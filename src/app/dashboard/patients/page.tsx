@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { Table, Button, Modal, Form, Input, message, Space, Popconfirm, Select, InputNumber, Radio } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, MedicineBoxOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, MedicineBoxOutlined, HistoryOutlined } from '@ant-design/icons';
+import Link from 'next/link';
 import api from '@/lib/axios';
 
 const NO_TUTOR_REASON_LABELS: Record<string, string> = {
@@ -39,11 +40,13 @@ export default function PatientsPage() {
   const [tutors, setTutors] = useState<Tutor[]>([]);
   const [speciesOptions, setSpeciesOptions] = useState<SupportOption[]>([]);
   const [breedOptions, setBreedOptions] = useState<SupportOption[]>([]);
+  const [breedSearchValue, setBreedSearchValue] = useState('');
   const [sexOptions, setSexOptions] = useState<SupportOption[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form] = Form.useForm();
+  const watchedSpecies = Form.useWatch('species', form);
 
   const fetchPatients = async () => {
     setLoading(true);
@@ -72,7 +75,11 @@ export default function PatientsPage() {
     FELINO: 'ANIMAL_RACA_GATO',
     BOVINO: 'ANIMAL_RACA_BOVINO',
     EQUINO: 'ANIMAL_RACA_EQUINO',
+    OUTRO: 'ANIMAL_RACA_OUTRO',
   };
+
+  const getBreedDiscriminator = (species: string) =>
+    BREED_DISCRIMINATOR[species] ?? 'ANIMAL_RACA_OUTRO';
 
   const fetchSupportOptions = async () => {
     try {
@@ -88,17 +95,29 @@ export default function PatientsPage() {
   };
 
   const fetchBreedOptions = async (species: string) => {
-    const disc = BREED_DISCRIMINATOR[species];
-    if (!disc) {
-      setBreedOptions([]);
-      return;
-    }
+    const disc = getBreedDiscriminator(species);
     try {
       const res = await api.get<SupportOption[]>('/catalog/support', { params: { discriminator: disc } });
       setBreedOptions(res.data ?? []);
     } catch (error) {
       console.error('Error fetching breed options:', error);
       setBreedOptions([]);
+    }
+  };
+
+  const handleAddBreed = async (breedName?: string) => {
+    const species = form.getFieldValue('species');
+    const disc = getBreedDiscriminator(species);
+    const newBreed = (breedName ?? breedSearchValue)?.trim();
+    if (!newBreed) return;
+    try {
+      await api.post('/catalog/support', { discriminator: disc, description: newBreed });
+      message.success(`Raça "${newBreed}" cadastrada`);
+      await fetchBreedOptions(species);
+      form.setFieldValue('breed', newBreed);
+      setBreedSearchValue('');
+    } catch (e: any) {
+      message.error(e.response?.data?.message ?? 'Erro ao cadastrar raça');
     }
   };
 
@@ -187,6 +206,9 @@ export default function PatientsPage() {
       key: 'actions',
       render: (_: any, record: Patient) => (
         <Space>
+          <Link href={`/dashboard/patients/${record.id}`}>
+            <Button icon={<HistoryOutlined />} title="Ver timeline" />
+          </Link>
           <Button icon={<EditOutlined />} onClick={() => handleEdit(record)} />
           <Popconfirm title="Tem certeza?" onConfirm={() => handleDelete(record.id)}>
             <Button icon={<DeleteOutlined />} danger />
@@ -230,6 +252,7 @@ export default function PatientsPage() {
             name="tutor_choice"
             label="Tutor"
             rules={[{ required: true, message: 'Defina se informa o tutor agora ou não' }]}
+            extra={editingId ? 'Você pode vincular ou alterar o tutor ao editar o paciente.' : undefined}
           >
             <Radio.Group>
               <Radio value="yes">Informar tutor agora</Radio>
@@ -278,12 +301,37 @@ export default function PatientsPage() {
             </Form.Item>
             <Form.Item name="breed" label="Raça" rules={[{ required: true, message: 'Obrigatório' }]}>
               <Select
-                placeholder={breedOptions.length ? 'Selecione a raça' : 'Selecione primeiro a espécie'}
+                placeholder={breedOptions.length ? 'Selecione ou cadastre a raça' : 'Selecione primeiro a espécie'}
                 showSearch
-                filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
-                options={breedOptions.map((o) => ({ value: o.description, label: o.description }))}
+                filterOption={(input, option) => {
+                  const optVal = option?.value as string;
+                  if (optVal?.startsWith('__NEW__:')) return true;
+                  return (option?.label ?? '').toLowerCase().includes(input.toLowerCase());
+                }}
+                options={[
+                  ...breedOptions.map((o) => ({ value: o.description, label: o.description })),
+                  ...(breedSearchValue?.trim() &&
+                  !breedOptions.some(
+                    (o) => o.description.toLowerCase() === breedSearchValue.trim().toLowerCase(),
+                  )
+                    ? [
+                        {
+                          value: `__NEW__:${breedSearchValue.trim()}`,
+                          label: `+ Cadastrar "${breedSearchValue.trim()}"`,
+                        },
+                      ]
+                    : []),
+                ]}
+                onSearch={setBreedSearchValue}
+                onSelect={(val: string) => {
+                  if (val.startsWith('__NEW__:')) {
+                    const newBreed = val.replace(/^__NEW__:/, '');
+                    form.setFieldValue('breed', newBreed);
+                    handleAddBreed(newBreed);
+                  }
+                }}
                 allowClear
-                disabled={!breedOptions.length}
+                disabled={!watchedSpecies}
               />
             </Form.Item>
           </div>

@@ -1,11 +1,15 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { Row, Col, Card, Statistic, Table, Tag, Typography } from 'antd';
 import {
   UserOutlined,
   MedicineBoxOutlined,
   CalendarOutlined,
+  ExperimentOutlined,
+  MessageOutlined,
+  FileSearchOutlined,
 } from '@ant-design/icons';
 import api from '@/lib/axios';
 
@@ -18,15 +22,28 @@ export default function DashboardPage() {
     newPatientsMonth: 0,
     revenueMonth: 0,
     cancelledThisMonth: 0,
+    vaccinesDue: 0,
+    examsAwaitingFollowup: 0,
+    unansweredConversations: 0,
   });
   const [recentAppointments, setRecentAppointments] = useState([]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      const consultationsRes = await api.get('/consultations');
-      const patientsRes = await api.get('/patients');
+      const [metricsRes, consultationsRes, patientsRes] = await Promise.all([
+        api.get('/metrics/dashboard'),
+        api.get('/consultations'),
+        api.get('/patients'),
+      ]);
 
+      const metrics = metricsRes.data as {
+        consultations_today: number;
+        vaccines_due: number;
+        exams_awaiting_followup: number;
+        unanswered_conversations: number;
+        monthly_revenue: number;
+      };
       const consultations = consultationsRes.data;
       const patients = patientsRes.data;
 
@@ -34,25 +51,6 @@ export default function DashboardPage() {
       const todayStr = now.toISOString().split('T')[0];
       const currentMonth = now.getMonth();
       const currentYear = now.getFullYear();
-
-      const todayAppointments = consultations.filter((c: any) => {
-        const dateStr = new Date(c.consultation_date).toISOString().split('T')[0];
-        return dateStr === todayStr;
-      });
-
-      const revenueMonth = consultations.reduce((acc: number, curr: any) => {
-        if (!curr.consultation_date) return acc;
-        const d = new Date(curr.consultation_date);
-        if (
-          d.getFullYear() === currentYear &&
-          d.getMonth() === currentMonth &&
-          curr.status === 'completed' &&
-          curr.paid
-        ) {
-          return acc + (parseFloat(curr.price) || 0);
-        }
-        return acc;
-      }, 0);
 
       const newPatientsMonth = patients.filter((p: any) => {
         if (!p.createdAt) return false;
@@ -72,10 +70,13 @@ export default function DashboardPage() {
       }).length;
 
       setStats({
-        appointmentsToday: todayAppointments.length,
+        appointmentsToday: metrics.consultations_today,
         newPatientsMonth,
-        revenueMonth,
+        revenueMonth: metrics.monthly_revenue,
         cancelledThisMonth,
+        vaccinesDue: metrics.vaccines_due,
+        examsAwaitingFollowup: metrics.exams_awaiting_followup,
+        unansweredConversations: metrics.unanswered_conversations,
       });
 
       const todayConsultations = consultations.filter((c: any) => {
@@ -181,6 +182,42 @@ export default function DashboardPage() {
               valueStyle={{ color: '#64748b', fontWeight: 600 }}
             />
           </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <Link href="/dashboard/vaccines">
+            <Card bordered={false} className="rounded-xl shadow-sm border border-slate-200/80 hover:shadow-md transition-shadow cursor-pointer" loading={loading}>
+              <Statistic
+                title={<span className="text-slate-600">Vacinas (próx. 30 dias)</span>}
+                value={stats.vaccinesDue}
+                prefix={<ExperimentOutlined className="!text-amber-600" />}
+                valueStyle={{ color: '#d97706', fontWeight: 600 }}
+              />
+            </Card>
+          </Link>
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <Link href="/dashboard/followups">
+            <Card bordered={false} className="rounded-xl shadow-sm border border-slate-200/80 hover:shadow-md transition-shadow cursor-pointer" loading={loading}>
+              <Statistic
+                title={<span className="text-slate-600">Exames aguard. retorno</span>}
+                value={stats.examsAwaitingFollowup}
+                prefix={<FileSearchOutlined className="!text-purple-600" />}
+                valueStyle={{ color: '#7c3aed', fontWeight: 600 }}
+              />
+            </Card>
+          </Link>
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <Link href="/dashboard/whatsapp">
+            <Card bordered={false} className="rounded-xl shadow-sm border border-slate-200/80 hover:shadow-md transition-shadow cursor-pointer" loading={loading}>
+              <Statistic
+                title={<span className="text-slate-600">Conversas não respondidas</span>}
+                value={stats.unansweredConversations}
+                prefix={<MessageOutlined className="!text-green-600" />}
+                valueStyle={{ color: '#16a34a', fontWeight: 600 }}
+              />
+            </Card>
+          </Link>
         </Col>
       </Row>
 
