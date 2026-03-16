@@ -1,9 +1,14 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Table, Button, Modal, Form, Input, message, Space, Popconfirm, Select, InputNumber } from 'antd';
+import { Table, Button, Modal, Form, Input, message, Space, Popconfirm, Select, InputNumber, Radio } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, MedicineBoxOutlined } from '@ant-design/icons';
 import api from '@/lib/axios';
+
+const NO_TUTOR_REASON_LABELS: Record<string, string> = {
+  EMERGENCIA: 'Emergência',
+  ABANDONO: 'Abandono',
+};
 
 interface Tutor {
   id: string;
@@ -19,8 +24,9 @@ interface Patient {
   weight: number;
   sex: string;
   chip_number?: string;
-  tutor_id: string;
-  tutor?: Tutor;
+  tutor_id: string | null;
+  no_tutor_reason?: string | null;
+  tutor?: Tutor | null;
 }
 
 interface SupportOption {
@@ -105,12 +111,18 @@ export default function PatientsPage() {
   const handleAdd = () => {
     setEditingId(null);
     form.resetFields();
+    form.setFieldsValue({ tutor_choice: undefined });
     setModalVisible(true);
   };
 
   const handleEdit = (record: Patient) => {
     setEditingId(record.id);
-    form.setFieldsValue(record);
+    const hasTutor = !!record.tutor_id;
+    form.setFieldsValue({
+      ...record,
+      tutor_choice: hasTutor ? 'yes' : 'no',
+      no_tutor_reason: record.no_tutor_reason ?? undefined,
+    });
     fetchBreedOptions(record.species);
     setModalVisible(true);
   };
@@ -127,12 +139,17 @@ export default function PatientsPage() {
   };
 
   const handleSubmit = async (values: any) => {
+    const { tutor_choice, ...rest } = values;
+    const payload =
+      tutor_choice === 'yes'
+        ? { ...rest, tutor_id: rest.tutor_id || null, no_tutor_reason: null }
+        : { ...rest, tutor_id: null, no_tutor_reason: rest.no_tutor_reason || null };
     try {
       if (editingId) {
-        await api.put(`/patients/${editingId}`, values);
+        await api.put(`/patients/${editingId}`, payload);
         message.success('Paciente atualizado com sucesso');
       } else {
-        await api.post('/patients', values);
+        await api.post('/patients', payload);
         message.success('Paciente criado com sucesso');
       }
       setModalVisible(false);
@@ -161,8 +178,9 @@ export default function PatientsPage() {
     },
     {
       title: 'Tutor',
-      dataIndex: ['tutor', 'name'],
       key: 'tutorName',
+      render: (_: any, record: Patient) =>
+        record.tutor?.name ?? (record.no_tutor_reason ? `Sem tutor (${NO_TUTOR_REASON_LABELS[record.no_tutor_reason] ?? record.no_tutor_reason})` : '—'),
     },
     {
       title: 'Ações',
@@ -207,13 +225,42 @@ export default function PatientsPage() {
           <Form.Item name="name" label="Nome" rules={[{ required: true, message: 'Obrigatório' }]}>
             <Input />
           </Form.Item>
-          
-          <Form.Item name="tutor_id" label="Tutor" rules={[{ required: true, message: 'Obrigatório' }]}>
-            <Select placeholder="Selecione um tutor">
-              {tutors.map(tutor => (
-                <Select.Option key={tutor.id} value={tutor.id}>{tutor.name}</Select.Option>
-              ))}
-            </Select>
+
+          <Form.Item
+            name="tutor_choice"
+            label="Tutor"
+            rules={[{ required: true, message: 'Defina se informa o tutor agora ou não' }]}
+          >
+            <Radio.Group>
+              <Radio value="yes">Informar tutor agora</Radio>
+              <Radio value="no">Não informar tutor (emergência ou abandono)</Radio>
+            </Radio.Group>
+          </Form.Item>
+
+          <Form.Item
+            noStyle
+            shouldUpdate={(prev, curr) => prev.tutor_choice !== curr.tutor_choice}
+          >
+            {({ getFieldValue }) =>
+              getFieldValue('tutor_choice') === 'yes' ? (
+                <Form.Item name="tutor_id" label="Selecione o tutor" rules={[{ required: true, message: 'Selecione um tutor' }]}>
+                  <Select placeholder="Selecione um tutor" allowClear showSearch optionFilterProp="label">
+                    {tutors.map((tutor) => (
+                      <Select.Option key={tutor.id} value={tutor.id} label={tutor.name}>
+                        {tutor.name}
+                      </Select.Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              ) : getFieldValue('tutor_choice') === 'no' ? (
+                <Form.Item name="no_tutor_reason" label="Motivo" rules={[{ required: true, message: 'Informe o motivo' }]}>
+                  <Select placeholder="Selecione o motivo">
+                    <Select.Option value="EMERGENCIA">{NO_TUTOR_REASON_LABELS.EMERGENCIA}</Select.Option>
+                    <Select.Option value="ABANDONO">{NO_TUTOR_REASON_LABELS.ABANDONO}</Select.Option>
+                  </Select>
+                </Form.Item>
+              ) : null
+            }
           </Form.Item>
 
           <div className="grid grid-cols-2 gap-4">
