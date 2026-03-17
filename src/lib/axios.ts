@@ -46,13 +46,20 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    
-    // Handle 401 (Unauthorized) - Refresh Token logic could go here
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      // originalRequest._retry = true;
-      // Implement refresh token flow...
+
+    // 401: token ausente, expirado ou inválido — limpar e redirecionar ao login
+    if (error.response?.status === 401 && typeof window !== 'undefined') {
+      const isAuthRoute = originalRequest?.url?.includes('/auth/login');
+      if (!isAuthRoute) {
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('tenantId');
+        localStorage.removeItem('tenantCode');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+        return Promise.reject(error);
+      }
     }
-    
+
     return Promise.reject(error);
   }
 );
