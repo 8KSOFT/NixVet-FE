@@ -5,6 +5,11 @@ import { Card, List, Input, Button, message, Spin, Empty, Row, Col, Statistic, T
 import { MessageOutlined, SendOutlined, BulbOutlined, ClockCircleOutlined, AlertOutlined } from '@ant-design/icons';
 import api from '@/lib/axios';
 import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+import 'dayjs/locale/pt-br';
+
+dayjs.extend(relativeTime);
+dayjs.locale('pt-br');
 
 interface ConversationMetrics {
   unanswered_conversations: number;

@@ -311,8 +311,8 @@ export default function CalendarPage() {
       setDetailsVisible(false);
       setSelectedConsultation(null);
       fetchConsultations();
-    } catch (e) {
-      if (e?.errorFields) message.error('Preencha a nova data/hora');
+    } catch (e: unknown) {
+      if (e && typeof e === 'object' && 'errorFields' in e) message.error('Preencha a nova data/hora');
       else message.error('Erro ao reagendar');
     } finally {
       setRescheduleLoading(false);
