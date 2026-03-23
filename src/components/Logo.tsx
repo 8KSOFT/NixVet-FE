@@ -5,6 +5,11 @@ interface LogoProps {
   height?: number;
   src?: string | null;
   alt?: string;
+  className?: string;
+}
+
+function mergeImgClass(className?: string) {
+  return ['rounded-xl object-cover', className].filter(Boolean).join(' ');
 }
 
 export default function Logo({
@@ -12,7 +17,9 @@ export default function Logo({
   height = 52,
   src = null,
   alt = 'Logo',
+  className,
 }: LogoProps) {
+  const imgClass = mergeImgClass(className);
   if (src) {
     return (
       <img
@@ -20,7 +27,7 @@ export default function Logo({
         alt={alt}
         width={width}
         height={height}
-        className="rounded-xl object-cover"
+        className={imgClass}
       />
     );
   }
@@ -31,7 +38,7 @@ export default function Logo({
       alt={alt}
       width={width}
       height={height}
-      className="rounded-xl object-cover"
+      className={imgClass}
     />
   );
 }

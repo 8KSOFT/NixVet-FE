@@ -1,5 +1,10 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Node (local vs Docker)
+
+- **Docker / CI:** imagem `node:22` (veja `Dockerfile`). É o build “oficial”.
+- **Local com Node 23:** o Yarn ignora `engines` (`.yarnrc`). Após `yarn install`, o `postinstall` corrige `package.json` internos do Next sem `version` (workaround Node 23). Se ainda falhar, use `nvm use 22` ou build na Docker.
+
 ## Getting Started
 
 First, run the development server:
