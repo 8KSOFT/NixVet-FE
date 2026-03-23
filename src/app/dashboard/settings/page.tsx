@@ -24,11 +24,89 @@ export default function SettingsPage() {
   const [loading, setLoading] = React.useState(false);
   const [loadingCep, setLoadingCep] = React.useState(false);
   const [creatingTenant, setCreatingTenant] = React.useState(false);
-  const isAdmin = getCurrentUserRole() === 'admin';
+  const [googleStatus, setGoogleStatus] = React.useState<{
+    connected: boolean;
+    accountEmail?: string;
+    calendarId?: string;
+  }>({ connected: false });
+  const [googleCalendars, setGoogleCalendars] = React.useState<
+    Array<{ id: string; summary: string; primary: boolean }>
+  >([]);
+  const [selectedCalendarId, setSelectedCalendarId] = React.useState<string>('primary');
+  const [googleLoading, setGoogleLoading] = React.useState(false);
+  const currentRole = getCurrentUserRole();
+  const isSuperAdmin = currentRole === 'superadmin';
 
   React.useEffect(() => {
     fetchSettings();
+    fetchGoogleStatus();
   }, []);
+
+  const fetchGoogleStatus = async () => {
+    try {
+      const statusRes = await api.get('/integrations/google/status');
+      const status = statusRes.data || { connected: false };
+      setGoogleStatus(status);
+      if (status.connected) {
+        const calendarsRes = await api.get('/integrations/google/calendars');
+        const calendars = Array.isArray(calendarsRes.data) ? calendarsRes.data : [];
+        setGoogleCalendars(calendars);
+        setSelectedCalendarId(status.calendarId || 'primary');
+      } else {
+        setGoogleCalendars([]);
+      }
+    } catch {
+      setGoogleStatus({ connected: false });
+      setGoogleCalendars([]);
+    }
+  };
+
+  const handleGoogleConnect = async () => {
+    try {
+      setGoogleLoading(true);
+      const response = await api.get('/integrations/google/connect');
+      const url = response.data?.url;
+      if (!url) {
+        message.error('Não foi possível iniciar conexão Google');
+        return;
+      }
+      window.open(url, '_blank', 'noopener,noreferrer');
+      message.info('Após autorizar no Google, clique em "Atualizar Status".');
+    } catch (error: any) {
+      message.error(error.response?.data?.message || 'Erro ao conectar Google');
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
+  const handleGoogleDisconnect = async () => {
+    try {
+      setGoogleLoading(true);
+      await api.post('/integrations/google/disconnect');
+      message.success('Integração Google desconectada');
+      await fetchGoogleStatus();
+    } catch (error: any) {
+      message.error(error.response?.data?.message || 'Erro ao desconectar Google');
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
+  const handleGoogleSaveCalendar = async () => {
+    try {
+      setGoogleLoading(true);
+      await api.put('/integrations/google/settings', {
+        calendarId: selectedCalendarId,
+        syncDirection: 'nixvet_to_google',
+      });
+      message.success('Calendário Google atualizado');
+      await fetchGoogleStatus();
+    } catch (error: any) {
+      message.error(error.response?.data?.message || 'Erro ao salvar calendário');
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
 
   const fetchSettings = async () => {
     try {
@@ -70,6 +148,11 @@ export default function SettingsPage() {
         clinicName: data.name,
         email: data.email,
         phone: data.phone,
+        brandName: data.brand_name,
+        logoUrl: data.logo_url,
+        primaryColor: data.primary_color,
+        subdomain: data.subdomain,
+        customDomain: data.custom_domain,
         cep: data.cep || '',
         street,
         number,
@@ -139,6 +222,11 @@ export default function SettingsPage() {
         name: values.clinicName,
         email: values.email,
         phone: values.phone,
+        brand_name: values.brandName,
+        logo_url: values.logoUrl,
+        primary_color: values.primaryColor,
+        subdomain: values.subdomain,
+        custom_domain: values.customDomain,
         address: fullAddress,
         cep: values.cep,
       });
@@ -206,6 +294,23 @@ export default function SettingsPage() {
             </Form.Item>
             <Form.Item name="phone" label="Telefone">
               <Input />
+            </Form.Item>
+            <Form.Item name="brandName" label="Nome da marca (white-label)">
+              <Input placeholder="Ex: Vixen Vet" />
+            </Form.Item>
+            <Form.Item name="logoUrl" label="URL do logo">
+              <Input placeholder="https://cdn.empresa.com/logo.png" />
+            </Form.Item>
+            <div className="grid grid-cols-2 gap-4">
+              <Form.Item name="primaryColor" label="Cor principal">
+                <Input placeholder="#2563eb" />
+              </Form.Item>
+              <Form.Item name="subdomain" label="Subdomínio">
+                <Input placeholder="vixen" />
+              </Form.Item>
+            </div>
+            <Form.Item name="customDomain" label="Domínio customizado (opcional)">
+              <Input placeholder="app.empresa.com.br" />
             </Form.Item>
 
             <div className="grid grid-cols-3 gap-4">
@@ -279,7 +384,53 @@ export default function SettingsPage() {
           </div>
         </Card>
 
-        {isAdmin && (
+        <Card title="Integração Google Agenda" className="shadow-sm">
+          <div className="flex flex-col gap-3">
+            <div>
+              <h4 className="font-bold text-gray-700">Status</h4>
+              <p className="text-gray-500">
+                {googleStatus.connected
+                  ? `Conectado${googleStatus.accountEmail ? ` (${googleStatus.accountEmail})` : ''}`
+                  : 'Desconectado'}
+              </p>
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              <Button type="primary" onClick={handleGoogleConnect} loading={googleLoading} className="bg-blue-600">
+                Conectar Google
+              </Button>
+              <Button onClick={fetchGoogleStatus} loading={googleLoading}>
+                Atualizar Status
+              </Button>
+              {googleStatus.connected && (
+                <Button danger onClick={handleGoogleDisconnect} loading={googleLoading}>
+                  Desconectar
+                </Button>
+              )}
+            </div>
+            {googleStatus.connected && (
+              <>
+                <Divider />
+                <div className="flex gap-2">
+                  <Input
+                    value={selectedCalendarId}
+                    onChange={(e) => setSelectedCalendarId(e.target.value)}
+                    placeholder="ID do calendário (ex: primary)"
+                  />
+                  <Button onClick={handleGoogleSaveCalendar} loading={googleLoading} type="primary" className="bg-blue-600">
+                    Salvar calendário
+                  </Button>
+                </div>
+                {googleCalendars.length > 0 && (
+                  <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
+                    Disponíveis: {googleCalendars.map((c) => c.summary).join(', ')}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </Card>
+
+        {isSuperAdmin && (
           <Card title="Nova clínica (para testes)" className="shadow-sm md:col-span-2">
             <p className="text-gray-500 mb-4">
               Crie uma clínica para usuários testarem. Informe o <strong>código</strong> na tela de login. Opcional: cadastre o primeiro usuário (admin) da clínica.

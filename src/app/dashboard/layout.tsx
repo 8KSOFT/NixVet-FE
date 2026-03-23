@@ -21,6 +21,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Logo from '@/components/Logo';
 import api from '@/lib/axios';
+import { fetchPublicBranding } from '@/lib/branding';
 
 interface ClinicNotification {
   id: string;
@@ -116,11 +117,20 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const [collapsed, setCollapsed] = useState(false);
+  const [brandName, setBrandName] = useState('NixVet');
+  const [brandLogo, setBrandLogo] = useState<string | null>(null);
   const router = useRouter();
   const pathname = usePathname();
   const {
     token: { colorBgContainer },
   } = theme.useToken();
+
+  useEffect(() => {
+    fetchPublicBranding().then((branding) => {
+      setBrandName(branding.appName || 'NixVet');
+      setBrandLogo(branding.logoUrl);
+    });
+  }, []);
 
   const handleLogout = () => {
     if (typeof window !== 'undefined') {
@@ -184,9 +194,11 @@ export default function DashboardLayout({
             <Logo
               width={collapsed ? 44 : 52}
               height={collapsed ? 44 : 52}
+              src={brandLogo}
+              alt={brandName}
             />
             {!collapsed && (
-              <span className="text-slate-800 font-semibold text-lg tracking-tight">NixVet</span>
+              <span className="text-slate-800 font-semibold text-lg tracking-tight">{brandName}</span>
             )}
           </div>
         </div>

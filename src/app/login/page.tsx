@@ -6,17 +6,29 @@ import { UserOutlined, LockOutlined, ShopOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import Logo from '@/components/Logo';
 import api from '@/lib/axios';
+import { fetchPublicBranding } from '@/lib/branding';
 
 const { Title, Text } = Typography;
 
 export default function LoginPage() {
   const router = useRouter();
   const [loading, setLoading] = React.useState(false);
+  const [brandName, setBrandName] = React.useState('NixVetApp');
+  const [brandLogo, setBrandLogo] = React.useState<string | null>(null);
+  const [defaultTenantCode, setDefaultTenantCode] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    fetchPublicBranding().then((branding) => {
+      setBrandName(branding.appName || 'NixVetApp');
+      setBrandLogo(branding.logoUrl);
+      setDefaultTenantCode(branding.tenantCode);
+    });
+  }, []);
 
   const onFinish = async (values: any) => {
     setLoading(true);
     try {
-      const tenantCode = values.tenantCode || 'NIXVET'; // Default for demo if empty
+      const tenantCode = values.tenantCode || defaultTenantCode || 'NIXVET';
       
       const response = await api.post('/auth/login', {
         email: values.email,
@@ -47,10 +59,10 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
-            <Logo width={80} height={80} />
+            <Logo width={80} height={80} src={brandLogo} alt={brandName} />
           </div>
           <Title level={2} className="!text-blue-600 !mb-2">
-            NixVetApp
+            {brandName}
           </Title>
           <Text className="text-gray-500 text-lg">
             Sistema de Gestão Veterinária
@@ -125,7 +137,7 @@ export default function LoginPage() {
         </Card>
         
         <div className="text-center mt-8 text-gray-400 text-sm">
-          © {new Date().getFullYear()} NixVetApp. Todos os direitos reservados.
+          © {new Date().getFullYear()} {brandName}. Todos os direitos reservados.
         </div>
       </div>
     </div>

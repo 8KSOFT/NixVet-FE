@@ -1,29 +1,37 @@
 import React from 'react';
 
 interface LogoProps {
-  className?: string;
   width?: number;
   height?: number;
+  src?: string | null;
   alt?: string;
-  color?: string;
-  accent?: string;
 }
 
 export default function Logo({
-  className = '',
-  width = 50,
-  height = 50,
-  alt = 'NixVet',
-  color: _color,
-  accent: _accent,
+  width = 52,
+  height = 52,
+  src = null,
+  alt = 'Logo',
 }: LogoProps) {
+  if (src) {
+    return (
+      <img
+        src={src}
+        alt={alt}
+        width={width}
+        height={height}
+        className="rounded-xl object-cover"
+      />
+    );
+  }
+
   return (
     <img
       src="/logo.svg"
       alt={alt}
       width={width}
       height={height}
-      className={className}
+      className="rounded-xl object-cover"
     />
   );
 }
