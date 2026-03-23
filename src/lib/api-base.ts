@@ -1,13 +1,13 @@
 /**
- * NestJS usa prefixo global `api`. Muitos envs apontam só o host
- * (ex.: https://nixvet-api.8ksoft.com) — normaliza para incluir `/api`.
+ * Resolve a base URL da API (NestJS prefixo `/api`).
  *
- * **same-origin / relative** → retorna `/api` (mesmo protocolo e host da página).
- * Use quando o reverse proxy expõe o backend em `https://seu-front/api/*` (evita
- * mixed-content: página HTTPS chamando API em HTTP em outro host).
+ * Aceita:
+ *   - URL absoluta: "http://host:3001" ou "https://host/api"
+ *   - "same-origin" / "relative" → `/api` (proxy no mesmo host)
+ *   - vazio → localhost dev
  *
- * HML “só HTTP” no browser: front e API na mesma origem HTTP, ou ambos HTTPS,
- * ou proxy `/api` + `same-origin`.
+ * **Auto-upgrade:** se a página está em HTTPS e a URL configurada é HTTP,
+ * troca o esquema para HTTPS automaticamente, evitando mixed-content.
  */
 export function getApiBaseUrl(): string {
   const raw = (process.env.NEXT_PUBLIC_API_URL || '').trim().replace(/\/+$/, '');
@@ -18,6 +18,15 @@ export function getApiBaseUrl(): string {
     return '/api';
   }
 
-  if (raw.endsWith('/api')) return raw;
-  return `${raw}/api`;
+  let url = raw.endsWith('/api') ? raw : `${raw}/api`;
+
+  if (
+    typeof window !== 'undefined' &&
+    window.location.protocol === 'https:' &&
+    url.startsWith('http://')
+  ) {
+    url = url.replace(/^http:\/\//, 'https://');
+  }
+
+  return url;
 }
