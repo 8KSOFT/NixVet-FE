@@ -1,3 +1,5 @@
+import { getApiBaseUrl } from './api-base';
+
 export interface PublicBranding {
   appName: string;
   logoUrl: string | null;
@@ -17,10 +19,9 @@ const fallbackBranding: PublicBranding = {
 };
 
 export async function fetchPublicBranding(): Promise<PublicBranding> {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-  if (!apiUrl) return fallbackBranding;
-
   try {
+    const apiUrl = getApiBaseUrl();
+
     const host = typeof window !== 'undefined' ? window.location.host : '';
     const query = host ? `?host=${encodeURIComponent(host)}` : '';
     const response = await fetch(`${apiUrl}/tenants/public-brand${query}`, {
