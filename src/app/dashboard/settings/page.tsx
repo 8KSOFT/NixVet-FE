@@ -368,22 +368,6 @@ export default function SettingsPage() {
           </Form>
         </Card>
 
-        <Card title="Sistema" className="shadow-sm">
-          <div className="flex flex-col gap-4">
-            <div>
-              <h4 className="font-bold text-gray-700">Versão do Sistema</h4>
-              <p className="text-gray-500">v1.0.0</p>
-            </div>
-            <Divider />
-            <div>
-              <h4 className="font-bold text-gray-700">Tenant ID</h4>
-              <p className="text-gray-500 font-mono text-xs bg-gray-100 p-2 rounded">
-                {typeof window !== 'undefined' ? localStorage.getItem('tenantId') : 'Loading...'}
-              </p>
-            </div>
-          </div>
-        </Card>
-
         <Card title="Integração Google Agenda" className="shadow-sm">
           <div className="flex flex-col gap-3">
             <div>
@@ -427,6 +411,21 @@ export default function SettingsPage() {
                 )}
               </>
             )}
+          </div>
+        </Card>
+
+        <Card title="Sistema" className="shadow-sm md:col-span-2">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:gap-10 gap-4">
+            <div>
+              <h4 className="font-bold text-gray-700">Versão do Sistema</h4>
+              <p className="text-gray-500">v1.0.0</p>
+            </div>
+            <div className="sm:border-l sm:border-gray-200 sm:pl-10 flex-1 min-w-0">
+              <h4 className="font-bold text-gray-700">Tenant ID</h4>
+              <p className="text-gray-500 font-mono text-xs bg-gray-100 p-2 rounded break-all mt-1">
+                {typeof window !== 'undefined' ? localStorage.getItem('tenantId') : 'Loading...'}
+              </p>
+            </div>
           </div>
         </Card>
 
