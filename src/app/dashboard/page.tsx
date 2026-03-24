@@ -98,12 +98,20 @@ export default function DashboardPage() {
         unansweredConversations: metrics.unanswered_conversations,
       });
 
+      type ConsultTodayRow = {
+        id: string;
+        consultation_date: string;
+        patient?: { name?: string };
+        veterinarian?: { name?: string };
+        status?: string;
+      };
+
       const todayConsultations = consultations.filter((c: { consultation_date?: string }) => {
         const raw = c.consultation_date;
         if (!raw) return false;
         const dateStr = new Date(raw).toISOString().split('T')[0];
         return dateStr === todayStr;
-      });
+      }) as ConsultTodayRow[];
 
       const statusLabel = (status: string) => {
         if (status === 'cancelled') return t('consultation.status.cancelled');
@@ -112,7 +120,6 @@ export default function DashboardPage() {
       };
 
       const recent = todayConsultations
-        .filter((c: { consultation_date?: string }): c is { consultation_date: string; id: string; patient?: { name?: string }; veterinarian?: { name?: string }; status?: string } => Boolean(c.consultation_date))
         .sort(
           (a, b) =>
             new Date(b.consultation_date).getTime() - new Date(a.consultation_date).getTime(),
