@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Layout, Menu, Button, Avatar, Dropdown, Badge } from 'antd';
+import { Layout, Menu, Button, Avatar, Badge, Drawer, Dropdown, List, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import {
   MenuFoldOutlined,
@@ -39,14 +39,17 @@ function NotificationsBell() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [list, setList] = useState<ClinicNotification[]>([]);
   const [loading, setLoading] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const fetchUnread = () => {
     api.get<number>('/notifications/unread-count').then((r) => setUnreadCount(Number(r.data ?? 0))).catch(() => {});
   };
 
+  /** Lista todas (lidas + não lidas), mais recentes primeiro */
   const fetchList = () => {
     setLoading(true);
-    api.get<ClinicNotification[]>('/notifications', { params: { unread: true } })
+    api
+      .get<ClinicNotification[]>('/notifications')
       .then((r) => setList(Array.isArray(r.data) ? r.data : []))
       .catch(() => setList([]))
       .finally(() => setLoading(false));
@@ -54,15 +57,24 @@ function NotificationsBell() {
 
   useEffect(() => {
     fetchUnread();
-    const t = setInterval(fetchUnread, 60000);
-    return () => clearInterval(t);
+    const tick = setInterval(fetchUnread, 60000);
+    return () => clearInterval(tick);
   }, []);
+
+  useEffect(() => {
+    if (drawerOpen) {
+      fetchList();
+      fetchUnread();
+    }
+  }, [drawerOpen]);
 
   const markRead = async (id: string) => {
     try {
       await api.post(`/notifications/${id}/read`);
       fetchUnread();
-      setList((prev) => prev.filter((n) => n.id !== id));
+      setList((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)),
+      );
     } catch {}
   };
 
@@ -70,46 +82,75 @@ function NotificationsBell() {
     try {
       await api.post('/notifications/read-all');
       setUnreadCount(0);
-      setList([]);
+      setList((prev) => prev.map((n) => ({ ...n, is_read: true })));
     } catch {}
   };
 
-  const dropdownContent = (
-    <div className="min-w-[280px] max-h-[360px] overflow-auto">
-      <div className="p-2 border-b flex justify-between items-center">
-        <span className="font-medium">{t('notifications.title')}</span>
-        {list.length > 0 && (
-          <Button type="link" size="small" onClick={markAllRead}>
-            {t('notifications.markAllRead')}
-          </Button>
-        )}
-      </div>
-      {loading ? (
-        <div className="p-4 text-center text-slate-500">{t('notifications.loading')}</div>
-      ) : list.length === 0 ? (
-        <div className="p-4 text-center text-slate-500">{t('notifications.empty')}</div>
-      ) : (
-        <ul className="list-none p-0 m-0">
-          {list.map((n) => (
-            <li
-              key={n.id}
-              className="px-3 py-2 border-b border-slate-100 hover:bg-slate-50 cursor-pointer"
-              onClick={() => markRead(n.id)}
-            >
-              <div className="text-sm text-slate-800">{n.message}</div>
-              <div className="text-xs text-slate-400 mt-0.5">{n.type}</div>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
   return (
-    <Dropdown dropdownRender={() => dropdownContent} trigger={['click']} onOpenChange={(open) => open && fetchList()}>
+    <>
       <Badge count={unreadCount} size="small" offset={[-2, 2]}>
-        <Button type="text" icon={<BellOutlined className="text-lg" />} className="flex items-center justify-center w-10 h-10 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-blue-600" />
+        <Button
+          type="text"
+          icon={<BellOutlined className="text-lg" />}
+          onClick={() => setDrawerOpen(true)}
+          className="flex items-center justify-center w-10 h-10 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-blue-600"
+          aria-label={t('notifications.title')}
+        />
       </Badge>
-    </Dropdown>
+      <Drawer
+        title={t('notifications.title')}
+        placement="right"
+        width={420}
+        onClose={() => setDrawerOpen(false)}
+        open={drawerOpen}
+        extra={
+          list.some((n) => !n.is_read) ? (
+            <Button type="link" size="small" onClick={() => void markAllRead()}>
+              {t('notifications.markAllRead')}
+            </Button>
+          ) : null
+        }
+        styles={{
+          body: { padding: 16, background: '#e2e8f0' },
+        }}
+      >
+        {loading ? (
+          <div className="py-12 text-center text-slate-500">{t('notifications.loading')}</div>
+        ) : list.length === 0 ? (
+          <div className="py-12 text-center text-slate-500">{t('notifications.empty')}</div>
+        ) : (
+          <List
+            dataSource={list}
+            renderItem={(n) => (
+              <List.Item
+                className="!px-0 !border-0 !mb-3"
+                style={{ border: 'none' }}
+              >
+                <button
+                  type="button"
+                  className={`w-full text-left rounded-lg border border-slate-200 shadow-sm p-3 transition-colors ${
+                    n.is_read ? 'bg-white' : 'bg-blue-50 border-blue-200'
+                  } hover:bg-slate-50`}
+                  onClick={() => void markRead(n.id)}
+                >
+                  <Typography.Text className="!text-slate-900 !text-sm block whitespace-pre-wrap break-words">
+                    {n.message}
+                  </Typography.Text>
+                  <div className="flex justify-between items-center mt-2 gap-2">
+                    <Typography.Text type="secondary" className="!text-xs uppercase">
+                      {n.type}
+                    </Typography.Text>
+                    {!n.is_read && (
+                      <span className="text-xs font-medium text-blue-600 shrink-0">Nova</span>
+                    )}
+                  </div>
+                </button>
+              </List.Item>
+            )}
+          />
+        )}
+      </Drawer>
+    </>
   );
 }
 

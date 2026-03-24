@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Card, Table, Button, Modal, Form, Input, message, Alert, Select, Space, Typography } from 'antd';
+import { Card, Table, Button, Modal, Form, Input, message, Alert, Select, Space, Typography, Switch } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import api from '@/lib/axios';
 import { getApiBaseUrl } from '@/lib/api-base';
@@ -42,6 +42,10 @@ export default function SettingsWhatsappNumbersPage() {
 
   const currentRole = getCurrentUserRole();
   const isSuperAdmin = currentRole === 'superadmin';
+  const canManageChatbot =
+    currentRole === 'admin' || currentRole === 'manager' || isSuperAdmin;
+  const [chatbotEnabled, setChatbotEnabled] = useState(false);
+  const [chatbotSaving, setChatbotSaving] = useState(false);
   const provider = integration?.effectiveProvider ?? 'meta';
   const twilioWebhookUrl = `${getApiBaseUrl()}/whatsapp/webhook`;
 
@@ -69,10 +73,37 @@ export default function SettingsWhatsappNumbersPage() {
     }
   };
 
+  const fetchTenantChatbot = async () => {
+    if (!canManageChatbot) return;
+    try {
+      const res = await api.get<{ whatsapp_ai_chatbot_enabled?: boolean }>('/tenants/me');
+      setChatbotEnabled(Boolean(res.data?.whatsapp_ai_chatbot_enabled));
+    } catch {
+      setChatbotEnabled(false);
+    }
+  };
+
+  const saveChatbotToggle = async (enabled: boolean) => {
+    setChatbotSaving(true);
+    try {
+      await api.put('/tenants/me', { whatsapp_ai_chatbot_enabled: enabled });
+      setChatbotEnabled(enabled);
+      message.success(enabled ? 'Chatbot de IA ativado' : 'Chatbot de IA desativado');
+    } catch (e: any) {
+      message.error(e.response?.data?.message ?? 'Erro ao salvar');
+    } finally {
+      setChatbotSaving(false);
+    }
+  };
+
   useEffect(() => {
     fetchList();
     fetchIntegration();
   }, []);
+
+  useEffect(() => {
+    void fetchTenantChatbot();
+  }, [canManageChatbot]);
 
   const saveProviderOverride = async () => {
     setProviderSaving(true);
@@ -205,6 +236,28 @@ export default function SettingsWhatsappNumbersPage() {
         Cadastro do número desta clínica para <strong>receber</strong> conversas no NixVet e o sistema saber qual
         clínica é cada linha. Quem não usa Meta vai pelo modo <strong>Twilio</strong> (definido no servidor).
       </p>
+
+      {canManageChatbot && (
+        <Card
+          className="mb-6 border-blue-200 bg-gradient-to-br from-blue-50/90 to-white shadow-sm"
+          title={<span className="text-blue-800 font-semibold">Chatbot — respostas automáticas (IA)</span>}
+        >
+          <Space direction="vertical" size="middle" className="w-full">
+            <div className="flex flex-wrap items-center gap-3">
+              <Switch
+                checked={chatbotEnabled}
+                loading={chatbotSaving}
+                onChange={(v) => void saveChatbotToggle(v)}
+              />
+              <Typography.Text strong>{chatbotEnabled ? 'Ativo' : 'Desativado'}</Typography.Text>
+            </div>
+            <Typography.Paragraph type="secondary" className="!mb-0 text-sm">
+              O mesmo controle existe em <strong>Configurações</strong> (topo da página). Exige{' '}
+              <code className="text-xs">OPENAI_API_KEY</code> e fila de IA no servidor.
+            </Typography.Paragraph>
+          </Space>
+        </Card>
+      )}
 
       {integration && (
         <Alert

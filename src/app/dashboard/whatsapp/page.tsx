@@ -29,13 +29,36 @@ interface AlertConversation {
   waiting_since: string | null;
 }
 
+type ThreadStatus = 'waiting_clinic' | 'waiting_tutor' | 'resolved' | null;
+
 interface Conversation {
   id: string;
   wa_id: string;
   contact_name: string | null;
   status: string;
   last_message_at: string | null;
+  thread_status?: ThreadStatus;
+  thread_waiting_since?: string | null;
   whatsapp_number?: { display_phone: string };
+}
+
+function ThreadStatusTag({ status }: { status: ThreadStatus | undefined }) {
+  if (!status || status === 'resolved') return null;
+  if (status === 'waiting_clinic') {
+    return (
+      <Tag color="error" className="m-0">
+        Não respondido
+      </Tag>
+    );
+  }
+  if (status === 'waiting_tutor') {
+    return (
+      <Tag color="processing" className="m-0">
+        Aguardando resposta do tutor
+      </Tag>
+    );
+  }
+  return null;
 }
 
 interface WhatsappMessage {
@@ -58,6 +81,7 @@ export default function WhatsAppPage() {
   const [alerts, setAlerts] = useState<AlertConversation[]>([]);
   const [suggestLoading, setSuggestLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [whatsappConfigured, setWhatsappConfigured] = useState<boolean | null>(null);
 
   const selectedIdRef = useRef<string | null>(null);
   selectedIdRef.current = selectedId;
@@ -157,6 +181,10 @@ export default function WhatsAppPage() {
   useEffect(() => {
     fetchConversations(false);
     fetchMetricsAndAlerts(false);
+    api
+      .get<unknown[]>('/whatsapp/numbers')
+      .then((r) => setWhatsappConfigured(Array.isArray(r.data) && r.data.length > 0))
+      .catch(() => setWhatsappConfigured(false));
   }, [fetchConversations, fetchMetricsAndAlerts]);
 
   useEffect(() => {
@@ -197,29 +225,23 @@ export default function WhatsAppPage() {
         </span>
       </div>
 
-      <Alert
-        type="info"
-        showIcon
-        className="mb-6"
-        message="Como a clínica usa o WhatsApp aqui (sem Meta na clínica)"
-        description={
-          <span className="text-sm">
-            O cadastro do <strong>número da clínica</strong> fica em{' '}
-            <Link href="/dashboard/settings/whatsapp-numbers" className="text-blue-600 font-medium">
-              Configurações → WhatsApp da clínica
-            </Link>
-            . Você informa um <strong>código interno</strong> e o <strong>telefone WhatsApp da clínica</strong> — não é
-            necessário Facebook/Meta Business nesse modo (integração Twilio fica no servidor). Depois de cadastrar,
-            mensagens recebidas nesse número aparecem nesta tela.
-            {' '}
-            <strong>Chatbot automático</strong> (IA responde sozinha) é ligado em{' '}
-            <Link href="/dashboard/settings" className="text-blue-600 font-medium">
-              Configurações → Dados da clínica
-            </Link>{' '}
-            (admin). No servidor ainda é necessário <code className="text-xs">OPENAI_API_KEY</code> e a fila de IA ativa.
-          </span>
-        }
-      />
+      {whatsappConfigured === false && (
+        <Alert
+          type="info"
+          showIcon
+          className="mb-6"
+          message="Configure o WhatsApp da clínica"
+          description={
+            <span className="text-sm">
+              Cadastre o número em{' '}
+              <Link href="/dashboard/settings/whatsapp-numbers" className="text-blue-600 font-medium">
+                Configurações → WhatsApp da clínica
+              </Link>{' '}
+              (código interno + número que o Twilio envia no campo To). Sem isso, as mensagens não entram aqui.
+            </span>
+          }
+        />
+      )}
 
       <Row gutter={[16, 16]} className="mb-6">
         <Col xs={12} sm={6}>
@@ -294,8 +316,9 @@ export default function WhatsAppPage() {
                   onClick={() => setSelectedId(c.id)}
                 >
                   <div className="w-full">
-                    <div className="font-medium">
-                      {c.contact_name || c.wa_id || 'Sem nome'}
+                    <div className="font-medium flex items-center gap-2 flex-wrap">
+                      <span>{c.contact_name || c.wa_id || 'Sem nome'}</span>
+                      <ThreadStatusTag status={c.thread_status ?? null} />
                     </div>
                     <div className="text-xs text-gray-500">
                       {c.wa_id}
@@ -308,7 +331,16 @@ export default function WhatsAppPage() {
           )}
         </Card>
         <Card
-          title={selectedConv ? (selectedConv.contact_name || selectedConv.wa_id) : 'Selecione uma conversa'}
+          title={
+            selectedConv ? (
+              <Space wrap>
+                <span>{selectedConv.contact_name || selectedConv.wa_id}</span>
+                <ThreadStatusTag status={selectedConv.thread_status ?? null} />
+              </Space>
+            ) : (
+              'Selecione uma conversa'
+            )
+          }
           className="flex-1 min-w-0 flex flex-col"
           bodyStyle={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 400 }}
         >

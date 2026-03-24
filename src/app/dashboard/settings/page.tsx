@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Form, Input, Button, Card, message, Divider, Switch } from 'antd';
+import { Form, Input, Button, Card, message, Divider, Switch, Typography, Space } from 'antd';
 import { SettingOutlined, SaveOutlined, SearchOutlined, PlusOutlined } from '@ant-design/icons';
 import api from '@/lib/axios';
 import axios from 'axios';
@@ -37,7 +37,9 @@ export default function SettingsPage() {
   const [googleLoading, setGoogleLoading] = React.useState(false);
   const currentRole = getCurrentUserRole();
   const isSuperAdmin = currentRole === 'superadmin';
-  const canManageChatbot = currentRole === 'admin' || isSuperAdmin;
+  const canManageChatbot = currentRole === 'admin' || currentRole === 'manager' || isSuperAdmin;
+  const [chatbotEnabled, setChatbotEnabled] = React.useState(false);
+  const [chatbotSaving, setChatbotSaving] = React.useState(false);
 
   React.useEffect(() => {
     fetchSettings();
@@ -162,8 +164,8 @@ export default function SettingsPage() {
         neighborhood,
         city,
         state,
-        whatsappAiChatbotEnabled: Boolean(data.whatsapp_ai_chatbot_enabled),
       });
+      setChatbotEnabled(Boolean(data.whatsapp_ai_chatbot_enabled));
     } catch (error) {
       console.error('Error fetching settings:', error);
       message.error('Erro ao carregar configurações');
@@ -233,9 +235,6 @@ export default function SettingsPage() {
         address: fullAddress,
         cep: values.cep,
       };
-      if (canManageChatbot) {
-        payload.whatsapp_ai_chatbot_enabled = Boolean(values.whatsappAiChatbotEnabled);
-      }
       await api.put('/tenants/me', payload);
 
       message.success({ content: 'Configurações salvas com sucesso!', key: 'saving' });
@@ -284,11 +283,49 @@ export default function SettingsPage() {
     }
   };
 
+  const saveChatbotToggle = async (enabled: boolean) => {
+    setChatbotSaving(true);
+    try {
+      await api.put('/tenants/me', { whatsapp_ai_chatbot_enabled: enabled });
+      setChatbotEnabled(enabled);
+      message.success(enabled ? 'Chatbot de IA ativado' : 'Chatbot de IA desativado');
+    } catch (e: any) {
+      message.error(e.response?.data?.message ?? 'Erro ao salvar');
+    } finally {
+      setChatbotSaving(false);
+    }
+  };
+
   return (
     <div>
       <h1 className="text-2xl font-bold text-blue-600 flex items-center gap-2 mb-6">
         <SettingOutlined /> Configurações
       </h1>
+
+      {canManageChatbot && (
+        <Card
+          className="mb-6 shadow-sm border-blue-200 bg-gradient-to-br from-blue-50/80 to-white"
+          title={
+            <span className="text-blue-800 font-semibold">Chatbot WhatsApp — respostas automáticas com IA</span>
+          }
+        >
+          <Space direction="vertical" size="middle" className="w-full">
+            <div className="flex flex-wrap items-center gap-3">
+              <Switch
+                checked={chatbotEnabled}
+                loading={chatbotSaving}
+                onChange={(v) => void saveChatbotToggle(v)}
+              />
+              <Typography.Text strong>{chatbotEnabled ? 'Ativo' : 'Desativado'}</Typography.Text>
+            </div>
+            <Typography.Paragraph type="secondary" className="!mb-0 text-sm">
+              Quando <strong>ativo</strong>, cada mensagem de texto recebida no WhatsApp pode receber uma resposta
+              gerada pela IA (após classificação). Requer <code className="text-xs">OPENAI_API_KEY</code> e worker da
+              fila de IA no servidor. Casos de emergência usam texto fixo. Quem não é gestor/admin não vê esta opção.
+            </Typography.Paragraph>
+          </Space>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card title="Dados da Clínica" className="shadow-sm">
@@ -319,20 +356,6 @@ export default function SettingsPage() {
             <Form.Item name="customDomain" label="Domínio customizado (opcional)">
               <Input placeholder="app.empresa.com.br" />
             </Form.Item>
-
-            {canManageChatbot && (
-              <>
-                <Divider plain>WhatsApp — IA</Divider>
-                <Form.Item
-                  name="whatsappAiChatbotEnabled"
-                  label="Chatbot automático (responde mensagens recebidas)"
-                  valuePropName="checked"
-                  extra="Gravado nesta clínica. Exige OPENAI_API_KEY e worker da fila de IA no servidor. Emergências usam texto fixo; demais intenções respeitam confiança mínima configurada no ambiente."
-                >
-                  <Switch />
-                </Form.Item>
-              </>
-            )}
 
             <div className="grid grid-cols-3 gap-4">
               <div className="col-span-1">
