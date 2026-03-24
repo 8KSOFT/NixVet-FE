@@ -78,7 +78,7 @@ export function menuKeysForRole(role: string | null | undefined): string[] {
 }
 
 export function getStoredMenuKeys(): string[] {
-  if (typeof window === 'undefined') return MENU_BY_ROLE.veterinarian;
+  if (typeof window === 'undefined') return [...MENU_BY_ROLE.veterinarian];
   try {
     const raw = localStorage.getItem('user');
     const user = raw ? JSON.parse(raw) : null;

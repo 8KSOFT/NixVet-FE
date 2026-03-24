@@ -154,8 +154,8 @@ export default function DashboardLayout({
       items: [
         {
           key: 'profile',
-          label: t('userMenu.profile'),
           icon: <UserOutlined />,
+          label: <Link href="/dashboard/profile">{t('userMenu.profile')}</Link>,
         },
         {
           key: 'settings',
@@ -176,6 +176,7 @@ export default function DashboardLayout({
   );
 
   const getSelectedKey = () => {
+    if (pathname.includes('/dashboard/profile')) return 'profile';
     if (pathname.includes('/dashboard/patients')) return 'patients';
     if (pathname.includes('/dashboard/owners')) return 'owners';
     if (pathname.includes('/dashboard/calendar')) return 'calendar';

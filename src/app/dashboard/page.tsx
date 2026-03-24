@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { Row, Col, Card, Statistic, Table, Tag, Typography } from 'antd';
 import {
@@ -11,11 +11,20 @@ import {
   MessageOutlined,
   FileSearchOutlined,
 } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import api from '@/lib/axios';
 
 const { Title } = Typography;
 
 export default function DashboardPage() {
+  const { t, i18n } = useTranslation('common');
+  const locale = useMemo(() => {
+    const l = i18n.language?.split('-')[0];
+    if (l === 'en') return 'en-US';
+    if (l === 'es') return 'es-ES';
+    return 'pt-BR';
+  }, [i18n.language]);
+
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     appointmentsToday: 0,
@@ -26,7 +35,17 @@ export default function DashboardPage() {
     examsAwaitingFollowup: 0,
     unansweredConversations: 0,
   });
-  const [recentAppointments, setRecentAppointments] = useState([]);
+  const [recentAppointments, setRecentAppointments] = useState<
+    Array<{
+      key: string;
+      time: string;
+      date: string;
+      patient: string;
+      veterinarian: string;
+      status: string;
+      statusKey: string;
+    }>
+  >([]);
 
   const fetchData = async () => {
     try {
@@ -52,13 +71,13 @@ export default function DashboardPage() {
       const currentMonth = now.getMonth();
       const currentYear = now.getFullYear();
 
-      const newPatientsMonth = patients.filter((p: any) => {
+      const newPatientsMonth = patients.filter((p: { createdAt?: string }) => {
         if (!p.createdAt) return false;
         const d = new Date(p.createdAt);
         return d.getFullYear() === currentYear && d.getMonth() === currentMonth;
       }).length;
 
-      const cancelledThisMonth = consultations.filter((c: any) => {
+      const cancelledThisMonth = consultations.filter((c: { consultation_date?: string; status?: string }) => {
         if (!c.consultation_date) return false;
         const d = new Date(c.consultation_date);
         return (
@@ -79,32 +98,33 @@ export default function DashboardPage() {
         unansweredConversations: metrics.unanswered_conversations,
       });
 
-      const todayConsultations = consultations.filter((c: any) => {
+      const todayConsultations = consultations.filter((c: { consultation_date?: string }) => {
         const dateStr = new Date(c.consultation_date).toISOString().split('T')[0];
         return dateStr === todayStr;
       });
 
+      const statusLabel = (status: string) => {
+        if (status === 'cancelled') return t('consultation.status.cancelled');
+        if (status === 'completed') return t('consultation.status.completed');
+        return t('consultation.status.scheduled');
+      };
+
       const recent = todayConsultations
         .sort(
-          (a: any, b: any) =>
-            new Date(b.consultation_date).getTime() -
-            new Date(a.consultation_date).getTime()
+          (a: { consultation_date: string }, b: { consultation_date: string }) =>
+            new Date(b.consultation_date).getTime() - new Date(a.consultation_date).getTime(),
         )
-        .map((c: any) => ({
+        .map((c: { id: string; consultation_date: string; patient?: { name?: string }; veterinarian?: { name?: string }; status?: string }) => ({
           key: c.id,
-          time: new Date(c.consultation_date).toLocaleTimeString('pt-BR', {
+          time: new Date(c.consultation_date).toLocaleTimeString(locale, {
             hour: '2-digit',
             minute: '2-digit',
           }),
-          date: new Date(c.consultation_date).toLocaleDateString('pt-BR'),
-          patient: c.patient?.name || 'N/A',
-          veterinarian: c.veterinarian?.name || 'N/A',
-          status:
-            c.status === 'cancelled'
-              ? 'Cancelado'
-              : c.status === 'completed'
-                ? 'Realizado'
-                : 'Agendado',
+          date: new Date(c.consultation_date).toLocaleDateString(locale),
+          patient: c.patient?.name || t('dashboardHome.na'),
+          veterinarian: c.veterinarian?.name || t('dashboardHome.na'),
+          status: statusLabel(c.status || 'scheduled'),
+          statusKey: c.status || 'scheduled',
         }));
 
       setRecentAppointments(recent);
@@ -117,35 +137,39 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [locale, t]);
 
-  const columns = [
-    { title: 'Data', dataIndex: 'date', key: 'date' },
-    { title: 'Horário', dataIndex: 'time', key: 'time' },
-    { title: 'Paciente', dataIndex: 'patient', key: 'patient' },
-    { title: 'Veterinário', dataIndex: 'veterinarian', key: 'veterinarian' },
-    {
-      title: 'Status',
-      key: 'status',
-      dataIndex: 'status',
-      render: (status: string) => {
-        const color = status === 'Realizado' ? 'green' : status === 'Cancelado' ? 'red' : 'blue';
-        return <Tag color={color}>{status}</Tag>;
+  const columns = useMemo(
+    () => [
+      { title: t('dashboardHome.colDate'), dataIndex: 'date', key: 'date' },
+      { title: t('dashboardHome.colTime'), dataIndex: 'time', key: 'time' },
+      { title: t('dashboardHome.colPatient'), dataIndex: 'patient', key: 'patient' },
+      { title: t('dashboardHome.colVet'), dataIndex: 'veterinarian', key: 'veterinarian' },
+      {
+        title: t('dashboardHome.colStatus'),
+        key: 'status',
+        dataIndex: 'status',
+        render: (status: string, row: { statusKey: string }) => {
+          const color =
+            row.statusKey === 'completed' ? 'green' : row.statusKey === 'cancelled' ? 'red' : 'blue';
+          return <Tag color={color}>{status}</Tag>;
+        },
       },
-    },
-  ];
+    ],
+    [t],
+  );
 
   return (
     <div>
       <Title level={2} className="!mb-6 !text-slate-800 !font-semibold">
-        Visão geral
+        {t('dashboardHome.title')}
       </Title>
 
       <Row gutter={[16, 16]} className="mb-8">
         <Col xs={24} sm={12} lg={6}>
           <Card bordered={false} className="rounded-xl shadow-sm border border-slate-200/80 hover:shadow-md transition-shadow" loading={loading}>
             <Statistic
-              title={<span className="text-slate-600">Atendimentos hoje</span>}
+              title={<span className="text-slate-600">{t('dashboardHome.statsToday')}</span>}
               value={stats.appointmentsToday}
               prefix={<MedicineBoxOutlined className="!text-blue-600" />}
               valueStyle={{ color: '#2563eb', fontWeight: 600 }}
@@ -155,7 +179,7 @@ export default function DashboardPage() {
         <Col xs={24} sm={12} lg={6}>
           <Card bordered={false} className="rounded-xl shadow-sm border border-slate-200/80 hover:shadow-md transition-shadow" loading={loading}>
             <Statistic
-              title={<span className="text-slate-600">Novos pacientes (mês)</span>}
+              title={<span className="text-slate-600">{t('dashboardHome.statsNewPatients')}</span>}
               value={stats.newPatientsMonth}
               prefix={<UserOutlined className="!text-blue-500" />}
               valueStyle={{ color: '#2563eb', fontWeight: 600 }}
@@ -165,10 +189,10 @@ export default function DashboardPage() {
         <Col xs={24} sm={12} lg={6}>
           <Card bordered={false} className="rounded-xl shadow-sm border border-slate-200/80 hover:shadow-md transition-shadow" loading={loading}>
             <Statistic
-              title={<span className="text-slate-600">Receita do mês</span>}
+              title={<span className="text-slate-600">{t('dashboardHome.statsRevenue')}</span>}
               value={stats.revenueMonth}
               precision={2}
-              prefix="R$"
+              prefix={t('dashboardHome.currencyPrefix')}
               valueStyle={{ color: '#059669', fontWeight: 600 }}
             />
           </Card>
@@ -176,7 +200,7 @@ export default function DashboardPage() {
         <Col xs={24} sm={12} lg={6}>
           <Card bordered={false} className="rounded-xl shadow-sm border border-slate-200/80 hover:shadow-md transition-shadow" loading={loading}>
             <Statistic
-              title={<span className="text-slate-600">Canceladas (mês)</span>}
+              title={<span className="text-slate-600">{t('dashboardHome.statsCancelled')}</span>}
               value={stats.cancelledThisMonth}
               prefix={<CalendarOutlined className="!text-slate-500" />}
               valueStyle={{ color: '#64748b', fontWeight: 600 }}
@@ -187,7 +211,7 @@ export default function DashboardPage() {
           <Link href="/dashboard/vaccines">
             <Card bordered={false} className="rounded-xl shadow-sm border border-slate-200/80 hover:shadow-md transition-shadow cursor-pointer" loading={loading}>
               <Statistic
-                title={<span className="text-slate-600">Vacinas (próx. 30 dias)</span>}
+                title={<span className="text-slate-600">{t('dashboardHome.statsVaccines')}</span>}
                 value={stats.vaccinesDue}
                 prefix={<ExperimentOutlined className="!text-amber-600" />}
                 valueStyle={{ color: '#d97706', fontWeight: 600 }}
@@ -199,7 +223,7 @@ export default function DashboardPage() {
           <Link href="/dashboard/followups">
             <Card bordered={false} className="rounded-xl shadow-sm border border-slate-200/80 hover:shadow-md transition-shadow cursor-pointer" loading={loading}>
               <Statistic
-                title={<span className="text-slate-600">Exames aguard. retorno</span>}
+                title={<span className="text-slate-600">{t('dashboardHome.statsExams')}</span>}
                 value={stats.examsAwaitingFollowup}
                 prefix={<FileSearchOutlined className="!text-purple-600" />}
                 valueStyle={{ color: '#7c3aed', fontWeight: 600 }}
@@ -211,7 +235,7 @@ export default function DashboardPage() {
           <Link href="/dashboard/whatsapp">
             <Card bordered={false} className="rounded-xl shadow-sm border border-slate-200/80 hover:shadow-md transition-shadow cursor-pointer" loading={loading}>
               <Statistic
-                title={<span className="text-slate-600">Conversas não respondidas</span>}
+                title={<span className="text-slate-600">{t('dashboardHome.statsWhatsApp')}</span>}
                 value={stats.unansweredConversations}
                 prefix={<MessageOutlined className="!text-green-600" />}
                 valueStyle={{ color: '#16a34a', fontWeight: 600 }}
@@ -222,17 +246,12 @@ export default function DashboardPage() {
       </Row>
 
       <Card
-        title={<span className="font-semibold text-slate-800">Atendimentos de hoje</span>}
+        title={<span className="font-semibold text-slate-800">{t('dashboardHome.tableTitle')}</span>}
         bordered={false}
         className="rounded-xl shadow-sm border border-slate-200/80"
         loading={loading}
       >
-        <Table
-          columns={columns}
-          dataSource={recentAppointments}
-          pagination={false}
-          size="middle"
-        />
+        <Table columns={columns} dataSource={recentAppointments} pagination={false} size="middle" />
       </Card>
     </div>
   );

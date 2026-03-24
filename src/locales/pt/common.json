@@ -94,5 +94,47 @@
   "calendar": {
     "title": "Agenda",
     "scheduleConsultation": "Agendar Consulta"
+  },
+  "profile": {
+    "title": "Meu perfil",
+    "name": "Nome completo",
+    "email": "E-mail",
+    "newPassword": "Nova senha (opcional)",
+    "passwordPlaceholder": "Deixe em branco para manter a atual",
+    "passwordMin": "Mínimo 6 caracteres",
+    "crmv": "CRMV",
+    "specialty": "Especialidade",
+    "save": "Salvar alterações",
+    "saved": "Perfil atualizado",
+    "loadError": "Erro ao carregar perfil",
+    "saveError": "Erro ao salvar perfil"
+  },
+  "dashboardHome": {
+    "title": "Visão geral",
+    "statsToday": "Atendimentos hoje",
+    "statsNewPatients": "Novos pacientes (mês)",
+    "currencyPrefix": "R$",
+    "statsRevenue": "Receita do mês",
+    "statsCancelled": "Canceladas (mês)",
+    "statsVaccines": "Vacinas (próx. 30 dias)",
+    "statsExams": "Exames aguard. retorno",
+    "statsWhatsApp": "Conversas não respondidas",
+    "tableTitle": "Atendimentos de hoje",
+    "colDate": "Data",
+    "colTime": "Horário",
+    "colPatient": "Paciente",
+    "colVet": "Veterinário",
+    "colStatus": "Status",
+    "statusScheduled": "Agendado",
+    "statusCompleted": "Realizado",
+    "statusCancelled": "Cancelado",
+    "na": "N/D"
+  },
+  "consultation": {
+    "status": {
+      "scheduled": "Agendado",
+      "completed": "Realizado",
+      "cancelled": "Cancelado"
+    }
   }
 }

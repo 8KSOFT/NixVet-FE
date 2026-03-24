@@ -94,5 +94,47 @@
   "calendar": {
     "title": "Calendar",
     "scheduleConsultation": "Schedule appointment"
+  },
+  "profile": {
+    "title": "My profile",
+    "name": "Full name",
+    "email": "Email",
+    "newPassword": "New password (optional)",
+    "passwordPlaceholder": "Leave blank to keep current",
+    "passwordMin": "At least 6 characters",
+    "crmv": "License (CRMV)",
+    "specialty": "Specialty",
+    "save": "Save changes",
+    "saved": "Profile updated",
+    "loadError": "Failed to load profile",
+    "saveError": "Failed to save profile"
+  },
+  "dashboardHome": {
+    "title": "Overview",
+    "statsToday": "Appointments today",
+    "statsNewPatients": "New patients (month)",
+    "currencyPrefix": "R$",
+    "statsRevenue": "Monthly revenue",
+    "statsCancelled": "Cancelled (month)",
+    "statsVaccines": "Vaccines (next 30 days)",
+    "statsExams": "Exams awaiting follow-up",
+    "statsWhatsApp": "Unanswered conversations",
+    "tableTitle": "Today's appointments",
+    "colDate": "Date",
+    "colTime": "Time",
+    "colPatient": "Patient",
+    "colVet": "Veterinarian",
+    "colStatus": "Status",
+    "statusScheduled": "Scheduled",
+    "statusCompleted": "Completed",
+    "statusCancelled": "Cancelled",
+    "na": "N/A"
+  },
+  "consultation": {
+    "status": {
+      "scheduled": "Scheduled",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
+    }
   }
 }
