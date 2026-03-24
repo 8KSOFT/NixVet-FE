@@ -14,7 +14,7 @@ const items = [
   { key: '/dashboard/settings/surgical-procedures', icon: <ExperimentOutlined />, label: <Link href="/dashboard/settings/surgical-procedures">Procedimentos cirúrgicos</Link> },
   { key: '/dashboard/settings/exams', icon: <FileSearchOutlined />, label: <Link href="/dashboard/settings/exams">Exames</Link> },
   { key: '/dashboard/settings/materials', icon: <ToolOutlined />, label: <Link href="/dashboard/settings/materials">Materiais</Link> },
-  { key: '/dashboard/settings/whatsapp-numbers', icon: <MessageOutlined />, label: <Link href="/dashboard/settings/whatsapp-numbers">WhatsApp (números)</Link> },
+  { key: '/dashboard/settings/whatsapp-numbers', icon: <MessageOutlined />, label: <Link href="/dashboard/settings/whatsapp-numbers">WhatsApp da clínica</Link> },
   { key: '/dashboard/settings/automations', icon: <ThunderboltOutlined />, label: <Link href="/dashboard/settings/automations">Automações</Link> },
 ];
 

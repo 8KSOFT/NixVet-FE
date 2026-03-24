@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Form, Input, Button, Card, message, Divider } from 'antd';
+import { Form, Input, Button, Card, message, Divider, Switch } from 'antd';
 import { SettingOutlined, SaveOutlined, SearchOutlined, PlusOutlined } from '@ant-design/icons';
 import api from '@/lib/axios';
 import axios from 'axios';
@@ -37,6 +37,7 @@ export default function SettingsPage() {
   const [googleLoading, setGoogleLoading] = React.useState(false);
   const currentRole = getCurrentUserRole();
   const isSuperAdmin = currentRole === 'superadmin';
+  const canManageChatbot = currentRole === 'admin' || isSuperAdmin;
 
   React.useEffect(() => {
     fetchSettings();
@@ -161,6 +162,7 @@ export default function SettingsPage() {
         neighborhood,
         city,
         state,
+        whatsappAiChatbotEnabled: Boolean(data.whatsapp_ai_chatbot_enabled),
       });
     } catch (error) {
       console.error('Error fetching settings:', error);
@@ -219,7 +221,7 @@ export default function SettingsPage() {
         ? `${values.street}, ${values.number}${values.complement ? ` - ${values.complement}` : ''} - ${values.neighborhood} - ${values.city}/${values.state}`
         : values.address || '';
 
-      await api.put('/tenants/me', {
+      const payload: Record<string, unknown> = {
         name: values.clinicName,
         email: values.email,
         phone: values.phone,
@@ -230,7 +232,11 @@ export default function SettingsPage() {
         custom_domain: values.customDomain,
         address: fullAddress,
         cep: values.cep,
-      });
+      };
+      if (canManageChatbot) {
+        payload.whatsapp_ai_chatbot_enabled = Boolean(values.whatsappAiChatbotEnabled);
+      }
+      await api.put('/tenants/me', payload);
 
       message.success({ content: 'Configurações salvas com sucesso!', key: 'saving' });
     } catch (error) {
@@ -313,6 +319,20 @@ export default function SettingsPage() {
             <Form.Item name="customDomain" label="Domínio customizado (opcional)">
               <Input placeholder="app.empresa.com.br" />
             </Form.Item>
+
+            {canManageChatbot && (
+              <>
+                <Divider plain>WhatsApp — IA</Divider>
+                <Form.Item
+                  name="whatsappAiChatbotEnabled"
+                  label="Chatbot automático (responde mensagens recebidas)"
+                  valuePropName="checked"
+                  extra="Gravado nesta clínica. Exige OPENAI_API_KEY e worker da fila de IA no servidor. Emergências usam texto fixo; demais intenções respeitam confiança mínima configurada no ambiente."
+                >
+                  <Switch />
+                </Form.Item>
+              </>
+            )}
 
             <div className="grid grid-cols-3 gap-4">
               <div className="col-span-1">

@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { Card, List, Input, Button, message, Spin, Empty, Row, Col, Statistic, Tag, Space } from 'antd';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
+import Link from 'next/link';
+import { Card, List, Input, Button, message, Spin, Empty, Row, Col, Statistic, Tag, Space, Alert } from 'antd';
 import { MessageOutlined, SendOutlined, BulbOutlined, ClockCircleOutlined, AlertOutlined } from '@ant-design/icons';
 import api from '@/lib/axios';
 import dayjs from 'dayjs';
@@ -10,6 +11,9 @@ import 'dayjs/locale/pt-br';
 
 dayjs.extend(relativeTime);
 dayjs.locale('pt-br');
+
+/** Polling enquanto a aba está visível (evita WebSocket no backend). */
+const WHATSAPP_REFRESH_MS = 5000;
 
 interface ConversationMetrics {
   unanswered_conversations: number;
@@ -55,21 +59,24 @@ export default function WhatsAppPage() {
   const [suggestLoading, setSuggestLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
 
-  const fetchConversations = async () => {
-    setLoadingConv(true);
+  const selectedIdRef = useRef<string | null>(null);
+  selectedIdRef.current = selectedId;
+
+  const fetchConversations = useCallback(async (silent = false) => {
+    if (!silent) setLoadingConv(true);
     try {
       const res = await api.get<{ data: Conversation[]; total: number }>('/whatsapp/conversations', {
         params: { limit: 50, order: 'desc' },
       });
       setConversations(res.data?.data ?? []);
     } catch (e) {
-      message.error('Erro ao carregar conversas');
+      if (!silent) message.error('Erro ao carregar conversas');
     } finally {
-      setLoadingConv(false);
+      if (!silent) setLoadingConv(false);
     }
-  };
+  }, []);
 
-  const fetchMetricsAndAlerts = async () => {
+  const fetchMetricsAndAlerts = useCallback(async (silent = false) => {
     try {
       const [metricsRes, alertsRes] = await Promise.all([
         api.get<ConversationMetrics>('/conversations/metrics'),
@@ -78,10 +85,12 @@ export default function WhatsAppPage() {
       setMetrics(metricsRes.data ?? null);
       setAlerts(alertsRes.data?.conversations ?? []);
     } catch {
-      setMetrics(null);
-      setAlerts([]);
+      if (!silent) {
+        setMetrics(null);
+        setAlerts([]);
+      }
     }
-  };
+  }, []);
 
   const handleSuggestReply = async () => {
     if (!messages.length) {
@@ -108,9 +117,8 @@ export default function WhatsAppPage() {
     }
   };
 
-  const fetchMessages = async (conversationId: string) => {
-    setLoadingMsg(true);
-    setSelectedId(conversationId);
+  const loadMessages = useCallback(async (conversationId: string, silent = false) => {
+    if (!silent) setLoadingMsg(true);
     try {
       const res = await api.get<{ data: WhatsappMessage[]; total: number }>(
         `/whatsapp/conversations/${conversationId}/messages`,
@@ -119,12 +127,14 @@ export default function WhatsAppPage() {
       const list = res.data?.data ?? [];
       setMessages(list.reverse());
     } catch (e) {
-      message.error('Erro ao carregar mensagens');
-      setMessages([]);
+      if (!silent) {
+        message.error('Erro ao carregar mensagens');
+        setMessages([]);
+      }
     } finally {
-      setLoadingMsg(false);
+      if (!silent) setLoadingMsg(false);
     }
-  };
+  }, []);
 
   const handleSend = async () => {
     if (!selectedId || !sendText.trim()) return;
@@ -135,7 +145,7 @@ export default function WhatsAppPage() {
         text: sendText.trim(),
       });
       setSendText('');
-      await fetchMessages(selectedId);
+      await loadMessages(selectedId, false);
       message.success('Mensagem enviada');
     } catch (e: any) {
       message.error(e.response?.data?.message ?? 'Erro ao enviar');
@@ -145,21 +155,71 @@ export default function WhatsAppPage() {
   };
 
   useEffect(() => {
-    fetchConversations();
-    fetchMetricsAndAlerts();
-  }, []);
+    fetchConversations(false);
+    fetchMetricsAndAlerts(false);
+  }, [fetchConversations, fetchMetricsAndAlerts]);
 
   useEffect(() => {
-    if (selectedId) fetchMessages(selectedId);
-  }, [selectedId]);
+    if (selectedId) loadMessages(selectedId, false);
+  }, [selectedId, loadMessages]);
+
+  useEffect(() => {
+    const refresh = () => {
+      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
+      void fetchConversations(true);
+      void fetchMetricsAndAlerts(true);
+      const sid = selectedIdRef.current;
+      if (sid) void loadMessages(sid, true);
+    };
+
+    const id = window.setInterval(refresh, WHATSAPP_REFRESH_MS);
+    const onVis = () => {
+      if (document.visibilityState === 'visible') refresh();
+    };
+    document.addEventListener('visibilitychange', onVis);
+
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener('visibilitychange', onVis);
+    };
+  }, [fetchConversations, fetchMetricsAndAlerts, loadMessages]);
 
   const selectedConv = conversations.find((c) => c.id === selectedId);
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-blue-600 flex items-center gap-2 mb-6">
-        <MessageOutlined /> WhatsApp
-      </h1>
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 mb-6">
+        <h1 className="text-2xl font-bold text-blue-600 flex items-center gap-2 m-0">
+          <MessageOutlined /> WhatsApp
+        </h1>
+        <span className="text-xs text-slate-500">
+          Lista e mensagens atualizam automaticamente a cada {WHATSAPP_REFRESH_MS / 1000}s (aba visível)
+        </span>
+      </div>
+
+      <Alert
+        type="info"
+        showIcon
+        className="mb-6"
+        message="Como a clínica usa o WhatsApp aqui (sem Meta na clínica)"
+        description={
+          <span className="text-sm">
+            O cadastro do <strong>número da clínica</strong> fica em{' '}
+            <Link href="/dashboard/settings/whatsapp-numbers" className="text-blue-600 font-medium">
+              Configurações → WhatsApp da clínica
+            </Link>
+            . Você informa um <strong>código interno</strong> e o <strong>telefone WhatsApp da clínica</strong> — não é
+            necessário Facebook/Meta Business nesse modo (integração Twilio fica no servidor). Depois de cadastrar,
+            mensagens recebidas nesse número aparecem nesta tela.
+            {' '}
+            <strong>Chatbot automático</strong> (IA responde sozinha) é ligado em{' '}
+            <Link href="/dashboard/settings" className="text-blue-600 font-medium">
+              Configurações → Dados da clínica
+            </Link>{' '}
+            (admin). No servidor ainda é necessário <code className="text-xs">OPENAI_API_KEY</code> e a fila de IA ativa.
+          </span>
+        }
+      />
 
       <Row gutter={[16, 16]} className="mb-6">
         <Col xs={12} sm={6}>
