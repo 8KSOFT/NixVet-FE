@@ -1,16 +1,19 @@
 'use client';
 
 import React from 'react';
-import { Form, Input, Button, Card, Typography, message, Divider } from 'antd';
+import { Form, Input, Button, Card, Typography, message } from 'antd';
 import { UserOutlined, LockOutlined, ShopOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import Logo from '@/components/Logo';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 import api from '@/lib/axios';
 import { fetchPublicBranding } from '@/lib/branding';
 
 const { Title, Text } = Typography;
 
 export default function LoginPage() {
+  const { t } = useTranslation('common');
   const router = useRouter();
   const [loading, setLoading] = React.useState(false);
   const [brandName, setBrandName] = React.useState('NixVetApp');
@@ -43,11 +46,11 @@ export default function LoginPage() {
       localStorage.setItem('tenantCode', tenantCode); // Save code for display
       localStorage.setItem('user', JSON.stringify(user));
       
-      message.success(`Bem-vindo, ${user.name}!`);
+      message.success(t('auth.welcome', { name: user.name }));
       router.push('/dashboard');
     } catch (error: any) {
       console.error(error);
-      const msg = error.response?.data?.message || 'Falha no login. Verifique suas credenciais.';
+      const msg = error.response?.data?.message || t('auth.loginFailed');
       message.error(msg);
     } finally {
       setLoading(false);
@@ -55,7 +58,10 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="absolute top-4 right-4 z-10">
+        <LanguageSwitcher />
+      </div>
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
@@ -64,9 +70,7 @@ export default function LoginPage() {
           <Title level={2} className="!text-blue-600 !mb-2">
             {brandName}
           </Title>
-          <Text className="text-gray-500 text-lg">
-            Sistema de Gestão Veterinária
-          </Text>
+          <Text className="text-gray-500 text-lg">{t('auth.subtitle')}</Text>
         </div>
 
         <Card className="shadow-xl rounded-2xl border-0 overflow-hidden">
@@ -80,38 +84,38 @@ export default function LoginPage() {
             >
               <Form.Item
                 name="tenantCode"
-                label={<span className="text-gray-600 font-medium">Código da Clínica (Ex: NIXVET)</span>}
+                label={<span className="text-gray-600 font-medium">{t('auth.tenantCodeLabel')}</span>}
               >
                  <Input 
                   prefix={<ShopOutlined className="text-gray-400" />} 
-                  placeholder="Código (Padrão: NIXVET)" 
+                  placeholder={t('auth.tenantCodePlaceholder')}
                   className="rounded-lg"
                 />
               </Form.Item>
 
               <Form.Item
                 name="email"
-                label={<span className="text-gray-600 font-medium">Email</span>}
+                label={<span className="text-gray-600 font-medium">{t('auth.emailLabel')}</span>}
                 rules={[
-                  { required: true, message: 'Por favor insira seu email!' },
-                  { type: 'email', message: 'Email inválido!' }
+                  { required: true, message: t('auth.emailRequired') },
+                  { type: 'email', message: t('auth.emailInvalid') },
                 ]}
               >
                 <Input 
                   prefix={<UserOutlined className="text-gray-400" />} 
-                  placeholder="ex: vet@nixvet.com" 
+                  placeholder={t('auth.emailPlaceholder')}
                   className="rounded-lg"
                 />
               </Form.Item>
 
               <Form.Item
                 name="password"
-                label={<span className="text-gray-600 font-medium">Senha</span>}
-                rules={[{ required: true, message: 'Por favor insira sua senha!' }]}
+                label={<span className="text-gray-600 font-medium">{t('auth.passwordLabel')}</span>}
+                rules={[{ required: true, message: t('auth.passwordRequired') }]}
               >
                 <Input.Password
                   prefix={<LockOutlined className="text-gray-400" />}
-                  placeholder="******"
+                  placeholder={t('auth.passwordPlaceholder')}
                   className="rounded-lg"
                 />
               </Form.Item>
@@ -123,13 +127,13 @@ export default function LoginPage() {
                   className="w-full h-12 text-lg font-medium bg-blue-600 hover:bg-blue-700 rounded-lg border-none shadow-md hover:shadow-lg transition-all"
                   loading={loading}
                 >
-                  Entrar no Sistema
+                  {t('auth.submit')}
                 </Button>
               </Form.Item>
 
               <div className="text-center mt-4">
                 <a href="#" className="text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors">
-                  Esqueceu sua senha?
+                  {t('auth.forgotPassword')}
                 </a>
               </div>
             </Form>
@@ -137,7 +141,7 @@ export default function LoginPage() {
         </Card>
         
         <div className="text-center mt-8 text-gray-400 text-sm">
-          © {new Date().getFullYear()} {brandName}. Todos os direitos reservados.
+          © {new Date().getFullYear()} {brandName}. {t('auth.footer')}
         </div>
       </div>
     </div>

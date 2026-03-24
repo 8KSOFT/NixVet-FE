@@ -6,6 +6,7 @@ import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
 import { PlusOutlined, CalendarOutlined, SwapOutlined, BulbOutlined } from '@ant-design/icons';
 import api from '@/lib/axios';
+import { useTranslation } from 'react-i18next';
 
 interface Resource {
   id: string;
@@ -72,6 +73,7 @@ interface User {
 }
 
 export default function CalendarPage() {
+  const { t } = useTranslation('common');
   const [consultations, setConsultations] = useState<Consultation[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [veterinarians, setVeterinarians] = useState<User[]>([]);
@@ -347,7 +349,7 @@ export default function CalendarPage() {
     <div>
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold text-blue-600 flex items-center gap-2">
-          <CalendarOutlined /> Agenda
+          <CalendarOutlined /> {t('calendar.title')}
         </h1>
         <Button
           type="primary"
@@ -355,7 +357,7 @@ export default function CalendarPage() {
           onClick={handleAdd}
           className="bg-blue-600"
         >
-          Agendar Consulta
+          {t('calendar.scheduleConsultation')}
         </Button>
       </div>
 

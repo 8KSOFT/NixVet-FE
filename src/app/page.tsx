@@ -148,6 +148,15 @@ export default function LandingPage() {
         <div className="mb-4">
           <Logo width={32} height={32} className="inline-block opacity-50 grayscale hover:grayscale-0 transition-all" />
         </div>
+        <div className="flex flex-wrap justify-center gap-4 text-sm mb-3">
+          <Link href="/politicas-uso" className="text-blue-600 hover:underline">
+            Políticas de uso
+          </Link>
+          <span className="text-gray-300">|</span>
+          <Link href="/termos-servicos-aplicativo" className="text-blue-600 hover:underline">
+            Termos do aplicativo
+          </Link>
+        </div>
         NixVetApp ©{new Date().getFullYear()} - Todos os direitos reservados.
       </Footer>
     </Layout>

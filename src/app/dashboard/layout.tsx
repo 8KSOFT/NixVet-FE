@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Layout, Menu, Button, Avatar, Dropdown, Badge, theme } from 'antd';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Layout, Menu, Button, Avatar, Dropdown, Badge } from 'antd';
+import { useTranslation } from 'react-i18next';
 import {
   MenuFoldOutlined,
   MenuUnfoldOutlined,
@@ -20,6 +21,7 @@ import {
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Logo from '@/components/Logo';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 import api from '@/lib/axios';
 import { fetchPublicBranding } from '@/lib/branding';
 
@@ -32,6 +34,7 @@ interface ClinicNotification {
 }
 
 function NotificationsBell() {
+  const { t } = useTranslation('common');
   const [unreadCount, setUnreadCount] = useState(0);
   const [list, setList] = useState<ClinicNotification[]>([]);
   const [loading, setLoading] = useState(false);
@@ -73,17 +76,17 @@ function NotificationsBell() {
   const dropdownContent = (
     <div className="min-w-[280px] max-h-[360px] overflow-auto">
       <div className="p-2 border-b flex justify-between items-center">
-        <span className="font-medium">Notificações</span>
+        <span className="font-medium">{t('notifications.title')}</span>
         {list.length > 0 && (
           <Button type="link" size="small" onClick={markAllRead}>
-            Marcar todas como lidas
+            {t('notifications.markAllRead')}
           </Button>
         )}
       </div>
       {loading ? (
-        <div className="p-4 text-center text-slate-500">Carregando...</div>
+        <div className="p-4 text-center text-slate-500">{t('notifications.loading')}</div>
       ) : list.length === 0 ? (
-        <div className="p-4 text-center text-slate-500">Nenhuma notificação não lida.</div>
+        <div className="p-4 text-center text-slate-500">{t('notifications.empty')}</div>
       ) : (
         <ul className="list-none p-0 m-0">
           {list.map((n) => (
@@ -121,9 +124,7 @@ export default function DashboardLayout({
   const [brandLogo, setBrandLogo] = useState<string | null>(null);
   const router = useRouter();
   const pathname = usePathname();
-  const {
-    token: { colorBgContainer },
-  } = theme.useToken();
+  const { t, i18n } = useTranslation('common');
 
   useEffect(() => {
     fetchPublicBranding().then((branding) => {
@@ -140,28 +141,31 @@ export default function DashboardLayout({
     router.push('/login');
   };
 
-  const userMenu = {
-    items: [
-      {
-        key: 'profile',
-        label: 'Meu Perfil',
-        icon: <UserOutlined />,
-      },
-      {
-        key: 'settings',
-        label: <Link href="/dashboard/settings">Configurações</Link>,
-        icon: <SettingOutlined />,
-      },
-      { type: 'divider' as const },
-      {
-        key: 'logout',
-        label: 'Sair',
-        icon: <LogoutOutlined />,
-        danger: true,
-        onClick: handleLogout,
-      },
-    ],
-  };
+  const userMenu = useMemo(
+    () => ({
+      items: [
+        {
+          key: 'profile',
+          label: t('userMenu.profile'),
+          icon: <UserOutlined />,
+        },
+        {
+          key: 'settings',
+          label: <Link href="/dashboard/settings">{t('userMenu.settings')}</Link>,
+          icon: <SettingOutlined />,
+        },
+        { type: 'divider' as const },
+        {
+          key: 'logout',
+          label: t('userMenu.logout'),
+          icon: <LogoutOutlined />,
+          danger: true,
+          onClick: handleLogout,
+        },
+      ],
+    }),
+    [t, i18n.language],
+  );
 
   const getSelectedKey = () => {
     if (pathname.includes('/dashboard/patients')) return 'patients';
@@ -177,6 +181,25 @@ export default function DashboardLayout({
     if (pathname.includes('/dashboard/whatsapp')) return 'whatsapp';
     return 'dashboard';
   };
+
+  const menuItems = useMemo(
+    () => [
+      { key: 'dashboard', icon: <DashboardOutlined />, label: <Link href="/dashboard">{t('nav.dashboard')}</Link> },
+      { key: 'patients', icon: <MedicineBoxOutlined />, label: <Link href="/dashboard/patients">{t('nav.patients')}</Link> },
+      { key: 'owners', icon: <TeamOutlined />, label: <Link href="/dashboard/owners">{t('nav.owners')}</Link> },
+      { key: 'team', icon: <UserOutlined />, label: <Link href="/dashboard/team">{t('nav.team')}</Link> },
+      { key: 'prescriptions', icon: <MedicineBoxOutlined />, label: <Link href="/dashboard/prescriptions">{t('nav.prescriptions')}</Link> },
+      { key: 'bulario', icon: <MedicineBoxOutlined />, label: <Link href="/dashboard/bulario">{t('nav.bulario')}</Link> },
+      { key: 'exams', icon: <FileSearchOutlined />, label: <Link href="/dashboard/exams">{t('nav.exams')}</Link> },
+      { key: 'followups', icon: <FileSearchOutlined />, label: <Link href="/dashboard/followups">{t('nav.followups')}</Link> },
+      { key: 'calendar', icon: <CalendarOutlined />, label: <Link href="/dashboard/calendar">{t('nav.calendar')}</Link> },
+      { key: 'vaccines', icon: <MedicineBoxOutlined />, label: <Link href="/dashboard/vaccines">{t('nav.vaccines')}</Link> },
+      { key: 'tasks', icon: <UnorderedListOutlined />, label: <Link href="/dashboard/tasks">{t('nav.tasks')}</Link> },
+      { key: 'whatsapp', icon: <MessageOutlined />, label: <Link href="/dashboard/whatsapp">{t('nav.whatsapp')}</Link> },
+      { key: 'settings', icon: <SettingOutlined />, label: <Link href="/dashboard/settings">{t('nav.settings')}</Link> },
+    ],
+    [t, i18n.language],
+  );
 
   return (
     <Layout className="min-h-screen bg-[#f1f5f9]">
@@ -208,21 +231,7 @@ export default function DashboardLayout({
           selectedKeys={[getSelectedKey()]}
           className="border-0 mt-3 px-2 !bg-transparent"
           style={{ minHeight: 'calc(100vh - 64px)' }}
-          items={[
-            { key: 'dashboard', icon: <DashboardOutlined />, label: <Link href="/dashboard">Dashboard</Link> },
-            { key: 'patients', icon: <MedicineBoxOutlined />, label: <Link href="/dashboard/patients">Pacientes</Link> },
-            { key: 'owners', icon: <TeamOutlined />, label: <Link href="/dashboard/owners">Tutores</Link> },
-            { key: 'team', icon: <UserOutlined />, label: <Link href="/dashboard/team">Equipe</Link> },
-            { key: 'prescriptions', icon: <MedicineBoxOutlined />, label: <Link href="/dashboard/prescriptions">Prescrição</Link> },
-            { key: 'bulario', icon: <MedicineBoxOutlined />, label: <Link href="/dashboard/bulario">Bulário</Link> },
-            { key: 'exams', icon: <FileSearchOutlined />, label: <Link href="/dashboard/exams">Exames</Link> },
-            { key: 'followups', icon: <FileSearchOutlined />, label: <Link href="/dashboard/followups">Acompanhamento</Link> },
-            { key: 'calendar', icon: <CalendarOutlined />, label: <Link href="/dashboard/calendar">Agenda</Link> },
-            { key: 'vaccines', icon: <MedicineBoxOutlined />, label: <Link href="/dashboard/vaccines">Vacinas</Link> },
-            { key: 'tasks', icon: <UnorderedListOutlined />, label: <Link href="/dashboard/tasks">Tarefas</Link> },
-            { key: 'whatsapp', icon: <MessageOutlined />, label: <Link href="/dashboard/whatsapp">WhatsApp</Link> },
-            { key: 'settings', icon: <SettingOutlined />, label: <Link href="/dashboard/settings">Configurações</Link> },
-          ]}
+          items={menuItems}
         />
       </Sider>
       <Layout className={`transition-[margin-left] duration-200 ${collapsed ? 'ml-[80px]' : 'ml-[260px]'}`}>
@@ -237,9 +246,11 @@ export default function DashboardLayout({
             className="flex items-center justify-center w-12 h-12 text-slate-600 hover:bg-slate-100 hover:text-blue-600 rounded-xl"
           />
           <div className="flex items-center gap-2">
+            <LanguageSwitcher />
             <NotificationsBell />
             <span className="text-slate-600 text-sm hidden sm:inline">
-              Olá, <strong className="text-slate-800">Veterinário</strong>
+              {t('header.greeting')}{' '}
+              <strong className="text-slate-800">{t('header.rolePlaceholder')}</strong>
             </span>
             <Dropdown menu={userMenu} placement="bottomRight" arrow>
               <Avatar

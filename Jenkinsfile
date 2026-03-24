@@ -57,11 +57,17 @@ pipeline {
                         // .env.local para Next.js
                         def envContent = """NODE_ENV=production
 NEXT_PUBLIC_API_URL=${envVars.NEXT_PUBLIC_API_URL}
+NEXT_PUBLIC_META_PIXEL_ID=${envVars.NEXT_PUBLIC_META_PIXEL_ID ?: ''}
+NEXT_PUBLIC_SITE_URL=${envVars.NEXT_PUBLIC_SITE_URL ?: ''}
 FRONTEND_PORT=${envVars.PORT}
 """
                         writeFile file: '.env.local', text: envContent
-                        // Docker Compose precisa saber a porta
-                        writeFile file: '.env', text: "FRONTEND_PORT=${envVars.PORT}\nNEXT_PUBLIC_API_URL=${envVars.NEXT_PUBLIC_API_URL}"
+                        // Docker Compose: porta + build args NEXT_PUBLIC_*
+                        writeFile file: '.env', text: """FRONTEND_PORT=${envVars.PORT}
+NEXT_PUBLIC_API_URL=${envVars.NEXT_PUBLIC_API_URL}
+NEXT_PUBLIC_META_PIXEL_ID=${envVars.NEXT_PUBLIC_META_PIXEL_ID ?: ''}
+NEXT_PUBLIC_SITE_URL=${envVars.NEXT_PUBLIC_SITE_URL ?: ''}
+"""
                     }
                 }
             }

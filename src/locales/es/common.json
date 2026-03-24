@@ -1,0 +1,59 @@
+{
+  "language": {
+    "pt": "Português",
+    "en": "English",
+    "es": "Español",
+    "label": "Idioma"
+  },
+  "nav": {
+    "dashboard": "Panel",
+    "patients": "Pacientes",
+    "owners": "Tutores",
+    "team": "Equipo",
+    "prescriptions": "Recetas",
+    "bulario": "Formulario",
+    "exams": "Exámenes",
+    "followups": "Seguimiento",
+    "calendar": "Agenda",
+    "vaccines": "Vacunas",
+    "tasks": "Tareas",
+    "whatsapp": "WhatsApp",
+    "settings": "Configuración"
+  },
+  "header": {
+    "greeting": "Hola,",
+    "rolePlaceholder": "Veterinario"
+  },
+  "userMenu": {
+    "profile": "Mi perfil",
+    "settings": "Configuración",
+    "logout": "Salir"
+  },
+  "notifications": {
+    "title": "Notificaciones",
+    "markAllRead": "Marcar todas como leídas",
+    "loading": "Cargando...",
+    "empty": "No hay notificaciones sin leer."
+  },
+  "auth": {
+    "subtitle": "Sistema de gestión veterinaria",
+    "tenantCodeLabel": "Código de la clínica (Ej: NIXVET)",
+    "tenantCodePlaceholder": "Código (por defecto: NIXVET)",
+    "emailLabel": "Correo",
+    "emailPlaceholder": "ej: vet@clinica.com",
+    "emailRequired": "¡Ingrese su correo!",
+    "emailInvalid": "¡Correo inválido!",
+    "passwordLabel": "Contraseña",
+    "passwordPlaceholder": "******",
+    "passwordRequired": "¡Ingrese su contraseña!",
+    "submit": "Entrar",
+    "forgotPassword": "¿Olvidó su contraseña?",
+    "welcome": "Bienvenido, {{name}}!",
+    "loginFailed": "Error al iniciar sesión. Verifique sus datos.",
+    "footer": "Todos los derechos reservados."
+  },
+  "calendar": {
+    "title": "Agenda",
+    "scheduleConsultation": "Agendar consulta"
+  }
+}

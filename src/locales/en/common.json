@@ -1,0 +1,59 @@
+{
+  "language": {
+    "pt": "Português",
+    "en": "English",
+    "es": "Español",
+    "label": "Language"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "patients": "Patients",
+    "owners": "Pet owners",
+    "team": "Team",
+    "prescriptions": "Prescriptions",
+    "bulario": "Drug index",
+    "exams": "Tests",
+    "followups": "Follow-up",
+    "calendar": "Calendar",
+    "vaccines": "Vaccines",
+    "tasks": "Tasks",
+    "whatsapp": "WhatsApp",
+    "settings": "Settings"
+  },
+  "header": {
+    "greeting": "Hello,",
+    "rolePlaceholder": "Veterinarian"
+  },
+  "userMenu": {
+    "profile": "My profile",
+    "settings": "Settings",
+    "logout": "Sign out"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "markAllRead": "Mark all as read",
+    "loading": "Loading...",
+    "empty": "No unread notifications."
+  },
+  "auth": {
+    "subtitle": "Veterinary practice management",
+    "tenantCodeLabel": "Clinic code (e.g. NIXVET)",
+    "tenantCodePlaceholder": "Code (default: NIXVET)",
+    "emailLabel": "Email",
+    "emailPlaceholder": "e.g. vet@clinic.com",
+    "emailRequired": "Please enter your email!",
+    "emailInvalid": "Invalid email!",
+    "passwordLabel": "Password",
+    "passwordPlaceholder": "******",
+    "passwordRequired": "Please enter your password!",
+    "submit": "Sign in",
+    "forgotPassword": "Forgot your password?",
+    "welcome": "Welcome, {{name}}!",
+    "loginFailed": "Login failed. Check your credentials.",
+    "footer": "All rights reserved."
+  },
+  "calendar": {
+    "title": "Calendar",
+    "scheduleConsultation": "Schedule appointment"
+  }
+}
