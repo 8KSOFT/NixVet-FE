@@ -11,7 +11,7 @@
  */
 export function getApiBaseUrl(): string {
   const raw = (process.env.NEXT_PUBLIC_API_URL || '').trim().replace(/\/+$/, '');
-  if (!raw) return 'http://localhost:3001/api';
+  if (!raw) return 'http://localhost:8537/api';
 
   const sentinel = raw.toLowerCase();
   if (sentinel === 'same-origin' || sentinel === 'relative') {
