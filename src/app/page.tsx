@@ -132,9 +132,9 @@ export default function LandingPage() {
             <Title level={2} className="!text-white mb-6 !text-3xl md:!text-5xl font-bold relative z-10">
               Pronto para transformar sua clínica?
             </Title>
-            <Paragraph className="text-white/80 text-xl mb-10 max-w-2xl mx-auto relative z-10">
+            <p className="mb-10 max-w-2xl mx-auto relative z-10 text-xl leading-relaxed text-white">
               Junte-se a veterinários que já modernizaram seus atendimentos com o NixVetApp.
-            </Paragraph>
+            </p>
             <Link href="/login" className="relative z-10">
               <Button size="large" className="h-14 px-12 text-lg bg-blue-500 border-none text-white hover:bg-blue-400 rounded-full shadow-lg">
                 Acessar Plataforma

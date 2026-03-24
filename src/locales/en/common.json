@@ -22,7 +22,46 @@
   },
   "header": {
     "greeting": "Hello,",
-    "rolePlaceholder": "Veterinarian"
+    "rolePlaceholder": "Veterinarian",
+    "roleUnknown": "User"
+  },
+  "roles": {
+    "admin": "Administrator",
+    "manager": "Manager",
+    "reception": "Reception",
+    "intern": "Intern",
+    "veterinarian": "Veterinarian",
+    "superadmin": "Superadmin"
+  },
+  "team": {
+    "title": "Team",
+    "newMember": "New member",
+    "newTitle": "New team member",
+    "editTitle": "Edit member",
+    "loadError": "Failed to load team",
+    "saveError": "Failed to save",
+    "created": "Created successfully",
+    "updated": "Updated successfully",
+    "removed": "Removed successfully",
+    "removeError": "Failed to remove",
+    "forbidden": "Only administrator or manager can manage the team.",
+    "confirmRemove": "Are you sure?",
+    "colName": "Name",
+    "colEmail": "Email",
+    "colCrmv": "License (CRMV)",
+    "colSpecialty": "Specialty",
+    "colRole": "Role",
+    "colActions": "Actions",
+    "formName": "Full name",
+    "formEmail": "Email",
+    "formRole": "Access role",
+    "formRoleHint": "Controls menu visibility and access level in the clinic.",
+    "formPassword": "Initial password",
+    "formPasswordOptional": "New password (optional)",
+    "passwordPlaceholder": "Leave blank to keep current password",
+    "passwordMin": "At least 6 characters",
+    "formCrmv": "License (CRMV)",
+    "formSpecialty": "Specialty"
   },
   "userMenu": {
     "profile": "My profile",

@@ -24,6 +24,7 @@ import Logo from '@/components/Logo';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import api from '@/lib/axios';
 import { fetchPublicBranding } from '@/lib/branding';
+import { getStoredMenuKeys, getStoredUserRole } from '@/lib/role-permissions';
 
 interface ClinicNotification {
   id: string;
@@ -122,6 +123,8 @@ export default function DashboardLayout({
   const [collapsed, setCollapsed] = useState(false);
   const [brandName, setBrandName] = useState('NixVet');
   const [brandLogo, setBrandLogo] = useState<string | null>(null);
+  const [menuAllow, setMenuAllow] = useState<Set<string>>(() => new Set(getStoredMenuKeys()));
+  const [headerRole, setHeaderRole] = useState<string>(() => getStoredUserRole() || '');
   const router = useRouter();
   const pathname = usePathname();
   const { t, i18n } = useTranslation('common');
@@ -132,6 +135,11 @@ export default function DashboardLayout({
       setBrandLogo(branding.logoUrl);
     });
   }, []);
+
+  useEffect(() => {
+    setMenuAllow(new Set(getStoredMenuKeys()));
+    setHeaderRole(getStoredUserRole() || '');
+  }, [pathname]);
 
   const handleLogout = () => {
     if (typeof window !== 'undefined') {
@@ -182,7 +190,7 @@ export default function DashboardLayout({
     return 'dashboard';
   };
 
-  const menuItems = useMemo(
+  const allMenuItems = useMemo(
     () => [
       { key: 'dashboard', icon: <DashboardOutlined />, label: <Link href="/dashboard">{t('nav.dashboard')}</Link> },
       { key: 'patients', icon: <MedicineBoxOutlined />, label: <Link href="/dashboard/patients">{t('nav.patients')}</Link> },
@@ -200,6 +208,15 @@ export default function DashboardLayout({
     ],
     [t, i18n.language],
   );
+
+  const menuItems = useMemo(() => {
+    const filtered = allMenuItems.filter((item) => menuAllow.has(item.key));
+    return filtered.length > 0 ? filtered : allMenuItems.filter((i) => i.key === 'dashboard');
+  }, [allMenuItems, menuAllow]);
+
+  const roleLabel = headerRole
+    ? t(`roles.${headerRole}`, { defaultValue: headerRole })
+    : t('header.roleUnknown');
 
   return (
     <Layout className="min-h-screen bg-[#f1f5f9]">
@@ -250,7 +267,7 @@ export default function DashboardLayout({
             <NotificationsBell />
             <span className="text-slate-600 text-sm hidden sm:inline">
               {t('header.greeting')}{' '}
-              <strong className="text-slate-800">{t('header.rolePlaceholder')}</strong>
+              <strong className="text-slate-800">{roleLabel}</strong>
             </span>
             <Dropdown menu={userMenu} placement="bottomRight" arrow>
               <Avatar

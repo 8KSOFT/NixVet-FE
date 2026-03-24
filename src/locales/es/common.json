@@ -22,7 +22,46 @@
   },
   "header": {
     "greeting": "Hola,",
-    "rolePlaceholder": "Veterinario"
+    "rolePlaceholder": "Veterinario",
+    "roleUnknown": "Usuario"
+  },
+  "roles": {
+    "admin": "Administrador",
+    "manager": "Gerente",
+    "reception": "Recepción",
+    "intern": "Pasante",
+    "veterinarian": "Veterinario(a)",
+    "superadmin": "Superadmin"
+  },
+  "team": {
+    "title": "Equipo",
+    "newMember": "Nuevo miembro",
+    "newTitle": "Nuevo miembro del equipo",
+    "editTitle": "Editar miembro",
+    "loadError": "Error al cargar el equipo",
+    "saveError": "Error al guardar",
+    "created": "Registrado con éxito",
+    "updated": "Actualizado con éxito",
+    "removed": "Eliminado con éxito",
+    "removeError": "Error al eliminar",
+    "forbidden": "Solo administrador o gerente puede gestionar el equipo.",
+    "confirmRemove": "¿Está seguro?",
+    "colName": "Nombre",
+    "colEmail": "Correo",
+    "colCrmv": "CRMV",
+    "colSpecialty": "Especialidad",
+    "colRole": "Perfil",
+    "colActions": "Acciones",
+    "formName": "Nombre completo",
+    "formEmail": "Correo",
+    "formRole": "Perfil de acceso",
+    "formRoleHint": "Define lo que la persona ve en el menú y su nivel de acceso.",
+    "formPassword": "Contraseña inicial",
+    "formPasswordOptional": "Nueva contraseña (opcional)",
+    "passwordPlaceholder": "Dejar en blanco para no cambiar",
+    "passwordMin": "Mínimo 6 caracteres",
+    "formCrmv": "CRMV",
+    "formSpecialty": "Especialidad"
   },
   "userMenu": {
     "profile": "Mi perfil",
