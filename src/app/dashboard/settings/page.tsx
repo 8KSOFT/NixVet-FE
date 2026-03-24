@@ -6,6 +6,7 @@ import { SettingOutlined, SaveOutlined, SearchOutlined, PlusOutlined } from '@an
 import api from '@/lib/axios';
 import axios from 'axios';
 import { MaskedInput } from 'antd-mask-input';
+import { formatCepMask } from '@/lib/format-cep';
 
 function getCurrentUserRole(): string | null {
   if (typeof window === 'undefined') return null;
@@ -153,7 +154,7 @@ export default function SettingsPage() {
         primaryColor: data.primary_color,
         subdomain: data.subdomain,
         customDomain: data.custom_domain,
-        cep: data.cep || '',
+        cep: formatCepMask(data.cep),
         street,
         number,
         complement,

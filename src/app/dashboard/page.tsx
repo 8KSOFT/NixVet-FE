@@ -99,7 +99,9 @@ export default function DashboardPage() {
       });
 
       const todayConsultations = consultations.filter((c: { consultation_date?: string }) => {
-        const dateStr = new Date(c.consultation_date).toISOString().split('T')[0];
+        const raw = c.consultation_date;
+        if (!raw) return false;
+        const dateStr = new Date(raw).toISOString().split('T')[0];
         return dateStr === todayStr;
       });
 
@@ -110,11 +112,12 @@ export default function DashboardPage() {
       };
 
       const recent = todayConsultations
+        .filter((c: { consultation_date?: string }): c is { consultation_date: string; id: string; patient?: { name?: string }; veterinarian?: { name?: string }; status?: string } => Boolean(c.consultation_date))
         .sort(
-          (a: { consultation_date: string }, b: { consultation_date: string }) =>
+          (a, b) =>
             new Date(b.consultation_date).getTime() - new Date(a.consultation_date).getTime(),
         )
-        .map((c: { id: string; consultation_date: string; patient?: { name?: string }; veterinarian?: { name?: string }; status?: string }) => ({
+        .map((c) => ({
           key: c.id,
           time: new Date(c.consultation_date).toLocaleTimeString(locale, {
             hour: '2-digit',

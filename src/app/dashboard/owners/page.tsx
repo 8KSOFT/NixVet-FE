@@ -6,6 +6,7 @@ import { PlusOutlined, EditOutlined, DeleteOutlined, TeamOutlined, SearchOutline
 import { MaskedInput } from 'antd-mask-input';
 import axios from 'axios';
 import api from '@/lib/axios';
+import { formatCepMask } from '@/lib/format-cep';
 
 interface Tutor {
   id: string;
@@ -22,6 +23,7 @@ export default function OwnersPage() {
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingRecord, setEditingRecord] = useState<Tutor | null>(null);
   const [loadingCep, setLoadingCep] = useState(false);
   const [form] = Form.useForm();
 
@@ -42,9 +44,61 @@ export default function OwnersPage() {
     fetchTutors();
   }, []);
 
+  useEffect(() => {
+    if (!modalVisible) return;
+
+    if (!editingId || !editingRecord || editingRecord.id !== editingId) {
+      form.resetFields();
+      return;
+    }
+
+    const record = editingRecord;
+    let street = record.address;
+    let number = '';
+    let complement = '';
+    let neighborhood = '';
+    let city = '';
+    let state = '';
+
+    const parts = record.address ? record.address.split(' - ') : [];
+
+    if (parts.length >= 3) {
+      const firstPart = parts[0].split(',');
+      street = firstPart[0];
+      number = firstPart[1] ? firstPart[1].trim() : '';
+
+      if (parts.length >= 4) {
+        complement = parts[1];
+        neighborhood = parts[2];
+        const cityState = parts[3].split('/');
+        city = cityState[0];
+        state = cityState[1] || '';
+      } else {
+        neighborhood = parts[1];
+        const cityState = parts[2].split('/');
+        city = cityState[0];
+        state = cityState[1] || '';
+      }
+    }
+
+    form.setFieldsValue({
+      name: record.name,
+      email: record.email,
+      phone: record.phone,
+      cpf: record.cpf,
+      cep: formatCepMask(record.cep),
+      street,
+      number,
+      complement,
+      neighborhood,
+      city,
+      state,
+    });
+  }, [modalVisible, editingId, editingRecord, form]);
+
   const handleAdd = () => {
     setEditingId(null);
-    form.resetFields();
+    setEditingRecord(null);
     setModalVisible(true);
   };
 
@@ -126,6 +180,8 @@ export default function OwnersPage() {
         message.success('Tutor criado com sucesso');
       }
       setModalVisible(false);
+      setEditingId(null);
+      setEditingRecord(null);
       fetchTutors();
     } catch (error) {
       console.error('Error saving tutor:', error);
@@ -135,49 +191,7 @@ export default function OwnersPage() {
 
   const handleEdit = (record: Tutor) => {
     setEditingId(record.id);
-    
-    // Parse address back to fields if possible, or put everything in street as fallback
-    // Address format expected: "Logradouro, Numero - Complemento - Bairro - Cidade/UF"
-    // This is a simple parser, might need improvement based on exact format consistency
-    let street = record.address;
-    let number = '';
-    let complement = '';
-    let neighborhood = '';
-    let city = '';
-    let state = '';
-
-    // Simple heuristic split - this assumes the format we generate
-    const parts = record.address ? record.address.split(' - ') : [];
-    
-    if (parts.length >= 3) {
-        const firstPart = parts[0].split(',');
-        street = firstPart[0];
-        number = firstPart[1] ? firstPart[1].trim() : '';
-        
-        // If there are 4 parts, likely has complement
-        if (parts.length >= 4) {
-            complement = parts[1];
-            neighborhood = parts[2];
-            const cityState = parts[3].split('/');
-            city = cityState[0];
-            state = cityState[1] || '';
-        } else {
-            neighborhood = parts[1];
-            const cityState = parts[2].split('/');
-            city = cityState[0];
-            state = cityState[1] || '';
-        }
-    }
-
-    form.setFieldsValue({
-        ...record,
-        street,
-        number,
-        complement,
-        neighborhood,
-        city,
-        state
-    });
+    setEditingRecord(record);
     setModalVisible(true);
   };
 
@@ -266,7 +280,12 @@ export default function OwnersPage() {
       <Modal
         title={editingId ? 'Editar Tutor' : 'Novo Tutor'}
         open={modalVisible}
-        onCancel={() => setModalVisible(false)}
+        destroyOnClose
+        onCancel={() => {
+          setModalVisible(false);
+          setEditingId(null);
+          setEditingRecord(null);
+        }}
         onOk={() => form.submit()}
       >
         <Form form={form} layout="vertical" onFinish={handleSubmit}>
