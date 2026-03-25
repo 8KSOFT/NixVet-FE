@@ -48,9 +48,10 @@ export default function LoginPage() {
   const onSubmit = async (values: LoginForm) => {
     setLoading(true);
     try {
-      const tenantCode = values.tenantCode || defaultTenantCode || 'NIXVET';
+      const rawTenant = values.tenantCode?.trim() || defaultTenantCode?.trim() || '';
+      const tenantCode = rawTenant || 'NIXVET';
       const response = await api.post('/auth/login', {
-        email: values.email,
+        email: values.email.trim().toLowerCase(),
         password: values.password,
         tenantCode,
       });

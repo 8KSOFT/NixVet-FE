@@ -5,16 +5,27 @@ const api = axios.create({
   baseURL: getApiBaseUrl(),
 });
 
+function isPublicAuthRequest(config: { url?: string }) {
+  const path = config.url || '';
+  return path.includes('auth/login') || path.includes('auth/register');
+}
+
 api.interceptors.request.use((config) => {
   if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('accessToken');
-    const tenantId = localStorage.getItem('tenantId');
+    // Login não deve enviar tenant/token antigos: o middleware usaria outro tenant e o login falha.
+    if (!isPublicAuthRequest(config)) {
+      const token = localStorage.getItem('accessToken');
+      const tenantId = localStorage.getItem('tenantId');
 
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    if (tenantId) {
-      config.headers['x-tenant-id'] = tenantId;
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+      if (tenantId) {
+        config.headers['x-tenant-id'] = tenantId;
+      }
+    } else {
+      delete config.headers.Authorization;
+      delete config.headers['x-tenant-id'];
     }
 
     // Recalculate baseURL on client side to apply protocol auto-upgrade
