@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Calendar, Badge, Modal, Form, Select, DatePicker, Input, message, Button, Tag } from 'antd';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
-import { PlusOutlined, CalendarOutlined, SwapOutlined, BulbOutlined } from '@ant-design/icons';
+import { PlusOutlined, CalendarOutlined, SwapOutlined, BulbOutlined, GoogleOutlined } from '@ant-design/icons';
 import api from '@/lib/axios';
 import { useTranslation } from 'react-i18next';
 
@@ -12,6 +12,13 @@ interface Resource {
   id: string;
   name: string;
   type: string;
+}
+
+interface AppointmentType {
+  id: string;
+  name: string;
+  duration_minutes: number;
+  color: string | null;
 }
 
 interface AvailabilitySlot {
@@ -72,6 +79,15 @@ interface User {
   role: string;
 }
 
+interface GoogleEvent {
+  id: string;
+  title: string;
+  start: string;
+  end: string;
+  description: string | null;
+  isFromNixVet: boolean;
+}
+
 export default function CalendarPage() {
   const { t } = useTranslation('common');
   const [consultations, setConsultations] = useState<Consultation[]>([]);
@@ -90,6 +106,10 @@ export default function CalendarPage() {
   const [form] = Form.useForm();
   const [rescheduleForm] = Form.useForm();
   const [resources, setResources] = useState<Resource[]>([]);
+  const [appointmentTypes, setAppointmentTypes] = useState<AppointmentType[]>([]);
+  const [googleEvents, setGoogleEvents] = useState<GoogleEvent[]>([]);
+  const [googleConnected, setGoogleConnected] = useState(false);
+  const [currentMonth, setCurrentMonth] = useState<Dayjs>(dayjs());
   const [summarizeLoading, setSummarizeLoading] = useState(false);
   const [structureLoading, setStructureLoading] = useState(false);
 
@@ -129,12 +149,51 @@ export default function CalendarPage() {
     }
   };
 
+  const fetchAppointmentTypes = async () => {
+    try {
+      const res = await api.get<AppointmentType[]>('/appointment-types');
+      setAppointmentTypes(Array.isArray(res.data) ? res.data : []);
+    } catch {
+      setAppointmentTypes([]);
+    }
+  };
+
+  const fetchGoogleStatus = async () => {
+    try {
+      const res = await api.get<{ connected: boolean }>('/integrations/google/status');
+      setGoogleConnected(res.data?.connected ?? false);
+    } catch {
+      setGoogleConnected(false);
+    }
+  };
+
+  const fetchGoogleEvents = async (month: Dayjs) => {
+    if (!googleConnected) return;
+    try {
+      const from = month.startOf('month').toISOString();
+      const to = month.endOf('month').toISOString();
+      const res = await api.get<GoogleEvent[]>('/integrations/google/events', { params: { from, to } });
+      setGoogleEvents(Array.isArray(res.data) ? res.data : []);
+    } catch {
+      setGoogleEvents([]);
+    }
+  };
+
   useEffect(() => {
     fetchConsultations();
     fetchPatients();
     fetchVeterinarians();
     fetchResources();
+    fetchAppointmentTypes();
+    fetchGoogleStatus();
   }, []);
+
+  useEffect(() => {
+    if (googleConnected) {
+      fetchGoogleEvents(currentMonth);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [googleConnected, currentMonth]);
 
   const getListData = (value: Dayjs) => {
     const listData = consultations.filter(c =>
@@ -162,6 +221,9 @@ export default function CalendarPage() {
 
   const handleSelect = (date: Dayjs) => {
     setSelectedDate(date);
+    if (!date.isSame(currentMonth, 'month')) {
+      setCurrentMonth(date);
+    }
   };
 
   const fetchAvailability = async (date: Dayjs) => {
@@ -230,6 +292,7 @@ export default function CalendarPage() {
       const consultationDate = values.slot_datetime
         ? values.slot_datetime
         : values.consultation_date?.toISOString?.() ?? values.consultation_date;
+      const selectedType = appointmentTypes.find((t) => t.id === values.appointment_type_id);
       const payload = {
         patient_id: values.patient_id,
         veterinarian_id: values.veterinarian_id,
@@ -237,6 +300,8 @@ export default function CalendarPage() {
         price: parseFloat(values.price),
         observations: values.observations,
         required_resources: values.required_resources?.length ? values.required_resources : undefined,
+        appointment_type_id: values.appointment_type_id ?? undefined,
+        duration_minutes: selectedType?.duration_minutes ?? undefined,
       };
       await api.post('/consultations', payload);
       message.success('Consulta agendada com sucesso');
@@ -323,6 +388,9 @@ export default function CalendarPage() {
 
   const dateCellRender = (value: Dayjs) => {
     const listData = getListData(value);
+    const dayGoogleEvents = googleEvents.filter(
+      (e) => e.start && dayjs(e.start).isSame(value, 'day'),
+    );
     return (
       <ul className="list-none p-0 m-0">
         {listData.map(item => (
@@ -332,7 +400,7 @@ export default function CalendarPage() {
             onClick={() => handleOpenDetails(item)}
           >
             <Badge
-              status="success"
+              status={item.status === 'completed' ? 'success' : item.status === 'cancelled' ? 'error' : 'processing'}
               text={
                 <span className="text-xs">
                   {dayjs(item.consultation_date).format('HH:mm')} - {item.patient?.name}
@@ -341,6 +409,20 @@ export default function CalendarPage() {
             />
           </li>
         ))}
+        {dayGoogleEvents
+          .filter((e) => !e.isFromNixVet)
+          .map((e) => (
+            <li key={`g-${e.id}`} className="mb-1">
+              <Badge
+                color="#4285f4"
+                text={
+                  <span className="text-xs text-blue-600">
+                    {e.start ? dayjs(e.start).format('HH:mm') : ''} {e.title}
+                  </span>
+                }
+              />
+            </li>
+          ))}
       </ul>
     );
   };
@@ -350,6 +432,11 @@ export default function CalendarPage() {
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold text-blue-600 flex items-center gap-2">
           <CalendarOutlined /> {t('calendar.title')}
+          {googleConnected && (
+            <span className="flex items-center gap-1 text-sm font-normal text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full">
+              <GoogleOutlined /> Google Calendar sincronizado
+            </span>
+          )}
         </h1>
         <Button
           type="primary"
@@ -361,8 +448,22 @@ export default function CalendarPage() {
         </Button>
       </div>
 
+      {googleConnected && (
+        <div className="flex items-center gap-4 mb-3 text-xs text-gray-500">
+          <span className="flex items-center gap-1">
+            <span className="inline-block w-2.5 h-2.5 rounded-full bg-green-500" /> Consulta NixVet
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="inline-block w-2.5 h-2.5 rounded-full bg-blue-500" /> Evento Google Calendar
+          </span>
+        </div>
+      )}
       <div className="bg-white p-4 rounded-lg shadow">
-        <Calendar cellRender={dateCellRender} onSelect={handleSelect} />
+        <Calendar
+          cellRender={dateCellRender}
+          onSelect={handleSelect}
+          onPanelChange={(date) => setCurrentMonth(date)}
+        />
       </div>
 
       <Modal
@@ -424,6 +525,17 @@ export default function CalendarPage() {
             rules={[{ required: true, message: 'Informe o valor' }]}
           >
             <Input type="number" step="0.01" prefix="R$" />
+          </Form.Item>
+
+          <Form.Item name="appointment_type_id" label="Tipo de procedimento (opcional)">
+            <Select
+              placeholder="Selecione o tipo (define duração)"
+              allowClear
+              options={appointmentTypes.map((t) => ({
+                value: t.id,
+                label: `${t.name} — ${t.duration_minutes < 60 ? t.duration_minutes + ' min' : Math.floor(t.duration_minutes / 60) + 'h' + (t.duration_minutes % 60 ? ' ' + (t.duration_minutes % 60) + 'min' : '')}`,
+              }))}
+            />
           </Form.Item>
 
           <Form.Item name="required_resources" label="Recursos (opcional)">

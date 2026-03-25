@@ -136,14 +136,11 @@ function NotificationsBell() {
                   <Typography.Text className="!text-slate-900 !text-sm block whitespace-pre-wrap break-words">
                     {n.message}
                   </Typography.Text>
-                  <div className="flex justify-between items-center mt-2 gap-2">
-                    <Typography.Text type="secondary" className="!text-xs uppercase">
-                      {n.type}
-                    </Typography.Text>
-                    {!n.is_read && (
+                  {!n.is_read && (
+                    <div className="flex justify-end mt-2">
                       <span className="text-xs font-medium text-blue-600 shrink-0">Nova</span>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </button>
               </List.Item>
             )}

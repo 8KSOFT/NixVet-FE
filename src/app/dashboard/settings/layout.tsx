@@ -4,11 +4,12 @@ import React from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { Menu } from 'antd';
-import { SettingOutlined, MedicineBoxOutlined, ExperimentOutlined, FileSearchOutlined, ToolOutlined, ClockCircleOutlined, AppstoreOutlined, MessageOutlined, ThunderboltOutlined } from '@ant-design/icons';
+import { SettingOutlined, MedicineBoxOutlined, ExperimentOutlined, FileSearchOutlined, ToolOutlined, ClockCircleOutlined, AppstoreOutlined, MessageOutlined, ThunderboltOutlined, UnorderedListOutlined } from '@ant-design/icons';
 
 const items = [
   { key: '/dashboard/settings', icon: <SettingOutlined />, label: <Link href="/dashboard/settings">Dados da Clínica</Link> },
   { key: '/dashboard/settings/hours', icon: <ClockCircleOutlined />, label: <Link href="/dashboard/settings/hours">Horários</Link> },
+  { key: '/dashboard/settings/appointment-types', icon: <UnorderedListOutlined />, label: <Link href="/dashboard/settings/appointment-types">Tipos de Procedimento</Link> },
   { key: '/dashboard/settings/resources', icon: <AppstoreOutlined />, label: <Link href="/dashboard/settings/resources">Recursos</Link> },
   { key: '/dashboard/settings/diseases', icon: <MedicineBoxOutlined />, label: <Link href="/dashboard/settings/diseases">Doenças</Link> },
   { key: '/dashboard/settings/surgical-procedures', icon: <ExperimentOutlined />, label: <Link href="/dashboard/settings/surgical-procedures">Procedimentos cirúrgicos</Link> },

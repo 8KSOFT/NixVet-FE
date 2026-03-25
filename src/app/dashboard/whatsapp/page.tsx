@@ -2,8 +2,8 @@
 
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
-import { Card, List, Input, Button, message, Spin, Empty, Row, Col, Statistic, Tag, Space, Alert } from 'antd';
-import { MessageOutlined, SendOutlined, BulbOutlined, ClockCircleOutlined, AlertOutlined } from '@ant-design/icons';
+import { Card, List, Input, Button, message, Spin, Empty, Row, Col, Statistic, Tag, Space, Alert, Tooltip } from 'antd';
+import { MessageOutlined, SendOutlined, BulbOutlined, ClockCircleOutlined, AlertOutlined, RobotOutlined, UserOutlined } from '@ant-design/icons';
 import api from '@/lib/axios';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -36,10 +36,20 @@ interface Conversation {
   wa_id: string;
   contact_name: string | null;
   status: string;
+  ai_paused: boolean;
   last_message_at: string | null;
   thread_status?: ThreadStatus;
   thread_waiting_since?: string | null;
   whatsapp_number?: { display_phone: string };
+}
+
+function AiPausedTag({ paused }: { paused: boolean | undefined }) {
+  if (!paused) return null;
+  return (
+    <Tag color="orange" className="m-0" icon={<UserOutlined />}>
+      Atendimento humano
+    </Tag>
+  );
 }
 
 function ThreadStatusTag({ status }: { status: ThreadStatus | undefined }) {
@@ -169,12 +179,42 @@ export default function WhatsAppPage() {
         text: sendText.trim(),
       });
       setSendText('');
-      await loadMessages(selectedId, false);
+      await Promise.all([loadMessages(selectedId, false), fetchConversations(true)]);
       message.success('Mensagem enviada');
     } catch (e: any) {
       message.error(e.response?.data?.message ?? 'Erro ao enviar');
     } finally {
       setSending(false);
+    }
+  };
+
+  const [aiActionLoading, setAiActionLoading] = useState(false);
+
+  const handleResumeAi = async () => {
+    if (!selectedId) return;
+    setAiActionLoading(true);
+    try {
+      await api.post(`/whatsapp/conversations/${selectedId}/resume-ai`);
+      await fetchConversations(true);
+      message.success('Bot retomado — IA voltará a responder automaticamente.');
+    } catch (e: any) {
+      message.error(e.response?.data?.message ?? 'Erro ao retomar bot');
+    } finally {
+      setAiActionLoading(false);
+    }
+  };
+
+  const handlePauseAi = async () => {
+    if (!selectedId) return;
+    setAiActionLoading(true);
+    try {
+      await api.post(`/whatsapp/conversations/${selectedId}/pause-ai`);
+      await fetchConversations(true);
+      message.success('Bot pausado — você pode responder manualmente.');
+    } catch (e: any) {
+      message.error(e.response?.data?.message ?? 'Erro ao pausar bot');
+    } finally {
+      setAiActionLoading(false);
     }
   };
 
@@ -318,7 +358,8 @@ export default function WhatsAppPage() {
                   <div className="w-full">
                     <div className="font-medium flex items-center gap-2 flex-wrap">
                       <span>{c.contact_name || c.wa_id || 'Sem nome'}</span>
-                      <ThreadStatusTag status={c.thread_status ?? null} />
+                      <AiPausedTag paused={c.ai_paused} />
+                      {!c.ai_paused && <ThreadStatusTag status={c.thread_status ?? null} />}
                     </div>
                     <div className="text-xs text-gray-500">
                       {c.wa_id}
@@ -335,11 +376,41 @@ export default function WhatsAppPage() {
             selectedConv ? (
               <Space wrap>
                 <span>{selectedConv.contact_name || selectedConv.wa_id}</span>
-                <ThreadStatusTag status={selectedConv.thread_status ?? null} />
+                <AiPausedTag paused={selectedConv.ai_paused} />
+                {!selectedConv.ai_paused && <ThreadStatusTag status={selectedConv.thread_status ?? null} />}
               </Space>
             ) : (
               'Selecione uma conversa'
             )
+          }
+          extra={
+            selectedConv ? (
+              <Space>
+                {selectedConv.ai_paused ? (
+                  <Tooltip title="Retomar atendimento automático pelo bot">
+                    <Button
+                      size="small"
+                      icon={<RobotOutlined />}
+                      onClick={handleResumeAi}
+                      loading={aiActionLoading}
+                    >
+                      Retomar Bot
+                    </Button>
+                  </Tooltip>
+                ) : (
+                  <Tooltip title="Pausar bot e assumir atendimento manualmente">
+                    <Button
+                      size="small"
+                      icon={<UserOutlined />}
+                      onClick={handlePauseAi}
+                      loading={aiActionLoading}
+                    >
+                      Assumir
+                    </Button>
+                  </Tooltip>
+                )}
+              </Space>
+            ) : null
           }
           className="flex-1 min-w-0 flex flex-col"
           bodyStyle={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 400 }}

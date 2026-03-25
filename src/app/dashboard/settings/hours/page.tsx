@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Card, Tabs, Table, Button, Modal, Form, Input, Select, Switch, message } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { Card, Tabs, Table, Button, Modal, Form, Input, Select, Switch, message, Popconfirm, Space, Tag } from 'antd';
+import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import api from '@/lib/axios';
 
 const DAYS = [
@@ -13,6 +13,11 @@ const DAYS = [
   { value: 4, label: 'Quinta' },
   { value: 5, label: 'Sexta' },
   { value: 6, label: 'Sábado' },
+];
+
+const SCHEDULE_TYPES = [
+  { value: 'regular', label: 'Atendimento regular' },
+  { value: 'on_call', label: 'Plantão / Emergência' },
 ];
 
 interface BusinessHour {
@@ -38,6 +43,7 @@ interface VetSchedule {
   start_time: string;
   end_time: string;
   slot_duration_minutes: number;
+  schedule_type: 'regular' | 'on_call';
   user?: { name: string };
 }
 
@@ -107,6 +113,7 @@ export default function SettingsHoursPage() {
       });
       message.success('Salvo');
       setBusinessModalOpen(false);
+      businessForm.resetFields();
       fetchBusiness();
     } catch (e: any) {
       message.error(e.response?.data?.message ?? 'Erro ao salvar');
@@ -123,6 +130,7 @@ export default function SettingsHoursPage() {
       });
       message.success('Salvo');
       setEmergencyModalOpen(false);
+      emergencyForm.resetFields();
       fetchEmergency();
     } catch (e: any) {
       message.error(e.response?.data?.message ?? 'Erro ao salvar');
@@ -137,6 +145,7 @@ export default function SettingsHoursPage() {
         start_time: values.start_time,
         end_time: values.end_time,
         slot_duration_minutes: values.slot_duration_minutes ?? 30,
+        schedule_type: values.schedule_type ?? 'regular',
       });
       message.success('Adicionado');
       setVetModalOpen(false);
@@ -147,23 +156,41 @@ export default function SettingsHoursPage() {
     }
   };
 
-  const openBusinessEdit = (row: BusinessHour) => {
-    businessForm.setFieldsValue({
-      day_of_week: row.day_of_week,
-      open_time: row.open_time ?? '08:00',
-      close_time: row.close_time ?? '18:00',
-      is_closed: row.is_closed,
-    });
+  const handleDeleteVetSchedule = async (id: string) => {
+    try {
+      await api.delete(`/availability/config/veterinarian-schedules/${id}`);
+      message.success('Removido');
+      fetchVetSchedules();
+    } catch (e: any) {
+      message.error(e.response?.data?.message ?? 'Erro ao remover');
+    }
+  };
+
+  const openBusinessModal = (row?: BusinessHour) => {
+    if (row) {
+      businessForm.setFieldsValue({
+        day_of_week: row.day_of_week,
+        open_time: row.open_time ?? '08:00',
+        close_time: row.close_time ?? '18:00',
+        is_closed: row.is_closed,
+      });
+    } else {
+      businessForm.resetFields();
+    }
     setBusinessModalOpen(true);
   };
 
-  const openEmergencyEdit = (row: EmergencyHour) => {
-    emergencyForm.setFieldsValue({
-      day_of_week: row.day_of_week,
-      start_time: row.start_time,
-      end_time: row.end_time,
-      is_active: row.is_active,
-    });
+  const openEmergencyModal = (row?: EmergencyHour) => {
+    if (row) {
+      emergencyForm.setFieldsValue({
+        day_of_week: row.day_of_week,
+        start_time: row.start_time,
+        end_time: row.end_time,
+        is_active: row.is_active,
+      });
+    } else {
+      emergencyForm.resetFields();
+    }
     setEmergencyModalOpen(true);
   };
 
@@ -178,10 +205,18 @@ export default function SettingsHoursPage() {
               label: 'Horário de funcionamento',
               children: (
                 <>
-                  <p className="text-slate-600 mb-4">Define o horário de abertura/fechamento da clínica por dia.</p>
+                  <p className="text-slate-600 mb-4">Define o horário de abertura/fechamento da clínica por dia da semana.</p>
+                  <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    onClick={() => openBusinessModal()}
+                    className="mb-4 bg-blue-600"
+                  >
+                    Adicionar dia
+                  </Button>
                   <Table
                     dataSource={businessHours}
-                    rowKey={(r) => r.day_of_week.toString()}
+                    rowKey={(r) => r.id ?? r.day_of_week.toString()}
                     pagination={false}
                     columns={[
                       {
@@ -200,14 +235,14 @@ export default function SettingsHoursPage() {
                         render: (t: string | null, r: BusinessHour) => (r.is_closed ? '—' : t ?? '—'),
                       },
                       {
-                        title: 'Fechado',
+                        title: 'Status',
                         dataIndex: 'is_closed',
-                        render: (v: boolean) => (v ? 'Sim' : 'Não'),
+                        render: (v: boolean) => v ? <Tag color="red">Fechado</Tag> : <Tag color="green">Aberto</Tag>,
                       },
                       {
                         title: 'Ações',
                         render: (_: any, r: BusinessHour) => (
-                          <Button type="link" size="small" onClick={() => openBusinessEdit(r)}>
+                          <Button type="link" size="small" onClick={() => openBusinessModal(r)}>
                             Editar
                           </Button>
                         ),
@@ -219,23 +254,37 @@ export default function SettingsHoursPage() {
             },
             {
               key: 'emergency',
-              label: 'Horário de emergência',
+              label: 'Plantão / Emergência',
               children: (
                 <>
-                  <p className="text-slate-600 mb-4">Horários de plantão/emergência por dia.</p>
+                  <p className="text-slate-600 mb-4">
+                    Janelas de plantão ou emergência por dia da semana. Ative/desative por dia conforme necessário.
+                  </p>
+                  <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    onClick={() => openEmergencyModal()}
+                    className="mb-4 bg-blue-600"
+                  >
+                    Adicionar plantão
+                  </Button>
                   <Table
                     dataSource={emergencyHours}
-                    rowKey={(r) => r.day_of_week.toString()}
+                    rowKey={(r) => r.id ?? r.day_of_week.toString()}
                     pagination={false}
                     columns={[
                       { title: 'Dia', dataIndex: 'day_of_week', render: (d: number) => DAYS.find((x) => x.value === d)?.label ?? d },
                       { title: 'Início', dataIndex: 'start_time' },
                       { title: 'Fim', dataIndex: 'end_time' },
-                      { title: 'Ativo', dataIndex: 'is_active', render: (v: boolean) => (v ? 'Sim' : 'Não') },
+                      {
+                        title: 'Status',
+                        dataIndex: 'is_active',
+                        render: (v: boolean) => v ? <Tag color="green">Ativo</Tag> : <Tag>Inativo</Tag>,
+                      },
                       {
                         title: 'Ações',
                         render: (_: any, r: EmergencyHour) => (
-                          <Button type="link" size="small" onClick={() => openEmergencyEdit(r)}>
+                          <Button type="link" size="small" onClick={() => openEmergencyModal(r)}>
                             Editar
                           </Button>
                         ),
@@ -250,8 +299,18 @@ export default function SettingsHoursPage() {
               label: 'Agenda por veterinário',
               children: (
                 <>
-                  <p className="text-slate-600 mb-4">Cadastre os dias e horários de atendimento de cada veterinário.</p>
-                  <Button type="primary" icon={<PlusOutlined />} onClick={() => setVetModalOpen(true)} className="mb-4 bg-blue-600">
+                  <p className="text-slate-600 mb-4">
+                    Dias e horários de cada veterinário. Defina se é atendimento regular ou plantão.
+                  </p>
+                  <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    onClick={() => {
+                      vetForm.resetFields();
+                      setVetModalOpen(true);
+                    }}
+                    className="mb-4 bg-blue-600"
+                  >
                     Adicionar horário
                   </Button>
                   <Table
@@ -269,6 +328,32 @@ export default function SettingsHoursPage() {
                       { title: 'Início', dataIndex: 'start_time' },
                       { title: 'Fim', dataIndex: 'end_time' },
                       { title: 'Slot (min)', dataIndex: 'slot_duration_minutes' },
+                      {
+                        title: 'Tipo',
+                        dataIndex: 'schedule_type',
+                        render: (t: string) =>
+                          t === 'on_call' ? (
+                            <Tag color="orange">Plantão</Tag>
+                          ) : (
+                            <Tag color="blue">Regular</Tag>
+                          ),
+                      },
+                      {
+                        title: 'Ações',
+                        key: 'actions',
+                        render: (_: any, r: VetSchedule) => (
+                          <Space>
+                            <Popconfirm
+                              title="Remover este horário?"
+                              onConfirm={() => handleDeleteVetSchedule(r.id)}
+                              okText="Remover"
+                              cancelText="Cancelar"
+                            >
+                              <Button icon={<DeleteOutlined />} size="small" danger />
+                            </Popconfirm>
+                          </Space>
+                        ),
+                      },
                     ]}
                   />
                 </>
@@ -278,12 +363,19 @@ export default function SettingsHoursPage() {
         />
       </Card>
 
-      <Modal title="Editar horário de funcionamento" open={businessModalOpen} onCancel={() => setBusinessModalOpen(false)} footer={null}>
+      {/* Modal horário de funcionamento */}
+      <Modal
+        title="Horário de funcionamento"
+        open={businessModalOpen}
+        onCancel={() => setBusinessModalOpen(false)}
+        footer={null}
+        destroyOnClose
+      >
         <Form form={businessForm} layout="vertical" onFinish={onBusinessFinish}>
-          <Form.Item name="day_of_week" label="Dia" rules={[{ required: true }]}>
-            <Select options={DAYS} placeholder="Dia" />
+          <Form.Item name="day_of_week" label="Dia da semana" rules={[{ required: true }]}>
+            <Select options={DAYS} placeholder="Selecione o dia" />
           </Form.Item>
-          <Form.Item name="is_closed" label="Fechado" valuePropName="checked">
+          <Form.Item name="is_closed" label="Fechado neste dia" valuePropName="checked">
             <Switch />
           </Form.Item>
           <Form.Item noStyle shouldUpdate={(prev, curr) => prev.is_closed !== curr.is_closed}>
@@ -306,10 +398,17 @@ export default function SettingsHoursPage() {
         </Form>
       </Modal>
 
-      <Modal title="Editar horário de emergência" open={emergencyModalOpen} onCancel={() => setEmergencyModalOpen(false)} footer={null}>
+      {/* Modal plantão / emergência */}
+      <Modal
+        title="Plantão / Emergência"
+        open={emergencyModalOpen}
+        onCancel={() => setEmergencyModalOpen(false)}
+        footer={null}
+        destroyOnClose
+      >
         <Form form={emergencyForm} layout="vertical" onFinish={onEmergencyFinish}>
-          <Form.Item name="day_of_week" label="Dia" rules={[{ required: true }]}>
-            <Select options={DAYS} placeholder="Dia" />
+          <Form.Item name="day_of_week" label="Dia da semana" rules={[{ required: true }]}>
+            <Select options={DAYS} placeholder="Selecione o dia" />
           </Form.Item>
           <Form.Item name="start_time" label="Início" rules={[{ required: true }]}>
             <Input type="time" />
@@ -317,7 +416,7 @@ export default function SettingsHoursPage() {
           <Form.Item name="end_time" label="Fim" rules={[{ required: true }]}>
             <Input type="time" />
           </Form.Item>
-          <Form.Item name="is_active" label="Ativo" valuePropName="checked">
+          <Form.Item name="is_active" label="Ativo" valuePropName="checked" initialValue={true}>
             <Switch />
           </Form.Item>
           <Form.Item>
@@ -326,7 +425,14 @@ export default function SettingsHoursPage() {
         </Form>
       </Modal>
 
-      <Modal title="Adicionar horário do veterinário" open={vetModalOpen} onCancel={() => setVetModalOpen(false)} footer={null}>
+      {/* Modal agenda veterinário */}
+      <Modal
+        title="Adicionar horário do veterinário"
+        open={vetModalOpen}
+        onCancel={() => setVetModalOpen(false)}
+        footer={null}
+        destroyOnClose
+      >
         <Form form={vetForm} layout="vertical" onFinish={onVetFinish}>
           <Form.Item name="user_id" label="Veterinário" rules={[{ required: true }]}>
             <Select
@@ -335,7 +441,7 @@ export default function SettingsHoursPage() {
             />
           </Form.Item>
           <Form.Item name="day_of_week" label="Dia" rules={[{ required: true }]}>
-            <Select options={DAYS} placeholder="Dia" />
+            <Select options={DAYS} placeholder="Selecione o dia" />
           </Form.Item>
           <Form.Item name="start_time" label="Início" rules={[{ required: true }]}>
             <Input type="time" />
@@ -343,8 +449,11 @@ export default function SettingsHoursPage() {
           <Form.Item name="end_time" label="Fim" rules={[{ required: true }]}>
             <Input type="time" />
           </Form.Item>
-          <Form.Item name="slot_duration_minutes" label="Duração do slot (min)" initialValue={30}>
+          <Form.Item name="slot_duration_minutes" label="Duração padrão do slot (min)" initialValue={30}>
             <Input type="number" min={10} max={120} />
+          </Form.Item>
+          <Form.Item name="schedule_type" label="Tipo de agenda" initialValue="regular">
+            <Select options={SCHEDULE_TYPES} />
           </Form.Item>
           <Form.Item>
             <Button type="primary" htmlType="submit" className="bg-blue-600">Adicionar</Button>
