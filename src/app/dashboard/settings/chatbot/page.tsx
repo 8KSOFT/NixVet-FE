@@ -114,7 +114,7 @@ export default function ChatbotSettingsPage() {
             <Input placeholder="Ex.: Nina, Assistente Pet, Clínica PetCare" maxLength={80} />
           </Form.Item>
 
-          <Divider orientation="left" className="!text-sm !text-gray-500">Mensagens automáticas</Divider>
+          <Divider className="!text-sm !text-gray-500">Mensagens automáticas</Divider>
 
           <Form.Item
             name="greeting_message"
@@ -176,7 +176,7 @@ export default function ChatbotSettingsPage() {
             />
           </Form.Item>
 
-          <Divider orientation="left" className="!text-sm !text-gray-500">Prompt avançado</Divider>
+          <Divider className="!text-sm !text-gray-500">Prompt avançado</Divider>
 
           <Form.Item
             name="system_prompt_extra"
