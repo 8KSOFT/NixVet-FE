@@ -1,12 +1,15 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Card, Form, Input, Button, message, Typography } from 'antd';
-import { UserOutlined } from '@ant-design/icons';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent } from '@/components/ui/card';
+import { toast } from 'sonner';
+import { useForm } from 'react-hook-form';
+import { Loader2, User } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import api from '@/lib/axios';
-
-const { Title } = Typography;
 
 interface ProfileData {
   id: string;
@@ -17,17 +20,25 @@ interface ProfileData {
   specialty?: string | null;
 }
 
+interface ProfileFormValues {
+  name: string;
+  email: string;
+  password: string;
+  crmv: string;
+  specialty: string;
+}
+
 export default function ProfilePage() {
   const { t } = useTranslation('common');
-  const [form] = Form.useForm();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const { register, handleSubmit, reset, setValue } = useForm<ProfileFormValues>();
 
   const load = async () => {
     setLoading(true);
     try {
       const res = await api.get<ProfileData>('/users/profile');
-      form.setFieldsValue({
+      reset({
         name: res.data.name,
         email: res.data.email,
         crmv: res.data.crmv ?? '',
@@ -35,7 +46,7 @@ export default function ProfilePage() {
         password: '',
       });
     } catch {
-      message.error(t('profile.loadError'));
+      toast.error(t('profile.loadError'));
     } finally {
       setLoading(false);
     }
@@ -45,7 +56,7 @@ export default function ProfilePage() {
     load();
   }, []);
 
-  const onFinish = async (values: Record<string, string>) => {
+  const onSubmit = async (values: ProfileFormValues) => {
     setSaving(true);
     try {
       const payload: Record<string, string> = {
@@ -58,7 +69,7 @@ export default function ProfilePage() {
         payload.password = values.password;
       }
       const res = await api.put<ProfileData>('/users/profile', payload);
-      message.success(t('profile.saved'));
+      toast.success(t('profile.saved'));
       const raw = localStorage.getItem('user');
       const prev = raw ? JSON.parse(raw) : {};
       localStorage.setItem(
@@ -69,9 +80,9 @@ export default function ProfilePage() {
           email: res.data.email,
         }),
       );
-      form.setFieldValue('password', '');
+      setValue('password', '');
     } catch (e: any) {
-      message.error(e.response?.data?.message || t('profile.saveError'));
+      toast.error(e.response?.data?.message || t('profile.saveError'));
     } finally {
       setSaving(false);
     }
@@ -79,45 +90,48 @@ export default function ProfilePage() {
 
   return (
     <div>
-      <Title level={2} className="!mb-6 !text-slate-800 !font-semibold flex items-center gap-2">
-        <UserOutlined /> {t('profile.title')}
-      </Title>
-      <Card loading={loading} className="max-w-xl rounded-xl shadow-sm border border-slate-200/80">
-        <Form form={form} layout="vertical" onFinish={onFinish}>
-          <Form.Item name="name" label={t('profile.name')} rules={[{ required: true }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item name="email" label={t('profile.email')} rules={[{ required: true, type: 'email' }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item
-            name="password"
-            label={t('profile.newPassword')}
-            rules={[
-              {
-                validator: (_, v) => {
-                  if (v && String(v).length > 0 && String(v).length < 6) {
-                    return Promise.reject(new Error(t('profile.passwordMin')));
-                  }
-                  return Promise.resolve();
-                },
-              },
-            ]}
-          >
-            <Input.Password placeholder={t('profile.passwordPlaceholder')} />
-          </Form.Item>
-          <Form.Item name="crmv" label={t('profile.crmv')}>
-            <Input />
-          </Form.Item>
-          <Form.Item name="specialty" label={t('profile.specialty')}>
-            <Input />
-          </Form.Item>
-          <Form.Item>
-            <Button type="primary" htmlType="submit" loading={saving} className="bg-blue-600">
-              {t('profile.save')}
-            </Button>
-          </Form.Item>
-        </Form>
+      <h2 className="text-2xl font-semibold text-slate-800 mb-6 flex items-center gap-2">
+        <User className="w-6 h-6" /> {t('profile.title')}
+      </h2>
+      <Card className="max-w-xl rounded-xl shadow-sm border border-slate-200/80">
+        <CardContent className="pt-6">
+          {loading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              <div>
+                <Label>{t('profile.name')}</Label>
+                <Input {...register('name', { required: true })} />
+              </div>
+              <div>
+                <Label>{t('profile.email')}</Label>
+                <Input type="email" {...register('email', { required: true })} />
+              </div>
+              <div>
+                <Label>{t('profile.newPassword')}</Label>
+                <Input
+                  type="password"
+                  {...register('password')}
+                  placeholder={t('profile.passwordPlaceholder')}
+                />
+              </div>
+              <div>
+                <Label>{t('profile.crmv')}</Label>
+                <Input {...register('crmv')} />
+              </div>
+              <div>
+                <Label>{t('profile.specialty')}</Label>
+                <Input {...register('specialty')} />
+              </div>
+              <Button type="submit" disabled={saving} className="bg-blue-600">
+                {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                {t('profile.save')}
+              </Button>
+            </form>
+          )}
+        </CardContent>
       </Card>
     </div>
   );

@@ -1,8 +1,16 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Card, Table, Button, Modal, Form, Input, message, Select, Space } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { toast } from 'sonner';
+import { useForm, Controller } from 'react-hook-form';
+import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
 import api from '@/lib/axios';
 
 interface Area {
@@ -17,20 +25,22 @@ interface Exam {
   exam_area?: Area;
 }
 
+type FormValues = { name: string; area_id?: string };
+
 export default function SettingsExamsPage() {
   const [areas, setAreas] = useState<Area[]>([]);
   const [list, setList] = useState<Exam[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [form] = Form.useForm();
+  const { register, handleSubmit, reset, control, formState: { errors } } = useForm<FormValues>();
 
   const fetchAreas = async () => {
     try {
       const res = await api.get<Area[]>('/catalog/exam-areas');
       setAreas(res.data ?? []);
-    } catch (e) {
-      message.error('Erro ao carregar áreas');
+    } catch {
+      toast.error('Erro ao carregar áreas');
     }
   };
 
@@ -39,8 +49,8 @@ export default function SettingsExamsPage() {
     try {
       const res = await api.get<Exam[]>('/catalog/exams');
       setList(res.data ?? []);
-    } catch (e) {
-      message.error('Erro ao carregar exames');
+    } catch {
+      toast.error('Erro ao carregar exames');
     } finally {
       setLoading(false);
     }
@@ -53,39 +63,44 @@ export default function SettingsExamsPage() {
 
   const openCreate = () => {
     setEditingId(null);
-    form.resetFields();
+    reset({ name: '', area_id: undefined });
     setModalOpen(true);
   };
 
   const openEdit = (row: Exam) => {
     setEditingId(row.id);
-    form.setFieldsValue({ name: row.name, area_id: row.exam_area_id ?? row.exam_area?.id });
+    const areaId = row.exam_area_id ?? row.exam_area?.id;
+    reset({ name: row.name, area_id: areaId ? String(areaId) : undefined });
     setModalOpen(true);
   };
 
   const handleDelete = async (id: number) => {
     try {
       await api.delete(`/catalog/exams/${id}`);
-      message.success('Removido');
+      toast.success('Removido');
       fetchExams();
     } catch (e: any) {
-      message.error(e.response?.data?.message ?? 'Erro ao remover');
+      toast.error(e.response?.data?.message ?? 'Erro ao remover');
     }
   };
 
-  const onFinish = async (values: { name: string; area_id?: number }) => {
+  const onSubmit = async (values: FormValues) => {
+    const payload = {
+      name: values.name,
+      area_id: values.area_id ? Number(values.area_id) : undefined,
+    };
     try {
       if (editingId) {
-        await api.put(`/catalog/exams/${editingId}`, values);
-        message.success('Atualizado');
+        await api.put(`/catalog/exams/${editingId}`, payload);
+        toast.success('Atualizado');
       } else {
-        await api.post('/catalog/exams', values);
-        message.success('Criado');
+        await api.post('/catalog/exams', payload);
+        toast.success('Criado');
       }
       setModalOpen(false);
       fetchExams();
     } catch (e: any) {
-      message.error(e.response?.data?.message ?? 'Erro ao salvar');
+      toast.error(e.response?.data?.message ?? 'Erro ao salvar');
     }
   };
 
@@ -93,57 +108,82 @@ export default function SettingsExamsPage() {
     <div>
       <h1 className="text-2xl font-bold text-blue-600 mb-6">Exames</h1>
       <Card>
-        <Space className="mb-4">
-          <Button type="primary" icon={<PlusOutlined />} onClick={openCreate} className="bg-blue-600">
-            Novo exame
+        <CardContent className="pt-6">
+          <Button onClick={openCreate} className="mb-4 bg-blue-600">
+            <Plus className="w-4 h-4 mr-2" /> Novo exame
           </Button>
-        </Space>
-        <Table
-          loading={loading}
-          dataSource={list}
-          rowKey="id"
-          columns={[
-            { title: 'Nome', dataIndex: 'name', key: 'name' },
-            {
-              title: 'Área',
-              key: 'area',
-              render: (_, r) => r.exam_area?.name ?? r.exam_area_id ?? '—',
-            },
-            {
-              title: 'Ações',
-              key: 'actions',
-              width: 120,
-              render: (_, r) => (
-                <Space>
-                  <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEdit(r)} />
-                  <Button type="link" size="small" danger icon={<DeleteOutlined />} onClick={() => handleDelete(r.id)} />
-                </Space>
-              ),
-            },
-          ]}
-          pagination={{ pageSize: 20 }}
-        />
+          {loading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>Área</TableHead>
+                  <TableHead className="w-[120px]">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {list.map((r) => (
+                  <TableRow key={r.id}>
+                    <TableCell>{r.name}</TableCell>
+                    <TableCell>{r.exam_area?.name ?? r.exam_area_id ?? '—'}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="sm" onClick={() => openEdit(r)}>
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" onClick={() => handleDelete(r.id)}>
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
       </Card>
-      <Modal
-        title={editingId ? 'Editar exame' : 'Novo exame'}
-        open={modalOpen}
-        onCancel={() => setModalOpen(false)}
-        footer={null}
-      >
-        <Form form={form} layout="vertical" onFinish={onFinish}>
-          <Form.Item name="area_id" label="Área de exame">
-            <Select allowClear placeholder="Selecione" options={areas.map((a) => ({ label: a.name, value: a.id }))} />
-          </Form.Item>
-          <Form.Item name="name" label="Nome" rules={[{ required: true }]}>
-            <Input placeholder="Nome do exame" />
-          </Form.Item>
-          <Form.Item>
-            <Button type="primary" htmlType="submit" className="bg-blue-600">
-              Salvar
-            </Button>
-          </Form.Item>
-        </Form>
-      </Modal>
+
+      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingId ? 'Editar exame' : 'Novo exame'}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <div>
+              <Label>Área de exame</Label>
+              <Controller
+                name="area_id"
+                control={control}
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {areas.map((a) => (
+                        <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </div>
+            <div>
+              <Label htmlFor="name">Nome</Label>
+              <Input id="name" placeholder="Nome do exame" {...register('name', { required: true })} />
+              {errors.name && <p className="text-red-500 text-xs mt-1">Campo obrigatório</p>}
+            </div>
+            <DialogFooter>
+              <Button type="submit" className="bg-blue-600">Salvar</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

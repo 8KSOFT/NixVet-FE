@@ -1,10 +1,18 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Calendar, Badge, Modal, Form, Select, DatePicker, Input, message, Button, Tag } from 'antd';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
-import { PlusOutlined, CalendarOutlined, SwapOutlined, BulbOutlined, GoogleOutlined } from '@ant-design/icons';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Loader2 } from 'lucide-react';
 import api from '@/lib/axios';
 import { useTranslation } from 'react-i18next';
 
@@ -25,37 +33,6 @@ interface AvailabilitySlot {
   vetId: string;
   vetName: string;
   slots: string[];
-}
-
-function SlotSelect({
-  form,
-  availability,
-  availabilityLoading,
-}: {
-  form: any;
-  availability: AvailabilitySlot[];
-  availabilityLoading: boolean;
-}) {
-  const vetId = Form.useWatch('veterinarian_id', form);
-  const vetSlots = vetId ? availability.find(a => a.vetId === vetId) : null;
-  const options = (vetSlots?.slots ?? []).map(slot => ({
-    value: slot,
-    label: new Date(slot).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-  }));
-  return (
-    <Form.Item
-      name="slot_datetime"
-      label="Horário disponível"
-      rules={[{ required: true, message: 'Selecione o horário' }]}
-    >
-      <Select
-        placeholder={availabilityLoading ? 'Carregando...' : 'Selecione o horário'}
-        loading={availabilityLoading}
-        allowClear
-        options={options}
-      />
-    </Form.Item>
-  );
 }
 
 interface Consultation {
@@ -88,6 +65,76 @@ interface GoogleEvent {
   isFromNixVet: boolean;
 }
 
+const WEEKDAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+
+const PT_MONTHS = [
+  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
+];
+
+function buildCalendarDays(month: Dayjs): Dayjs[] {
+  const startOfMonth = month.startOf('month');
+  const endOfMonth = month.endOf('month');
+  const startDow = startOfMonth.day();
+  const days: Dayjs[] = [];
+  for (let i = startDow - 1; i >= 0; i--) {
+    days.push(startOfMonth.subtract(i + 1, 'day'));
+  }
+  for (let i = 0; i < endOfMonth.date(); i++) {
+    days.push(startOfMonth.add(i, 'day'));
+  }
+  const remaining = 42 - days.length;
+  for (let i = 1; i <= remaining; i++) {
+    days.push(endOfMonth.add(i, 'day'));
+  }
+  return days;
+}
+
+function formatDuration(minutes: number): string {
+  if (minutes < 60) return `${minutes} min`;
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return m ? `${h}h ${m}min` : `${h}h`;
+}
+
+interface SlotSelectProps {
+  veterinarianId: string;
+  availability: AvailabilitySlot[];
+  availabilityLoading: boolean;
+  value: string;
+  onChange: (v: string) => void;
+}
+
+function SlotSelect({ veterinarianId, availability, availabilityLoading, value, onChange }: SlotSelectProps) {
+  const vetSlots = veterinarianId ? availability.find(a => a.vetId === veterinarianId) : null;
+  const options = (vetSlots?.slots ?? []).map(slot => ({
+    value: slot,
+    label: new Date(slot).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+  }));
+
+  return (
+    <div className="space-y-1">
+      <Label>Horário disponível <span className="text-red-500">*</span></Label>
+      {availabilityLoading ? (
+        <div className="flex items-center gap-2 text-sm text-gray-500 py-2">
+          <Loader2 className="h-4 w-4 animate-spin" /> Carregando horários...
+        </div>
+      ) : (
+        <Select value={value} onValueChange={onChange}>
+          <SelectTrigger>
+            <SelectValue placeholder="Selecione o horário" />
+          </SelectTrigger>
+          <SelectContent>
+            {options.map(opt => (
+              <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      )}
+    </div>
+  );
+}
+
 export default function CalendarPage() {
   const { t } = useTranslation('common');
   const [consultations, setConsultations] = useState<Consultation[]>([]);
@@ -102,9 +149,7 @@ export default function CalendarPage() {
   const [availabilityLoading, setAvailabilityLoading] = useState(false);
   const [rescheduleVisible, setRescheduleVisible] = useState(false);
   const [rescheduleLoading, setRescheduleLoading] = useState(false);
-  const [rescheduleSlot, setRescheduleSlot] = useState<string | null>(null);
-  const [form] = Form.useForm();
-  const [rescheduleForm] = Form.useForm();
+  const [rescheduleDate, setRescheduleDate] = useState('');
   const [resources, setResources] = useState<Resource[]>([]);
   const [appointmentTypes, setAppointmentTypes] = useState<AppointmentType[]>([]);
   const [googleEvents, setGoogleEvents] = useState<GoogleEvent[]>([]);
@@ -112,6 +157,17 @@ export default function CalendarPage() {
   const [currentMonth, setCurrentMonth] = useState<Dayjs>(dayjs());
   const [summarizeLoading, setSummarizeLoading] = useState(false);
   const [structureLoading, setStructureLoading] = useState(false);
+
+  const [formData, setFormData] = useState({
+    patient_id: '',
+    consultation_date: '',
+    veterinarian_id: '',
+    slot_datetime: '',
+    price: '',
+    appointment_type_id: '',
+    required_resources: [] as string[],
+    observations: '',
+  });
 
   const fetchConsultations = async () => {
     try {
@@ -164,7 +220,6 @@ export default function CalendarPage() {
       const connected = res.data?.connected ?? false;
       setGoogleConnected(connected);
       if (connected) {
-        // chamamos diretamente aqui para evitar stale closure no useEffect
         const from = currentMonth.startOf('month').toISOString();
         const to = currentMonth.endOf('month').toISOString();
         const evRes = await api.get<GoogleEvent[]>('/integrations/google/events', { params: { from, to } });
@@ -182,7 +237,7 @@ export default function CalendarPage() {
       const res = await api.get<GoogleEvent[]>('/integrations/google/events', { params: { from, to } });
       setGoogleEvents(Array.isArray(res.data) ? res.data : []);
     } catch (e: any) {
-      message.warning(e?.response?.data?.message ?? 'Não foi possível carregar eventos do Google Calendar');
+      toast.warning(e?.response?.data?.message ?? 'Não foi possível carregar eventos do Google Calendar');
       setGoogleEvents([]);
     }
   };
@@ -204,10 +259,7 @@ export default function CalendarPage() {
   }, [currentMonth]);
 
   const getListData = (value: Dayjs) => {
-    const listData = consultations.filter(c =>
-      dayjs(c.consultation_date).isSame(value, 'day'),
-    );
-    return listData || [];
+    return consultations.filter(c => dayjs(c.consultation_date).isSame(value, 'day'));
   };
 
   const formatStatus = (status?: string) => {
@@ -216,10 +268,10 @@ export default function CalendarPage() {
     return 'Agendada';
   };
 
-  const getStatusColor = (status?: string) => {
-    if (status === 'completed') return 'green';
-    if (status === 'cancelled') return 'red';
-    return 'blue';
+  const getStatusBadgeClass = (status?: string) => {
+    if (status === 'completed') return 'bg-green-500 hover:bg-green-600 text-white';
+    if (status === 'cancelled') return 'bg-red-500 hover:bg-red-600 text-white';
+    return 'bg-blue-500 hover:bg-blue-600 text-white';
   };
 
   const handleOpenDetails = (consultation: Consultation) => {
@@ -248,34 +300,42 @@ export default function CalendarPage() {
   };
 
   const handleAdd = () => {
-    form.resetFields();
-    form.setFieldsValue({ consultation_date: selectedDate });
+    setFormData({
+      patient_id: '',
+      consultation_date: selectedDate.format('YYYY-MM-DD'),
+      veterinarian_id: '',
+      slot_datetime: '',
+      price: '',
+      appointment_type_id: '',
+      required_resources: [],
+      observations: '',
+    });
     setModalVisible(true);
     fetchAvailability(selectedDate);
   };
 
   const handleSummarizeObservations = async () => {
-    const notes = form.getFieldValue('observations') ?? '';
+    const notes = formData.observations ?? '';
     if (!notes.trim()) {
-      message.info('Digite algo nas observações para resumir');
+      toast.info('Digite algo nas observações para resumir');
       return;
     }
     setSummarizeLoading(true);
     try {
       const res = await api.post<{ summary?: string }>('/ai/summarize', { notes });
       const summary = res.data?.summary ?? '';
-      if (summary) form.setFieldValue('observations', summary);
+      if (summary) setFormData(prev => ({ ...prev, observations: summary }));
     } catch (e: any) {
-      message.error(e.response?.data?.message ?? 'Erro ao resumir');
+      toast.error(e.response?.data?.message ?? 'Erro ao resumir');
     } finally {
       setSummarizeLoading(false);
     }
   };
 
   const handleStructureObservations = async () => {
-    const text = form.getFieldValue('observations') ?? '';
+    const text = formData.observations ?? '';
     if (!text.trim()) {
-      message.info('Digite algo nas observações para estruturar');
+      toast.info('Digite algo nas observações para estruturar');
       return;
     }
     setStructureLoading(true);
@@ -287,37 +347,46 @@ export default function CalendarPage() {
         symptoms.length ? `Sintomas: ${symptoms.join(', ')}` : '',
         diagnosis.length ? `Diagnóstico possível: ${diagnosis.join(', ')}` : '',
       ].filter(Boolean).join('\n');
-      if (structured) form.setFieldValue('observations', (text + (text.endsWith('\n') ? '' : '\n') + structured).trim());
+      if (structured) {
+        setFormData(prev => ({
+          ...prev,
+          observations: (text + (text.endsWith('\n') ? '' : '\n') + structured).trim(),
+        }));
+      }
     } catch (e: any) {
-      message.error(e.response?.data?.message ?? 'Erro ao estruturar');
+      toast.error(e.response?.data?.message ?? 'Erro ao estruturar');
     } finally {
       setStructureLoading(false);
     }
   };
 
-  const handleSubmit = async (values: any) => {
+  const handleSubmit = async () => {
+    if (!formData.patient_id || !formData.veterinarian_id || !formData.price) {
+      toast.error('Preencha todos os campos obrigatórios');
+      return;
+    }
     try {
-      const consultationDate = values.slot_datetime
-        ? values.slot_datetime
-        : values.consultation_date?.toISOString?.() ?? values.consultation_date;
-      const selectedType = appointmentTypes.find((t) => t.id === values.appointment_type_id);
+      const consultationDate = formData.slot_datetime
+        ? formData.slot_datetime
+        : dayjs(formData.consultation_date).toISOString();
+      const selectedType = appointmentTypes.find(tp => tp.id === formData.appointment_type_id);
       const payload = {
-        patient_id: values.patient_id,
-        veterinarian_id: values.veterinarian_id,
+        patient_id: formData.patient_id,
+        veterinarian_id: formData.veterinarian_id,
         consultation_date: consultationDate,
-        price: parseFloat(values.price),
-        observations: values.observations,
-        required_resources: values.required_resources?.length ? values.required_resources : undefined,
-        appointment_type_id: values.appointment_type_id ?? undefined,
+        price: parseFloat(formData.price),
+        observations: formData.observations,
+        required_resources: formData.required_resources.length ? formData.required_resources : undefined,
+        appointment_type_id: formData.appointment_type_id || undefined,
         duration_minutes: selectedType?.duration_minutes ?? undefined,
       };
       await api.post('/consultations', payload);
-      message.success('Consulta agendada com sucesso');
+      toast.success('Consulta agendada com sucesso');
       setModalVisible(false);
       fetchConsultations();
     } catch (error) {
       console.error('Error scheduling consultation:', error);
-      message.error('Erro ao agendar consulta. Verifique os dados.');
+      toast.error('Erro ao agendar consulta. Verifique os dados.');
     }
   };
 
@@ -325,16 +394,14 @@ export default function CalendarPage() {
     if (!selectedConsultation) return;
     try {
       setUpdating(true);
-      await api.put(`/consultations/${selectedConsultation.id}`, {
-        status: 'completed',
-      });
-      message.success('Consulta marcada como realizada');
+      await api.put(`/consultations/${selectedConsultation.id}`, { status: 'completed' });
+      toast.success('Consulta marcada como realizada');
       setDetailsVisible(false);
       setSelectedConsultation(null);
       fetchConsultations();
     } catch (error) {
       console.error('Error updating consultation status:', error);
-      message.error('Erro ao atualizar status da consulta');
+      toast.error('Erro ao atualizar status da consulta');
     } finally {
       setUpdating(false);
     }
@@ -344,115 +411,119 @@ export default function CalendarPage() {
     if (!selectedConsultation) return;
     try {
       setUpdating(true);
-      await api.put(`/consultations/${selectedConsultation.id}`, {
-        paid: true,
-      });
-      message.success('Pagamento confirmado');
+      await api.put(`/consultations/${selectedConsultation.id}`, { paid: true });
+      toast.success('Pagamento confirmado');
       setDetailsVisible(false);
       setSelectedConsultation(null);
       fetchConsultations();
     } catch (error) {
       console.error('Error confirming payment:', error);
-      message.error('Erro ao confirmar pagamento');
+      toast.error('Erro ao confirmar pagamento');
     } finally {
       setUpdating(false);
     }
   };
 
   const openReschedule = () => {
-    setRescheduleSlot(selectedConsultation?.consultation_date ?? null);
-    rescheduleForm.setFieldsValue({
-      start_time: selectedConsultation?.consultation_date
-        ? dayjs(selectedConsultation.consultation_date)
-        : dayjs(),
-    });
+    const dateStr = selectedConsultation?.consultation_date
+      ? dayjs(selectedConsultation.consultation_date).format('YYYY-MM-DDTHH:mm')
+      : dayjs().format('YYYY-MM-DDTHH:mm');
+    setRescheduleDate(dateStr);
     setRescheduleVisible(true);
   };
 
   const handleRescheduleSubmit = async () => {
-    if (!selectedConsultation) return;
+    if (!selectedConsultation || !rescheduleDate) {
+      toast.error('Preencha a nova data/hora');
+      return;
+    }
     setRescheduleLoading(true);
     try {
-      const values = await rescheduleForm.validateFields();
-      const start = values.start_time.toISOString?.() ?? values.start_time;
-      const startDate = new Date(start);
+      const startDate = new Date(rescheduleDate);
       const endDate = new Date(startDate.getTime() + 30 * 60 * 1000);
       await api.put(`/consultations/${selectedConsultation.id}/reschedule`, {
         start_time: startDate.toISOString(),
         end_time: endDate.toISOString(),
       });
-      message.success('Consulta reagendada');
+      toast.success('Consulta reagendada');
       setRescheduleVisible(false);
       setDetailsVisible(false);
       setSelectedConsultation(null);
       fetchConsultations();
-    } catch (e: unknown) {
-      if (e && typeof e === 'object' && 'errorFields' in e) message.error('Preencha a nova data/hora');
-      else message.error('Erro ao reagendar');
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message ?? 'Erro ao reagendar');
     } finally {
       setRescheduleLoading(false);
     }
   };
 
-  const dateCellRender = (value: Dayjs) => {
-    const listData = getListData(value);
+  const dateCellRender = (day: Dayjs) => {
+    const listData = getListData(day);
     const dayGoogleEvents = googleEvents.filter(
-      (e) => e.start && dayjs(e.start).isSame(value, 'day'),
+      e => e.start && dayjs(e.start).isSame(day, 'day'),
     );
     return (
-      <ul className="list-none p-0 m-0">
+      <ul className="list-none p-0 m-0 space-y-0.5">
         {listData.map(item => (
           <li
             key={item.id}
-            className="mb-1 cursor-pointer"
-            onClick={() => handleOpenDetails(item)}
+            className="cursor-pointer"
+            onClick={e => { e.stopPropagation(); handleOpenDetails(item); }}
           >
-            <Badge
-              status={item.status === 'completed' ? 'success' : item.status === 'cancelled' ? 'error' : 'processing'}
-              text={
-                <span className="text-xs">
-                  {dayjs(item.consultation_date).format('HH:mm')} - {item.patient?.name}
-                </span>
-              }
-            />
+            <div className="flex items-center gap-1">
+              <span className={cn(
+                'inline-block w-2 h-2 rounded-full flex-shrink-0',
+                item.status === 'completed' ? 'bg-green-500' :
+                item.status === 'cancelled' ? 'bg-red-500' : 'bg-blue-500',
+              )} />
+              <span className="text-xs truncate leading-tight">
+                {dayjs(item.consultation_date).format('HH:mm')} {item.patient?.name}
+              </span>
+            </div>
           </li>
         ))}
-        {dayGoogleEvents
-          .map((e) => (
-            <li key={`g-${e.id}`} className="mb-1">
-              <Badge
-                color={e.isFromNixVet ? '#93c5fd' : '#4285f4'}
-                text={
-                  <span className={`text-xs ${e.isFromNixVet ? 'text-blue-400' : 'text-blue-600'}`}>
-                    {e.start ? dayjs(e.start).format('HH:mm') : ''} {e.title}
-                    {e.isFromNixVet && ' ↗'}
-                  </span>
-                }
-              />
-            </li>
-          ))}
+        {dayGoogleEvents.map(e => (
+          <li key={`g-${e.id}`}>
+            <div className="flex items-center gap-1">
+              <span className={cn(
+                'inline-block w-2 h-2 rounded-full flex-shrink-0',
+                e.isFromNixVet ? 'bg-blue-300' : 'bg-blue-500',
+              )} />
+              <span className={cn('text-xs truncate leading-tight', e.isFromNixVet ? 'text-blue-400' : 'text-blue-600')}>
+                {e.start ? dayjs(e.start).format('HH:mm') : ''} {e.title}
+                {e.isFromNixVet && ' ↗'}
+              </span>
+            </div>
+          </li>
+        ))}
       </ul>
     );
+  };
+
+  const calendarDays = buildCalendarDays(currentMonth);
+
+  const toggleResource = (id: string) => {
+    setFormData(prev => ({
+      ...prev,
+      required_resources: prev.required_resources.includes(id)
+        ? prev.required_resources.filter(r => r !== id)
+        : [...prev.required_resources, id],
+    }));
   };
 
   return (
     <div>
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold text-blue-600 flex items-center gap-2">
-          <CalendarOutlined /> {t('calendar.title')}
+          <CalendarIcon className="h-6 w-6" /> {t('calendar.title')}
           {googleConnected && (
             <span className="flex items-center gap-1 text-sm font-normal text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full">
-              <GoogleOutlined /> Google Calendar sincronizado
+              Google Calendar sincronizado
             </span>
           )}
         </h1>
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={handleAdd}
-          className="bg-blue-600"
-        >
-          {t('calendar.scheduleConsultation')}
+        <Button onClick={handleAdd} className="bg-blue-600 hover:bg-blue-700">
+          + {t('calendar.scheduleConsultation')}
         </Button>
       </div>
 
@@ -469,229 +540,347 @@ export default function CalendarPage() {
           </span>
         </div>
       )}
+
+      {/* Calendar */}
       <div className="bg-white p-4 rounded-lg shadow">
-        <Calendar
-          cellRender={dateCellRender}
-          onSelect={handleSelect}
-          onPanelChange={(date) => setCurrentMonth(date)}
-        />
-      </div>
-
-      <Modal
-        title="Agendar Consulta"
-        open={modalVisible}
-        onCancel={() => setModalVisible(false)}
-        onOk={() => form.submit()}
-      >
-        <Form form={form} layout="vertical" onFinish={handleSubmit}>
-          <Form.Item
-            name="patient_id"
-            label="Paciente"
-            rules={[{ required: true, message: 'Selecione o paciente' }]}
-          >
-            <Select placeholder="Selecione o paciente">
-              {patients.map(p => (
-                <Select.Option key={p.id} value={p.id}>
-                  {p.name}
-                </Select.Option>
-              ))}
-            </Select>
-          </Form.Item>
-
-          <Form.Item
-            name="consultation_date"
-            label="Data"
-            rules={[{ required: true, message: 'Selecione a data' }]}
-          >
-            <DatePicker
-              format="DD/MM/YYYY"
-              className="w-full"
-              onChange={(date) => date && fetchAvailability(date)}
-            />
-          </Form.Item>
-
-          <Form.Item
-            name="veterinarian_id"
-            label="Veterinário"
-            rules={[{ required: true, message: 'Selecione o veterinário' }]}
-          >
-            <Select
-              placeholder="Selecione o veterinário"
-              loading={availabilityLoading}
-              onChange={() => form.setFieldValue('slot_datetime', undefined)}
-            >
-              {veterinarians.map(v => (
-                <Select.Option key={v.id} value={v.id}>
-                  {v.name} ({v.role})
-                </Select.Option>
-              ))}
-            </Select>
-          </Form.Item>
-
-          <SlotSelect form={form} availability={availability} availabilityLoading={availabilityLoading} />
-
-          <Form.Item
-            name="price"
-            label="Valor da Consulta (R$)"
-            rules={[{ required: true, message: 'Informe o valor' }]}
-          >
-            <Input type="number" step="0.01" prefix="R$" />
-          </Form.Item>
-
-          <Form.Item name="appointment_type_id" label="Tipo de procedimento (opcional)">
-            <Select
-              placeholder="Selecione o tipo (define duração)"
-              allowClear
-              options={appointmentTypes.map((t) => ({
-                value: t.id,
-                label: `${t.name} — ${t.duration_minutes < 60 ? t.duration_minutes + ' min' : Math.floor(t.duration_minutes / 60) + 'h' + (t.duration_minutes % 60 ? ' ' + (t.duration_minutes % 60) + 'min' : '')}`,
-              }))}
-            />
-          </Form.Item>
-
-          <Form.Item name="required_resources" label="Recursos (opcional)">
-            <Select
-              mode="multiple"
-              placeholder="Salas/equipamentos"
-              allowClear
-              options={resources.map((r) => ({ value: r.id, label: `${r.name} (${r.type})` }))}
-            />
-          </Form.Item>
-
-          <Form.Item
-            name="observations"
-            label="Observações"
-            extra={
-              <span className="flex items-center gap-2 mt-1">
-                <Button
-                  type="link"
-                  size="small"
-                  icon={<BulbOutlined />}
-                  onClick={handleSummarizeObservations}
-                  loading={summarizeLoading}
-                  title="Resumir com IA"
-                >
-                  Resumir
-                </Button>
-                <Button
-                  type="link"
-                  size="small"
-                  onClick={handleStructureObservations}
-                  loading={structureLoading}
-                  title="Estruturar sintomas e diagnóstico (IA)"
-                >
-                  Estruturar
-                </Button>
-              </span>
-            }
-          >
-            <Input.TextArea rows={3} />
-          </Form.Item>
-        </Form>
-      </Modal>
-
-      <Modal
-        title="Detalhes da Consulta"
-        open={detailsVisible}
-        onCancel={() => {
-          setDetailsVisible(false);
-          setSelectedConsultation(null);
-        }}
-        footer={[
+        {/* Navigation header */}
+        <div className="flex items-center justify-between mb-4">
           <Button
-            key="cancel"
+            variant="ghost"
+            size="icon"
             onClick={() => {
-              setDetailsVisible(false);
-              setSelectedConsultation(null);
+              const prev = currentMonth.subtract(1, 'month');
+              setCurrentMonth(prev);
+              if (googleConnected) fetchGoogleEvents(prev);
             }}
           >
-            Fechar
-          </Button>,
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <h2 className="text-lg font-semibold">
+            {PT_MONTHS[currentMonth.month()]} {currentMonth.year()}
+          </h2>
           <Button
-            key="reschedule"
-            icon={<SwapOutlined />}
-            disabled={selectedConsultation?.status === 'cancelled'}
-            onClick={openReschedule}
+            variant="ghost"
+            size="icon"
+            onClick={() => {
+              const next = currentMonth.add(1, 'month');
+              setCurrentMonth(next);
+              if (googleConnected) fetchGoogleEvents(next);
+            }}
           >
-            Reagendar
-          </Button>,
-          <Button
-            key="complete"
-            type="primary"
-            disabled={selectedConsultation?.status === 'completed'}
-            loading={updating}
-            onClick={handleMarkCompleted}
-          >
-            Marcar como realizada
-          </Button>,
-          <Button
-            key="paid"
-            type="primary"
-            disabled={selectedConsultation?.paid}
-            loading={updating}
-            onClick={handleConfirmPayment}
-          >
-            Confirmar pagamento
-          </Button>,
-        ]}
-      >
-        {selectedConsultation && (
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <span>Data e hora:</span>
-              <span>
-                {new Date(selectedConsultation.consultation_date).toLocaleString('pt-BR')}
-              </span>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* Weekday headers */}
+        <div className="grid grid-cols-7 mb-1">
+          {WEEKDAYS.map(day => (
+            <div key={day} className="text-center text-xs font-medium text-gray-500 py-1">
+              {day}
             </div>
-            <div className="flex justify-between">
-              <span>Paciente:</span>
-              <span>{selectedConsultation.patient?.name || 'N/A'}</span>
+          ))}
+        </div>
+
+        {/* Days grid */}
+        <div className="grid grid-cols-7 border-t border-l">
+          {calendarDays.map((day, idx) => {
+            const isCurrentMonth = day.isSame(currentMonth, 'month');
+            const isToday = day.isSame(dayjs(), 'day');
+            const isSelected = day.isSame(selectedDate, 'day');
+            return (
+              <div
+                key={idx}
+                className={cn(
+                  'border-r border-b min-h-[80px] p-1 cursor-pointer hover:bg-gray-50 transition-colors',
+                  !isCurrentMonth && 'bg-gray-50',
+                  isSelected && 'bg-blue-50',
+                )}
+                onClick={() => handleSelect(day)}
+              >
+                <div className={cn(
+                  'text-sm font-medium w-6 h-6 flex items-center justify-center rounded-full mb-1',
+                  isToday && 'bg-blue-600 text-white',
+                  !isToday && !isCurrentMonth && 'text-gray-300',
+                  !isToday && isCurrentMonth && 'text-gray-800',
+                )}>
+                  {day.date()}
+                </div>
+                {isCurrentMonth && dateCellRender(day)}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Modal: Agendar Consulta */}
+      <Dialog open={modalVisible} onOpenChange={setModalVisible}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Agendar Consulta</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-1">
+              <Label>Paciente <span className="text-red-500">*</span></Label>
+              <Select value={formData.patient_id} onValueChange={v => setFormData(prev => ({ ...prev, patient_id: v }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o paciente" />
+                </SelectTrigger>
+                <SelectContent>
+                  {patients.map(p => (
+                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            <div className="flex justify-between">
-              <span>Veterinário:</span>
-              <span>{selectedConsultation.veterinarian?.name || 'N/A'}</span>
+
+            <div className="space-y-1">
+              <Label>Data <span className="text-red-500">*</span></Label>
+              <Input
+                type="date"
+                value={formData.consultation_date}
+                onChange={e => {
+                  const val = e.target.value;
+                  setFormData(prev => ({ ...prev, consultation_date: val }));
+                  if (val) fetchAvailability(dayjs(val));
+                }}
+              />
             </div>
-            <div className="flex justify-between items-center">
-              <span>Status:</span>
-              <Tag color={getStatusColor(selectedConsultation.status)}>
-                {formatStatus(selectedConsultation.status)}
-              </Tag>
+
+            <div className="space-y-1">
+              <Label>Veterinário <span className="text-red-500">*</span></Label>
+              <Select
+                value={formData.veterinarian_id}
+                onValueChange={v => setFormData(prev => ({ ...prev, veterinarian_id: v, slot_datetime: '' }))}
+              >
+                <SelectTrigger>
+                  {availabilityLoading ? (
+                    <span className="flex items-center gap-2 text-gray-400">
+                      <Loader2 className="h-4 w-4 animate-spin" /> Carregando...
+                    </span>
+                  ) : (
+                    <SelectValue placeholder="Selecione o veterinário" />
+                  )}
+                </SelectTrigger>
+                <SelectContent>
+                  {veterinarians.map(v => (
+                    <SelectItem key={v.id} value={v.id}>{v.name} ({v.role})</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            <div className="flex justify-between items-center">
-              <span>Pagamento:</span>
-              <Tag color={selectedConsultation.paid ? 'green' : 'orange'}>
-                {selectedConsultation.paid ? 'Pago' : 'Pendente'}
-              </Tag>
+
+            <SlotSelect
+              veterinarianId={formData.veterinarian_id}
+              availability={availability}
+              availabilityLoading={availabilityLoading}
+              value={formData.slot_datetime}
+              onChange={v => setFormData(prev => ({ ...prev, slot_datetime: v }))}
+            />
+
+            <div className="space-y-1">
+              <Label>Valor da Consulta (R$) <span className="text-red-500">*</span></Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">R$</span>
+                <Input
+                  type="number"
+                  step="0.01"
+                  className="pl-9"
+                  value={formData.price}
+                  onChange={e => setFormData(prev => ({ ...prev, price: e.target.value }))}
+                />
+              </div>
             </div>
-            {selectedConsultation.observations && (
-              <div>
-                <div className="font-semibold mb-1">Observações</div>
-                <div className="text-sm text-gray-700">
-                  {selectedConsultation.observations}
+
+            <div className="space-y-1">
+              <Label>Tipo de procedimento (opcional)</Label>
+              <Select
+                value={formData.appointment_type_id}
+                onValueChange={v => setFormData(prev => ({ ...prev, appointment_type_id: v === '_none' ? '' : v }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o tipo (define duração)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_none">Nenhum</SelectItem>
+                  {appointmentTypes.map(tp => (
+                    <SelectItem key={tp.id} value={tp.id}>
+                      {tp.name} — {formatDuration(tp.duration_minutes)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {resources.length > 0 && (
+              <div className="space-y-1">
+                <Label>Recursos (opcional)</Label>
+                <div className="flex flex-wrap gap-2 p-2 border rounded-md min-h-[40px]">
+                  {resources.map(r => (
+                    <button
+                      key={r.id}
+                      type="button"
+                      onClick={() => toggleResource(r.id)}
+                      className={cn(
+                        'text-xs px-2 py-1 rounded-full border transition-colors',
+                        formData.required_resources.includes(r.id)
+                          ? 'bg-blue-600 text-white border-blue-600'
+                          : 'bg-white text-gray-700 border-gray-300 hover:border-blue-400',
+                      )}
+                    >
+                      {r.name} ({r.type})
+                    </button>
+                  ))}
                 </div>
               </div>
             )}
-          </div>
-        )}
-      </Modal>
 
-      <Modal
-        title="Reagendar consulta"
-        open={rescheduleVisible}
-        onCancel={() => setRescheduleVisible(false)}
-        onOk={() => handleRescheduleSubmit()}
-        confirmLoading={rescheduleLoading}
-      >
-        <Form form={rescheduleForm} layout="vertical">
-          <Form.Item
-            name="start_time"
-            label="Nova data e hora"
-            rules={[{ required: true }]}
-          >
-            <DatePicker showTime format="DD/MM/YYYY HH:mm" className="w-full" />
-          </Form.Item>
-        </Form>
-      </Modal>
+            <div className="space-y-1">
+              <Label>Observações</Label>
+              <Textarea
+                rows={3}
+                value={formData.observations}
+                onChange={e => setFormData(prev => ({ ...prev, observations: e.target.value }))}
+              />
+              <div className="flex items-center gap-2 mt-1">
+                <Button
+                  type="button"
+                  variant="link"
+                  size="sm"
+                  className="h-auto p-0 text-blue-600"
+                  onClick={handleSummarizeObservations}
+                  disabled={summarizeLoading}
+                >
+                  {summarizeLoading ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+                  Resumir
+                </Button>
+                <Button
+                  type="button"
+                  variant="link"
+                  size="sm"
+                  className="h-auto p-0 text-blue-600"
+                  onClick={handleStructureObservations}
+                  disabled={structureLoading}
+                >
+                  {structureLoading ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+                  Estruturar
+                </Button>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setModalVisible(false)}>Cancelar</Button>
+            <Button onClick={handleSubmit} className="bg-blue-600 hover:bg-blue-700">Agendar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal: Detalhes da Consulta */}
+      <Dialog open={detailsVisible} onOpenChange={open => { if (!open) { setDetailsVisible(false); setSelectedConsultation(null); } }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Detalhes da Consulta</DialogTitle>
+          </DialogHeader>
+          {selectedConsultation && (
+            <div className="space-y-3 py-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Data e hora:</span>
+                <span className="font-medium">
+                  {new Date(selectedConsultation.consultation_date).toLocaleString('pt-BR')}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Paciente:</span>
+                <span className="font-medium">{selectedConsultation.patient?.name || 'N/A'}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-500">Veterinário:</span>
+                <span className="font-medium">{selectedConsultation.veterinarian?.name || 'N/A'}</span>
+              </div>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-gray-500">Status:</span>
+                <Badge className={getStatusBadgeClass(selectedConsultation.status)}>
+                  {formatStatus(selectedConsultation.status)}
+                </Badge>
+              </div>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-gray-500">Pagamento:</span>
+                <Badge className={selectedConsultation.paid
+                  ? 'bg-green-500 hover:bg-green-600 text-white'
+                  : 'bg-orange-500 hover:bg-orange-600 text-white'}>
+                  {selectedConsultation.paid ? 'Pago' : 'Pendente'}
+                </Badge>
+              </div>
+              {selectedConsultation.observations && (
+                <div className="pt-1">
+                  <div className="text-sm font-semibold mb-1 text-gray-700">Observações</div>
+                  <div className="text-sm text-gray-600 bg-gray-50 rounded p-2">
+                    {selectedConsultation.observations}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          <DialogFooter className="flex-wrap gap-2">
+            <Button
+              variant="outline"
+              onClick={() => { setDetailsVisible(false); setSelectedConsultation(null); }}
+            >
+              Fechar
+            </Button>
+            <Button
+              variant="outline"
+              disabled={selectedConsultation?.status === 'cancelled'}
+              onClick={openReschedule}
+            >
+              Reagendar
+            </Button>
+            <Button
+              disabled={selectedConsultation?.status === 'completed' || updating}
+              onClick={handleMarkCompleted}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {updating && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              Marcar como realizada
+            </Button>
+            <Button
+              disabled={!!selectedConsultation?.paid || updating}
+              onClick={handleConfirmPayment}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {updating && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              Confirmar pagamento
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal: Reagendar */}
+      <Dialog open={rescheduleVisible} onOpenChange={setRescheduleVisible}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Reagendar consulta</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-1 py-2">
+            <Label>Nova data e hora <span className="text-red-500">*</span></Label>
+            <Input
+              type="datetime-local"
+              value={rescheduleDate}
+              onChange={e => setRescheduleDate(e.target.value)}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRescheduleVisible(false)}>Cancelar</Button>
+            <Button
+              onClick={handleRescheduleSubmit}
+              disabled={rescheduleLoading}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {rescheduleLoading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              Confirmar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

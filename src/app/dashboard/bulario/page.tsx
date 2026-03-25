@@ -1,8 +1,12 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
-import { Table, Input, Card, Descriptions, Modal, Empty, Spin } from 'antd';
-import { MedicineBoxOutlined, SearchOutlined, InfoCircleOutlined } from '@ant-design/icons';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { BookOpen, Search, Info, Loader2 } from 'lucide-react';
 import api from '@/lib/axios';
 
 interface BularioItem {
@@ -22,23 +26,20 @@ export default function BularioPage() {
   const [detailItem, setDetailItem] = useState<BularioItem | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
 
-  const search = useCallback(
-    async (q: string, limit = 50) => {
-      setLoading(true);
-      try {
-        const response = await api.get<BularioItem[]>('/bulario', {
-          params: { q: q || undefined, limit },
-        });
-        setDataSource(response.data || []);
-      } catch (error) {
-        console.error('Error searching bulario:', error);
-        setDataSource([]);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [],
-  );
+  const search = useCallback(async (q: string, limit = 50) => {
+    setLoading(true);
+    try {
+      const response = await api.get<BularioItem[]>('/bulario', {
+        params: { q: q || undefined, limit },
+      });
+      setDataSource(response.data || []);
+    } catch (error) {
+      console.error('Error searching bulario:', error);
+      setDataSource([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   const handleSearch = () => search(query);
 
@@ -56,135 +57,131 @@ export default function BularioPage() {
     }
   };
 
-  const columns = [
-    {
-      title: 'Medicamento',
-      dataIndex: 'title',
-      key: 'title',
-      render: (title: string, record: BularioItem) => (
-        <span className="font-medium">{title}</span>
-      ),
-    },
-    {
-      title: 'Subtítulo',
-      dataIndex: 'subtitle',
-      key: 'subtitle',
-      render: (v: string | null) => v || '—',
-    },
-    {
-      title: 'Ações',
-      key: 'actions',
-      width: 100,
-      render: (_: unknown, record: BularioItem) => (
-        <a onClick={() => openDetail(record.id)} className="text-blue-600">
-          <InfoCircleOutlined /> Ver detalhes
-        </a>
-      ),
-    },
-  ];
-
   return (
     <div>
       <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
         <h1 className="text-2xl font-bold text-blue-600 flex items-center gap-2">
-          <MedicineBoxOutlined /> Bulário – Consulta de Medicamentos
+          <BookOpen className="w-6 h-6" /> Bulário – Consulta de Medicamentos
         </h1>
       </div>
 
       <Card className="mb-4">
-        <div className="flex gap-2 flex-wrap">
-          <Input
-            placeholder="Buscar por nome do medicamento"
-            prefix={<SearchOutlined className="text-gray-400" />}
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onPressEnter={handleSearch}
-            className="max-w-md"
-            allowClear
-          />
-          <button
-            type="button"
-            onClick={handleSearch}
-            className="px-4 py-2 rounded bg-blue-600 text-white hover:opacity-90"
-          >
-            Buscar
-          </button>
-          {query && (
-            <button
-              type="button"
-              onClick={() => {
-                setQuery('');
-                search('', 50);
-              }}
-              className="px-4 py-2 border rounded text-gray-600 hover:bg-gray-50"
-            >
-              Limpar
-            </button>
-          )}
-        </div>
-        <p className="text-gray-500 text-sm mt-2">
-          Digite pelo menos 2 caracteres e clique em Buscar para listar os medicamentos.
-        </p>
+        <CardContent className="pt-4">
+          <div className="flex gap-2 flex-wrap">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                placeholder="Buscar por nome do medicamento"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                className="pl-9"
+              />
+            </div>
+            <Button onClick={handleSearch} className="bg-blue-600 hover:bg-blue-700 text-white">
+              Buscar
+            </Button>
+            {query && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setQuery('');
+                  search('', 50);
+                }}
+              >
+                Limpar
+              </Button>
+            )}
+          </div>
+          <p className="text-gray-500 text-sm mt-2">
+            Digite pelo menos 2 caracteres e clique em Buscar para listar os medicamentos.
+          </p>
+        </CardContent>
       </Card>
 
       <Card>
-        <Table
-          columns={columns}
-          dataSource={dataSource}
-          rowKey="id"
-          loading={loading}
-          locale={{
-            emptyText: loading ? <Spin /> : (
-              <Empty description={query ? 'Nenhum medicamento encontrado.' : 'Use a busca acima para consultar o bulário.'} />
-            ),
-          }}
-          pagination={
-            dataSource.length > 0
-              ? { pageSize: 20, showSizeChanger: true, showTotal: (t) => `Total: ${t}` }
-              : false
-          }
-        />
+        <CardContent className="pt-4">
+          {loading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="animate-spin w-6 h-6 text-gray-400" />
+            </div>
+          ) : dataSource.length === 0 ? (
+            <p className="text-center text-gray-500 py-8">
+              {query ? 'Nenhum medicamento encontrado.' : 'Use a busca acima para consultar o bulário.'}
+            </p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Medicamento</TableHead>
+                  <TableHead>Subtítulo</TableHead>
+                  <TableHead className="w-[120px]">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {dataSource.map((item) => (
+                  <TableRow key={item.id}>
+                    <TableCell className="font-medium">{item.title}</TableCell>
+                    <TableCell>{item.subtitle ?? '—'}</TableCell>
+                    <TableCell>
+                      <button
+                        onClick={() => openDetail(item.id)}
+                        className="flex items-center gap-1 text-blue-600 hover:underline text-sm"
+                      >
+                        <Info className="w-4 h-4" /> Ver detalhes
+                      </button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
       </Card>
 
-      <Modal
-        title={detailItem?.title ?? 'Detalhes do medicamento'}
-        open={detailVisible}
-        onCancel={() => setDetailVisible(false)}
-        footer={null}
-        width={720}
-      >
-        {detailLoading && <div className="flex justify-center py-8"><Spin /></div>}
-        {!detailLoading && detailItem && (
-          <div className="max-h-[70vh] overflow-y-auto">
-            {detailItem.subtitle && (
-              <p className="text-gray-600 mb-3">{detailItem.subtitle}</p>
-            )}
-            {detailItem.link_details && (
-              <p className="text-sm mb-3">
-                <a href={detailItem.link_details} target="_blank" rel="noopener noreferrer" className="text-blue-600">
-                  Link externo
-                </a>
-              </p>
-            )}
-            {detailItem.details && detailItem.details.length > 0 ? (
-              detailItem.details.map((section, idx) => (
-                <div key={idx} className="mb-4">
-                  <h4 className="font-semibold text-blue-600 mb-2">{section.title}</h4>
-                  <Descriptions column={1} size="small" bordered>
-                    {section.data?.map((item, i) => (
-                      <Descriptions.Item key={i} label={item.title ?? '—'}>
-                        {item.data || '—'}
-                      </Descriptions.Item>
-                    ))}
-                  </Descriptions>
-                </div>
-              ))
-            ) : (
-              <Empty description="Sem detalhes cadastrados." />
-            )}
-          </div>
-        )}
-      </Modal>
+      <Dialog open={detailVisible} onOpenChange={setDetailVisible}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>{detailItem?.title ?? 'Detalhes do medicamento'}</DialogTitle>
+          </DialogHeader>
+          {detailLoading && (
+            <div className="flex justify-center py-8">
+              <Loader2 className="animate-spin w-6 h-6 text-gray-400" />
+            </div>
+          )}
+          {!detailLoading && detailItem && (
+            <div className="max-h-[70vh] overflow-y-auto">
+              {detailItem.subtitle && (
+                <p className="text-gray-600 mb-3">{detailItem.subtitle}</p>
+              )}
+              {detailItem.link_details && (
+                <p className="text-sm mb-3">
+                  <a href={detailItem.link_details} target="_blank" rel="noopener noreferrer" className="text-blue-600">
+                    Link externo
+                  </a>
+                </p>
+              )}
+              {detailItem.details && detailItem.details.length > 0 ? (
+                detailItem.details.map((section, idx) => (
+                  <div key={idx} className="mb-4">
+                    <h4 className="font-semibold text-blue-600 mb-2">{section.title}</h4>
+                    <div className="border rounded divide-y text-sm">
+                      {section.data?.map((entry, i) => (
+                        <div key={i} className="grid grid-cols-3 px-3 py-2">
+                          <span className="font-medium text-gray-600 col-span-1">{entry.title ?? '—'}</span>
+                          <span className="col-span-2">{entry.data || '—'}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-gray-500">Sem detalhes cadastrados.</p>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

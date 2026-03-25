@@ -1,8 +1,16 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Card, Table, Button, Modal, Form, Input, message, Select, Space } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { toast } from 'sonner';
+import { useForm, Controller } from 'react-hook-form';
+import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
 import api from '@/lib/axios';
 
 interface Category {
@@ -17,20 +25,22 @@ interface SurgicalProcedure {
   surgical_procedure_category?: Category;
 }
 
+type FormValues = { name: string; category_id?: string };
+
 export default function SettingsSurgicalProceduresPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [list, setList] = useState<SurgicalProcedure[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [form] = Form.useForm();
+  const { register, handleSubmit, reset, control, formState: { errors } } = useForm<FormValues>();
 
   const fetchCategories = async () => {
     try {
       const res = await api.get<Category[]>('/catalog/surgical-procedure-categories');
       setCategories(res.data ?? []);
-    } catch (e) {
-      message.error('Erro ao carregar categorias');
+    } catch {
+      toast.error('Erro ao carregar categorias');
     }
   };
 
@@ -39,8 +49,8 @@ export default function SettingsSurgicalProceduresPage() {
     try {
       const res = await api.get<SurgicalProcedure[]>('/catalog/surgical-procedures');
       setList(res.data ?? []);
-    } catch (e) {
-      message.error('Erro ao carregar procedimentos');
+    } catch {
+      toast.error('Erro ao carregar procedimentos');
     } finally {
       setLoading(false);
     }
@@ -53,42 +63,44 @@ export default function SettingsSurgicalProceduresPage() {
 
   const openCreate = () => {
     setEditingId(null);
-    form.resetFields();
+    reset({ name: '', category_id: undefined });
     setModalOpen(true);
   };
 
   const openEdit = (row: SurgicalProcedure) => {
     setEditingId(row.id);
-    form.setFieldsValue({
-      name: row.name,
-      category_id: row.surgical_procedure_category_id ?? row.surgical_procedure_category?.id,
-    });
+    const catId = row.surgical_procedure_category_id ?? row.surgical_procedure_category?.id;
+    reset({ name: row.name, category_id: catId ? String(catId) : undefined });
     setModalOpen(true);
   };
 
   const handleDelete = async (id: number) => {
     try {
       await api.delete(`/catalog/surgical-procedures/${id}`);
-      message.success('Removido');
+      toast.success('Removido');
       fetchProcedures();
     } catch (e: any) {
-      message.error(e.response?.data?.message ?? 'Erro ao remover');
+      toast.error(e.response?.data?.message ?? 'Erro ao remover');
     }
   };
 
-  const onFinish = async (values: { name: string; category_id?: number }) => {
+  const onSubmit = async (values: FormValues) => {
+    const payload = {
+      name: values.name,
+      category_id: values.category_id ? Number(values.category_id) : undefined,
+    };
     try {
       if (editingId) {
-        await api.put(`/catalog/surgical-procedures/${editingId}`, values);
-        message.success('Atualizado');
+        await api.put(`/catalog/surgical-procedures/${editingId}`, payload);
+        toast.success('Atualizado');
       } else {
-        await api.post('/catalog/surgical-procedures', values);
-        message.success('Criado');
+        await api.post('/catalog/surgical-procedures', payload);
+        toast.success('Criado');
       }
       setModalOpen(false);
       fetchProcedures();
     } catch (e: any) {
-      message.error(e.response?.data?.message ?? 'Erro ao salvar');
+      toast.error(e.response?.data?.message ?? 'Erro ao salvar');
     }
   };
 
@@ -96,62 +108,82 @@ export default function SettingsSurgicalProceduresPage() {
     <div>
       <h1 className="text-2xl font-bold text-blue-600 mb-6">Procedimentos cirúrgicos</h1>
       <Card>
-        <Space className="mb-4">
-          <Button type="primary" icon={<PlusOutlined />} onClick={openCreate} className="bg-blue-600">
-            Novo procedimento
+        <CardContent className="pt-6">
+          <Button onClick={openCreate} className="mb-4 bg-blue-600">
+            <Plus className="w-4 h-4 mr-2" /> Novo procedimento
           </Button>
-        </Space>
-        <Table
-          loading={loading}
-          dataSource={list}
-          rowKey="id"
-          columns={[
-            { title: 'Nome', dataIndex: 'name', key: 'name' },
-            {
-              title: 'Categoria',
-              key: 'category',
-              render: (_, r) =>
-                r.surgical_procedure_category?.name ?? r.surgical_procedure_category_id ?? '—',
-            },
-            {
-              title: 'Ações',
-              key: 'actions',
-              width: 120,
-              render: (_, r) => (
-                <Space>
-                  <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEdit(r)} />
-                  <Button type="link" size="small" danger icon={<DeleteOutlined />} onClick={() => handleDelete(r.id)} />
-                </Space>
-              ),
-            },
-          ]}
-          pagination={{ pageSize: 20 }}
-        />
+          {loading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>Categoria</TableHead>
+                  <TableHead className="w-[120px]">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {list.map((r) => (
+                  <TableRow key={r.id}>
+                    <TableCell>{r.name}</TableCell>
+                    <TableCell>{r.surgical_procedure_category?.name ?? r.surgical_procedure_category_id ?? '—'}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="sm" onClick={() => openEdit(r)}>
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" onClick={() => handleDelete(r.id)}>
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
       </Card>
-      <Modal
-        title={editingId ? 'Editar procedimento' : 'Novo procedimento'}
-        open={modalOpen}
-        onCancel={() => setModalOpen(false)}
-        footer={null}
-      >
-        <Form form={form} layout="vertical" onFinish={onFinish}>
-          <Form.Item name="category_id" label="Categoria">
-            <Select
-              allowClear
-              placeholder="Selecione"
-              options={categories.map((c) => ({ label: c.name, value: c.id }))}
-            />
-          </Form.Item>
-          <Form.Item name="name" label="Nome" rules={[{ required: true }]}>
-            <Input placeholder="Nome do procedimento" />
-          </Form.Item>
-          <Form.Item>
-            <Button type="primary" htmlType="submit" className="bg-blue-600">
-              Salvar
-            </Button>
-          </Form.Item>
-        </Form>
-      </Modal>
+
+      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingId ? 'Editar procedimento' : 'Novo procedimento'}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <div>
+              <Label>Categoria</Label>
+              <Controller
+                name="category_id"
+                control={control}
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((c) => (
+                        <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </div>
+            <div>
+              <Label htmlFor="name">Nome</Label>
+              <Input id="name" placeholder="Nome do procedimento" {...register('name', { required: true })} />
+              {errors.name && <p className="text-red-500 text-xs mt-1">Campo obrigatório</p>}
+            </div>
+            <DialogFooter>
+              <Button type="submit" className="bg-blue-600">Salvar</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

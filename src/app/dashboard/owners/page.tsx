@@ -1,10 +1,43 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Table, Button, Modal, Form, Input, message, Space, Popconfirm } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, TeamOutlined, SearchOutlined } from '@ant-design/icons';
-import { MaskedInput } from 'antd-mask-input';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { toast } from 'sonner';
 import axios from 'axios';
+import { Plus, Pencil, Trash2, Users, Search, Loader2 } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+
 import api from '@/lib/axios';
 import { formatCepMask } from '@/lib/format-cep';
 
@@ -18,6 +51,64 @@ interface Tutor {
   cep: string;
 }
 
+const tutorSchema = z.object({
+  name: z.string().min(1, 'Obrigatório'),
+  cpf: z.string().min(1, 'Obrigatório'),
+  phone: z.string().min(1, 'Obrigatório'),
+  email: z.string().email('Email inválido'),
+  cep: z.string().min(1, 'Obrigatório'),
+  street: z.string().min(1, 'Obrigatório'),
+  number: z.string().min(1, 'Obrigatório'),
+  complement: z.string().optional(),
+  neighborhood: z.string().min(1, 'Obrigatório'),
+  city: z.string().min(1, 'Obrigatório'),
+  state: z.string().min(1, 'Obrigatório'),
+});
+
+type TutorFormValues = z.infer<typeof tutorSchema>;
+
+const formatCpf = (value: string) => {
+  const cleaned = value.replace(/\D/g, '').slice(0, 11);
+  return cleaned
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+};
+
+const formatPhone = (value: string) => {
+  const cleaned = value.replace(/\D/g, '').slice(0, 11);
+  if (cleaned.length <= 10) {
+    return cleaned
+      .replace(/(\d{2})(\d)/, '($1) $2')
+      .replace(/(\d{4})(\d{1,4})$/, '$1-$2');
+  }
+  return cleaned
+    .replace(/(\d{2})(\d)/, '($1) $2')
+    .replace(/(\d{5})(\d{1,4})$/, '$1-$2');
+};
+
+const formatCep = (value: string) => {
+  const cleaned = value.replace(/\D/g, '').slice(0, 8);
+  return cleaned.replace(/(\d{5})(\d{1,3})$/, '$1-$2');
+};
+
+const formatPhoneDisplay = (text: string) => {
+  if (!text) return '';
+  const cleaned = ('' + text).replace(/\D/g, '');
+  const match = cleaned.match(/^(\d{2})(\d{5})(\d{4})$/);
+  if (match) return `(${match[1]}) ${match[2]}-${match[3]}`;
+  const matchLand = cleaned.match(/^(\d{2})(\d{4})(\d{4})$/);
+  if (matchLand) return `(${matchLand[1]}) ${matchLand[2]}-${matchLand[3]}`;
+  return text;
+};
+
+const formatCpfDisplay = (text: string) => {
+  if (!text) return '';
+  const cleaned = ('' + text).replace(/\D/g, '');
+  if (cleaned.length === 11) return cleaned.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '***.$2.$3-**');
+  return text;
+};
+
 export default function OwnersPage() {
   const [tutors, setTutors] = useState<Tutor[]>([]);
   const [loading, setLoading] = useState(false);
@@ -25,7 +116,17 @@ export default function OwnersPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingRecord, setEditingRecord] = useState<Tutor | null>(null);
   const [loadingCep, setLoadingCep] = useState(false);
-  const [form] = Form.useForm();
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    getValues,
+    formState: { errors, isSubmitting },
+  } = useForm<TutorFormValues>({
+    resolver: zodResolver(tutorSchema),
+  });
 
   const fetchTutors = async () => {
     setLoading(true);
@@ -34,7 +135,7 @@ export default function OwnersPage() {
       setTutors(response.data);
     } catch (error) {
       console.error('Error fetching tutors:', error);
-      message.error('Erro ao carregar tutores');
+      toast.error('Erro ao carregar tutores');
     } finally {
       setLoading(false);
     }
@@ -48,7 +149,19 @@ export default function OwnersPage() {
     if (!modalVisible) return;
 
     if (!editingId || !editingRecord || editingRecord.id !== editingId) {
-      form.resetFields();
+      reset({
+        name: '',
+        email: '',
+        phone: '',
+        cpf: '',
+        cep: '',
+        street: '',
+        number: '',
+        complement: '',
+        neighborhood: '',
+        city: '',
+        state: '',
+      });
       return;
     }
 
@@ -81,7 +194,7 @@ export default function OwnersPage() {
       }
     }
 
-    form.setFieldsValue({
+    reset({
       name: record.name,
       email: record.email,
       phone: record.phone,
@@ -94,7 +207,7 @@ export default function OwnersPage() {
       city,
       state,
     });
-  }, [modalVisible, editingId, editingRecord, form]);
+  }, [modalVisible, editingId, editingRecord, reset]);
 
   const handleAdd = () => {
     setEditingId(null);
@@ -105,62 +218,51 @@ export default function OwnersPage() {
   const handleDelete = async (id: string) => {
     try {
       await api.delete(`/tutors/${id}`);
-      message.success('Tutor removido com sucesso');
+      toast.success('Tutor removido com sucesso');
       fetchTutors();
     } catch (error) {
       console.error('Error deleting tutor:', error);
-      message.error('Erro ao remover tutor');
+      toast.error('Erro ao remover tutor');
     }
   };
 
   const handleCepSearch = async () => {
-    const cepValue = form.getFieldValue('cep');
+    const cepValue = getValues('cep');
     if (!cepValue) return;
 
     const cep = cepValue.replace(/\D/g, '');
     if (cep.length !== 8) {
-        message.warning('CEP inválido');
-        return;
+      toast.warning('CEP inválido');
+      return;
     }
 
-    // Clear address fields before searching to give feedback
-    form.setFieldsValue({
-        street: '',
-        neighborhood: '',
-        city: '',
-        state: ''
-    });
+    setValue('street', '');
+    setValue('neighborhood', '');
+    setValue('city', '');
+    setValue('state', '');
 
     setLoadingCep(true);
     try {
       const response = await axios.get(`https://viacep.com.br/ws/${cep}/json/`);
       if (response.data.erro) {
-        message.error('CEP não encontrado');
+        toast.error('CEP não encontrado');
         return;
       }
-      
       const { logradouro, bairro, localidade, uf } = response.data;
-      
-      // Auto-fill fields
-      // Use setFieldsValue to force update form values
-      form.setFieldsValue({
-        street: logradouro,
-        neighborhood: bairro,
-        city: localidade,
-        state: uf
-      });
-      // Force re-render of form items if needed, though setFieldsValue should work
+      setValue('street', logradouro);
+      setValue('neighborhood', bairro);
+      setValue('city', localidade);
+      setValue('state', uf);
     } catch (error) {
       console.error('Error fetching CEP:', error);
-      message.error('Erro ao buscar CEP');
+      toast.error('Erro ao buscar CEP');
     } finally {
       setLoadingCep(false);
     }
   };
 
-  const handleSubmit = async (values: any) => {
+  const onSubmit = async (values: TutorFormValues) => {
     try {
-      // Monta o endereço completo; envia só os campos aceitos pelo backend (evita 400 se a API for antiga)
       const fullAddress = `${values.street}, ${values.number}${values.complement ? ` - ${values.complement}` : ''} - ${values.neighborhood} - ${values.city}/${values.state}`;
       const payload = {
         name: values.name,
@@ -169,15 +271,14 @@ export default function OwnersPage() {
         cep: values.cep,
         phone: values.phone,
         address: fullAddress,
-        consent_given: values.consent_given,
       };
 
       if (editingId) {
         await api.put(`/tutors/${editingId}`, payload);
-        message.success('Tutor atualizado com sucesso');
+        toast.success('Tutor atualizado com sucesso');
       } else {
         await api.post('/tutors', payload);
-        message.success('Tutor criado com sucesso');
+        toast.success('Tutor criado com sucesso');
       }
       setModalVisible(false);
       setEditingId(null);
@@ -185,7 +286,7 @@ export default function OwnersPage() {
       fetchTutors();
     } catch (error) {
       console.error('Error saving tutor:', error);
-      message.error('Erro ao salvar tutor');
+      toast.error('Erro ao salvar tutor');
     }
   };
 
@@ -195,171 +296,260 @@ export default function OwnersPage() {
     setModalVisible(true);
   };
 
-  const columns = [
-    {
-      title: 'Nome',
-      dataIndex: 'name',
-      key: 'name',
-    },
-    {
-      title: 'Email',
-      dataIndex: 'email',
-      key: 'email',
-    },
-    {
-      title: 'Telefone',
-      dataIndex: 'phone',
-      key: 'phone',
-      render: (text: string) => {
-        if (!text) return '';
-        // Format: (11) 98587-5908
-        // Assuming backend returns only numbers or unformatted string
-        const cleaned = ('' + text).replace(/\D/g, '');
-        const match = cleaned.match(/^(\d{2})(\d{5})(\d{4})$/);
-        if (match) {
-          return `(${match[1]}) ${match[2]}-${match[3]}`;
-        }
-        // Fallback for landlines (2+4+4)
-        const matchLand = cleaned.match(/^(\d{2})(\d{4})(\d{4})$/);
-        if (matchLand) {
-            return `(${matchLand[1]}) ${matchLand[2]}-${matchLand[3]}`;
-        }
-        return text;
-      }
-    },
-    {
-      title: 'CPF',
-      dataIndex: 'cpf',
-      key: 'cpf',
-      render: (text: string) => {
-        if (!text) return '';
-        // Format incoming raw CPF to masked
-        // Backend returns clean numbers? Or formatted? 
-        // Assuming clean numbers or whatever comes from decrypt
-        const cleaned = ('' + text).replace(/\D/g, '');
-        // Check if length is correct for CPF (11 digits)
-        if (cleaned.length === 11) {
-            return cleaned.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '***.$2.$3-**');
-        }
-        return text;
-      }
-    },
-    {
-      title: 'Ações',
-      key: 'actions',
-      render: (_: any, record: Tutor) => (
-        <Space>
-          <Button icon={<EditOutlined />} onClick={() => handleEdit(record)} />
-          <Popconfirm title="Tem certeza?" onConfirm={() => handleDelete(record.id)}>
-            <Button icon={<DeleteOutlined />} danger />
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ];
+  const closeModal = () => {
+    setModalVisible(false);
+    setEditingId(null);
+    setEditingRecord(null);
+  };
 
   return (
     <div>
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold text-blue-600 flex items-center gap-2">
-          <TeamOutlined /> Tutores
+          <Users className="w-6 h-6" />
+          Tutores
         </h1>
-        <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd} className="bg-blue-600">
+        <Button onClick={handleAdd} className="bg-blue-600 hover:bg-blue-700">
+          <Plus className="w-4 h-4 mr-2" />
           Novo Tutor
         </Button>
       </div>
 
-      <Table
-        columns={columns}
-        dataSource={tutors}
-        rowKey="id"
-        loading={loading}
-        pagination={{ pageSize: 10 }}
-      />
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Nome</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Telefone</TableHead>
+              <TableHead>CPF</TableHead>
+              <TableHead>Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin mx-auto text-muted-foreground" />
+                </TableCell>
+              </TableRow>
+            ) : tutors.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                  Nenhum tutor encontrado
+                </TableCell>
+              </TableRow>
+            ) : (
+              tutors.map((tutor) => (
+                <TableRow key={tutor.id}>
+                  <TableCell>{tutor.name}</TableCell>
+                  <TableCell>{tutor.email}</TableCell>
+                  <TableCell>{formatPhoneDisplay(tutor.phone)}</TableCell>
+                  <TableCell>{formatCpfDisplay(tutor.cpf)}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleEdit(tutor)}
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Tem certeza que deseja remover o tutor <strong>{tutor.name}</strong>? Esta ação não pode ser desfeita.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction
+                              className="bg-destructive hover:bg-destructive/90"
+                              onClick={() => handleDelete(tutor.id)}
+                            >
+                              Remover
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
 
-      <Modal
-        title={editingId ? 'Editar Tutor' : 'Novo Tutor'}
-        open={modalVisible}
-        destroyOnClose
-        onCancel={() => {
-          setModalVisible(false);
-          setEditingId(null);
-          setEditingRecord(null);
-        }}
-        onOk={() => form.submit()}
-      >
-        <Form form={form} layout="vertical" onFinish={handleSubmit}>
-          <Form.Item name="name" label="Nome" rules={[{ required: true, message: 'Obrigatório' }]}>
-            <Input />
-          </Form.Item>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <Form.Item name="cpf" label="CPF" rules={[{ required: true, message: 'Obrigatório' }]}>
-              <MaskedInput mask="000.000.000-00" />
-            </Form.Item>
-            <Form.Item name="phone" label="Telefone" rules={[{ required: true, message: 'Obrigatório' }]}>
-              <MaskedInput mask="(00) 00000-0000" />
-            </Form.Item>
-          </div>
+      <Dialog open={modalVisible} onOpenChange={(open) => { if (!open) closeModal(); }}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editingId ? 'Editar Tutor' : 'Novo Tutor'}</DialogTitle>
+          </DialogHeader>
 
-          <Form.Item name="email" label="Email" rules={[{ required: true, type: 'email', message: 'Email inválido' }]}>
-            <Input />
-          </Form.Item>
-          
-          <div className="grid grid-cols-3 gap-4">
-             <div className="col-span-1">
-                <Form.Item label="CEP" required tooltip="Digite o CEP para buscar o endereço">
-                  <div className="flex gap-2">
-                     <Form.Item
-                        name="cep"
-                        noStyle
-                        rules={[{ required: true, message: 'Obrigatório' }]}
-                     >
-                        <MaskedInput mask="00000-000" disabled={loadingCep} className="w-full" />
-                     </Form.Item>
-                     <Button 
-                       type="primary"
-                       icon={loadingCep ? <SearchOutlined spin /> : <SearchOutlined />} 
-                       onClick={handleCepSearch}
-                       disabled={loadingCep}
-                       className="bg-blue-600"
-                     />
-                  </div>
-                </Form.Item>
-             </div>
-             <div className="col-span-2">
-                <div className="grid grid-cols-3 gap-2">
-                    <Form.Item name="street" label="Logradouro" className="col-span-2" rules={[{ required: true, message: 'Obrigatório' }]}>
-                      <Input placeholder="Rua, Av, etc" />
-                    </Form.Item>
-                    <Form.Item name="number" label="Número" rules={[{ required: true, message: 'Obrigatório' }]}>
-                      <Input placeholder="123" />
-                    </Form.Item>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <div className="space-y-1">
+              <Label htmlFor="name">Nome *</Label>
+              <Input
+                id="name"
+                {...register('name')}
+                placeholder="Nome completo"
+              />
+              {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <Label htmlFor="cpf">CPF *</Label>
+                <Input
+                  id="cpf"
+                  {...register('cpf')}
+                  placeholder="000.000.000-00"
+                  onChange={(e) => {
+                    const formatted = formatCpf(e.target.value);
+                    setValue('cpf', formatted);
+                  }}
+                />
+                {errors.cpf && <p className="text-sm text-destructive">{errors.cpf.message}</p>}
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="phone">Telefone *</Label>
+                <Input
+                  id="phone"
+                  {...register('phone')}
+                  placeholder="(00) 00000-0000"
+                  onChange={(e) => {
+                    const formatted = formatPhone(e.target.value);
+                    setValue('phone', formatted);
+                  }}
+                />
+                {errors.phone && <p className="text-sm text-destructive">{errors.phone.message}</p>}
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="email">Email *</Label>
+              <Input
+                id="email"
+                type="email"
+                {...register('email')}
+                placeholder="email@exemplo.com"
+              />
+              {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="col-span-1 space-y-1">
+                <Label htmlFor="cep">CEP *</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="cep"
+                    {...register('cep')}
+                    placeholder="00000-000"
+                    disabled={loadingCep}
+                    onChange={(e) => {
+                      const formatted = formatCep(e.target.value);
+                      setValue('cep', formatted);
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={handleCepSearch}
+                    disabled={loadingCep}
+                  >
+                    {loadingCep ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Search className="w-4 h-4" />
+                    )}
+                  </Button>
                 </div>
-             </div>
-          </div>
-          
-          <div className="grid grid-cols-3 gap-4">
-            <Form.Item name="complement" label="Complemento">
-                <Input placeholder="Apto 101" />
-            </Form.Item>
-            <Form.Item name="neighborhood" label="Bairro" rules={[{ required: true, message: 'Obrigatório' }]}>
-                <Input />
-            </Form.Item>
-             <div className="col-span-1">
-                 <div className="flex gap-2">
-                    <Form.Item name="city" label="Cidade" className="flex-1" rules={[{ required: true, message: 'Obrigatório' }]}>
-                        <Input />
-                    </Form.Item>
-                    <Form.Item name="state" label="UF" className="w-16" rules={[{ required: true, message: 'Obrigatório' }]}>
-                        <Input maxLength={2} />
-                    </Form.Item>
-                 </div>
-             </div>
-          </div>
+                {errors.cep && <p className="text-sm text-destructive">{errors.cep.message}</p>}
+              </div>
 
-        </Form>
-      </Modal>
+              <div className="col-span-2">
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="col-span-2 space-y-1">
+                    <Label htmlFor="street">Logradouro *</Label>
+                    <Input
+                      id="street"
+                      {...register('street')}
+                      placeholder="Rua, Av, etc"
+                    />
+                    {errors.street && <p className="text-sm text-destructive">{errors.street.message}</p>}
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="number">Número *</Label>
+                    <Input
+                      id="number"
+                      {...register('number')}
+                      placeholder="123"
+                    />
+                    {errors.number && <p className="text-sm text-destructive">{errors.number.message}</p>}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-1">
+                <Label htmlFor="complement">Complemento</Label>
+                <Input
+                  id="complement"
+                  {...register('complement')}
+                  placeholder="Apto 101"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="neighborhood">Bairro *</Label>
+                <Input
+                  id="neighborhood"
+                  {...register('neighborhood')}
+                />
+                {errors.neighborhood && <p className="text-sm text-destructive">{errors.neighborhood.message}</p>}
+              </div>
+              <div className="flex gap-2">
+                <div className="flex-1 space-y-1">
+                  <Label htmlFor="city">Cidade *</Label>
+                  <Input
+                    id="city"
+                    {...register('city')}
+                  />
+                  {errors.city && <p className="text-sm text-destructive">{errors.city.message}</p>}
+                </div>
+                <div className="w-16 space-y-1">
+                  <Label htmlFor="state">UF *</Label>
+                  <Input
+                    id="state"
+                    {...register('state')}
+                    maxLength={2}
+                  />
+                  {errors.state && <p className="text-sm text-destructive">{errors.state.message}</p>}
+                </div>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={closeModal}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700">
+                {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                {editingId ? 'Salvar' : 'Criar'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -1,12 +1,25 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Card, Table, Button, Modal, Form, Input, Select, message, Space } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { toast } from 'sonner';
+import { useForm, Controller } from 'react-hook-form';
+import { Plus, Loader2 } from 'lucide-react';
 import api from '@/lib/axios';
 
 interface Resource {
   id: string;
+  name: string;
+  type: string;
+}
+
+interface ResourceFormValues {
   name: string;
   type: string;
 }
@@ -21,7 +34,7 @@ export default function SettingsResourcesPage() {
   const [list, setList] = useState<Resource[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
-  const [form] = Form.useForm();
+  const form = useForm<ResourceFormValues>();
 
   const fetchList = async () => {
     setLoading(true);
@@ -29,7 +42,7 @@ export default function SettingsResourcesPage() {
       const res = await api.get<Resource[]>('/resources');
       setList(res.data ?? []);
     } catch {
-      message.error('Erro ao carregar recursos');
+      toast.error('Erro ao carregar recursos');
     } finally {
       setLoading(false);
     }
@@ -39,15 +52,15 @@ export default function SettingsResourcesPage() {
     fetchList();
   }, []);
 
-  const onFinish = async (values: { name: string; type: string }) => {
+  const onFinish = async (values: ResourceFormValues) => {
     try {
       await api.post('/resources', values);
-      message.success('Recurso cadastrado');
+      toast.success('Recurso cadastrado');
       setModalOpen(false);
-      form.resetFields();
+      form.reset();
       fetchList();
     } catch (e: any) {
-      message.error(e.response?.data?.message ?? 'Erro ao salvar');
+      toast.error(e.response?.data?.message ?? 'Erro ao salvar');
     }
   };
 
@@ -55,41 +68,81 @@ export default function SettingsResourcesPage() {
     <div>
       <h1 className="text-2xl font-bold text-blue-600 mb-6">Recursos</h1>
       <Card>
-        <p className="text-slate-600 mb-4">Salas e equipamentos para agendamento (opcional na agenda).</p>
-        <Space className="mb-4">
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => setModalOpen(true)} className="bg-blue-600">
-            Novo recurso
+        <CardContent className="pt-6">
+          <p className="text-slate-600 mb-4">Salas e equipamentos para agendamento (opcional na agenda).</p>
+          <Button
+            onClick={() => {
+              form.reset();
+              setModalOpen(true);
+            }}
+            className="mb-4 bg-blue-600"
+          >
+            <Plus className="w-4 h-4 mr-2" /> Novo recurso
           </Button>
-        </Space>
-        <Table
-          loading={loading}
-          dataSource={list}
-          rowKey="id"
-          columns={[
-            { title: 'Nome', dataIndex: 'name', key: 'name' },
-            {
-              title: 'Tipo',
-              dataIndex: 'type',
-              key: 'type',
-              render: (t: string) => TYPES.find((x) => x.value === t)?.label ?? t,
-            },
-          ]}
-        />
+
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>Tipo</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {list.map((r) => (
+                  <TableRow key={r.id}>
+                    <TableCell>{r.name}</TableCell>
+                    <TableCell>{TYPES.find((x) => x.value === r.type)?.label ?? r.type}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
       </Card>
 
-      <Modal title="Novo recurso" open={modalOpen} onCancel={() => setModalOpen(false)} footer={null}>
-        <Form form={form} layout="vertical" onFinish={onFinish}>
-          <Form.Item name="name" label="Nome" rules={[{ required: true }]}>
-            <Input placeholder="Ex.: Sala 1, Raio-X" />
-          </Form.Item>
-          <Form.Item name="type" label="Tipo" rules={[{ required: true }]}>
-            <Select options={TYPES} placeholder="Selecione" />
-          </Form.Item>
-          <Form.Item>
-            <Button type="primary" htmlType="submit" className="bg-blue-600">Salvar</Button>
-          </Form.Item>
-        </Form>
-      </Modal>
+      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Novo recurso</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={form.handleSubmit(onFinish)} className="flex flex-col gap-4 mt-2">
+            <div className="flex flex-col gap-1.5">
+              <Label>Nome</Label>
+              <Input {...form.register('name', { required: true })} placeholder="Ex.: Sala 1, Raio-X" />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label>Tipo</Label>
+              <Controller
+                name="type"
+                control={form.control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TYPES.map((t) => (
+                        <SelectItem key={t.value} value={t.value}>
+                          {t.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </div>
+            <Button type="submit" className="bg-blue-600">
+              Salvar
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

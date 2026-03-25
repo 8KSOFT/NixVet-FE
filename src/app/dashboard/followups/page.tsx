@@ -1,8 +1,17 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Card, Table, Button, Modal, Form, Select, Input, message, Tag } from 'antd';
-import { FileSearchOutlined } from '@ant-design/icons';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { toast } from 'sonner';
+import { useForm, Controller } from 'react-hook-form';
+import { Loader2, FileSearch } from 'lucide-react';
 import api from '@/lib/axios';
 
 interface ExamFollowup {
@@ -16,6 +25,12 @@ interface ExamFollowup {
   Patient?: { name: string };
 }
 
+interface FollowupFormValues {
+  exam_request_id: string;
+  patient_id: string;
+  expected_result_date?: string;
+}
+
 export default function FollowupsPage() {
   const [awaiting, setAwaiting] = useState<ExamFollowup[]>([]);
   const [all, setAll] = useState<ExamFollowup[]>([]);
@@ -23,8 +38,7 @@ export default function FollowupsPage() {
   const [patients, setPatients] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [form] = Form.useForm();
+  const { register, handleSubmit, reset, control } = useForm<FollowupFormValues>();
 
   const fetchData = async () => {
     setLoading(true);
@@ -40,7 +54,7 @@ export default function FollowupsPage() {
       setExamRequests(Array.isArray(examsRes.data) ? examsRes.data : []);
       setPatients(Array.isArray(patientsRes.data) ? patientsRes.data : []);
     } catch {
-      message.error('Erro ao carregar');
+      toast.error('Erro ao carregar');
     } finally {
       setLoading(false);
     }
@@ -50,95 +64,153 @@ export default function FollowupsPage() {
     fetchData();
   }, []);
 
-  const onFinishCreate = async (values: { exam_request_id: string; patient_id: string; expected_result_date?: string }) => {
+  const onSubmit = async (values: FollowupFormValues) => {
     try {
       await api.post('/exam-followups', values);
-      message.success('Acompanhamento criado');
+      toast.success('Acompanhamento criado');
       setModalOpen(false);
-      form.resetFields();
+      reset();
       fetchData();
     } catch (e: any) {
-      message.error(e.response?.data?.message ?? 'Erro ao criar');
+      toast.error(e.response?.data?.message ?? 'Erro ao criar');
     }
   };
 
   const updateStatus = async (id: string, followup_status: string) => {
     try {
       await api.put(`/exam-followups/${id}`, { followup_status });
-      message.success('Atualizado');
+      toast.success('Atualizado');
       fetchData();
     } catch (e: any) {
-      message.error(e.response?.data?.message ?? 'Erro');
+      toast.error(e.response?.data?.message ?? 'Erro');
     }
   };
 
   return (
     <div>
       <h1 className="text-2xl font-bold text-blue-600 mb-6 flex items-center gap-2">
-        <FileSearchOutlined /> Acompanhamento de exames
+        <FileSearch className="w-6 h-6" /> Acompanhamento de exames
       </h1>
       <Card>
-        <Button type="primary" onClick={() => { setModalOpen(true); setEditingId(null); }} className="mb-4 bg-blue-600">
-          Novo acompanhamento
-        </Button>
-        <h3 className="font-medium text-slate-700 mb-2">Aguardando retorno</h3>
-        <Table
-          loading={loading}
-          dataSource={awaiting}
-          rowKey="id"
-          pagination={false}
-          columns={[
-            { title: 'Paciente', dataIndex: ['Patient', 'name'], key: 'patient' },
-            { title: 'Solicitação', dataIndex: 'exam_request_id', key: 'exam_request_id' },
-            { title: 'Previsão resultado', dataIndex: 'expected_result_date', key: 'expected_result_date' },
-            { title: 'Status', dataIndex: 'followup_status', key: 'followup_status' },
-            {
-              title: 'Ações',
-              key: 'actions',
-              render: (_: any, r: ExamFollowup) => (
-                <Button type="link" size="small" onClick={() => updateStatus(r.id, 'closed')}>
-                  Fechar
-                </Button>
-              ),
-            },
-          ]}
-        />
-        <h3 className="font-medium text-slate-700 mt-6 mb-2">Todos</h3>
-        <Table
-          loading={loading}
-          dataSource={all}
-          rowKey="id"
-          pagination={{ pageSize: 20 }}
-          columns={[
-            { title: 'Paciente', dataIndex: ['Patient', 'name'], key: 'patient' },
-            { title: 'Previsão', dataIndex: 'expected_result_date', key: 'expected_result_date' },
-            { title: 'Status', dataIndex: 'followup_status', key: 'followup_status', render: (s: string) => <Tag>{s}</Tag> },
-          ]}
-        />
+        <CardContent className="pt-6">
+          <Button onClick={() => setModalOpen(true)} className="mb-4 bg-blue-600">
+            Novo acompanhamento
+          </Button>
+
+          <h3 className="font-medium text-slate-700 mb-2">Aguardando retorno</h3>
+          {loading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Paciente</TableHead>
+                  <TableHead>Solicitação</TableHead>
+                  <TableHead>Previsão resultado</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {awaiting.map((item) => (
+                  <TableRow key={item.id}>
+                    <TableCell>{item.Patient?.name}</TableCell>
+                    <TableCell>{item.exam_request_id}</TableCell>
+                    <TableCell>{item.expected_result_date}</TableCell>
+                    <TableCell>{item.followup_status}</TableCell>
+                    <TableCell>
+                      <Button variant="link" size="sm" onClick={() => updateStatus(item.id, 'closed')}>
+                        Fechar
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+
+          <h3 className="font-medium text-slate-700 mt-6 mb-2">Todos</h3>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Paciente</TableHead>
+                <TableHead>Previsão</TableHead>
+                <TableHead>Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {all.map((item) => (
+                <TableRow key={item.id}>
+                  <TableCell>{item.Patient?.name}</TableCell>
+                  <TableCell>{item.expected_result_date}</TableCell>
+                  <TableCell>
+                    <Badge variant="secondary">{item.followup_status}</Badge>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
       </Card>
 
-      <Modal title="Novo acompanhamento" open={modalOpen} onCancel={() => setModalOpen(false)} footer={null}>
-        <Form form={form} layout="vertical" onFinish={onFinishCreate}>
-          <Form.Item name="exam_request_id" label="Solicitação de exame" rules={[{ required: true }]}>
-            <Select
-              placeholder="Selecione"
-              options={examRequests.map((e) => ({ value: e.id, label: e.id }))}
-            />
-          </Form.Item>
-          <Form.Item name="patient_id" label="Paciente" rules={[{ required: true }]}>
-            <Select
-              placeholder="Selecione"
-              options={patients.map((p) => ({ value: p.id, label: p.name }))}
-            />
-          </Form.Item>
-          <Form.Item name="expected_result_date" label="Previsão do resultado">
-            <Input type="date" />
-          </Form.Item>
-          <Form.Item>
-            <Button type="primary" htmlType="submit" className="bg-blue-600">Criar</Button>
-          </Form.Item>
-        </Form>
-      </Modal>
+      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Novo acompanhamento</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <div>
+              <Label>Solicitação de exame</Label>
+              <Controller
+                name="exam_request_id"
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {examRequests.map((e) => (
+                        <SelectItem key={e.id} value={e.id}>{e.id}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </div>
+            <div>
+              <Label>Paciente</Label>
+              <Controller
+                name="patient_id"
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {patients.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </div>
+            <div>
+              <Label>Previsão do resultado</Label>
+              <Input type="date" {...register('expected_result_date')} />
+            </div>
+            <DialogFooter>
+              <Button type="submit" className="bg-blue-600">Criar</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

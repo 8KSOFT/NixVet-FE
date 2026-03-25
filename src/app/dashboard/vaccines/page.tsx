@@ -1,8 +1,17 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Card, Table, Button, Modal, Form, Input, Select, Tabs, message } from 'antd';
-import { PlusOutlined, ExperimentOutlined } from '@ant-design/icons';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { toast } from 'sonner';
+import { useForm, Controller } from 'react-hook-form';
+import { Plus, Loader2 } from 'lucide-react';
 import api from '@/lib/axios';
 
 interface VaccineReminder {
@@ -14,13 +23,51 @@ interface VaccineReminder {
   patient?: { name: string };
 }
 
+interface VaccineFormValues {
+  patient_id: string;
+  vaccine_name: string;
+  next_due_date: string;
+}
+
+function ReminderTable({ data, loading }: { data: VaccineReminder[]; loading: boolean }) {
+  if (loading) {
+    return (
+      <div className="flex justify-center py-8">
+        <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+      </div>
+    );
+  }
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Paciente</TableHead>
+          <TableHead>Vacina</TableHead>
+          <TableHead>Próxima dose</TableHead>
+          <TableHead>Status</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {data.map((r) => (
+          <TableRow key={r.id}>
+            <TableCell>{r.patient?.name}</TableCell>
+            <TableCell>{r.vaccine_name}</TableCell>
+            <TableCell>{r.next_due_date}</TableCell>
+            <TableCell>{r.reminder_status}</TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+}
+
 export default function VaccinesPage() {
   const [allReminders, setAllReminders] = useState<VaccineReminder[]>([]);
   const [dueSoon, setDueSoon] = useState<VaccineReminder[]>([]);
   const [patients, setPatients] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
-  const [form] = Form.useForm();
+  const { register, handleSubmit, reset, control } = useForm<VaccineFormValues>();
 
   const fetchAll = async () => {
     setLoading(true);
@@ -34,7 +81,7 @@ export default function VaccinesPage() {
       setDueSoon(Array.isArray(dueRes.data) ? dueRes.data : []);
       setPatients(Array.isArray(patientsRes.data) ? patientsRes.data : []);
     } catch {
-      message.error('Erro ao carregar lembretes');
+      toast.error('Erro ao carregar lembretes');
     } finally {
       setLoading(false);
     }
@@ -44,87 +91,81 @@ export default function VaccinesPage() {
     fetchAll();
   }, []);
 
-  const onFinish = async (values: { patient_id: string; vaccine_name: string; next_due_date: string }) => {
+  const onSubmit = async (values: VaccineFormValues) => {
     try {
       await api.post('/vaccine/reminders', values);
-      message.success('Lembrete criado');
+      toast.success('Lembrete criado');
       setModalOpen(false);
-      form.resetFields();
+      reset();
       fetchAll();
     } catch (e: any) {
-      message.error(e.response?.data?.message ?? 'Erro ao criar');
+      toast.error(e.response?.data?.message ?? 'Erro ao criar');
     }
   };
 
-  const columns = [
-    { title: 'Paciente', dataIndex: ['patient', 'name'], key: 'patient' },
-    { title: 'Vacina', dataIndex: 'vaccine_name', key: 'vaccine_name' },
-    { title: 'Próxima dose', dataIndex: 'next_due_date', key: 'next_due_date' },
-    { title: 'Status', dataIndex: 'reminder_status', key: 'reminder_status' },
-  ];
-
   return (
     <div>
-      <h1 className="text-2xl font-bold text-blue-600 mb-6 flex items-center gap-2">
-        <ExperimentOutlined /> Vacinas
-      </h1>
+      <h1 className="text-2xl font-bold text-blue-600 mb-6">Vacinas</h1>
       <Card>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => setModalOpen(true)} className="mb-4 bg-blue-600">
-          Novo lembrete
-        </Button>
-        <Tabs
-          items={[
-            {
-              key: 'due',
-              label: 'Próximos 30 dias',
-              children: (
-                <Table
-                  loading={loading}
-                  dataSource={dueSoon}
-                  rowKey="id"
-                  columns={columns}
-                  pagination={false}
-                />
-              ),
-            },
-            {
-              key: 'all',
-              label: 'Todos os lembretes',
-              children: (
-                <Table
-                  loading={loading}
-                  dataSource={allReminders}
-                  rowKey="id"
-                  columns={columns}
-                  pagination={{ pageSize: 20 }}
-                />
-              ),
-            },
-          ]}
-        />
+        <CardContent className="pt-6">
+          <Button onClick={() => setModalOpen(true)} className="mb-4 bg-blue-600">
+            <Plus className="w-4 h-4 mr-2" /> Novo lembrete
+          </Button>
+          <Tabs defaultValue="due">
+            <TabsList>
+              <TabsTrigger value="due">Próximos 30 dias</TabsTrigger>
+              <TabsTrigger value="all">Todos os lembretes</TabsTrigger>
+            </TabsList>
+            <TabsContent value="due">
+              <ReminderTable data={dueSoon} loading={loading} />
+            </TabsContent>
+            <TabsContent value="all">
+              <ReminderTable data={allReminders} loading={loading} />
+            </TabsContent>
+          </Tabs>
+        </CardContent>
       </Card>
 
-      <Modal title="Novo lembrete de vacina" open={modalOpen} onCancel={() => setModalOpen(false)} footer={null}>
-        <Form form={form} layout="vertical" onFinish={onFinish}>
-          <Form.Item name="patient_id" label="Paciente" rules={[{ required: true }]}>
-            <Select
-              placeholder="Selecione"
-              showSearch
-              optionFilterProp="label"
-              options={patients.map((p) => ({ value: p.id, label: p.name }))}
-            />
-          </Form.Item>
-          <Form.Item name="vaccine_name" label="Vacina" rules={[{ required: true }]}>
-            <Input placeholder="Ex.: Antirrábica" />
-          </Form.Item>
-          <Form.Item name="next_due_date" label="Próxima dose" rules={[{ required: true }]}>
-            <Input type="date" />
-          </Form.Item>
-          <Form.Item>
-            <Button type="primary" htmlType="submit" className="bg-blue-600">Criar</Button>
-          </Form.Item>
-        </Form>
-      </Modal>
+      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Novo lembrete de vacina</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <div>
+              <Label>Paciente</Label>
+              <Controller
+                name="patient_id"
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {patients.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </div>
+            <div>
+              <Label>Vacina</Label>
+              <Input {...register('vaccine_name', { required: true })} placeholder="Ex.: Antirrábica" />
+            </div>
+            <div>
+              <Label>Próxima dose</Label>
+              <Input type="date" {...register('next_due_date', { required: true })} />
+            </div>
+            <DialogFooter>
+              <Button type="submit" className="bg-blue-600">Criar</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

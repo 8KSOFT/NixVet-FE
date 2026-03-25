@@ -2,19 +2,30 @@
 
 import React, { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
-import { Row, Col, Card, Statistic, Table, Tag, Typography } from 'antd';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
-  UserOutlined,
-  MedicineBoxOutlined,
-  CalendarOutlined,
-  ExperimentOutlined,
-  MessageOutlined,
-  FileSearchOutlined,
-} from '@ant-design/icons';
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Stethoscope,
+  Users,
+  Calendar,
+  FlaskConical,
+  MessageSquare,
+  FileSearch,
+  TrendingUp,
+  XCircle,
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import api from '@/lib/axios';
-
-const { Title } = Typography;
+import { cn } from '@/lib/utils';
 
 export default function DashboardPage() {
   const { t, i18n } = useTranslation('common');
@@ -77,16 +88,18 @@ export default function DashboardPage() {
         return d.getFullYear() === currentYear && d.getMonth() === currentMonth;
       }).length;
 
-      const cancelledThisMonth = consultations.filter((c: { consultation_date?: string; status?: string }) => {
-        if (!c.consultation_date) return false;
-        const d = new Date(c.consultation_date);
-        return (
-          d.getFullYear() === currentYear &&
-          d.getMonth() === currentMonth &&
-          d <= now &&
-          c.status === 'cancelled'
-        );
-      }).length;
+      const cancelledThisMonth = consultations.filter(
+        (c: { consultation_date?: string; status?: string }) => {
+          if (!c.consultation_date) return false;
+          const d = new Date(c.consultation_date);
+          return (
+            d.getFullYear() === currentYear &&
+            d.getMonth() === currentMonth &&
+            d <= now &&
+            c.status === 'cancelled'
+          );
+        },
+      ).length;
 
       setStats({
         appointmentsToday: metrics.consultations_today,
@@ -147,121 +160,193 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locale, t]);
 
-  const columns = useMemo(
+  const statCards = useMemo(
     () => [
-      { title: t('dashboardHome.colDate'), dataIndex: 'date', key: 'date' },
-      { title: t('dashboardHome.colTime'), dataIndex: 'time', key: 'time' },
-      { title: t('dashboardHome.colPatient'), dataIndex: 'patient', key: 'patient' },
-      { title: t('dashboardHome.colVet'), dataIndex: 'veterinarian', key: 'veterinarian' },
       {
-        title: t('dashboardHome.colStatus'),
-        key: 'status',
-        dataIndex: 'status',
-        render: (status: string, row: { statusKey: string }) => {
-          const color =
-            row.statusKey === 'completed' ? 'green' : row.statusKey === 'cancelled' ? 'red' : 'blue';
-          return <Tag color={color}>{status}</Tag>;
-        },
+        label: t('dashboardHome.statsToday'),
+        value: stats.appointmentsToday,
+        icon: Stethoscope,
+        color: 'text-blue-600',
+        bg: 'bg-blue-50',
+        valueColor: 'text-blue-700',
+        href: undefined,
+      },
+      {
+        label: t('dashboardHome.statsNewPatients'),
+        value: stats.newPatientsMonth,
+        icon: Users,
+        color: 'text-sky-600',
+        bg: 'bg-sky-50',
+        valueColor: 'text-sky-700',
+        href: undefined,
+      },
+      {
+        label: t('dashboardHome.statsRevenue'),
+        value: `${t('dashboardHome.currencyPrefix')}${stats.revenueMonth.toFixed(2)}`,
+        icon: TrendingUp,
+        color: 'text-emerald-600',
+        bg: 'bg-emerald-50',
+        valueColor: 'text-emerald-700',
+        href: undefined,
+      },
+      {
+        label: t('dashboardHome.statsCancelled'),
+        value: stats.cancelledThisMonth,
+        icon: XCircle,
+        color: 'text-slate-500',
+        bg: 'bg-slate-100',
+        valueColor: 'text-slate-600',
+        href: undefined,
+      },
+      {
+        label: t('dashboardHome.statsVaccines'),
+        value: stats.vaccinesDue,
+        icon: FlaskConical,
+        color: 'text-amber-600',
+        bg: 'bg-amber-50',
+        valueColor: 'text-amber-700',
+        href: '/dashboard/vaccines',
+      },
+      {
+        label: t('dashboardHome.statsExams'),
+        value: stats.examsAwaitingFollowup,
+        icon: FileSearch,
+        color: 'text-violet-600',
+        bg: 'bg-violet-50',
+        valueColor: 'text-violet-700',
+        href: '/dashboard/followups',
+      },
+      {
+        label: t('dashboardHome.statsWhatsApp'),
+        value: stats.unansweredConversations,
+        icon: MessageSquare,
+        color: 'text-green-600',
+        bg: 'bg-green-50',
+        valueColor: 'text-green-700',
+        href: '/dashboard/whatsapp',
       },
     ],
-    [t],
+    [t, stats],
   );
 
+  const statusVariant = (
+    statusKey: string,
+  ): 'default' | 'secondary' | 'destructive' | 'outline' => {
+    if (statusKey === 'completed') return 'default';
+    if (statusKey === 'cancelled') return 'destructive';
+    return 'secondary';
+  };
+
+  const statusClass = (statusKey: string) => {
+    if (statusKey === 'completed') return 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100';
+    if (statusKey === 'cancelled') return 'bg-red-100 text-red-700 hover:bg-red-100';
+    return 'bg-blue-100 text-blue-700 hover:bg-blue-100';
+  };
+
   return (
-    <div>
-      <Title level={2} className="!mb-6 !text-slate-800 !font-semibold">
-        {t('dashboardHome.title')}
-      </Title>
+    <div className="space-y-8">
+      <h2 className="text-2xl font-semibold text-slate-800">{t('dashboardHome.title')}</h2>
 
-      <Row gutter={[16, 16]} className="mb-8">
-        <Col xs={24} sm={12} lg={6}>
-          <Card bordered={false} className="rounded-xl shadow-sm border border-slate-200/80 hover:shadow-md transition-shadow" loading={loading}>
-            <Statistic
-              title={<span className="text-slate-600">{t('dashboardHome.statsToday')}</span>}
-              value={stats.appointmentsToday}
-              prefix={<MedicineBoxOutlined className="!text-blue-600" />}
-              valueStyle={{ color: '#2563eb', fontWeight: 600 }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card bordered={false} className="rounded-xl shadow-sm border border-slate-200/80 hover:shadow-md transition-shadow" loading={loading}>
-            <Statistic
-              title={<span className="text-slate-600">{t('dashboardHome.statsNewPatients')}</span>}
-              value={stats.newPatientsMonth}
-              prefix={<UserOutlined className="!text-blue-500" />}
-              valueStyle={{ color: '#2563eb', fontWeight: 600 }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card bordered={false} className="rounded-xl shadow-sm border border-slate-200/80 hover:shadow-md transition-shadow" loading={loading}>
-            <Statistic
-              title={<span className="text-slate-600">{t('dashboardHome.statsRevenue')}</span>}
-              value={stats.revenueMonth}
-              precision={2}
-              prefix={t('dashboardHome.currencyPrefix')}
-              valueStyle={{ color: '#059669', fontWeight: 600 }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card bordered={false} className="rounded-xl shadow-sm border border-slate-200/80 hover:shadow-md transition-shadow" loading={loading}>
-            <Statistic
-              title={<span className="text-slate-600">{t('dashboardHome.statsCancelled')}</span>}
-              value={stats.cancelledThisMonth}
-              prefix={<CalendarOutlined className="!text-slate-500" />}
-              valueStyle={{ color: '#64748b', fontWeight: 600 }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Link href="/dashboard/vaccines">
-            <Card bordered={false} className="rounded-xl shadow-sm border border-slate-200/80 hover:shadow-md transition-shadow cursor-pointer" loading={loading}>
-              <Statistic
-                title={<span className="text-slate-600">{t('dashboardHome.statsVaccines')}</span>}
-                value={stats.vaccinesDue}
-                prefix={<ExperimentOutlined className="!text-amber-600" />}
-                valueStyle={{ color: '#d97706', fontWeight: 600 }}
-              />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {statCards.map((card) => {
+          const Icon = card.icon;
+          const cardContent = (
+            <Card
+              className={cn(
+                'rounded-xl border border-slate-200/80 shadow-sm transition-shadow',
+                card.href && 'cursor-pointer hover:shadow-md',
+              )}
+            >
+              <CardContent className="p-5">
+                {loading ? (
+                  <div className="space-y-3">
+                    <Skeleton className="h-4 w-24" />
+                    <Skeleton className="h-8 w-16" />
+                  </div>
+                ) : (
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <p className="text-sm text-slate-500">{card.label}</p>
+                      <p className={cn('text-3xl font-bold', card.valueColor)}>{card.value}</p>
+                    </div>
+                    <div className={cn('rounded-lg p-2.5', card.bg)}>
+                      <Icon className={cn('h-5 w-5', card.color)} />
+                    </div>
+                  </div>
+                )}
+              </CardContent>
             </Card>
-          </Link>
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Link href="/dashboard/followups">
-            <Card bordered={false} className="rounded-xl shadow-sm border border-slate-200/80 hover:shadow-md transition-shadow cursor-pointer" loading={loading}>
-              <Statistic
-                title={<span className="text-slate-600">{t('dashboardHome.statsExams')}</span>}
-                value={stats.examsAwaitingFollowup}
-                prefix={<FileSearchOutlined className="!text-purple-600" />}
-                valueStyle={{ color: '#7c3aed', fontWeight: 600 }}
-              />
-            </Card>
-          </Link>
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Link href="/dashboard/whatsapp">
-            <Card bordered={false} className="rounded-xl shadow-sm border border-slate-200/80 hover:shadow-md transition-shadow cursor-pointer" loading={loading}>
-              <Statistic
-                title={<span className="text-slate-600">{t('dashboardHome.statsWhatsApp')}</span>}
-                value={stats.unansweredConversations}
-                prefix={<MessageOutlined className="!text-green-600" />}
-                valueStyle={{ color: '#16a34a', fontWeight: 600 }}
-              />
-            </Card>
-          </Link>
-        </Col>
-      </Row>
+          );
 
-      <Card
-        title={<span className="font-semibold text-slate-800">{t('dashboardHome.tableTitle')}</span>}
-        bordered={false}
-        className="rounded-xl shadow-sm border border-slate-200/80"
-        loading={loading}
-      >
-        <Table columns={columns} dataSource={recentAppointments} pagination={false} size="middle" />
+          return card.href ? (
+            <Link key={card.label} href={card.href}>
+              {cardContent}
+            </Link>
+          ) : (
+            <div key={card.label}>{cardContent}</div>
+          );
+        })}
+      </div>
+
+      <Card className="rounded-xl border border-slate-200/80 shadow-sm">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-semibold text-slate-800">
+            {t('dashboardHome.tableTitle')}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          {loading ? (
+            <div className="space-y-3 p-6">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-10 w-full" />
+              ))}
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t('dashboardHome.colDate')}</TableHead>
+                  <TableHead>{t('dashboardHome.colTime')}</TableHead>
+                  <TableHead>{t('dashboardHome.colPatient')}</TableHead>
+                  <TableHead>{t('dashboardHome.colVet')}</TableHead>
+                  <TableHead>{t('dashboardHome.colStatus')}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {recentAppointments.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={5}
+                      className="py-8 text-center text-sm text-slate-400"
+                    >
+                      {t('dashboardHome.noAppointments', 'Nenhuma consulta hoje')}
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  recentAppointments.map((row) => (
+                    <TableRow key={row.key}>
+                      <TableCell className="text-slate-600">{row.date}</TableCell>
+                      <TableCell className="text-slate-600">{row.time}</TableCell>
+                      <TableCell className="font-medium text-slate-800">{row.patient}</TableCell>
+                      <TableCell className="text-slate-600">{row.veterinarian}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={statusVariant(row.statusKey)}
+                          className={cn('text-xs font-medium', statusClass(row.statusKey))}
+                        >
+                          {row.status}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
       </Card>
     </div>
   );

@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
-import { AntdRegistry } from '@ant-design/nextjs-registry';
 import AppProviders from '@/components/AppProviders';
 import "./globals.css";
 
@@ -23,10 +22,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR" className={plusJakarta.variable}>
-      <body className="min-h-screen bg-slate-100 text-slate-800 antialiased">
-        <AntdRegistry>
-          <AppProviders>{children}</AppProviders>
-        </AntdRegistry>
+      <body className="min-h-screen bg-background text-foreground antialiased">
+        <AppProviders>{children}</AppProviders>
       </body>
     </html>
   );

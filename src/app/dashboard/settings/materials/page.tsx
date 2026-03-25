@@ -1,8 +1,15 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Card, Table, Button, Modal, Form, Input, message, Space } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { toast } from 'sonner';
+import { useForm } from 'react-hook-form';
+import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
 import api from '@/lib/axios';
 
 interface Material {
@@ -10,20 +17,22 @@ interface Material {
   name: string;
 }
 
+type FormValues = { name: string };
+
 export default function SettingsMaterialsPage() {
   const [list, setList] = useState<Material[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [form] = Form.useForm();
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<FormValues>();
 
   const fetchMaterials = async () => {
     setLoading(true);
     try {
       const res = await api.get<Material[]>('/catalog/materials');
       setList(res.data ?? []);
-    } catch (e) {
-      message.error('Erro ao carregar materiais');
+    } catch {
+      toast.error('Erro ao carregar materiais');
     } finally {
       setLoading(false);
     }
@@ -35,39 +44,39 @@ export default function SettingsMaterialsPage() {
 
   const openCreate = () => {
     setEditingId(null);
-    form.resetFields();
+    reset({ name: '' });
     setModalOpen(true);
   };
 
   const openEdit = (row: Material) => {
     setEditingId(row.id);
-    form.setFieldsValue({ name: row.name });
+    reset({ name: row.name });
     setModalOpen(true);
   };
 
   const handleDelete = async (id: number) => {
     try {
       await api.delete(`/catalog/materials/${id}`);
-      message.success('Removido');
+      toast.success('Removido');
       fetchMaterials();
     } catch (e: any) {
-      message.error(e.response?.data?.message ?? 'Erro ao remover');
+      toast.error(e.response?.data?.message ?? 'Erro ao remover');
     }
   };
 
-  const onFinish = async (values: { name: string }) => {
+  const onSubmit = async (values: FormValues) => {
     try {
       if (editingId) {
         await api.put(`/catalog/materials/${editingId}`, values);
-        message.success('Atualizado');
+        toast.success('Atualizado');
       } else {
         await api.post('/catalog/materials', values);
-        message.success('Criado');
+        toast.success('Criado');
       }
       setModalOpen(false);
       fetchMaterials();
     } catch (e: any) {
-      message.error(e.response?.data?.message ?? 'Erro ao salvar');
+      toast.error(e.response?.data?.message ?? 'Erro ao salvar');
     }
   };
 
@@ -75,49 +84,61 @@ export default function SettingsMaterialsPage() {
     <div>
       <h1 className="text-2xl font-bold text-blue-600 mb-6">Materiais</h1>
       <Card>
-        <Space className="mb-4">
-          <Button type="primary" icon={<PlusOutlined />} onClick={openCreate} className="bg-blue-600">
-            Novo material
+        <CardContent className="pt-6">
+          <Button onClick={openCreate} className="mb-4 bg-blue-600">
+            <Plus className="w-4 h-4 mr-2" /> Novo material
           </Button>
-        </Space>
-        <Table
-          loading={loading}
-          dataSource={list}
-          rowKey="id"
-          columns={[
-            { title: 'Nome', dataIndex: 'name', key: 'name' },
-            {
-              title: 'Ações',
-              key: 'actions',
-              width: 120,
-              render: (_, r) => (
-                <Space>
-                  <Button type="link" size="small" icon={<EditOutlined />} onClick={() => openEdit(r)} />
-                  <Button type="link" size="small" danger icon={<DeleteOutlined />} onClick={() => handleDelete(r.id)} />
-                </Space>
-              ),
-            },
-          ]}
-          pagination={{ pageSize: 20 }}
-        />
+          {loading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nome</TableHead>
+                  <TableHead className="w-[120px]">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {list.map((r) => (
+                  <TableRow key={r.id}>
+                    <TableCell>{r.name}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="sm" onClick={() => openEdit(r)}>
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" onClick={() => handleDelete(r.id)}>
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
       </Card>
-      <Modal
-        title={editingId ? 'Editar material' : 'Novo material'}
-        open={modalOpen}
-        onCancel={() => setModalOpen(false)}
-        footer={null}
-      >
-        <Form form={form} layout="vertical" onFinish={onFinish}>
-          <Form.Item name="name" label="Nome" rules={[{ required: true }]}>
-            <Input placeholder="Nome do material" />
-          </Form.Item>
-          <Form.Item>
-            <Button type="primary" htmlType="submit" className="bg-blue-600">
-              Salvar
-            </Button>
-          </Form.Item>
-        </Form>
-      </Modal>
+
+      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editingId ? 'Editar material' : 'Novo material'}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <div>
+              <Label htmlFor="name">Nome</Label>
+              <Input id="name" placeholder="Nome do material" {...register('name', { required: true })} />
+              {errors.name && <p className="text-red-500 text-xs mt-1">Campo obrigatório</p>}
+            </div>
+            <DialogFooter>
+              <Button type="submit" className="bg-blue-600">Salvar</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

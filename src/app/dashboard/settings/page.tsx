@@ -1,11 +1,17 @@
 'use client';
 
 import React from 'react';
-import { Form, Input, Button, Card, message, Divider, Switch, Typography, Space } from 'antd';
-import { SettingOutlined, SaveOutlined, SearchOutlined, PlusOutlined } from '@ant-design/icons';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
+import { Separator } from '@/components/ui/separator';
+import { toast } from 'sonner';
+import { useForm } from 'react-hook-form';
+import { Settings, Save, Search, Plus, Loader2 } from 'lucide-react';
 import api from '@/lib/axios';
 import axios from 'axios';
-import { MaskedInput } from 'antd-mask-input';
 import { formatCepMask } from '@/lib/format-cep';
 
 function getCurrentUserRole(): string | null {
@@ -19,9 +25,40 @@ function getCurrentUserRole(): string | null {
   }
 }
 
+interface ClinicFormValues {
+  clinicName: string;
+  email: string;
+  phone: string;
+  brandName: string;
+  logoUrl: string;
+  primaryColor: string;
+  subdomain: string;
+  customDomain: string;
+  cep: string;
+  street: string;
+  number: string;
+  complement: string;
+  neighborhood: string;
+  city: string;
+  state: string;
+}
+
+interface TenantFormValues {
+  name: string;
+  code: string;
+  initialUserName?: string;
+  initialUserEmail?: string;
+  initialUserPassword?: string;
+}
+
 export default function SettingsPage() {
-  const [form] = Form.useForm();
-  const [formNewTenant] = Form.useForm();
+  const { register, setValue, getValues, handleSubmit } = useForm<ClinicFormValues>();
+  const {
+    register: registerTenant,
+    handleSubmit: handleSubmitTenant,
+    reset: resetTenant,
+  } = useForm<TenantFormValues>();
+
   const [loading, setLoading] = React.useState(false);
   const [loadingCep, setLoadingCep] = React.useState(false);
   const [creatingTenant, setCreatingTenant] = React.useState(false);
@@ -71,13 +108,13 @@ export default function SettingsPage() {
       const response = await api.get('/integrations/google/connect');
       const url = response.data?.url;
       if (!url) {
-        message.error('Não foi possível iniciar conexão Google');
+        toast.error('Não foi possível iniciar conexão Google');
         return;
       }
       window.open(url, '_blank', 'noopener,noreferrer');
-      message.info('Após autorizar no Google, clique em "Atualizar Status".');
+      toast.info('Após autorizar no Google, clique em "Atualizar Status".');
     } catch (error: any) {
-      message.error(error.response?.data?.message || 'Erro ao conectar Google');
+      toast.error(error.response?.data?.message || 'Erro ao conectar Google');
     } finally {
       setGoogleLoading(false);
     }
@@ -87,10 +124,10 @@ export default function SettingsPage() {
     try {
       setGoogleLoading(true);
       await api.post('/integrations/google/disconnect');
-      message.success('Integração Google desconectada');
+      toast.success('Integração Google desconectada');
       await fetchGoogleStatus();
     } catch (error: any) {
-      message.error(error.response?.data?.message || 'Erro ao desconectar Google');
+      toast.error(error.response?.data?.message || 'Erro ao desconectar Google');
     } finally {
       setGoogleLoading(false);
     }
@@ -103,10 +140,10 @@ export default function SettingsPage() {
         calendarId: selectedCalendarId,
         syncDirection: 'nixvet_to_google',
       });
-      message.success('Calendário Google atualizado');
+      toast.success('Calendário Google atualizado');
       await fetchGoogleStatus();
     } catch (error: any) {
-      message.error(error.response?.data?.message || 'Erro ao salvar calendário');
+      toast.error(error.response?.data?.message || 'Erro ao salvar calendário');
     } finally {
       setGoogleLoading(false);
     }
@@ -127,12 +164,10 @@ export default function SettingsPage() {
 
       if (data.address) {
         const parts = data.address.split(' - ');
-
         if (parts.length >= 3) {
           const firstPart = parts[0].split(',');
           street = firstPart[0];
           number = firstPart[1] ? firstPart[1].trim() : '';
-
           if (parts.length >= 4) {
             complement = parts[1];
             neighborhood = parts[2];
@@ -148,81 +183,71 @@ export default function SettingsPage() {
         }
       }
 
-      form.setFieldsValue({
-        clinicName: data.name,
-        email: data.email,
-        phone: data.phone,
-        brandName: data.brand_name,
-        logoUrl: data.logo_url,
-        primaryColor: data.primary_color,
-        subdomain: data.subdomain,
-        customDomain: data.custom_domain,
-        cep: formatCepMask(data.cep),
-        street,
-        number,
-        complement,
-        neighborhood,
-        city,
-        state,
-      });
+      setValue('clinicName', data.name ?? '');
+      setValue('email', data.email ?? '');
+      setValue('phone', data.phone ?? '');
+      setValue('brandName', data.brand_name ?? '');
+      setValue('logoUrl', data.logo_url ?? '');
+      setValue('primaryColor', data.primary_color ?? '');
+      setValue('subdomain', data.subdomain ?? '');
+      setValue('customDomain', data.custom_domain ?? '');
+      setValue('cep', formatCepMask(data.cep) ?? '');
+      setValue('street', street);
+      setValue('number', number);
+      setValue('complement', complement);
+      setValue('neighborhood', neighborhood);
+      setValue('city', city);
+      setValue('state', state);
       setChatbotEnabled(Boolean(data.whatsapp_ai_chatbot_enabled));
     } catch (error) {
       console.error('Error fetching settings:', error);
-      message.error('Erro ao carregar configurações');
+      toast.error('Erro ao carregar configurações');
     } finally {
       setLoading(false);
     }
   };
 
   const handleCepSearch = async () => {
-    const cepValue = form.getFieldValue('cep');
+    const cepValue = getValues('cep');
     if (!cepValue) return;
 
     const cep = cepValue.replace(/\D/g, '');
     if (cep.length !== 8) {
-      message.warning('CEP inválido');
+      toast.warning('CEP inválido');
       return;
     }
 
-    form.setFieldsValue({
-      street: '',
-      neighborhood: '',
-      city: '',
-      state: '',
-    });
+    setValue('street', '');
+    setValue('neighborhood', '');
+    setValue('city', '');
+    setValue('state', '');
 
     setLoadingCep(true);
     try {
       const response = await axios.get(`https://viacep.com.br/ws/${cep}/json/`);
       if (response.data.erro) {
-        message.error('CEP não encontrado');
+        toast.error('CEP não encontrado');
         return;
       }
-
       const { logradouro, bairro, localidade, uf } = response.data;
-
-      form.setFieldsValue({
-        street: logradouro,
-        neighborhood: bairro,
-        city: localidade,
-        state: uf,
-      });
+      setValue('street', logradouro);
+      setValue('neighborhood', bairro);
+      setValue('city', localidade);
+      setValue('state', uf);
     } catch (error) {
       console.error('Error fetching CEP:', error);
-      message.error('Erro ao buscar CEP');
+      toast.error('Erro ao buscar CEP');
     } finally {
       setLoadingCep(false);
     }
   };
 
-  const onFinish = async (values: any) => {
+  const onFinish = async (values: ClinicFormValues) => {
     try {
-      message.loading({ content: 'Salvando configurações...', key: 'saving' });
-
+      toast.loading('Salvando configurações...', { id: 'saving' });
       const fullAddress = values.street
         ? `${values.street}, ${values.number}${values.complement ? ` - ${values.complement}` : ''} - ${values.neighborhood} - ${values.city}/${values.state}`
-        : values.address || '';
-
+        : '';
       const payload: Record<string, unknown> = {
         name: values.clinicName,
         email: values.email,
@@ -236,23 +261,16 @@ export default function SettingsPage() {
         cep: values.cep,
       };
       await api.put('/tenants/me', payload);
-
-      message.success({ content: 'Configurações salvas com sucesso!', key: 'saving' });
+      toast.success('Configurações salvas com sucesso!', { id: 'saving' });
     } catch (error) {
       console.error('Error saving settings:', error);
-      message.error({ content: 'Erro ao salvar configurações', key: 'saving' });
+      toast.error('Erro ao salvar configurações', { id: 'saving' });
     }
   };
 
-  const onCreateTenant = async (values: {
-    name: string;
-    code: string;
-    initialUserName?: string;
-    initialUserEmail?: string;
-    initialUserPassword?: string;
-  }) => {
+  const onCreateTenant = async (values: TenantFormValues) => {
     if (!values.name?.trim() || !values.code?.trim()) {
-      message.warning('Preencha nome e código');
+      toast.warning('Preencha nome e código');
       return;
     }
     setCreatingTenant(true);
@@ -269,15 +287,14 @@ export default function SettingsPage() {
         };
       }
       await api.post('/tenants', payload);
-      message.success(
+      toast.success(
         payload.initialUser
           ? `Clínica "${values.name}" e usuário criados. Código: ${payload.code}`
           : `Clínica "${values.name}" criada. Código para login: ${payload.code}`,
       );
-      formNewTenant.resetFields();
+      resetTenant();
     } catch (e: any) {
-      const msg = e.response?.data?.message || 'Erro ao criar clínica';
-      message.error(msg);
+      toast.error(e.response?.data?.message || 'Erro ao criar clínica');
     } finally {
       setCreatingTenant(false);
     }
@@ -288,219 +305,278 @@ export default function SettingsPage() {
     try {
       await api.put('/tenants/me', { whatsapp_ai_chatbot_enabled: enabled });
       setChatbotEnabled(enabled);
-      message.success(enabled ? 'Chatbot de IA ativado' : 'Chatbot de IA desativado');
+      toast.success(enabled ? 'Chatbot de IA ativado' : 'Chatbot de IA desativado');
     } catch (e: any) {
-      message.error(e.response?.data?.message ?? 'Erro ao salvar');
+      toast.error(e.response?.data?.message ?? 'Erro ao salvar');
     } finally {
       setChatbotSaving(false);
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+      </div>
+    );
+  }
+
   return (
     <div>
       <h1 className="text-2xl font-bold text-blue-600 flex items-center gap-2 mb-6">
-        <SettingOutlined /> Configurações
+        <Settings className="w-6 h-6" /> Configurações
       </h1>
 
       {canManageChatbot && (
-        <Card
-          className="mb-6 shadow-sm border-blue-200 bg-gradient-to-br from-blue-50/80 to-white"
-          title={
-            <span className="text-blue-800 font-semibold">Chatbot WhatsApp — respostas automáticas com IA</span>
-          }
-        >
-          <Space direction="vertical" size="middle" className="w-full">
-            <div className="flex flex-wrap items-center gap-3">
-              <Switch
-                checked={chatbotEnabled}
-                loading={chatbotSaving}
-                onChange={(v) => void saveChatbotToggle(v)}
-              />
-              <Typography.Text strong>{chatbotEnabled ? 'Ativo' : 'Desativado'}</Typography.Text>
+        <Card className="mb-6 shadow-sm border-blue-200 bg-gradient-to-br from-blue-50/80 to-white">
+          <CardHeader>
+            <CardTitle className="text-blue-800 font-semibold text-base">
+              Chatbot WhatsApp — respostas automáticas com IA
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-wrap items-center gap-3">
+                <Switch
+                  checked={chatbotEnabled}
+                  disabled={chatbotSaving}
+                  onCheckedChange={(v) => void saveChatbotToggle(v)}
+                />
+                {chatbotSaving && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+                <span className="font-semibold">{chatbotEnabled ? 'Ativo' : 'Desativado'}</span>
+              </div>
+              <p className="text-sm text-muted-foreground mb-0">
+                Quando <strong>ativo</strong>, cada mensagem de texto recebida no WhatsApp pode receber uma resposta
+                gerada pela IA (após classificação). Requer <code className="text-xs">OPENAI_API_KEY</code> e worker da
+                fila de IA no servidor. Casos de emergência usam texto fixo. Quem não é gestor/admin não vê esta opção.
+              </p>
             </div>
-            <Typography.Paragraph type="secondary" className="!mb-0 text-sm">
-              Quando <strong>ativo</strong>, cada mensagem de texto recebida no WhatsApp pode receber uma resposta
-              gerada pela IA (após classificação). Requer <code className="text-xs">OPENAI_API_KEY</code> e worker da
-              fila de IA no servidor. Casos de emergência usam texto fixo. Quem não é gestor/admin não vê esta opção.
-            </Typography.Paragraph>
-          </Space>
+          </CardContent>
         </Card>
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card title="Dados da Clínica" className="shadow-sm">
-          <Form form={form} layout="vertical" onFinish={onFinish}>
-            <Form.Item name="clinicName" label="Nome da Clínica">
-              <Input />
-            </Form.Item>
-            <Form.Item name="email" label="Email de Contato">
-              <Input />
-            </Form.Item>
-            <Form.Item name="phone" label="Telefone">
-              <Input />
-            </Form.Item>
-            <Form.Item name="brandName" label="Nome da marca (white-label)">
-              <Input placeholder="Ex: Vixen Vet" />
-            </Form.Item>
-            <Form.Item name="logoUrl" label="URL do logo">
-              <Input placeholder="https://cdn.empresa.com/logo.png" />
-            </Form.Item>
-            <div className="grid grid-cols-2 gap-4">
-              <Form.Item name="primaryColor" label="Cor principal">
-                <Input placeholder="#2563eb" />
-              </Form.Item>
-              <Form.Item name="subdomain" label="Subdomínio">
-                <Input placeholder="vixen" />
-              </Form.Item>
-            </div>
-            <Form.Item name="customDomain" label="Domínio customizado (opcional)">
-              <Input placeholder="app.empresa.com.br" />
-            </Form.Item>
+        <Card className="shadow-sm">
+          <CardHeader>
+            <CardTitle>Dados da Clínica</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit(onFinish)} className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <Label>Nome da Clínica</Label>
+                <Input {...register('clinicName')} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label>Email de Contato</Label>
+                <Input {...register('email')} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label>Telefone</Label>
+                <Input {...register('phone')} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label>Nome da marca (white-label)</Label>
+                <Input {...register('brandName')} placeholder="Ex: Vixen Vet" />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label>URL do logo</Label>
+                <Input {...register('logoUrl')} placeholder="https://cdn.empresa.com/logo.png" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <Label>Cor principal</Label>
+                  <Input {...register('primaryColor')} placeholder="#2563eb" />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label>Subdomínio</Label>
+                  <Input {...register('subdomain')} placeholder="vixen" />
+                </div>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label>Domínio customizado (opcional)</Label>
+                <Input {...register('customDomain')} placeholder="app.empresa.com.br" />
+              </div>
 
-            <div className="grid grid-cols-3 gap-4">
-              <div className="col-span-1">
-                <Form.Item label="CEP">
+              <div className="grid grid-cols-3 gap-4">
+                <div className="col-span-1 flex flex-col gap-1.5">
+                  <Label>CEP</Label>
                   <div className="flex gap-2">
-                    <Form.Item name="cep" noStyle>
-                      <MaskedInput mask="00000-000" disabled={loadingCep} className="w-full" />
-                    </Form.Item>
+                    <Input {...register('cep')} disabled={loadingCep} placeholder="00000-000" className="flex-1" />
                     <Button
-                      type="primary"
-                      icon={<SearchOutlined />}
+                      type="button"
+                      size="icon"
                       onClick={handleCepSearch}
                       disabled={loadingCep}
                       className="bg-blue-600"
-                    />
+                    >
+                      {loadingCep ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                    </Button>
                   </div>
-                </Form.Item>
-              </div>
-              <div className="col-span-2">
-                <div className="grid grid-cols-3 gap-2">
-                  <Form.Item name="street" label="Logradouro" className="col-span-2">
-                    <Input placeholder="Rua, Av, etc" />
-                  </Form.Item>
-                  <Form.Item name="number" label="Número">
-                    <Input placeholder="123" />
-                  </Form.Item>
+                </div>
+                <div className="col-span-2">
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="col-span-2 flex flex-col gap-1.5">
+                      <Label>Logradouro</Label>
+                      <Input {...register('street')} placeholder="Rua, Av, etc" />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <Label>Número</Label>
+                      <Input {...register('number')} placeholder="123" />
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="grid grid-cols-3 gap-4">
-              <Form.Item name="complement" label="Complemento">
-                <Input placeholder="Apto 101" />
-              </Form.Item>
-              <Form.Item name="neighborhood" label="Bairro">
-                <Input />
-              </Form.Item>
-              <Form.Item name="city" label="Cidade">
-                <Input />
-              </Form.Item>
-            </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <Label>Complemento</Label>
+                  <Input {...register('complement')} placeholder="Apto 101" />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label>Bairro</Label>
+                  <Input {...register('neighborhood')} />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label>Cidade</Label>
+                  <Input {...register('city')} />
+                </div>
+              </div>
 
-            <div className="grid grid-cols-3 gap-4">
-              <Form.Item name="state" label="UF">
-                <Input maxLength={2} />
-              </Form.Item>
-            </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <Label>UF</Label>
+                  <Input {...register('state')} maxLength={2} />
+                </div>
+              </div>
 
-            <Form.Item>
-              <Button type="primary" htmlType="submit" icon={<SaveOutlined />} className="bg-blue-600">
-                Salvar Alterações
-              </Button>
-            </Form.Item>
-          </Form>
+              <div>
+                <Button type="submit" className="bg-blue-600">
+                  <Save className="w-4 h-4 mr-2" />
+                  Salvar Alterações
+                </Button>
+              </div>
+            </form>
+          </CardContent>
         </Card>
 
-        <Card title="Integração Google Agenda" className="shadow-sm">
-          <div className="flex flex-col gap-3">
-            <div>
-              <h4 className="font-bold text-gray-700">Status</h4>
-              <p className="text-gray-500">
-                {googleStatus.connected
-                  ? `Conectado${googleStatus.accountEmail ? ` (${googleStatus.accountEmail})` : ''}`
-                  : 'Desconectado'}
-              </p>
-            </div>
-            <div className="flex gap-2 flex-wrap">
-              <Button type="primary" onClick={handleGoogleConnect} loading={googleLoading} className="bg-blue-600">
-                Conectar Google
-              </Button>
-              <Button onClick={fetchGoogleStatus} loading={googleLoading}>
-                Atualizar Status
-              </Button>
-              {googleStatus.connected && (
-                <Button danger onClick={handleGoogleDisconnect} loading={googleLoading}>
-                  Desconectar
+        <Card className="shadow-sm">
+          <CardHeader>
+            <CardTitle>Integração Google Agenda</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col gap-3">
+              <div>
+                <h4 className="font-bold text-gray-700">Status</h4>
+                <p className="text-gray-500">
+                  {googleStatus.connected
+                    ? `Conectado${googleStatus.accountEmail ? ` (${googleStatus.accountEmail})` : ''}`
+                    : 'Desconectado'}
+                </p>
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                <Button onClick={handleGoogleConnect} disabled={googleLoading} className="bg-blue-600">
+                  {googleLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  Conectar Google
                 </Button>
+                <Button variant="outline" onClick={fetchGoogleStatus} disabled={googleLoading}>
+                  {googleLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                  Atualizar Status
+                </Button>
+                {googleStatus.connected && (
+                  <Button variant="destructive" onClick={handleGoogleDisconnect} disabled={googleLoading}>
+                    Desconectar
+                  </Button>
+                )}
+              </div>
+              {googleStatus.connected && (
+                <>
+                  <Separator />
+                  <div className="flex gap-2">
+                    <Input
+                      value={selectedCalendarId}
+                      onChange={(e) => setSelectedCalendarId(e.target.value)}
+                      placeholder="ID do calendário (ex: primary)"
+                    />
+                    <Button onClick={handleGoogleSaveCalendar} disabled={googleLoading} className="bg-blue-600">
+                      Salvar calendário
+                    </Button>
+                  </div>
+                  {googleCalendars.length > 0 && (
+                    <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
+                      Disponíveis: {googleCalendars.map((c) => c.summary).join(', ')}
+                    </div>
+                  )}
+                </>
               )}
             </div>
-            {googleStatus.connected && (
-              <>
-                <Divider />
-                <div className="flex gap-2">
-                  <Input
-                    value={selectedCalendarId}
-                    onChange={(e) => setSelectedCalendarId(e.target.value)}
-                    placeholder="ID do calendário (ex: primary)"
-                  />
-                  <Button onClick={handleGoogleSaveCalendar} loading={googleLoading} type="primary" className="bg-blue-600">
-                    Salvar calendário
-                  </Button>
-                </div>
-                {googleCalendars.length > 0 && (
-                  <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
-                    Disponíveis: {googleCalendars.map((c) => c.summary).join(', ')}
-                  </div>
-                )}
-              </>
-            )}
-          </div>
+          </CardContent>
         </Card>
 
-        <Card title="Sistema" className="shadow-sm md:col-span-2">
-          <div className="flex flex-col sm:flex-row sm:items-start sm:gap-10 gap-4">
-            <div>
-              <h4 className="font-bold text-gray-700">Versão do Sistema</h4>
-              <p className="text-gray-500">v1.0.0</p>
+        <Card className="shadow-sm md:col-span-2">
+          <CardHeader>
+            <CardTitle>Sistema</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col sm:flex-row sm:items-start sm:gap-10 gap-4">
+              <div>
+                <h4 className="font-bold text-gray-700">Versão do Sistema</h4>
+                <p className="text-gray-500">v1.0.0</p>
+              </div>
+              <div className="sm:border-l sm:border-gray-200 sm:pl-10 flex-1 min-w-0">
+                <h4 className="font-bold text-gray-700">Tenant ID</h4>
+                <p className="text-gray-500 font-mono text-xs bg-gray-100 p-2 rounded break-all mt-1">
+                  {typeof window !== 'undefined' ? localStorage.getItem('tenantId') : 'Loading...'}
+                </p>
+              </div>
             </div>
-            <div className="sm:border-l sm:border-gray-200 sm:pl-10 flex-1 min-w-0">
-              <h4 className="font-bold text-gray-700">Tenant ID</h4>
-              <p className="text-gray-500 font-mono text-xs bg-gray-100 p-2 rounded break-all mt-1">
-                {typeof window !== 'undefined' ? localStorage.getItem('tenantId') : 'Loading...'}
-              </p>
-            </div>
-          </div>
+          </CardContent>
         </Card>
 
         {isSuperAdmin && (
-          <Card title="Nova clínica (para testes)" className="shadow-sm md:col-span-2">
-            <p className="text-gray-500 mb-4">
-              Crie uma clínica para usuários testarem. Informe o <strong>código</strong> na tela de login. Opcional: cadastre o primeiro usuário (admin) da clínica.
-            </p>
-            <Form form={formNewTenant} layout="vertical" onFinish={onCreateTenant} className="max-w-md">
-              <Form.Item name="name" label="Nome da clínica" rules={[{ required: true, message: 'Obrigatório' }]}>
-                <Input placeholder="Ex: Clínica Teste" />
-              </Form.Item>
-              <Form.Item name="code" label="Código (usado no login)" rules={[{ required: true, message: 'Obrigatório' }]}>
-                <Input placeholder="Ex: TESTE" />
-              </Form.Item>
-              <Divider plain>Primeiro usuário (opcional)</Divider>
-              <Form.Item name="initialUserName" label="Nome do usuário">
-                <Input placeholder="Ex: Admin Teste" />
-              </Form.Item>
-              <Form.Item name="initialUserEmail" label="Email">
-                <Input type="email" placeholder="Ex: admin@teste.com" />
-              </Form.Item>
-              <Form.Item name="initialUserPassword" label="Senha">
-                <Input.Password placeholder="Senha de acesso" />
-              </Form.Item>
-              <Form.Item>
-                <Button type="primary" htmlType="submit" icon={<PlusOutlined />} loading={creatingTenant} className="bg-blue-600">
-                  Criar clínica
-                </Button>
-              </Form.Item>
-            </Form>
+          <Card className="shadow-sm md:col-span-2">
+            <CardHeader>
+              <CardTitle>Nova clínica (para testes)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-500 mb-4">
+                Crie uma clínica para usuários testarem. Informe o <strong>código</strong> na tela de login. Opcional:
+                cadastre o primeiro usuário (admin) da clínica.
+              </p>
+              <form onSubmit={handleSubmitTenant(onCreateTenant)} className="max-w-md flex flex-col gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <Label>Nome da clínica *</Label>
+                  <Input {...registerTenant('name', { required: true })} placeholder="Ex: Clínica Teste" />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label>Código (usado no login) *</Label>
+                  <Input {...registerTenant('code', { required: true })} placeholder="Ex: TESTE" />
+                </div>
+                <Separator />
+                <p className="text-xs text-muted-foreground">Primeiro usuário (opcional)</p>
+                <div className="flex flex-col gap-1.5">
+                  <Label>Nome do usuário</Label>
+                  <Input {...registerTenant('initialUserName')} placeholder="Ex: Admin Teste" />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label>Email</Label>
+                  <Input {...registerTenant('initialUserEmail')} type="email" placeholder="Ex: admin@teste.com" />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label>Senha</Label>
+                  <Input {...registerTenant('initialUserPassword')} type="password" placeholder="Senha de acesso" />
+                </div>
+                <div>
+                  <Button type="submit" disabled={creatingTenant} className="bg-blue-600">
+                    {creatingTenant ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Plus className="w-4 h-4 mr-2" />
+                    )}
+                    Criar clínica
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
           </Card>
         )}
       </div>

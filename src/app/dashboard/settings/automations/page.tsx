@@ -1,8 +1,18 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Card, Table, Button, Modal, Form, Input, Select, Switch, message, Space } from 'antd';
-import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { toast } from 'sonner';
+import { useForm, Controller } from 'react-hook-form';
+import { Plus, Trash2, Loader2 } from 'lucide-react';
 import api from '@/lib/axios';
 
 interface WorkflowConfig {
@@ -23,11 +33,23 @@ const ACTION_TYPES = [
   { value: 'create_notification', label: 'Criar notificação' },
 ];
 
+type FormValues = {
+  event_name: string;
+  action_type: string;
+  delay_minutes: number;
+  channel?: string;
+  template_message?: string;
+  description?: string;
+  is_active: boolean;
+};
+
 export default function SettingsAutomationsPage() {
   const [list, setList] = useState<WorkflowConfig[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
-  const [form] = Form.useForm();
+  const { register, handleSubmit, reset, control, formState: { errors } } = useForm<FormValues>({
+    defaultValues: { delay_minutes: 0, is_active: true },
+  });
 
   const fetchList = async () => {
     setLoading(true);
@@ -35,7 +57,7 @@ export default function SettingsAutomationsPage() {
       const res = await api.get<WorkflowConfig[]>('/workflow-configs');
       setList(Array.isArray(res.data) ? res.data : []);
     } catch {
-      message.error('Erro ao carregar automações');
+      toast.error('Erro ao carregar automações');
     } finally {
       setLoading(false);
     }
@@ -45,7 +67,7 @@ export default function SettingsAutomationsPage() {
     fetchList();
   }, []);
 
-  const onFinish = async (values: any) => {
+  const onSubmit = async (values: FormValues) => {
     try {
       await api.post('/workflow-configs', {
         event_name: values.event_name,
@@ -56,22 +78,22 @@ export default function SettingsAutomationsPage() {
         description: values.description || undefined,
         is_active: values.is_active !== false,
       });
-      message.success('Regra salva');
+      toast.success('Regra salva');
       setModalOpen(false);
-      form.resetFields();
+      reset();
       fetchList();
     } catch (e: any) {
-      message.error(e.response?.data?.message ?? 'Erro ao salvar');
+      toast.error(e.response?.data?.message ?? 'Erro ao salvar');
     }
   };
 
   const handleDelete = async (id: string) => {
     try {
       await api.delete(`/workflow-configs/${id}`);
-      message.success('Removido');
+      toast.success('Removido');
       fetchList();
     } catch (e: any) {
-      message.error(e.response?.data?.message ?? 'Erro ao remover');
+      toast.error(e.response?.data?.message ?? 'Erro ao remover');
     }
   };
 
@@ -79,60 +101,112 @@ export default function SettingsAutomationsPage() {
     <div>
       <h1 className="text-2xl font-bold text-blue-600 mb-6">Automações</h1>
       <Card>
-        <p className="text-slate-600 mb-4">Regras por evento (ex.: ao criar consulta → enviar lembrete WhatsApp).</p>
-        <Button type="primary" icon={<PlusOutlined />} onClick={() => setModalOpen(true)} className="mb-4 bg-blue-600">
-          Nova regra
-        </Button>
-        <Table
-          loading={loading}
-          dataSource={list}
-          rowKey="id"
-          columns={[
-            { title: 'Evento', dataIndex: 'event_name', key: 'event_name' },
-            { title: 'Ação', dataIndex: 'action_type', key: 'action_type' },
-            { title: 'Atraso (min)', dataIndex: 'delay_minutes', key: 'delay_minutes', width: 100 },
-            { title: 'Canal', dataIndex: 'channel', key: 'channel' },
-            { title: 'Ativo', dataIndex: 'is_active', key: 'is_active', render: (v: boolean) => (v ? 'Sim' : 'Não') },
-            {
-              title: 'Ações',
-              key: 'actions',
-              width: 80,
-              render: (_: any, r: WorkflowConfig) => (
-                <Button type="link" size="small" danger icon={<DeleteOutlined />} onClick={() => handleDelete(r.id)} />
-              ),
-            },
-          ]}
-        />
+        <CardContent className="pt-6">
+          <p className="text-slate-600 mb-4">Regras por evento (ex.: ao criar consulta → enviar lembrete WhatsApp).</p>
+          <Button onClick={() => setModalOpen(true)} className="mb-4 bg-blue-600">
+            <Plus className="w-4 h-4 mr-2" /> Nova regra
+          </Button>
+          {loading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Evento</TableHead>
+                  <TableHead>Ação</TableHead>
+                  <TableHead className="w-[100px]">Atraso (min)</TableHead>
+                  <TableHead>Canal</TableHead>
+                  <TableHead>Ativo</TableHead>
+                  <TableHead className="w-[80px]">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {list.map((r) => (
+                  <TableRow key={r.id}>
+                    <TableCell>{r.event_name}</TableCell>
+                    <TableCell>{r.action_type}</TableCell>
+                    <TableCell>{r.delay_minutes}</TableCell>
+                    <TableCell>{r.channel}</TableCell>
+                    <TableCell>{r.is_active ? 'Sim' : 'Não'}</TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" onClick={() => handleDelete(r.id)}>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
       </Card>
 
-      <Modal title="Nova regra de automação" open={modalOpen} onCancel={() => setModalOpen(false)} footer={null}>
-        <Form form={form} layout="vertical" onFinish={onFinish}>
-          <Form.Item name="event_name" label="Nome do evento" rules={[{ required: true }]}>
-            <Input placeholder="Ex.: consultation.created.v1" />
-          </Form.Item>
-          <Form.Item name="action_type" label="Tipo de ação" rules={[{ required: true }]}>
-            <Select options={ACTION_TYPES} placeholder="Selecione" />
-          </Form.Item>
-          <Form.Item name="delay_minutes" label="Atraso (minutos)" rules={[{ required: true }]} initialValue={0}>
-            <Input type="number" min={0} />
-          </Form.Item>
-          <Form.Item name="channel" label="Canal">
-            <Input placeholder="Ex.: whatsapp" />
-          </Form.Item>
-          <Form.Item name="template_message" label="Mensagem modelo">
-            <Input.TextArea rows={2} placeholder="Texto da mensagem (placeholders conforme evento)" />
-          </Form.Item>
-          <Form.Item name="description" label="Descrição">
-            <Input placeholder="Descrição da regra" />
-          </Form.Item>
-          <Form.Item name="is_active" label="Ativo" valuePropName="checked" initialValue={true}>
-            <Switch />
-          </Form.Item>
-          <Form.Item>
-            <Button type="primary" htmlType="submit" className="bg-blue-600">Salvar</Button>
-          </Form.Item>
-        </Form>
-      </Modal>
+      <Dialog open={modalOpen} onOpenChange={(open) => { setModalOpen(open); if (!open) reset(); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Nova regra de automação</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <div>
+              <Label htmlFor="event_name">Nome do evento</Label>
+              <Input id="event_name" placeholder="Ex.: consultation.created.v1" {...register('event_name', { required: true })} />
+              {errors.event_name && <p className="text-red-500 text-xs mt-1">Campo obrigatório</p>}
+            </div>
+            <div>
+              <Label>Tipo de ação</Label>
+              <Controller
+                name="action_type"
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ACTION_TYPES.map((t) => (
+                        <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              {errors.action_type && <p className="text-red-500 text-xs mt-1">Campo obrigatório</p>}
+            </div>
+            <div>
+              <Label htmlFor="delay_minutes">Atraso (minutos)</Label>
+              <Input id="delay_minutes" type="number" min={0} {...register('delay_minutes', { required: true })} />
+            </div>
+            <div>
+              <Label htmlFor="channel">Canal</Label>
+              <Input id="channel" placeholder="Ex.: whatsapp" {...register('channel')} />
+            </div>
+            <div>
+              <Label htmlFor="template_message">Mensagem modelo</Label>
+              <Textarea id="template_message" rows={2} placeholder="Texto da mensagem (placeholders conforme evento)" {...register('template_message')} />
+            </div>
+            <div>
+              <Label htmlFor="description">Descrição</Label>
+              <Input id="description" placeholder="Descrição da regra" {...register('description')} />
+            </div>
+            <div className="flex items-center gap-2">
+              <Controller
+                name="is_active"
+                control={control}
+                render={({ field }) => (
+                  <Switch id="is_active" checked={field.value} onCheckedChange={field.onChange} />
+                )}
+              />
+              <Label htmlFor="is_active">Ativo</Label>
+            </div>
+            <DialogFooter>
+              <Button type="submit" className="bg-blue-600">Salvar</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

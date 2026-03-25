@@ -1,16 +1,29 @@
 'use client';
 
 import React from 'react';
-import { Form, Input, Button, Card, Typography, message } from 'antd';
-import { UserOutlined, LockOutlined, ShopOutlined } from '@ant-design/icons';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
+import { Building2, Mail, Lock, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent } from '@/components/ui/card';
 import Logo from '@/components/Logo';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import api from '@/lib/axios';
 import { fetchPublicBranding } from '@/lib/branding';
 
-const { Title, Text } = Typography;
+const loginSchema = z.object({
+  tenantCode: z.string().optional(),
+  email: z.string().email(),
+  password: z.string().min(1),
+});
+
+type LoginForm = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const { t } = useTranslation('common');
@@ -20,6 +33,10 @@ export default function LoginPage() {
   const [brandLogo, setBrandLogo] = React.useState<string | null>(null);
   const [defaultTenantCode, setDefaultTenantCode] = React.useState<string | null>(null);
 
+  const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>({
+    resolver: zodResolver(loginSchema),
+  });
+
   React.useEffect(() => {
     fetchPublicBranding().then((branding) => {
       setBrandName(branding.appName || 'NixVetApp');
@@ -28,37 +45,34 @@ export default function LoginPage() {
     });
   }, []);
 
-  const onFinish = async (values: any) => {
+  const onSubmit = async (values: LoginForm) => {
     setLoading(true);
     try {
       const tenantCode = values.tenantCode || defaultTenantCode || 'NIXVET';
-      
       const response = await api.post('/auth/login', {
         email: values.email,
         password: values.password,
-        tenantCode: tenantCode
+        tenantCode,
       });
 
       const { access_token, user } = response.data;
-
       localStorage.setItem('accessToken', access_token);
-      localStorage.setItem('tenantId', user.tenant_id); // Save ID for headers
-      localStorage.setItem('tenantCode', tenantCode); // Save code for display
+      localStorage.setItem('tenantId', user.tenant_id);
+      localStorage.setItem('tenantCode', tenantCode);
       localStorage.setItem('user', JSON.stringify(user));
-      
-      message.success(t('auth.welcome', { name: user.name }));
+
+      toast.success(t('auth.welcome', { name: user.name }));
       router.push('/dashboard');
     } catch (error: any) {
-      console.error(error);
       const msg = error.response?.data?.message || t('auth.loginFailed');
-      message.error(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 py-12 px-4">
       <div className="absolute top-4 right-4 z-10">
         <LanguageSwitcher />
       </div>
@@ -67,82 +81,85 @@ export default function LoginPage() {
           <div className="flex justify-center mb-4">
             <Logo width={80} height={80} src={brandLogo} alt={brandName} />
           </div>
-          <Title level={2} className="!text-blue-600 !mb-2">
-            {brandName}
-          </Title>
-          <Text className="text-gray-500 text-lg">{t('auth.subtitle')}</Text>
+          <h1 className="text-2xl font-bold text-primary mb-2">{brandName}</h1>
+          <p className="text-slate-500 text-lg">{t('auth.subtitle')}</p>
         </div>
 
-        <Card className="shadow-xl rounded-2xl border-0 overflow-hidden">
-          <div className="p-4">
-            <Form
-              name="login"
-              initialValues={{ remember: true }}
-              onFinish={onFinish}
-              layout="vertical"
-              size="large"
-            >
-              <Form.Item
-                name="tenantCode"
-                label={<span className="text-gray-600 font-medium">{t('auth.tenantCodeLabel')}</span>}
+        <Card className="shadow-xl rounded-2xl border-0">
+          <CardContent className="p-6">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="tenantCode" className="text-slate-600 font-medium">
+                  {t('auth.tenantCodeLabel')}
+                </Label>
+                <div className="relative">
+                  <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+                  <Input
+                    id="tenantCode"
+                    className="pl-9"
+                    placeholder={t('auth.tenantCodePlaceholder')}
+                    {...register('tenantCode')}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="email" className="text-slate-600 font-medium">
+                  {t('auth.emailLabel')}
+                </Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+                  <Input
+                    id="email"
+                    type="email"
+                    className="pl-9"
+                    placeholder={t('auth.emailPlaceholder')}
+                    aria-invalid={!!errors.email}
+                    {...register('email')}
+                  />
+                </div>
+                {errors.email && <p className="text-xs text-destructive">{t('auth.emailInvalid')}</p>}
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="password" className="text-slate-600 font-medium">
+                  {t('auth.passwordLabel')}
+                </Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+                  <Input
+                    id="password"
+                    type="password"
+                    className="pl-9"
+                    placeholder={t('auth.passwordPlaceholder')}
+                    aria-invalid={!!errors.password}
+                    {...register('password')}
+                  />
+                </div>
+                {errors.password && <p className="text-xs text-destructive">{t('auth.passwordRequired')}</p>}
+              </div>
+
+              <Button
+                type="submit"
+                className="w-full h-11 text-base font-medium mt-2"
+                disabled={loading}
               >
-                 <Input 
-                  prefix={<ShopOutlined className="text-gray-400" />} 
-                  placeholder={t('auth.tenantCodePlaceholder')}
-                  className="rounded-lg"
-                />
-              </Form.Item>
+                {loading && <Loader2 className="size-4 animate-spin" />}
+                {t('auth.submit')}
+              </Button>
 
-              <Form.Item
-                name="email"
-                label={<span className="text-gray-600 font-medium">{t('auth.emailLabel')}</span>}
-                rules={[
-                  { required: true, message: t('auth.emailRequired') },
-                  { type: 'email', message: t('auth.emailInvalid') },
-                ]}
-              >
-                <Input 
-                  prefix={<UserOutlined className="text-gray-400" />} 
-                  placeholder={t('auth.emailPlaceholder')}
-                  className="rounded-lg"
-                />
-              </Form.Item>
-
-              <Form.Item
-                name="password"
-                label={<span className="text-gray-600 font-medium">{t('auth.passwordLabel')}</span>}
-                rules={[{ required: true, message: t('auth.passwordRequired') }]}
-              >
-                <Input.Password
-                  prefix={<LockOutlined className="text-gray-400" />}
-                  placeholder={t('auth.passwordPlaceholder')}
-                  className="rounded-lg"
-                />
-              </Form.Item>
-
-              <Form.Item className="mb-2">
-                <Button 
-                  type="primary" 
-                  htmlType="submit" 
-                  className="w-full h-12 text-lg font-medium bg-blue-600 hover:bg-blue-700 rounded-lg border-none shadow-md hover:shadow-lg transition-all"
-                  loading={loading}
-                >
-                  {t('auth.submit')}
-                </Button>
-              </Form.Item>
-
-              <div className="text-center mt-4">
-                <a href="#" className="text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors">
+              <div className="text-center">
+                <a href="#" className="text-primary hover:text-primary/80 text-sm font-medium transition-colors">
                   {t('auth.forgotPassword')}
                 </a>
               </div>
-            </Form>
-          </div>
+            </form>
+          </CardContent>
         </Card>
-        
-        <div className="text-center mt-8 text-gray-400 text-sm">
+
+        <p className="text-center mt-8 text-slate-400 text-sm">
           © {new Date().getFullYear()} {brandName}. {t('auth.footer')}
-        </div>
+        </p>
       </div>
     </div>
   );

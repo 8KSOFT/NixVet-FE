@@ -1,25 +1,42 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Layout, Menu, Button, Avatar, Badge, Drawer, Dropdown, List, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
-import {
-  MenuFoldOutlined,
-  MenuUnfoldOutlined,
-  DashboardOutlined,
-  UserOutlined,
-  TeamOutlined,
-  MedicineBoxOutlined,
-  FileSearchOutlined,
-  CalendarOutlined,
-  SettingOutlined,
-  LogoutOutlined,
-  MessageOutlined,
-  BellOutlined,
-  UnorderedListOutlined,
-} from '@ant-design/icons';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
+import {
+  LayoutDashboard,
+  Users,
+  Stethoscope,
+  CalendarDays,
+  Settings,
+  LogOut,
+  MessageSquare,
+  Bell,
+  ChevronLeft,
+  ChevronRight,
+  Menu,
+  User,
+  ClipboardList,
+  Syringe,
+  FileSearch,
+  BookOpen,
+  FlaskConical,
+} from 'lucide-react';
+import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { cn } from '@/lib/utils';
 import Logo from '@/components/Logo';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import api from '@/lib/axios';
@@ -39,13 +56,12 @@ function NotificationsBell() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [list, setList] = useState<ClinicNotification[]>([]);
   const [loading, setLoading] = useState(false);
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [open, setOpen] = useState(false);
 
   const fetchUnread = () => {
     api.get<number>('/notifications/unread-count').then((r) => setUnreadCount(Number(r.data ?? 0))).catch(() => {});
   };
 
-  /** Lista todas (lidas + não lidas), mais recentes primeiro */
   const fetchList = () => {
     setLoading(true);
     api
@@ -62,19 +78,17 @@ function NotificationsBell() {
   }, []);
 
   useEffect(() => {
-    if (drawerOpen) {
+    if (open) {
       fetchList();
       fetchUnread();
     }
-  }, [drawerOpen]);
+  }, [open]);
 
   const markRead = async (id: string) => {
     try {
       await api.post(`/notifications/${id}/read`);
       fetchUnread();
-      setList((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)),
-      );
+      setList((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)));
     } catch {}
   };
 
@@ -88,76 +102,152 @@ function NotificationsBell() {
 
   return (
     <>
-      <Badge count={unreadCount} size="small" offset={[-2, 2]}>
-        <Button
-          type="text"
-          icon={<BellOutlined className="text-lg" />}
-          onClick={() => setDrawerOpen(true)}
-          className="flex items-center justify-center w-10 h-10 rounded-xl text-slate-600 hover:bg-slate-100 hover:text-blue-600"
-          aria-label={t('notifications.title')}
-        />
-      </Badge>
-      <Drawer
-        title={t('notifications.title')}
-        placement="right"
-        width={420}
-        onClose={() => setDrawerOpen(false)}
-        open={drawerOpen}
-        extra={
-          list.some((n) => !n.is_read) ? (
-            <Button type="link" size="small" onClick={() => void markAllRead()}>
-              {t('notifications.markAllRead')}
-            </Button>
-          ) : null
-        }
-        styles={{
-          body: { padding: 16, background: '#e2e8f0' },
-        }}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="relative text-slate-600 hover:text-blue-600"
+        onClick={() => setOpen(true)}
+        aria-label={t('notifications.title')}
       >
-        {loading ? (
-          <div className="py-12 text-center text-slate-500">{t('notifications.loading')}</div>
-        ) : list.length === 0 ? (
-          <div className="py-12 text-center text-slate-500">{t('notifications.empty')}</div>
-        ) : (
-          <List
-            dataSource={list}
-            renderItem={(n) => (
-              <List.Item
-                className="!px-0 !border-0 !mb-3"
-                style={{ border: 'none' }}
-              >
-                <button
-                  type="button"
-                  className={`w-full text-left rounded-lg border border-slate-200 shadow-sm p-3 transition-colors ${
-                    n.is_read ? 'bg-white' : 'bg-blue-50 border-blue-200'
-                  } hover:bg-slate-50`}
-                  onClick={() => void markRead(n.id)}
-                >
-                  <Typography.Text className="!text-slate-900 !text-sm block whitespace-pre-wrap break-words">
-                    {n.message}
-                  </Typography.Text>
-                  {!n.is_read && (
-                    <div className="flex justify-end mt-2">
-                      <span className="text-xs font-medium text-blue-600 shrink-0">Nova</span>
-                    </div>
-                  )}
-                </button>
-              </List.Item>
-            )}
-          />
+        <Bell className="size-5" />
+        {unreadCount > 0 && (
+          <span className="absolute -top-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+            {unreadCount > 9 ? '9+' : unreadCount}
+          </span>
         )}
-      </Drawer>
+      </Button>
+
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetContent side="right" className="w-[420px] p-0 flex flex-col">
+          <div className="flex items-center justify-between p-4 border-b">
+            <h2 className="text-base font-semibold">{t('notifications.title')}</h2>
+            {list.some((n) => !n.is_read) && (
+              <Button variant="ghost" size="sm" className="text-blue-600 text-xs h-auto py-1" onClick={() => void markAllRead()}>
+                {t('notifications.markAllRead')}
+              </Button>
+            )}
+          </div>
+          <ScrollArea className="flex-1 bg-slate-100 p-3">
+            {loading ? (
+              <p className="py-12 text-center text-slate-500 text-sm">{t('notifications.loading')}</p>
+            ) : list.length === 0 ? (
+              <p className="py-12 text-center text-slate-500 text-sm">{t('notifications.empty')}</p>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {list.map((n) => (
+                  <button
+                    key={n.id}
+                    type="button"
+                    className={cn(
+                      'w-full text-left rounded-lg border border-slate-200 shadow-sm p-3 transition-colors text-sm',
+                      n.is_read ? 'bg-white' : 'bg-blue-50 border-blue-200',
+                      'hover:bg-slate-50',
+                    )}
+                    onClick={() => void markRead(n.id)}
+                  >
+                    <p className="text-slate-900 whitespace-pre-wrap break-words">{n.message}</p>
+                    {!n.is_read && (
+                      <div className="flex justify-end mt-2">
+                        <span className="text-xs font-medium text-blue-600">Nova</span>
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </ScrollArea>
+        </SheetContent>
+      </Sheet>
     </>
   );
 }
 
-const { Header, Sider, Content } = Layout;
+const NAV_ITEMS = [
+  { key: 'dashboard', icon: LayoutDashboard, href: '/dashboard', labelKey: 'nav.dashboard' },
+  { key: 'patients', icon: Stethoscope, href: '/dashboard/patients', labelKey: 'nav.patients' },
+  { key: 'owners', icon: Users, href: '/dashboard/owners', labelKey: 'nav.owners' },
+  { key: 'team', icon: User, href: '/dashboard/team', labelKey: 'nav.team' },
+  { key: 'prescriptions', icon: ClipboardList, href: '/dashboard/prescriptions', labelKey: 'nav.prescriptions' },
+  { key: 'bulario', icon: BookOpen, href: '/dashboard/bulario', labelKey: 'nav.bulario' },
+  { key: 'exams', icon: FlaskConical, href: '/dashboard/exams', labelKey: 'nav.exams' },
+  { key: 'followups', icon: FileSearch, href: '/dashboard/followups', labelKey: 'nav.followups' },
+  { key: 'calendar', icon: CalendarDays, href: '/dashboard/calendar', labelKey: 'nav.calendar' },
+  { key: 'vaccines', icon: Syringe, href: '/dashboard/vaccines', labelKey: 'nav.vaccines' },
+  { key: 'tasks', icon: ClipboardList, href: '/dashboard/tasks', labelKey: 'nav.tasks' },
+  { key: 'whatsapp', icon: MessageSquare, href: '/dashboard/whatsapp', labelKey: 'nav.whatsapp' },
+  { key: 'settings', icon: Settings, href: '/dashboard/settings', labelKey: 'nav.settings' },
+] as const;
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+function getActiveKey(pathname: string): string {
+  if (pathname.includes('/dashboard/profile')) return 'profile';
+  if (pathname.includes('/dashboard/patients')) return 'patients';
+  if (pathname.includes('/dashboard/owners')) return 'owners';
+  if (pathname.includes('/dashboard/calendar')) return 'calendar';
+  if (pathname.includes('/dashboard/settings')) return 'settings';
+  if (pathname.includes('/dashboard/bulario')) return 'bulario';
+  if (pathname.includes('/dashboard/prescriptions')) return 'prescriptions';
+  if (pathname.includes('/dashboard/exams')) return 'exams';
+  if (pathname.includes('/dashboard/followups')) return 'followups';
+  if (pathname.includes('/dashboard/vaccines')) return 'vaccines';
+  if (pathname.includes('/dashboard/tasks')) return 'tasks';
+  if (pathname.includes('/dashboard/whatsapp')) return 'whatsapp';
+  if (pathname.includes('/dashboard/team')) return 'team';
+  return 'dashboard';
+}
+
+interface SidebarNavProps {
+  collapsed: boolean;
+  menuAllow: Set<string>;
+  activeKey: string;
+  brandName: string;
+  brandLogo: string | null;
+}
+
+function SidebarNav({ collapsed, menuAllow, activeKey, brandName, brandLogo }: SidebarNavProps) {
+  const { t } = useTranslation('common');
+  const items = NAV_ITEMS.filter((item) => menuAllow.has(item.key));
+  const visibleItems = items.length > 0 ? items : NAV_ITEMS.filter((i) => i.key === 'dashboard');
+
+  return (
+    <div className="flex flex-col h-full">
+      <div className="flex items-center h-16 px-4 border-b border-slate-200/80 shrink-0">
+        <div className={cn('flex items-center gap-3 w-full', collapsed && 'justify-center')}>
+          <Logo width={collapsed ? 36 : 44} height={collapsed ? 36 : 44} src={brandLogo} alt={brandName} />
+          {!collapsed && (
+            <span className="text-slate-800 font-semibold text-lg tracking-tight truncate">{brandName}</span>
+          )}
+        </div>
+      </div>
+      <ScrollArea className="flex-1 py-3">
+        <nav className="flex flex-col gap-0.5 px-2">
+          {visibleItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = activeKey === item.key;
+            return (
+              <Link
+                key={item.key}
+                href={item.href}
+                className={cn(
+                  'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
+                  isActive
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
+                  collapsed && 'justify-center px-2',
+                )}
+                title={collapsed ? t(item.labelKey) : undefined}
+              >
+                <Icon className={cn('shrink-0', collapsed ? 'size-5' : 'size-4')} />
+                {!collapsed && <span>{t(item.labelKey)}</span>}
+              </Link>
+            );
+          })}
+        </nav>
+      </ScrollArea>
+    </div>
+  );
+}
+
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [brandName, setBrandName] = useState('NixVet');
   const [brandLogo, setBrandLogo] = useState<string | null>(null);
@@ -165,7 +255,9 @@ export default function DashboardLayout({
   const [headerRole, setHeaderRole] = useState<string>(() => getStoredUserRole() || '');
   const router = useRouter();
   const pathname = usePathname();
-  const { t, i18n } = useTranslation('common');
+  const { t } = useTranslation('common');
+
+  const activeKey = getActiveKey(pathname);
 
   useEffect(() => {
     fetchPublicBranding().then((branding) => {
@@ -187,120 +279,42 @@ export default function DashboardLayout({
     router.push('/login');
   };
 
-  const userMenu = useMemo(
-    () => ({
-      items: [
-        {
-          key: 'profile',
-          icon: <UserOutlined />,
-          label: <Link href="/dashboard/profile">{t('userMenu.profile')}</Link>,
-        },
-        {
-          key: 'settings',
-          label: <Link href="/dashboard/settings">{t('userMenu.settings')}</Link>,
-          icon: <SettingOutlined />,
-        },
-        { type: 'divider' as const },
-        {
-          key: 'logout',
-          label: t('userMenu.logout'),
-          icon: <LogoutOutlined />,
-          danger: true,
-          onClick: handleLogout,
-        },
-      ],
-    }),
-    [t, i18n.language],
-  );
-
-  const getSelectedKey = () => {
-    if (pathname.includes('/dashboard/profile')) return 'profile';
-    if (pathname.includes('/dashboard/patients')) return 'patients';
-    if (pathname.includes('/dashboard/owners')) return 'owners';
-    if (pathname.includes('/dashboard/calendar')) return 'calendar';
-    if (pathname.includes('/dashboard/settings')) return 'settings';
-    if (pathname.includes('/dashboard/bulario')) return 'bulario';
-    if (pathname.includes('/dashboard/prescriptions')) return 'prescriptions';
-    if (pathname.includes('/dashboard/exams')) return 'exams';
-    if (pathname.includes('/dashboard/followups')) return 'followups';
-    if (pathname.includes('/dashboard/vaccines')) return 'vaccines';
-    if (pathname.includes('/dashboard/tasks')) return 'tasks';
-    if (pathname.includes('/dashboard/whatsapp')) return 'whatsapp';
-    return 'dashboard';
-  };
-
-  const allMenuItems = useMemo(
-    () => [
-      { key: 'dashboard', icon: <DashboardOutlined />, label: <Link href="/dashboard">{t('nav.dashboard')}</Link> },
-      { key: 'patients', icon: <MedicineBoxOutlined />, label: <Link href="/dashboard/patients">{t('nav.patients')}</Link> },
-      { key: 'owners', icon: <TeamOutlined />, label: <Link href="/dashboard/owners">{t('nav.owners')}</Link> },
-      { key: 'team', icon: <UserOutlined />, label: <Link href="/dashboard/team">{t('nav.team')}</Link> },
-      { key: 'prescriptions', icon: <MedicineBoxOutlined />, label: <Link href="/dashboard/prescriptions">{t('nav.prescriptions')}</Link> },
-      { key: 'bulario', icon: <MedicineBoxOutlined />, label: <Link href="/dashboard/bulario">{t('nav.bulario')}</Link> },
-      { key: 'exams', icon: <FileSearchOutlined />, label: <Link href="/dashboard/exams">{t('nav.exams')}</Link> },
-      { key: 'followups', icon: <FileSearchOutlined />, label: <Link href="/dashboard/followups">{t('nav.followups')}</Link> },
-      { key: 'calendar', icon: <CalendarOutlined />, label: <Link href="/dashboard/calendar">{t('nav.calendar')}</Link> },
-      { key: 'vaccines', icon: <MedicineBoxOutlined />, label: <Link href="/dashboard/vaccines">{t('nav.vaccines')}</Link> },
-      { key: 'tasks', icon: <UnorderedListOutlined />, label: <Link href="/dashboard/tasks">{t('nav.tasks')}</Link> },
-      { key: 'whatsapp', icon: <MessageOutlined />, label: <Link href="/dashboard/whatsapp">{t('nav.whatsapp')}</Link> },
-      { key: 'settings', icon: <SettingOutlined />, label: <Link href="/dashboard/settings">{t('nav.settings')}</Link> },
-    ],
-    [t, i18n.language],
-  );
-
-  const menuItems = useMemo(() => {
-    const filtered = allMenuItems.filter((item) => menuAllow.has(item.key));
-    return filtered.length > 0 ? filtered : allMenuItems.filter((i) => i.key === 'dashboard');
-  }, [allMenuItems, menuAllow]);
-
   const roleLabel = headerRole
     ? t(`roles.${headerRole}`, { defaultValue: headerRole })
     : t('header.roleUnknown');
 
   return (
-    <Layout className="min-h-screen bg-[#f1f5f9]">
-      <Sider
-        trigger={null}
-        collapsible
-        collapsed={collapsed}
-        width={260}
-        theme="light"
-        className="!bg-white border-r border-slate-200/80 shadow-sm"
-        style={{ overflow: 'auto', height: '100vh', position: 'fixed', left: 0, top: 0, bottom: 0, zIndex: 100 }}
+    <div className="flex min-h-screen bg-slate-50">
+      {/* Desktop sidebar */}
+      <aside
+        className={cn(
+          'fixed inset-y-0 left-0 z-50 bg-white border-r border-slate-200/80 shadow-sm transition-[width] duration-200',
+          collapsed ? 'w-[72px]' : 'w-[260px]',
+          'hidden lg:flex flex-col',
+        )}
       >
-        <div className="flex items-center h-16 px-4 border-b border-slate-200/80">
-          <div className={`flex items-center gap-3 w-full ${collapsed ? 'justify-center' : ''}`}>
-            <Logo
-              width={collapsed ? 44 : 52}
-              height={collapsed ? 44 : 52}
-              src={brandLogo}
-              alt={brandName}
-            />
-            {!collapsed && (
-              <span className="text-slate-800 font-semibold text-lg tracking-tight">{brandName}</span>
-            )}
-          </div>
-        </div>
-        <Menu
-          theme="light"
-          mode="inline"
-          selectedKeys={[getSelectedKey()]}
-          className="border-0 mt-3 px-2 !bg-transparent"
-          style={{ minHeight: 'calc(100vh - 64px)' }}
-          items={menuItems}
+        <SidebarNav
+          collapsed={collapsed}
+          menuAllow={menuAllow}
+          activeKey={activeKey}
+          brandName={brandName}
+          brandLogo={brandLogo}
         />
-      </Sider>
-      <Layout className={`transition-[margin-left] duration-200 ${collapsed ? 'ml-[80px]' : 'ml-[260px]'}`}>
-        <Header
-          className="sticky top-0 z-50 flex items-center justify-between h-16 px-6 bg-white border-b border-slate-200/80 shadow-sm"
-          style={{ padding: 0 }}
-        >
+      </aside>
+
+      {/* Main content */}
+      <div className={cn('flex flex-col flex-1 min-w-0 transition-[margin-left] duration-200', collapsed ? 'lg:ml-[72px]' : 'lg:ml-[260px]')}>
+        {/* Header */}
+        <header className="sticky top-0 z-40 flex items-center justify-between h-16 px-4 lg:px-6 bg-white border-b border-slate-200/80 shadow-sm">
           <Button
-            type="text"
-            icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+            variant="ghost"
+            size="icon"
+            className="text-slate-600 hover:text-blue-600"
             onClick={() => setCollapsed(!collapsed)}
-            className="flex items-center justify-center w-12 h-12 text-slate-600 hover:bg-slate-100 hover:text-blue-600 rounded-xl"
-          />
+          >
+            {collapsed ? <ChevronRight className="size-5" /> : <ChevronLeft className="size-5" />}
+          </Button>
+
           <div className="flex items-center gap-2">
             <LanguageSwitcher />
             <NotificationsBell />
@@ -308,20 +322,44 @@ export default function DashboardLayout({
               {t('header.greeting')}{' '}
               <strong className="text-slate-800">{roleLabel}</strong>
             </span>
-            <Dropdown menu={userMenu} placement="bottomRight" arrow>
-              <Avatar
-                className="cursor-pointer border-2 border-white shadow-md hover:ring-2 hover:ring-blue-200"
-                style={{ backgroundColor: '#2563eb' }}
-                icon={<UserOutlined />}
-                size="default"
-              />
-            </Dropdown>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Avatar className="cursor-pointer size-8 border-2 border-white shadow-md hover:ring-2 hover:ring-blue-200">
+                  <AvatarFallback className="bg-blue-600 text-white text-xs font-semibold">
+                    {roleLabel.substring(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard/profile" className="flex items-center gap-2">
+                    <User className="size-4" />
+                    {t('userMenu.profile')}
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard/settings" className="flex items-center gap-2">
+                    <Settings className="size-4" />
+                    {t('userMenu.settings')}
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="text-red-600 focus:text-red-600 flex items-center gap-2"
+                  onClick={handleLogout}
+                >
+                  <LogOut className="size-4" />
+                  {t('userMenu.logout')}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
-        </Header>
-        <Content className="p-6 min-h-[calc(100vh-64px)]">
+        </header>
+
+        <main className="flex-1 p-4 lg:p-6">
           {children}
-        </Content>
-      </Layout>
-    </Layout>
+        </main>
+      </div>
+    </div>
   );
 }
