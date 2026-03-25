@@ -1,7 +1,6 @@
 'use client';
 
-import React from 'react';
-import { useForm } from 'react-hook-form';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -12,26 +11,22 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import Logo from '@/components/Logo';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
-import api from '@/lib/axios';
+import { getApiBaseUrl } from '@/lib/api-base';
 import { fetchPublicBranding } from '@/lib/branding';
-
-interface LoginForm {
-  tenantCode?: string;
-  email: string;
-  password: string;
-}
 
 export default function LoginPage() {
   const { t } = useTranslation('common');
   const router = useRouter();
-  const [loading, setLoading] = React.useState(false);
-  const [brandName, setBrandName] = React.useState('NixVetApp');
-  const [brandLogo, setBrandLogo] = React.useState<string | null>(null);
-  const [defaultTenantCode, setDefaultTenantCode] = React.useState<string | null>(null);
 
-  const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [tenantCode, setTenantCode] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [brandName, setBrandName] = useState('NixVetApp');
+  const [brandLogo, setBrandLogo] = useState<string | null>(null);
+  const [defaultTenantCode, setDefaultTenantCode] = useState<string | null>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     fetchPublicBranding().then((branding) => {
       setBrandName(branding.appName || 'NixVetApp');
       setBrandLogo(branding.logoUrl);
@@ -39,28 +34,52 @@ export default function LoginPage() {
     });
   }, []);
 
-  const onSubmit = async (values: LoginForm) => {
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const trimmedEmail = email.trim().toLowerCase();
+    const trimmedPassword = password;
+
+    if (!trimmedEmail || !trimmedPassword) {
+      toast.error('Preencha email e senha.');
+      return;
+    }
+
     setLoading(true);
+
+    const code = tenantCode.trim() || defaultTenantCode?.trim() || 'NIXVET';
+    const apiBase = getApiBaseUrl();
+    const url = `${apiBase}/auth/login`;
+
     try {
-      const rawTenant = values.tenantCode?.trim() || defaultTenantCode?.trim() || '';
-      const tenantCode = rawTenant || 'NIXVET';
-      const response = await api.post('/auth/login', {
-        email: values.email.trim().toLowerCase(),
-        password: values.password,
-        tenantCode,
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: trimmedEmail,
+          password: trimmedPassword,
+          tenantCode: code,
+        }),
       });
 
-      const { access_token, user } = response.data;
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast.error(data?.message || t('auth.loginFailed'));
+        return;
+      }
+
+      const { access_token, user } = data;
       localStorage.setItem('accessToken', access_token);
       localStorage.setItem('tenantId', user.tenant_id);
-      localStorage.setItem('tenantCode', tenantCode);
+      localStorage.setItem('tenantCode', code);
       localStorage.setItem('user', JSON.stringify(user));
 
       toast.success(t('auth.welcome', { name: user.name }));
       router.push('/dashboard');
-    } catch (error: any) {
-      const msg = error.response?.data?.message || t('auth.loginFailed');
-      toast.error(msg);
+    } catch (err: any) {
+      console.error('[LOGIN] fetch error:', err);
+      toast.error(t('auth.loginFailed'));
     } finally {
       setLoading(false);
     }
@@ -82,7 +101,7 @@ export default function LoginPage() {
 
         <Card className="shadow-xl rounded-2xl border-0">
           <CardContent className="p-6">
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-1.5">
                 <Label htmlFor="tenantCode" className="text-slate-600 font-medium">
                   {t('auth.tenantCodeLabel')}
@@ -91,9 +110,11 @@ export default function LoginPage() {
                   <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
                   <Input
                     id="tenantCode"
+                    name="tenantCode"
                     className="pl-9"
                     placeholder={t('auth.tenantCodePlaceholder')}
-                    {...register('tenantCode')}
+                    value={tenantCode}
+                    onChange={(e) => setTenantCode(e.target.value)}
                   />
                 </div>
               </div>
@@ -106,14 +127,15 @@ export default function LoginPage() {
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
                   <Input
                     id="email"
+                    name="email"
                     type="email"
                     className="pl-9"
                     placeholder={t('auth.emailPlaceholder')}
-                    aria-invalid={!!errors.email}
-                    {...register('email')}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
                   />
                 </div>
-                {errors.email && <p className="text-xs text-destructive">{t('auth.emailInvalid')}</p>}
               </div>
 
               <div className="space-y-1.5">
@@ -124,14 +146,15 @@ export default function LoginPage() {
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
                   <Input
                     id="password"
+                    name="password"
                     type="password"
                     className="pl-9"
                     placeholder={t('auth.passwordPlaceholder')}
-                    aria-invalid={!!errors.password}
-                    {...register('password')}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
                   />
                 </div>
-                {errors.password && <p className="text-xs text-destructive">{t('auth.passwordRequired')}</p>}
               </div>
 
               <Button
