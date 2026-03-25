@@ -161,20 +161,28 @@ export default function CalendarPage() {
   const fetchGoogleStatus = async () => {
     try {
       const res = await api.get<{ connected: boolean }>('/integrations/google/status');
-      setGoogleConnected(res.data?.connected ?? false);
+      const connected = res.data?.connected ?? false;
+      setGoogleConnected(connected);
+      if (connected) {
+        // chamamos diretamente aqui para evitar stale closure no useEffect
+        const from = currentMonth.startOf('month').toISOString();
+        const to = currentMonth.endOf('month').toISOString();
+        const evRes = await api.get<GoogleEvent[]>('/integrations/google/events', { params: { from, to } });
+        setGoogleEvents(Array.isArray(evRes.data) ? evRes.data : []);
+      }
     } catch {
       setGoogleConnected(false);
     }
   };
 
   const fetchGoogleEvents = async (month: Dayjs) => {
-    if (!googleConnected) return;
     try {
       const from = month.startOf('month').toISOString();
       const to = month.endOf('month').toISOString();
       const res = await api.get<GoogleEvent[]>('/integrations/google/events', { params: { from, to } });
       setGoogleEvents(Array.isArray(res.data) ? res.data : []);
-    } catch {
+    } catch (e: any) {
+      message.warning(e?.response?.data?.message ?? 'Não foi possível carregar eventos do Google Calendar');
       setGoogleEvents([]);
     }
   };
@@ -193,7 +201,7 @@ export default function CalendarPage() {
       fetchGoogleEvents(currentMonth);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [googleConnected, currentMonth]);
+  }, [currentMonth]);
 
   const getListData = (value: Dayjs) => {
     const listData = consultations.filter(c =>
@@ -410,14 +418,14 @@ export default function CalendarPage() {
           </li>
         ))}
         {dayGoogleEvents
-          .filter((e) => !e.isFromNixVet)
           .map((e) => (
             <li key={`g-${e.id}`} className="mb-1">
               <Badge
-                color="#4285f4"
+                color={e.isFromNixVet ? '#93c5fd' : '#4285f4'}
                 text={
-                  <span className="text-xs text-blue-600">
+                  <span className={`text-xs ${e.isFromNixVet ? 'text-blue-400' : 'text-blue-600'}`}>
                     {e.start ? dayjs(e.start).format('HH:mm') : ''} {e.title}
+                    {e.isFromNixVet && ' ↗'}
                   </span>
                 }
               />
@@ -454,7 +462,10 @@ export default function CalendarPage() {
             <span className="inline-block w-2.5 h-2.5 rounded-full bg-green-500" /> Consulta NixVet
           </span>
           <span className="flex items-center gap-1">
-            <span className="inline-block w-2.5 h-2.5 rounded-full bg-blue-500" /> Evento Google Calendar
+            <span className="inline-block w-2.5 h-2.5 rounded-full bg-blue-500" /> Google Calendar externo
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="inline-block w-2.5 h-2.5 rounded-full bg-blue-200" /> Sincronizado do NixVet ↗
           </span>
         </div>
       )}

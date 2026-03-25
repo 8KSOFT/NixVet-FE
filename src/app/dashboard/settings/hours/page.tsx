@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Card, Tabs, Table, Button, Modal, Form, Input, Select, Switch, message, Popconfirm, Space, Tag } from 'antd';
+import { Card, Tabs, Table, Button, Modal, Form, Input, Select, Switch, message, Popconfirm, Space, Tag, Checkbox } from 'antd';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import api from '@/lib/axios';
 
@@ -138,22 +138,30 @@ export default function SettingsHoursPage() {
   };
 
   const onVetFinish = async (values: any) => {
-    try {
-      await api.post('/availability/config/veterinarian-schedules', {
-        user_id: values.user_id,
-        day_of_week: values.day_of_week,
-        start_time: values.start_time,
-        end_time: values.end_time,
-        slot_duration_minutes: values.slot_duration_minutes ?? 30,
-        schedule_type: values.schedule_type ?? 'regular',
-      });
-      message.success('Adicionado');
-      setVetModalOpen(false);
-      vetForm.resetFields();
-      fetchVetSchedules();
-    } catch (e: any) {
-      message.error(e.response?.data?.message ?? 'Erro ao salvar');
+    const days: number[] = Array.isArray(values.days_of_week) ? values.days_of_week : [values.days_of_week];
+    const errors: string[] = [];
+    for (const day of days) {
+      try {
+        await api.post('/availability/config/veterinarian-schedules', {
+          user_id: values.user_id,
+          day_of_week: day,
+          start_time: values.start_time,
+          end_time: values.end_time,
+          slot_duration_minutes: values.slot_duration_minutes ?? 30,
+          schedule_type: values.schedule_type ?? 'regular',
+        });
+      } catch (e: any) {
+        errors.push(`${DAYS.find(d => d.value === day)?.label}: ${e.response?.data?.message ?? 'Erro'}`);
+      }
     }
+    if (errors.length) {
+      message.error(errors.join('\n'));
+    } else {
+      message.success(days.length > 1 ? `${days.length} horários adicionados` : 'Adicionado');
+    }
+    setVetModalOpen(false);
+    vetForm.resetFields();
+    fetchVetSchedules();
   };
 
   const handleDeleteVetSchedule = async (id: string) => {
@@ -440,8 +448,14 @@ export default function SettingsHoursPage() {
               options={veterinarians.map((v) => ({ value: v.id, label: v.name }))}
             />
           </Form.Item>
-          <Form.Item name="day_of_week" label="Dia" rules={[{ required: true }]}>
-            <Select options={DAYS} placeholder="Selecione o dia" />
+          <Form.Item name="days_of_week" label="Dias da semana" rules={[{ required: true, message: 'Selecione ao menos um dia' }]}>
+            <Checkbox.Group>
+              <div className="grid grid-cols-2 gap-y-1 gap-x-4 mt-1">
+                {DAYS.map((d) => (
+                  <Checkbox key={d.value} value={d.value}>{d.label}</Checkbox>
+                ))}
+              </div>
+            </Checkbox.Group>
           </Form.Item>
           <Form.Item name="start_time" label="Início" rules={[{ required: true }]}>
             <Input type="time" />

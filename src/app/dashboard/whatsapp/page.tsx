@@ -355,13 +355,13 @@ export default function WhatsAppPage() {
                   className={`cursor-pointer rounded px-2 py-2 ${selectedId === c.id ? 'bg-blue-50 border-blue-200' : 'hover:bg-gray-50'}`}
                   onClick={() => setSelectedId(c.id)}
                 >
-                  <div className="w-full">
+                  <div className="w-full min-h-[52px] flex flex-col justify-center">
                     <div className="font-medium flex items-center gap-2 flex-wrap">
                       <span>{c.contact_name || c.wa_id || 'Sem nome'}</span>
                       <AiPausedTag paused={c.ai_paused} />
                       {!c.ai_paused && <ThreadStatusTag status={c.thread_status ?? null} />}
                     </div>
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs text-gray-500 mt-0.5">
                       {c.wa_id}
                       {c.last_message_at && ` · ${dayjs(c.last_message_at).fromNow()}`}
                     </div>

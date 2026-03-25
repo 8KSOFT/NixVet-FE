@@ -4,7 +4,7 @@ import React from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { Menu } from 'antd';
-import { SettingOutlined, MedicineBoxOutlined, ExperimentOutlined, FileSearchOutlined, ToolOutlined, ClockCircleOutlined, AppstoreOutlined, MessageOutlined, ThunderboltOutlined, UnorderedListOutlined } from '@ant-design/icons';
+import { SettingOutlined, MedicineBoxOutlined, ExperimentOutlined, FileSearchOutlined, ToolOutlined, ClockCircleOutlined, AppstoreOutlined, MessageOutlined, ThunderboltOutlined, UnorderedListOutlined, RobotOutlined } from '@ant-design/icons';
 
 const items = [
   { key: '/dashboard/settings', icon: <SettingOutlined />, label: <Link href="/dashboard/settings">Dados da Clínica</Link> },
@@ -16,6 +16,7 @@ const items = [
   { key: '/dashboard/settings/exams', icon: <FileSearchOutlined />, label: <Link href="/dashboard/settings/exams">Exames</Link> },
   { key: '/dashboard/settings/materials', icon: <ToolOutlined />, label: <Link href="/dashboard/settings/materials">Materiais</Link> },
   { key: '/dashboard/settings/whatsapp-numbers', icon: <MessageOutlined />, label: <Link href="/dashboard/settings/whatsapp-numbers">WhatsApp da clínica</Link> },
+  { key: '/dashboard/settings/chatbot', icon: <RobotOutlined />, label: <Link href="/dashboard/settings/chatbot">Chatbot / IA</Link> },
   { key: '/dashboard/settings/automations', icon: <ThunderboltOutlined />, label: <Link href="/dashboard/settings/automations">Automações</Link> },
 ];
 
