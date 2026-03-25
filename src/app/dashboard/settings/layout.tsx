@@ -16,12 +16,14 @@ import {
   Bot,
   Zap,
   DollarSign,
+  CalendarOff,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const items = [
   { key: '/dashboard/settings', icon: Settings, label: 'Dados da Clínica' },
   { key: '/dashboard/settings/hours', icon: Clock, label: 'Horários' },
+  { key: '/dashboard/settings/holidays', icon: CalendarOff, label: 'Feriados' },
   { key: '/dashboard/settings/appointment-types', icon: List, label: 'Tipos de Procedimento' },
   { key: '/dashboard/settings/resources', icon: Layers, label: 'Recursos' },
   { key: '/dashboard/settings/diseases', icon: HeartPulse, label: 'Doenças' },

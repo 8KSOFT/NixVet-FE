@@ -154,6 +154,7 @@ export default function CalendarPage() {
   const [appointmentTypes, setAppointmentTypes] = useState<AppointmentType[]>([]);
   const [googleEvents, setGoogleEvents] = useState<GoogleEvent[]>([]);
   const [googleConnected, setGoogleConnected] = useState(false);
+  const [googleDiag, setGoogleDiag] = useState<Record<string, unknown> | null>(null);
   const [currentMonth, setCurrentMonth] = useState<Dayjs>(dayjs());
   const [summarizeLoading, setSummarizeLoading] = useState(false);
   const [structureLoading, setStructureLoading] = useState(false);
@@ -216,9 +217,10 @@ export default function CalendarPage() {
 
   const fetchGoogleStatus = async () => {
     try {
-      const res = await api.get<{ connected: boolean }>('/integrations/google/status');
+      const res = await api.get<Record<string, unknown>>('/integrations/google/status');
       const connected = res.data?.connected ?? false;
-      setGoogleConnected(connected);
+      setGoogleConnected(Boolean(connected));
+      setGoogleDiag(res.data);
       if (connected) {
         const from = currentMonth.startOf('month').toISOString();
         const to = currentMonth.endOf('month').toISOString();
@@ -528,16 +530,30 @@ export default function CalendarPage() {
       </div>
 
       {googleConnected && (
-        <div className="flex items-center gap-4 mb-3 text-xs text-gray-500">
-          <span className="flex items-center gap-1">
-            <span className="inline-block w-2.5 h-2.5 rounded-full bg-green-500" /> Consulta NixVet
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="inline-block w-2.5 h-2.5 rounded-full bg-blue-500" /> Google Calendar externo
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="inline-block w-2.5 h-2.5 rounded-full bg-blue-200" /> Sincronizado do NixVet ↗
-          </span>
+        <div className="space-y-2 mb-3">
+          <div className="flex items-center gap-4 text-xs text-gray-500">
+            <span className="flex items-center gap-1">
+              <span className="inline-block w-2.5 h-2.5 rounded-full bg-green-500" /> Consulta NixVet
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="inline-block w-2.5 h-2.5 rounded-full bg-blue-500" /> Google Calendar externo
+            </span>
+            <span className="flex items-center gap-1">
+              <span className="inline-block w-2.5 h-2.5 rounded-full bg-blue-200" /> Sincronizado do NixVet ↗
+            </span>
+          </div>
+          {googleDiag?.tokenStatus === 'expired' && (
+            <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2">
+              ⚠️ Token do Google expirado. O sistema tentará renovar automaticamente.
+              Se os eventos não aparecerem, desconecte e reconecte a integração em Configurações.
+            </div>
+          )}
+          {googleEvents.length === 0 && googleDiag?.tokenStatus === 'valid' && (
+            <div className="text-xs text-blue-600 bg-blue-50 border border-blue-200 rounded px-3 py-2">
+              Nenhum evento encontrado no Google Calendar para este mês.
+              Calendário: {String(googleDiag?.calendarId || 'primary')} | Conta: {String(googleDiag?.accountEmail || '?')}
+            </div>
+          )}
         </div>
       )}
 
