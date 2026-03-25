@@ -15,6 +15,7 @@ import {
   MessageSquare,
   Bot,
   Zap,
+  DollarSign,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -29,6 +30,7 @@ const items = [
   { key: '/dashboard/settings/materials', icon: Wrench, label: 'Materiais' },
   { key: '/dashboard/settings/whatsapp-numbers', icon: MessageSquare, label: 'WhatsApp da clínica' },
   { key: '/dashboard/settings/chatbot', icon: Bot, label: 'Chatbot / IA' },
+  { key: '/dashboard/settings/ai-costs', icon: DollarSign, label: 'Custos IA' },
   { key: '/dashboard/settings/automations', icon: Zap, label: 'Automações' },
 ];
 

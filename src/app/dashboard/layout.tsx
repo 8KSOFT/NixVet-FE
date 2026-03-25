@@ -27,7 +27,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   DropdownMenu,
@@ -119,14 +119,15 @@ function NotificationsBell() {
 
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="right" className="w-[420px] p-0 flex flex-col">
-          <div className="flex items-center justify-between p-4 border-b">
-            <h2 className="text-base font-semibold">{t('notifications.title')}</h2>
+          <SheetHeader className="flex flex-row items-center justify-between p-4 border-b space-y-0">
+            <SheetTitle className="text-base">{t('notifications.title')}</SheetTitle>
+            <SheetDescription className="sr-only">Painel de notificações</SheetDescription>
             {list.some((n) => !n.is_read) && (
               <Button variant="ghost" size="sm" className="text-blue-600 text-xs h-auto py-1" onClick={() => void markAllRead()}>
                 {t('notifications.markAllRead')}
               </Button>
             )}
-          </div>
+          </SheetHeader>
           <ScrollArea className="flex-1 bg-slate-100 p-3">
             {loading ? (
               <p className="py-12 text-center text-slate-500 text-sm">{t('notifications.loading')}</p>
