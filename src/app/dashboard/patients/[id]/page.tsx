@@ -121,11 +121,11 @@ export default function PatientDetailPage() {
   return (
     <div>
       <div className="flex items-center gap-4 mb-6">
-        <Link href="/dashboard/patients">
-          <Button variant="ghost">
+        <Button asChild variant="ghost">
+          <Link href="/dashboard/patients">
             <ChevronLeft className="w-4 h-4 mr-1" /> Voltar
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </div>
 
       <Card className="mb-6">

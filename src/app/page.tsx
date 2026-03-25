@@ -40,11 +40,9 @@ export default function LandingPage() {
           <Logo width={40} height={40} />
           <span className="text-2xl font-bold text-blue-600 tracking-tight">NixVetApp</span>
         </div>
-        <Link href="/login">
-          <Button size="lg" className="rounded-full px-8">
-            Acessar Sistema
-          </Button>
-        </Link>
+        <Button asChild size="lg" className="rounded-full px-8">
+          <Link href="/login">Acessar Sistema</Link>
+        </Button>
       </header>
 
       <main>
@@ -68,11 +66,9 @@ export default function LandingPage() {
               receitas digitais inteligentes e conformidade LGPD em uma interface moderna.
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <Link href="/login">
-                <Button size="lg" className="h-14 px-10 text-lg rounded-full hover:scale-105 transition-transform">
-                  Começar Agora
-                </Button>
-              </Link>
+              <Button asChild size="lg" className="h-14 px-10 text-lg rounded-full hover:scale-105 transition-transform">
+                <Link href="/login">Começar Agora</Link>
+              </Button>
               <Button size="lg" variant="outline" className="h-14 px-10 text-lg rounded-full">
                 Agendar Demonstração
               </Button>
@@ -119,11 +115,9 @@ export default function LandingPage() {
             <p className="mb-10 max-w-2xl mx-auto relative z-10 text-xl leading-relaxed text-white/90">
               Junte-se a veterinários que já modernizaram seus atendimentos com o NixVetApp.
             </p>
-            <Link href="/login" className="relative z-10">
-              <Button size="lg" variant="secondary" className="h-14 px-12 text-lg rounded-full shadow-lg">
-                Acessar Plataforma
-              </Button>
-            </Link>
+            <Button asChild size="lg" variant="secondary" className="h-14 px-12 text-lg rounded-full shadow-lg relative z-10">
+              <Link href="/login">Acessar Plataforma</Link>
+            </Button>
           </div>
         </section>
       </main>

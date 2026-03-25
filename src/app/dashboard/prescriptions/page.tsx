@@ -121,7 +121,7 @@ export default function PrescriptionsPage() {
   );
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
 
-  const { control, handleSubmit, reset, setValue, watch } = useForm<FormValues>({
+  const { control, register, handleSubmit, reset, setValue, watch } = useForm<FormValues>({
     defaultValues: {
       prescription_type: 'receita',
       medications: [],
@@ -549,7 +549,7 @@ export default function PrescriptionsPage() {
                       <div key={field.id} className="border rounded p-3 bg-white">
                         <input
                           type="hidden"
-                          {...(control.register(`medications.${index}.bulario_item_id`))}
+                          {...register(`medications.${index}.bulario_item_id`)}
                         />
                         <div className="flex flex-wrap gap-2 items-start mb-2">
                           <div className="relative flex-1 min-w-[200px]">

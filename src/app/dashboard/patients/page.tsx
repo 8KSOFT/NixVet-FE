@@ -306,11 +306,11 @@ export default function PatientsPage() {
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-2">
-                    <Link href={`/dashboard/patients/${record.id}`}>
-                      <Button variant="outline" size="icon" title="Ver timeline">
+                    <Button asChild variant="outline" size="icon" title="Ver timeline">
+                      <Link href={`/dashboard/patients/${record.id}`}>
                         <History className="w-4 h-4" />
-                      </Button>
-                    </Link>
+                      </Link>
+                    </Button>
                     <Button variant="outline" size="icon" onClick={() => handleEdit(record)}>
                       <Pencil className="w-4 h-4" />
                     </Button>

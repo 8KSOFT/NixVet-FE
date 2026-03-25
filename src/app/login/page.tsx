@@ -2,8 +2,6 @@
 
 import React from 'react';
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -17,13 +15,11 @@ import LanguageSwitcher from '@/components/LanguageSwitcher';
 import api from '@/lib/axios';
 import { fetchPublicBranding } from '@/lib/branding';
 
-const loginSchema = z.object({
-  tenantCode: z.string().optional(),
-  email: z.string().email(),
-  password: z.string().min(1),
-});
-
-type LoginForm = z.infer<typeof loginSchema>;
+interface LoginForm {
+  tenantCode?: string;
+  email: string;
+  password: string;
+}
 
 export default function LoginPage() {
   const { t } = useTranslation('common');
@@ -33,9 +29,7 @@ export default function LoginPage() {
   const [brandLogo, setBrandLogo] = React.useState<string | null>(null);
   const [defaultTenantCode, setDefaultTenantCode] = React.useState<string | null>(null);
 
-  const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>({
-    resolver: zodResolver(loginSchema),
-  });
+  const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>();
 
   React.useEffect(() => {
     fetchPublicBranding().then((branding) => {
