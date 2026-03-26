@@ -110,6 +110,7 @@ export default function PrescriptionsPage() {
   const [consultationsByPatient, setConsultationsByPatient] = useState<ConsultationOption[]>([]);
   const [surgicalProcedures, setSurgicalProcedures] = useState<SurgicalProcedureOption[]>([]);
   const [selectedProcedureIds, setSelectedProcedureIds] = useState<number[]>([]);
+  const [procedureSearch, setProcedureSearch] = useState('');
 
   const [bularioOptions, setBularioOptions] = useState<BularioItem[]>([]);
   const [searchingBulario, setSearchingBulario] = useState(false);
@@ -201,6 +202,7 @@ export default function PrescriptionsPage() {
     setPrescriptionType('receita');
     setSelectedPatientId(null);
     setSelectedProcedureIds([]);
+    setProcedureSearch('');
     setConsultationsByPatient([]);
     setMedInputValues({});
     setBularioOptions([]);
@@ -420,7 +422,7 @@ export default function PrescriptionsPage() {
       )}
 
       <Dialog open={modalVisible} onOpenChange={setModalVisible}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] max-w-[95vw] h-[92vh] max-h-[92vh] overflow-y-auto" onInteractOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle>Nova Prescrição</DialogTitle>
           </DialogHeader>
@@ -524,17 +526,25 @@ export default function PrescriptionsPage() {
             {prescriptionType === 'solicitacao_cirurgia' && (
               <div>
                 <Label>Procedimentos cirúrgicos *</Label>
-                <div className="border rounded p-3 space-y-2 max-h-48 overflow-y-auto mt-1">
-                  {surgicalProcedures.map((s) => (
-                    <label key={s.id} className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={selectedProcedureIds.includes(s.id)}
-                        onChange={() => toggleProcedure(s.id)}
-                      />
-                      {s.name}
-                    </label>
-                  ))}
+                <Input
+                  placeholder="Buscar procedimento..."
+                  className="mt-1 mb-2"
+                  value={procedureSearch}
+                  onChange={(e) => setProcedureSearch(e.target.value)}
+                />
+                <div className="border rounded p-3 space-y-2 max-h-48 overflow-y-auto">
+                  {surgicalProcedures
+                    .filter((s) => !procedureSearch || s.name.toLowerCase().includes(procedureSearch.toLowerCase()))
+                    .map((s) => (
+                      <label key={s.id} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selectedProcedureIds.includes(s.id)}
+                          onChange={() => toggleProcedure(s.id)}
+                        />
+                        {s.name}
+                      </label>
+                    ))}
                 </div>
               </div>
             )}
@@ -868,16 +878,7 @@ export default function PrescriptionsPage() {
               {bularioDetail.subtitle && (
                 <p className="text-gray-600 mb-2">{bularioDetail.subtitle}</p>
               )}
-              {bularioDetail.link_details && (
-                <a
-                  href={bularioDetail.link_details}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 text-sm block mb-3"
-                >
-                  Link externo
-                </a>
-              )}
+              {/* link externo removido */}
               {bularioDetail.details?.length ? (
                 bularioDetail.details.map((section, idx) => (
                   <div key={idx} className="mb-3">

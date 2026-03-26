@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, ChevronLeft, BookOpen, FlaskConical, ClipboardList, Clock } from 'lucide-react';
+import { Loader2, ChevronLeft, BookOpen, FlaskConical, ClipboardList, Clock, FileText } from 'lucide-react';
 import Link from 'next/link';
 import api from '@/lib/axios';
 
@@ -129,8 +129,13 @@ export default function PatientDetailPage() {
       </div>
 
       <Card className="mb-6">
-        <CardHeader>
+        <CardHeader className="flex-row items-center justify-between space-y-0">
           <CardTitle className="text-slate-800">{patient.name}</CardTitle>
+          <Button asChild size="sm" className="bg-blue-600 hover:bg-blue-700">
+            <Link href={`/dashboard/medical-records?patient=${id}`}>
+              <FileText className="w-4 h-4 mr-1" /> Prontuários
+            </Link>
+          </Button>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">

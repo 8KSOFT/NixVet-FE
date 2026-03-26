@@ -22,6 +22,7 @@ import {
   FileSearch,
   BookOpen,
   FlaskConical,
+  FileText,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -168,6 +169,7 @@ const NAV_ITEMS = [
   { key: 'patients', icon: Stethoscope, href: '/dashboard/patients', labelKey: 'nav.patients' },
   { key: 'owners', icon: Users, href: '/dashboard/owners', labelKey: 'nav.owners' },
   { key: 'team', icon: User, href: '/dashboard/team', labelKey: 'nav.team' },
+  { key: 'medical-records', icon: FileText, href: '/dashboard/medical-records', labelKey: 'nav.medicalRecords' },
   { key: 'prescriptions', icon: ClipboardList, href: '/dashboard/prescriptions', labelKey: 'nav.prescriptions' },
   { key: 'bulario', icon: BookOpen, href: '/dashboard/bulario', labelKey: 'nav.bulario' },
   { key: 'exams', icon: FlaskConical, href: '/dashboard/exams', labelKey: 'nav.exams' },
@@ -186,6 +188,7 @@ function getActiveKey(pathname: string): string {
   if (pathname.includes('/dashboard/calendar')) return 'calendar';
   if (pathname.includes('/dashboard/settings')) return 'settings';
   if (pathname.includes('/dashboard/bulario')) return 'bulario';
+  if (pathname.includes('/dashboard/medical-records')) return 'medical-records';
   if (pathname.includes('/dashboard/prescriptions')) return 'prescriptions';
   if (pathname.includes('/dashboard/exams')) return 'exams';
   if (pathname.includes('/dashboard/followups')) return 'followups';
