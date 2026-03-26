@@ -372,6 +372,12 @@ export default function SettingsPage() {
                 gerada pela IA (após classificação). Requer <code className="text-xs">OPENAI_API_KEY</code> e worker da
                 fila de IA no servidor. Casos de emergência usam texto fixo. Quem não é gestor/admin não vê esta opção.
               </p>
+              <a
+                href="/dashboard/chatbot-workflows"
+                className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-800 mt-2"
+              >
+                Configurar Workflow Visual do Chatbot →
+              </a>
             </div>
           </CardContent>
         </Card>
