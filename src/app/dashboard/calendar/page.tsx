@@ -16,14 +16,20 @@ import { cn } from '@/lib/utils';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Loader2, AlertTriangle } from 'lucide-react';
 import api from '@/lib/axios';
 import { useTranslation } from 'react-i18next';
+import { useRouter } from 'next/navigation';
 
 interface Resource { id: string; name: string; type: string; }
 interface AppointmentType { id: string; name: string; duration_minutes: number; color: string | null; }
 interface AvailabilitySlot { vetId: string; vetName: string; slots: string[]; }
 interface Consultation {
   id: string; consultation_date: string;
-  patient?: { name: string }; veterinarian?: { name: string };
-  observations?: string; status?: string; paid?: boolean;
+  start_time?: string | null; end_time?: string | null;
+  patient?: { id?: string; name: string; species?: string; breed?: string };
+  veterinarian?: { id?: string; name: string };
+  observations?: string | null; status?: string; paid?: boolean;
+  price?: number | null;
+  required_resources?: string[] | null;
+  appointment_type?: { name: string; duration_minutes: number; color?: string | null } | null;
 }
 interface Patient { id: string; name: string; }
 interface User { id: string; name: string; role: string; }
@@ -82,6 +88,7 @@ function SlotSelect({ veterinarianId, availability, availabilityLoading, value, 
 
 export default function CalendarPage() {
   const { t } = useTranslation('common');
+  const router = useRouter();
   const [consultations, setConsultations] = useState<Consultation[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [veterinarians, setVeterinarians] = useState<User[]>([]);
@@ -104,6 +111,17 @@ export default function CalendarPage() {
   const [summarizeLoading, setSummarizeLoading] = useState(false);
   const [structureLoading, setStructureLoading] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('month');
+  const [detailsLoading, setDetailsLoading] = useState(false);
+
+  const openDetails = async (c: Consultation) => {
+    setSelectedConsultation(c);
+    setDetailsVisible(true);
+    setDetailsLoading(true);
+    try {
+      const res = await api.get<Consultation>(`/consultations/${c.id}`);
+      setSelectedConsultation(res.data);
+    } catch {} finally { setDetailsLoading(false); }
+  };
 
   const [formData, setFormData] = useState({
     patient_id: '', consultation_date: '', veterinarian_id: '', slot_datetime: '',
@@ -195,7 +213,7 @@ export default function CalendarPage() {
   // ── Render helpers ──
 
   const renderDot = (c: Consultation) => (
-    <li key={c.id} className="cursor-pointer" onClick={e => { e.stopPropagation(); setSelectedConsultation(c); setDetailsVisible(true); }}>
+    <li key={c.id} className="cursor-pointer" onClick={e => { e.stopPropagation(); openDetails(c); }}>
       <div className="flex items-center gap-1">
         <span className={cn('inline-block w-2 h-2 rounded-full shrink-0', statusColor(c.status))} />
         <span className="text-xs truncate">{dayjs(c.consultation_date).format('HH:mm')} {c.patient?.name}</span>
@@ -228,7 +246,7 @@ export default function CalendarPage() {
                 <div className="w-16 text-xs text-gray-400 text-right pr-2 pt-1 shrink-0">{String(h).padStart(2, '0')}:00</div>
                 <div className="flex-1 border-l px-2 py-1 space-y-0.5">
                   {hourItems.map(c => (
-                    <div key={c.id} className={cn('text-xs px-2 py-1 rounded cursor-pointer', statusColor(c.status), 'text-white')} onClick={() => { setSelectedConsultation(c); setDetailsVisible(true); }}>
+                    <div key={c.id} className={cn('text-xs px-2 py-1 rounded cursor-pointer', statusColor(c.status), 'text-white')} onClick={() => openDetails(c)}>
                       {dayjs(c.consultation_date).format('HH:mm')} - {c.patient?.name} ({c.veterinarian?.name})
                     </div>
                   ))}
@@ -270,7 +288,7 @@ export default function CalendarPage() {
                 return (
                   <div key={di} className="border-l px-1 py-0.5 space-y-0.5">
                     {items.map(c => (
-                      <div key={c.id} className={cn('text-[10px] px-1 rounded cursor-pointer truncate', statusColor(c.status), 'text-white')} onClick={() => { setSelectedConsultation(c); setDetailsVisible(true); }}>
+                      <div key={c.id} className={cn('text-[10px] px-1 rounded cursor-pointer truncate', statusColor(c.status), 'text-white')} onClick={() => openDetails(c)}>
                         {dayjs(c.consultation_date).format('HH:mm')} {c.patient?.name}
                       </div>
                     ))}
@@ -449,23 +467,75 @@ export default function CalendarPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Modal: Detalhes */}
+      {/* Modal: Detalhes estilo Google Calendar */}
       <Dialog open={detailsVisible} onOpenChange={o => { if (!o) { setDetailsVisible(false); setSelectedConsultation(null); } }}>
-        <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>Detalhes da Consulta</DialogTitle></DialogHeader>
-          {selectedConsultation && (
-            <div className="space-y-3 py-2">
-              <div className="flex justify-between text-sm"><span className="text-gray-500">Data:</span><span className="font-medium">{new Date(selectedConsultation.consultation_date).toLocaleString('pt-BR')}</span></div>
-              <div className="flex justify-between text-sm"><span className="text-gray-500">Paciente:</span><span className="font-medium">{selectedConsultation.patient?.name || '—'}</span></div>
-              <div className="flex justify-between text-sm"><span className="text-gray-500">Veterinário:</span><span className="font-medium">{selectedConsultation.veterinarian?.name || '—'}</span></div>
-              <div className="flex justify-between items-center text-sm"><span className="text-gray-500">Status:</span><Badge className={cn(statusColor(selectedConsultation.status), 'text-white')}>{formatStatus(selectedConsultation.status)}</Badge></div>
-              <div className="flex justify-between items-center text-sm"><span className="text-gray-500">Pagamento:</span><Badge className={selectedConsultation.paid ? 'bg-green-500 text-white' : 'bg-orange-500 text-white'}>{selectedConsultation.paid ? 'Pago' : 'Pendente'}</Badge></div>
-              {selectedConsultation.observations && <div className="pt-1"><div className="text-sm font-semibold mb-1">Observações</div><div className="text-sm text-gray-600 bg-gray-50 rounded p-2">{selectedConsultation.observations}</div></div>}
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <div className="flex items-start gap-3">
+              <div className={cn('w-3 h-3 rounded-full mt-1.5 shrink-0', statusColor(selectedConsultation?.status))} />
+              <div>
+                <DialogTitle className="text-lg leading-tight">
+                  {selectedConsultation?.patient?.name || 'Consulta'}
+                  {selectedConsultation?.patient?.species && (
+                    <span className="text-sm font-normal text-gray-500 ml-2">
+                      ({selectedConsultation.patient.species}{selectedConsultation.patient.breed ? ` · ${selectedConsultation.patient.breed}` : ''})
+                    </span>
+                  )}
+                </DialogTitle>
+                <p className="text-sm text-gray-500 mt-0.5">
+                  {selectedConsultation && new Date(selectedConsultation.start_time || selectedConsultation.consultation_date).toLocaleString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', hour: '2-digit', minute: '2-digit' })}
+                  {selectedConsultation?.end_time && ` → ${new Date(selectedConsultation.end_time).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`}
+                </p>
+              </div>
+            </div>
+          </DialogHeader>
+
+          {detailsLoading ? (
+            <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>
+          ) : selectedConsultation && (
+            <div className="space-y-3 py-1 text-sm">
+              <div className="flex items-center gap-3">
+                <span className="text-gray-400 w-28 shrink-0">Veterinário</span>
+                <span className="font-medium">{selectedConsultation.veterinarian?.name || '—'}</span>
+              </div>
+              {selectedConsultation.appointment_type && (
+                <div className="flex items-center gap-3">
+                  <span className="text-gray-400 w-28 shrink-0">Procedimento</span>
+                  <span>{selectedConsultation.appointment_type.name}
+                    <span className="text-gray-400 ml-1">· {formatDuration(selectedConsultation.appointment_type.duration_minutes)}</span>
+                  </span>
+                </div>
+              )}
+              <div className="flex items-center gap-3">
+                <span className="text-gray-400 w-28 shrink-0">Status</span>
+                <div className="flex gap-2">
+                  <Badge className={cn(statusColor(selectedConsultation.status), 'text-white')}>{formatStatus(selectedConsultation.status)}</Badge>
+                  <Badge className={selectedConsultation.paid ? 'bg-green-500 text-white' : 'bg-orange-400 text-white'}>
+                    {selectedConsultation.paid ? 'Pago' : 'Pendente'}
+                  </Badge>
+                </div>
+              </div>
+              {selectedConsultation.price != null && (
+                <div className="flex items-center gap-3">
+                  <span className="text-gray-400 w-28 shrink-0">Valor</span>
+                  <span className="font-medium">R$ {Number(selectedConsultation.price).toFixed(2)}</span>
+                </div>
+              )}
+              {selectedConsultation.observations && (
+                <div className="pt-2 border-t">
+                  <p className="text-gray-400 text-xs mb-1">Observações</p>
+                  <p className="text-gray-700 bg-gray-50 rounded p-2 text-sm whitespace-pre-wrap">{selectedConsultation.observations}</p>
+                </div>
+              )}
             </div>
           )}
-          <DialogFooter className="flex-wrap gap-2">
+
+          <DialogFooter className="flex-wrap gap-2 mt-2">
             <Button variant="outline" onClick={() => { setDetailsVisible(false); setSelectedConsultation(null); }}>Fechar</Button>
-            <Button variant="outline" disabled={selectedConsultation?.status === 'cancelled'} onClick={() => { setRescheduleDate(selectedConsultation ? dayjs(selectedConsultation.consultation_date).format('YYYY-MM-DDTHH:mm') : ''); setRescheduleVisible(true); }}>Reagendar</Button>
+            {selectedConsultation?.patient?.id && (
+              <Button variant="outline" onClick={() => router.push(`/dashboard/medical-records?patient_id=${selectedConsultation!.patient!.id}`)}>Prontuário</Button>
+            )}
+            <Button variant="outline" disabled={selectedConsultation?.status === 'cancelled'} onClick={() => { setRescheduleDate(selectedConsultation ? dayjs(selectedConsultation.start_time || selectedConsultation.consultation_date).format('YYYY-MM-DDTHH:mm') : ''); setRescheduleVisible(true); }}>Reagendar</Button>
             <Button disabled={selectedConsultation?.status === 'completed' || updating} onClick={handleMarkCompleted} className="bg-blue-600">{updating && <Loader2 className="h-4 w-4 animate-spin mr-2" />}Realizada</Button>
             <Button disabled={!!selectedConsultation?.paid || updating} onClick={handleConfirmPayment} className="bg-green-600">{updating && <Loader2 className="h-4 w-4 animate-spin mr-2" />}Pagamento</Button>
           </DialogFooter>

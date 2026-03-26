@@ -86,6 +86,16 @@ export default function FollowupsPage() {
     }
   };
 
+  const markResultAvailable = async (id: string) => {
+    try {
+      await api.put(`/exam-followups/${id}/result-available`);
+      toast.success('Tutor notificado sobre resultado disponível');
+      fetchData();
+    } catch (e: any) {
+      toast.error(e.response?.data?.message ?? 'Erro ao notificar');
+    }
+  };
+
   return (
     <div>
       <h1 className="text-2xl font-bold text-blue-600 mb-6 flex items-center gap-2">
@@ -120,7 +130,12 @@ export default function FollowupsPage() {
                     <TableCell>{item.exam_request_id}</TableCell>
                     <TableCell>{item.expected_result_date}</TableCell>
                     <TableCell>{item.followup_status}</TableCell>
-                    <TableCell>
+                    <TableCell className="space-x-1">
+                      {item.followup_status === 'pending_result' && (
+                        <Button variant="outline" size="sm" className="text-green-600 border-green-300" onClick={() => markResultAvailable(item.id)}>
+                          Resultado Disponível
+                        </Button>
+                      )}
                       <Button variant="link" size="sm" onClick={() => updateStatus(item.id, 'closed')}>
                         Fechar
                       </Button>
@@ -138,6 +153,7 @@ export default function FollowupsPage() {
                 <TableHead>Paciente</TableHead>
                 <TableHead>Previsão</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -147,6 +163,18 @@ export default function FollowupsPage() {
                   <TableCell>{item.expected_result_date}</TableCell>
                   <TableCell>
                     <Badge variant="secondary">{item.followup_status}</Badge>
+                  </TableCell>
+                  <TableCell className="space-x-1">
+                    {item.followup_status === 'pending_result' && (
+                      <Button variant="outline" size="sm" className="text-green-600 border-green-300" onClick={() => markResultAvailable(item.id)}>
+                        Resultado Disponível
+                      </Button>
+                    )}
+                    {item.followup_status !== 'closed' && (
+                      <Button variant="link" size="sm" onClick={() => updateStatus(item.id, 'closed')}>
+                        Fechar
+                      </Button>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}

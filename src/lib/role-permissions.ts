@@ -15,6 +15,7 @@ const MENU_BY_ROLE: Record<string, readonly string[]> = {
     'vaccines',
     'tasks',
     'whatsapp',
+    'medical-records',
     'settings',
   ],
   admin: [
@@ -30,6 +31,7 @@ const MENU_BY_ROLE: Record<string, readonly string[]> = {
     'vaccines',
     'tasks',
     'whatsapp',
+    'medical-records',
     'settings',
   ],
   manager: [
@@ -45,6 +47,7 @@ const MENU_BY_ROLE: Record<string, readonly string[]> = {
     'vaccines',
     'tasks',
     'whatsapp',
+    'medical-records',
     'settings',
   ],
   reception: [
@@ -69,6 +72,7 @@ const MENU_BY_ROLE: Record<string, readonly string[]> = {
     'vaccines',
     'tasks',
     'whatsapp',
+    'medical-records',
   ],
 };
 
