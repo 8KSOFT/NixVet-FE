@@ -199,8 +199,8 @@ export default function WorkflowEditorPage() {
   const [selectedNode, setSelectedNode] = useState<Node | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
 
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 
   useEffect(() => {
     (async () => {

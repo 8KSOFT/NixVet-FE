@@ -328,11 +328,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </span>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Avatar className="cursor-pointer size-8 border-2 border-white shadow-md hover:ring-2 hover:ring-blue-200">
-                  <AvatarFallback className="bg-blue-600 text-white text-xs font-semibold">
-                    {roleLabel.substring(0, 2).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
+                <button type="button" className="rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400">
+                  <Avatar className="cursor-pointer size-8 border-2 border-white shadow-md hover:ring-2 hover:ring-blue-200">
+                    <AvatarFallback className="bg-blue-600 text-white text-xs font-semibold">
+                      {roleLabel.substring(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem asChild>
