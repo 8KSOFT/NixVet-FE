@@ -66,6 +66,8 @@ export default function SettingsPage() {
     connected: boolean;
     accountEmail?: string;
     calendarId?: string;
+    syncDirection?: string;
+    lastSyncAt?: string | null;
   }>({ connected: false });
   const [googleCalendars, setGoogleCalendars] = React.useState<
     Array<{ id: string; summary: string; primary: boolean }>
@@ -93,6 +95,7 @@ export default function SettingsPage() {
         const calendars = Array.isArray(calendarsRes.data) ? calendarsRes.data : [];
         setGoogleCalendars(calendars);
         setSelectedCalendarId(status.calendarId || 'primary');
+        setSyncDirection(status.syncDirection || 'both');
       } else {
         setGoogleCalendars([]);
       }
@@ -133,19 +136,35 @@ export default function SettingsPage() {
     }
   };
 
+  const [syncDirection, setSyncDirection] = React.useState('both');
+  const [forceSyncing, setForceSyncing] = React.useState(false);
+
   const handleGoogleSaveCalendar = async () => {
     try {
       setGoogleLoading(true);
       await api.put('/integrations/google/settings', {
         calendarId: selectedCalendarId,
-        syncDirection: 'nixvet_to_google',
+        syncDirection,
       });
-      toast.success('Calendário Google atualizado');
+      toast.success('Configurações do Google atualizadas');
       await fetchGoogleStatus();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Erro ao salvar calendário');
+      toast.error(error.response?.data?.message || 'Erro ao salvar');
     } finally {
       setGoogleLoading(false);
+    }
+  };
+
+  const handleForceSync = async () => {
+    setForceSyncing(true);
+    try {
+      await api.post('/integrations/google/force-sync');
+      toast.success('Sincronização executada');
+      await fetchGoogleStatus();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Erro ao sincronizar');
+    } finally {
+      setForceSyncing(false);
     }
   };
 
@@ -491,21 +510,50 @@ export default function SettingsPage() {
               {googleStatus.connected && (
                 <>
                   <Separator />
-                  <div className="flex gap-2">
-                    <Input
-                      value={selectedCalendarId}
-                      onChange={(e) => setSelectedCalendarId(e.target.value)}
-                      placeholder="ID do calendário (ex: primary)"
-                    />
-                    <Button onClick={handleGoogleSaveCalendar} disabled={googleLoading} className="bg-blue-600">
-                      Salvar calendário
-                    </Button>
-                  </div>
-                  {googleCalendars.length > 0 && (
-                    <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
-                      Disponíveis: {googleCalendars.map((c) => c.summary).join(', ')}
+                  <div className="flex flex-col gap-3">
+                    <div className="flex gap-2">
+                      <Input
+                        value={selectedCalendarId}
+                        onChange={(e) => setSelectedCalendarId(e.target.value)}
+                        placeholder="ID do calendário (ex: primary)"
+                        className="flex-1"
+                      />
                     </div>
-                  )}
+                    {googleCalendars.length > 0 && (
+                      <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
+                        Disponíveis: {googleCalendars.map((c) => c.summary).join(', ')}
+                      </div>
+                    )}
+                    <div>
+                      <Label className="text-sm font-semibold">Direção de sincronização</Label>
+                      <select
+                        className="w-full border rounded px-3 py-2 text-sm mt-1"
+                        value={syncDirection}
+                        onChange={(e) => setSyncDirection(e.target.value)}
+                      >
+                        <option value="both">Bidirecional (NixVet ↔ Google)</option>
+                        <option value="nixvet_to_google">NixVet → Google (somente enviar)</option>
+                        <option value="google_to_nixvet">Google → NixVet (somente receber)</option>
+                      </select>
+                      <p className="text-xs text-gray-400 mt-1">
+                        Com &quot;Bidirecional&quot;, eventos criados no Google Calendar aparecem automaticamente na agenda do NixVet (sync a cada 1 minuto).
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button onClick={handleGoogleSaveCalendar} disabled={googleLoading} className="bg-blue-600">
+                        Salvar configurações
+                      </Button>
+                      <Button onClick={handleForceSync} disabled={forceSyncing} variant="outline">
+                        {forceSyncing && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                        Sincronizar agora
+                      </Button>
+                    </div>
+                    {googleStatus.lastSyncAt && (
+                      <p className="text-xs text-gray-400">
+                        Última sincronização: {new Date(googleStatus.lastSyncAt).toLocaleString('pt-BR')}
+                      </p>
+                    )}
+                  </div>
                 </>
               )}
             </div>
