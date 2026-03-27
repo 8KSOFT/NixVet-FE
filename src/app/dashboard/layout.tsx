@@ -13,6 +13,7 @@ import {
   LogOut,
   MessageSquare,
   Bell,
+  AlertTriangle,
   ChevronLeft,
   ChevronRight,
   Menu,
@@ -53,6 +54,8 @@ interface ClinicNotification {
 }
 
 function NotificationsBell() {
+  const isUrgent = (type: string) => type === 'emergency' || type === 'human_attention';
+
   const { t } = useTranslation('common');
   const [unreadCount, setUnreadCount] = useState(0);
   const [list, setList] = useState<ClinicNotification[]>([]);
@@ -116,6 +119,9 @@ function NotificationsBell() {
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
+        {list.some((n) => !n.is_read && isUrgent(n.type)) && (
+          <AlertTriangle className="absolute -bottom-0.5 -left-0.5 size-3 text-amber-500" />
+        )}
       </Button>
 
       <Sheet open={open} onOpenChange={setOpen}>
@@ -143,14 +149,28 @@ function NotificationsBell() {
                     className={cn(
                       'w-full text-left rounded-lg border border-slate-200 shadow-sm p-3 transition-colors text-sm',
                       n.is_read ? 'bg-white' : 'bg-blue-50 border-blue-200',
+                      !n.is_read && n.type === 'human_attention' && 'bg-amber-50 border-amber-300',
+                      !n.is_read && n.type === 'emergency' && 'bg-red-50 border-red-300',
                       'hover:bg-slate-50',
                     )}
                     onClick={() => void markRead(n.id)}
                   >
+                    <div className="mb-1 flex items-center justify-between gap-2">
+                      <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                        {n.type === 'emergency' ? 'Emergência' : n.type === 'human_attention' ? 'Atendimento humano' : 'Notificação'}
+                      </span>
+                    </div>
                     <p className="text-slate-900 whitespace-pre-wrap break-words">{n.message}</p>
                     {!n.is_read && (
                       <div className="flex justify-end mt-2">
-                        <span className="text-xs font-medium text-blue-600">Nova</span>
+                        <span
+                          className={cn(
+                            'text-xs font-medium',
+                            n.type === 'emergency' ? 'text-red-600' : n.type === 'human_attention' ? 'text-amber-700' : 'text-blue-600',
+                          )}
+                        >
+                          Nova
+                        </span>
                       </div>
                     )}
                   </button>
