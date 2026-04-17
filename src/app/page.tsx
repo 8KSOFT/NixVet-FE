@@ -35,7 +35,7 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
-      <header className="flex items-center justify-between px-6 md:px-12 bg-white/90 backdrop-blur-md shadow-sm sticky top-0 z-50 h-20 border-b border-slate-100">
+      <header className="sticky top-0 z-50 flex h-20 items-center justify-between border-b border-slate-100 bg-white/95 px-6 backdrop-blur-sm md:px-12 supports-[backdrop-filter]:bg-white/90">
         <div className="flex items-center gap-3">
           <Logo width={40} height={40} />
           <span className="text-2xl font-bold text-blue-600 tracking-tight">NixVetApp</span>
@@ -47,11 +47,17 @@ export default function LandingPage() {
 
       <main>
         {/* Hero */}
-        <section className="bg-gradient-to-b from-[#f0f5ff] to-white py-24 px-6 md:px-12 text-center relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-64 h-64 bg-blue-100 rounded-full mix-blend-multiply filter blur-xl opacity-70" />
-          <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-100 rounded-full mix-blend-multiply filter blur-xl opacity-70" />
+        <section className="relative overflow-hidden bg-gradient-to-b from-[#eef6f8] via-[#f8fafc] to-white py-24 px-6 text-center md:px-12">
+          <div
+            className="pointer-events-none absolute inset-0 opacity-40"
+            style={{
+              background:
+                'radial-gradient(ellipse 80% 50% at 50% -20%, rgb(14 116 144 / 0.12), transparent), radial-gradient(ellipse 60% 40% at 100% 0%, rgb(59 130 246 / 0.08), transparent)',
+            }}
+            aria-hidden
+          />
 
-          <div className="max-w-5xl mx-auto relative z-10">
+          <div className="relative z-10 mx-auto max-w-5xl">
             <div className="mb-8 inline-block px-4 py-1.5 rounded-full bg-blue-50 text-blue-600 font-medium text-sm border border-blue-100">
               A plataforma definitiva para veterinários
             </div>
@@ -66,7 +72,7 @@ export default function LandingPage() {
               receitas digitais inteligentes e conformidade LGPD em uma interface moderna.
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <Button asChild size="lg" className="h-14 px-10 text-lg rounded-full hover:scale-105 transition-transform">
+              <Button asChild size="lg" className="h-14 rounded-full px-10 text-lg">
                 <Link href="/login">Começar Agora</Link>
               </Button>
               <Button size="lg" variant="outline" className="h-14 px-10 text-lg rounded-full">
@@ -89,9 +95,12 @@ export default function LandingPage() {
             {FEATURES.map((feature) => {
               const Icon = feature.icon;
               return (
-                <Card key={feature.title} className="h-full shadow-sm hover:shadow-xl transition-all duration-300 border-gray-100 rounded-2xl group">
+                <Card
+                  key={feature.title}
+                  className="group h-full rounded-2xl border-gray-100 shadow-sm transition-colors duration-200 hover:border-primary/20 hover:shadow-md"
+                >
                   <CardContent className="pt-6">
-                    <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform ${feature.iconBg}`}>
+                    <div className={`mb-6 flex h-16 w-16 items-center justify-center rounded-2xl ${feature.iconBg}`}>
                       <Icon className="size-7" />
                     </div>
                     <h4 className="font-semibold text-base mb-3">{feature.title}</h4>
@@ -105,9 +114,14 @@ export default function LandingPage() {
 
         {/* CTA */}
         <section className="py-20 px-6">
-          <div className="max-w-5xl mx-auto bg-blue-600 rounded-3xl p-12 md:p-20 text-center text-white relative overflow-hidden shadow-2xl">
-            <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-            <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
+          <div className="relative mx-auto max-w-5xl overflow-hidden rounded-3xl bg-gradient-to-br from-[#0d7b94] to-[#0a5f72] p-12 text-center text-white shadow-lg md:p-20">
+            <div
+              className="pointer-events-none absolute inset-0 opacity-30"
+              style={{
+                background: 'radial-gradient(circle at 90% 10%, rgba(255,255,255,0.15), transparent 45%)',
+              }}
+              aria-hidden
+            />
 
             <h2 className="text-white mb-6 text-3xl md:text-5xl font-bold relative z-10">
               Pronto para transformar sua clínica?

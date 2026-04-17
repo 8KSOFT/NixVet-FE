@@ -225,20 +225,44 @@ interface SidebarNavProps {
   activeKey: string;
   brandName: string;
   brandLogo: string | null;
+  /** Painel escuro (referência estilo clínica / Mediplus) */
+  variant?: 'medical' | 'light';
+  onNavigate?: () => void;
 }
 
-function SidebarNav({ collapsed, menuAllow, activeKey, brandName, brandLogo }: SidebarNavProps) {
+function SidebarNav({
+  collapsed,
+  menuAllow,
+  activeKey,
+  brandName,
+  brandLogo,
+  variant = 'medical',
+  onNavigate,
+}: SidebarNavProps) {
   const { t } = useTranslation('common');
   const items = NAV_ITEMS.filter((item) => menuAllow.has(item.key));
   const visibleItems = items.length > 0 ? items : NAV_ITEMS.filter((i) => i.key === 'dashboard');
+  const medical = variant === 'medical';
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center h-16 px-4 border-b border-slate-200/80 shrink-0">
+      <div
+        className={cn(
+          'flex items-center h-16 px-4 shrink-0 border-b',
+          medical ? 'border-white/15' : 'border-slate-200/80',
+        )}
+      >
         <div className={cn('flex items-center gap-3 w-full', collapsed && 'justify-center')}>
           <Logo width={collapsed ? 36 : 44} height={collapsed ? 36 : 44} src={brandLogo} alt={brandName} />
           {!collapsed && (
-            <span className="text-slate-800 font-semibold text-lg tracking-tight truncate">{brandName}</span>
+            <span
+              className={cn(
+                'font-semibold text-lg tracking-tight truncate',
+                medical ? 'text-white' : 'text-slate-800',
+              )}
+            >
+              {brandName}
+            </span>
           )}
         </div>
       </div>
@@ -251,11 +275,17 @@ function SidebarNav({ collapsed, menuAllow, activeKey, brandName, brandLogo }: S
               <Link
                 key={item.key}
                 href={item.href}
+                onClick={() => onNavigate?.()}
                 className={cn(
-                  'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
-                  isActive
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
+                  'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-150',
+                  medical &&
+                    (isActive
+                      ? 'bg-white/20 text-white'
+                      : 'text-white/85 hover:bg-white/10 hover:text-white'),
+                  !medical &&
+                    (isActive
+                      ? 'bg-primary/10 text-primary'
+                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'),
                   collapsed && 'justify-center px-2',
                 )}
                 title={collapsed ? t(item.labelKey) : undefined}
@@ -273,6 +303,7 @@ function SidebarNav({ collapsed, menuAllow, activeKey, brandName, brandLogo }: S
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [brandName, setBrandName] = useState('NixVet');
   const [brandLogo, setBrandLogo] = useState<string | null>(null);
   const [menuAllow, setMenuAllow] = useState<Set<string>>(() => new Set(getStoredMenuKeys()));
@@ -308,12 +339,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     : t('header.roleUnknown');
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
-      {/* Desktop sidebar */}
+    <div className="flex min-h-screen bg-[var(--background)]">
+      {/* Desktop sidebar — painel sólido (menos camadas que card + sombra) */}
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 bg-white border-r border-slate-200/80 shadow-sm transition-[width] duration-200',
-          collapsed ? 'w-[72px]' : 'w-[260px]',
+          'fixed inset-y-0 left-0 z-50 bg-primary text-primary-foreground border-r border-primary/30 transition-[width] duration-200 ease-out',
+          collapsed ? 'w-[var(--app-sidebar-w-collapsed)]' : 'w-[var(--app-sidebar-w)]',
           'hidden lg:flex flex-col',
         )}
       >
@@ -323,21 +354,62 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           activeKey={activeKey}
           brandName={brandName}
           brandLogo={brandLogo}
+          variant="medical"
         />
       </aside>
 
+      <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
+        <SheetContent
+          side="left"
+          className="w-[min(100%,280px)] p-0 border-0 bg-primary text-primary-foreground shadow-none [&>button]:text-white [&>button]:ring-offset-primary"
+        >
+          <SheetHeader className="sr-only">
+            <SheetTitle>Menu</SheetTitle>
+            <SheetDescription>Navegação principal</SheetDescription>
+          </SheetHeader>
+          <SidebarNav
+            collapsed={false}
+            menuAllow={menuAllow}
+            activeKey={activeKey}
+            brandName={brandName}
+            brandLogo={brandLogo}
+            variant="medical"
+            onNavigate={() => setMobileNavOpen(false)}
+          />
+        </SheetContent>
+      </Sheet>
+
       {/* Main content */}
-      <div className={cn('flex flex-col flex-1 min-w-0 transition-[margin-left] duration-200', collapsed ? 'lg:ml-[72px]' : 'lg:ml-[260px]')}>
-        {/* Header */}
-        <header className="sticky top-0 z-40 flex items-center justify-between h-16 px-4 lg:px-6 bg-white border-b border-slate-200/80 shadow-sm">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-slate-600 hover:text-blue-600"
-            onClick={() => setCollapsed(!collapsed)}
-          >
-            {collapsed ? <ChevronRight className="size-5" /> : <ChevronLeft className="size-5" />}
-          </Button>
+      <div
+        className={cn(
+          'flex flex-col flex-1 min-w-0 transition-[margin-left] duration-200 ease-out',
+          collapsed ? 'lg:ml-[var(--app-sidebar-w-collapsed)]' : 'lg:ml-[var(--app-sidebar-w)]',
+        )}
+      >
+        {/* Header — só borda, sem sombra (composição mais leve) */}
+        <header
+          className="sticky top-0 z-40 flex h-[var(--app-header-h)] items-center justify-between gap-2 px-4 lg:px-6 bg-white/95 backdrop-blur-sm border-b border-border supports-[backdrop-filter]:bg-white/80"
+        >
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="lg:hidden text-slate-600"
+              onClick={() => setMobileNavOpen(true)}
+              aria-label="Abrir menu"
+            >
+              <Menu className="size-5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="hidden lg:inline-flex text-slate-600 hover:text-primary"
+              onClick={() => setCollapsed(!collapsed)}
+              aria-label={collapsed ? 'Expandir menu' : 'Recolher menu'}
+            >
+              {collapsed ? <ChevronRight className="size-5" /> : <ChevronLeft className="size-5" />}
+            </Button>
+          </div>
 
           <div className="flex items-center gap-2">
             <LanguageSwitcher />
@@ -348,9 +420,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </span>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button type="button" className="rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400">
-                  <Avatar className="cursor-pointer size-8 border-2 border-white shadow-md hover:ring-2 hover:ring-blue-200">
-                    <AvatarFallback className="bg-blue-600 text-white text-xs font-semibold">
+                <button type="button" className="rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                  <Avatar className="cursor-pointer size-8 border border-border hover:ring-2 hover:ring-primary/25">
+                    <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
                       {roleLabel.substring(0, 2).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
@@ -382,7 +454,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        <main className="flex-1 p-4 lg:p-6">
+        <main className="app-dashboard-main flex-1 p-4 lg:p-6">
           {children}
         </main>
       </div>

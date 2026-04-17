@@ -76,6 +76,7 @@
     "empty": "Nenhuma notificação não lida."
   },
   "auth": {
+    "cardTitle": "Entre na sua conta",
     "subtitle": "Sistema de Gestão Veterinária",
     "tenantCodeLabel": "Código da Clínica (Ex: NIXVET)",
     "tenantCodePlaceholder": "Código (Padrão: NIXVET)",

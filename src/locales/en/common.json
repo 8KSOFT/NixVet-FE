@@ -76,6 +76,7 @@
     "empty": "No unread notifications."
   },
   "auth": {
+    "cardTitle": "Sign in to your account",
     "subtitle": "Veterinary practice management",
     "tenantCodeLabel": "Clinic code (e.g. NIXVET)",
     "tenantCodePlaceholder": "Code (default: NIXVET)",

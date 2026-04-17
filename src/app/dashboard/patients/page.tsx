@@ -151,8 +151,18 @@ export default function PatientsPage() {
     OUTRO: 'ANIMAL_RACA_OUTRO',
   };
 
-  const getBreedDiscriminator = (species: string) =>
-    BREED_DISCRIMINATOR[species] ?? 'ANIMAL_RACA_OUTRO';
+  /** Alinha valor salvo / legado ao código usado no catálogo support */
+  const normalizeSpeciesCode = (species: string) => {
+    const s = (species || '').trim().toUpperCase();
+    if (s === 'CÃO' || s === 'CAO' || s === 'CACHORRO') return 'CANINO';
+    if (s === 'GATO') return 'FELINO';
+    return s;
+  };
+
+  const getBreedDiscriminator = (species: string) => {
+    const code = normalizeSpeciesCode(species);
+    return BREED_DISCRIMINATOR[code] ?? 'ANIMAL_RACA_OUTRO';
+  };
 
   const fetchSupportOptions = async () => {
     try {
