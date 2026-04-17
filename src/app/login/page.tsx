@@ -109,10 +109,10 @@ export default function LoginPage() {
         <LanguageSwitcher />
       </div>
 
-      <div className="mx-auto flex min-h-screen max-w-6xl flex-col lg:flex-row">
-        {/* Painel hero (referência layout clínica tipo Mediplus) — sem blur pesado */}
+      {/* Largura total: barra teal encosta à esquerda da viewport (sem max-w + mx-auto) */}
+      <div className="flex min-h-screen w-full flex-col lg:flex-row">
         <section
-          className="relative flex flex-1 flex-col justify-center px-8 py-14 text-primary-foreground lg:min-h-0 lg:max-w-md lg:shrink-0 lg:rounded-none lg:px-10 xl:max-w-lg"
+          className="relative flex w-full shrink-0 flex-col justify-center px-8 py-14 text-primary-foreground lg:min-h-screen lg:w-[min(100%,26rem)] lg:px-10 xl:w-[min(100%,30rem)]"
           style={{
             background: 'linear-gradient(165deg, #0a6578 0%, var(--primary) 42%, #0b5c6e 100%)',
           }}
@@ -161,7 +161,7 @@ export default function LoginPage() {
                         className="pl-9"
                         placeholder={t('auth.tenantCodePlaceholder')}
                         value={tenantCode}
-                        onChange={(e) => setTenantCode(e.target.value)}
+                        onChange={(e) => setTenantCode(e.target.value.toLowerCase())}
                         autoComplete="organization"
                       />
                     </div>
@@ -180,7 +180,7 @@ export default function LoginPage() {
                         className="pl-9"
                         placeholder={t('auth.emailPlaceholder')}
                         value={email}
-                        onChange={(e) => setEmail(e.target.value)}
+                        onChange={(e) => setEmail(e.target.value.toLowerCase())}
                         required
                         autoComplete="email"
                       />

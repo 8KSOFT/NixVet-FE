@@ -7,6 +7,7 @@
   },
   "nav": {
     "dashboard": "Dashboard",
+    "clinicsAdmin": "Clinics (global)",
     "patients": "Patients",
     "owners": "Pet owners",
     "team": "Team",
@@ -131,6 +132,33 @@
     "statusCompleted": "Completed",
     "statusCancelled": "Cancelled",
     "na": "N/A"
+  },
+  "superadminClinics": {
+    "title": "System clinics",
+    "subtitle": "All registered clinics. Superadmin only.",
+    "loading": "Loading clinics…",
+    "empty": "No clinics found.",
+    "loadError": "Could not load clinics.",
+    "forbidden": "Superadmin access only.",
+    "yes": "Yes",
+    "no": "No",
+    "colName": "Name",
+    "colCode": "Code",
+    "colClinicEmail": "Clinic email",
+    "colAdmin": "Clinic admin",
+    "colChatbot": "WhatsApp chatbot",
+    "colAi": "Platform AI",
+    "colPlan": "Monthly plan",
+    "colActions": "Actions",
+    "resetPassword": "Reset password",
+    "resetTitle": "New administrator password",
+    "resetDescription": "Set a new password for the first admin user of \"{{name}}\" (min. 8 characters).",
+    "newPassword": "New password",
+    "passwordMin": "Password must be at least 8 characters.",
+    "resetOk": "Administrator password updated.",
+    "resetError": "Failed to reset password.",
+    "cancel": "Cancel",
+    "confirmReset": "Save password"
   },
   "consultation": {
     "status": {

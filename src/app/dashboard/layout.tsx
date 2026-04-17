@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
@@ -24,11 +24,11 @@ import {
   BookOpen,
   FlaskConical,
   FileText,
+  Landmark,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
@@ -186,6 +186,12 @@ function NotificationsBell() {
 
 const NAV_ITEMS = [
   { key: 'dashboard', icon: LayoutDashboard, href: '/dashboard', labelKey: 'nav.dashboard' },
+  {
+    key: 'clinics-admin',
+    icon: Landmark,
+    href: '/dashboard/superadmin/clinics',
+    labelKey: 'nav.clinicsAdmin',
+  },
   { key: 'patients', icon: Stethoscope, href: '/dashboard/patients', labelKey: 'nav.patients' },
   { key: 'owners', icon: Users, href: '/dashboard/owners', labelKey: 'nav.owners' },
   { key: 'team', icon: User, href: '/dashboard/team', labelKey: 'nav.team' },
@@ -203,6 +209,7 @@ const NAV_ITEMS = [
 
 function getActiveKey(pathname: string): string {
   if (pathname.includes('/dashboard/profile')) return 'profile';
+  if (pathname.includes('/dashboard/superadmin/clinics')) return 'clinics-admin';
   if (pathname.includes('/dashboard/patients')) return 'patients';
   if (pathname.includes('/dashboard/owners')) return 'owners';
   if (pathname.includes('/dashboard/calendar')) return 'calendar';
@@ -454,7 +461,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        <main className="app-dashboard-main flex-1 p-4 lg:p-6">
+        <main className="flex-1 p-4 lg:p-6">
           {children}
         </main>
       </div>

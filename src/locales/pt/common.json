@@ -7,6 +7,7 @@
   },
   "nav": {
     "dashboard": "Dashboard",
+    "clinicsAdmin": "Clínicas (global)",
     "patients": "Pacientes",
     "owners": "Tutores",
     "team": "Equipe",
@@ -131,6 +132,33 @@
     "statusCompleted": "Realizado",
     "statusCancelled": "Cancelado",
     "na": "N/D"
+  },
+  "superadminClinics": {
+    "title": "Clínicas do sistema",
+    "subtitle": "Lista de todas as unidades cadastradas. Apenas superadmin.",
+    "loading": "Carregando clínicas…",
+    "empty": "Nenhuma clínica encontrada.",
+    "loadError": "Não foi possível carregar as clínicas.",
+    "forbidden": "Acesso restrito a superadmin.",
+    "yes": "Sim",
+    "no": "Não",
+    "colName": "Nome",
+    "colCode": "Código",
+    "colClinicEmail": "E-mail da clínica",
+    "colAdmin": "Admin da clínica",
+    "colChatbot": "Chatbot WhatsApp",
+    "colAi": "IA na plataforma",
+    "colPlan": "Plano mensal",
+    "colActions": "Ações",
+    "resetPassword": "Redefinir senha",
+    "resetTitle": "Nova senha do administrador",
+    "resetDescription": "Defina uma nova senha para o primeiro usuário administrador de \"{{name}}\" (mín. 8 caracteres).",
+    "newPassword": "Nova senha",
+    "passwordMin": "Informe uma senha com pelo menos 8 caracteres.",
+    "resetOk": "Senha do administrador atualizada.",
+    "resetError": "Falha ao redefinir senha.",
+    "cancel": "Cancelar",
+    "confirmReset": "Salvar senha"
   },
   "consultation": {
     "status": {

@@ -83,12 +83,6 @@ body {
   border-color: var(--border);
 }
 
-/* Shell: menos repaint em listas longas */
-.app-dashboard-main {
-  content-visibility: auto;
-  contain-intrinsic-size: 800px;
-}
-
 .login-shell {
   background: linear-gradient(135deg, #e8f4f7 0%, #f4f7f9 45%, #eef2f7 100%);
 }
