@@ -14,6 +14,14 @@ export const metadata: Metadata = {
   title: "NixVet - Sistema Veterinário",
   description: "Gestão clínica veterinária profissional",
   manifest: "/manifest.json",
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/icon.png", type: "image/png", sizes: "512x512" },
+    ],
+    shortcut: "/icon.svg",
+    apple: "/icon.png",
+  },
 };
 
 export default function RootLayout({

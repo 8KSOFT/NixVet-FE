@@ -1,4 +1,6 @@
-import React from 'react';
+'use client';
+
+import React, { useState } from 'react';
 
 interface LogoProps {
   width?: number;
@@ -8,8 +10,10 @@ interface LogoProps {
   className?: string;
 }
 
+const DEFAULT_LOGO = '/logo.png';
+
 function mergeImgClass(className?: string) {
-  return ['rounded-xl object-cover', className].filter(Boolean).join(' ');
+  return ['rounded-xl object-contain', className].filter(Boolean).join(' ');
 }
 
 export default function Logo({
@@ -19,26 +23,20 @@ export default function Logo({
   alt = 'Logo',
   className,
 }: LogoProps) {
-  const imgClass = mergeImgClass(className);
-  if (src) {
-    return (
-      <img
-        src={src}
-        alt={alt}
-        width={width}
-        height={height}
-        className={imgClass}
-      />
-    );
-  }
+  const [failed, setFailed] = useState(false);
+  const effectiveSrc = failed || !src ? DEFAULT_LOGO : src;
 
   return (
     <img
-      src="/logo.svg"
+      key={effectiveSrc}
+      src={effectiveSrc}
       alt={alt}
       width={width}
       height={height}
-      className={imgClass}
+      className={mergeImgClass(className)}
+      onError={() => {
+        if (!failed) setFailed(true);
+      }}
     />
   );
 }
