@@ -260,7 +260,19 @@ function SidebarNav({
         )}
       >
         <div className={cn('flex items-center gap-3 w-full', collapsed && 'justify-center')}>
-          <Logo width={collapsed ? 36 : 44} height={collapsed ? 36 : 44} src={brandLogo} alt={brandName} />
+          <div
+            className={cn(
+              'rounded-xl overflow-hidden flex items-center justify-center shrink-0',
+              medical && 'bg-white/95 p-1 ring-1 ring-white/20 shadow-sm',
+            )}
+          >
+            <Logo
+              width={collapsed ? 32 : 40}
+              height={collapsed ? 32 : 40}
+              src={brandLogo}
+              alt={brandName}
+            />
+          </div>
           {!collapsed && (
             <span
               className={cn(

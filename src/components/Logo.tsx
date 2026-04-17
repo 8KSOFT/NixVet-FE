@@ -13,7 +13,9 @@ interface LogoProps {
 const DEFAULT_LOGO = '/logo.png';
 
 function mergeImgClass(className?: string) {
-  return ['rounded-xl object-contain', className].filter(Boolean).join(' ');
+  // Sem rounded-xl por padrão: o PNG já traz os cantos arredondados
+  // desenhados e aplicar border-radius duplica + recorta anti-aliasing.
+  return ['object-contain block', className].filter(Boolean).join(' ');
 }
 
 export default function Logo({
