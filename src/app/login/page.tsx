@@ -109,31 +109,24 @@ export default function LoginPage() {
         <LanguageSwitcher />
       </div>
 
-      {/* Largura total: barra teal encosta à esquerda da viewport (sem max-w + mx-auto) */}
       <div className="flex min-h-screen w-full flex-col lg:flex-row">
-        <section
-          className="relative flex w-full shrink-0 flex-col justify-center px-8 py-14 text-primary-foreground lg:min-h-screen lg:w-[min(100%,26rem)] lg:px-10 xl:w-[min(100%,30rem)]"
-          style={{
-            background: 'linear-gradient(165deg, #0a6578 0%, var(--primary) 42%, #0b5c6e 100%)',
-          }}
-        >
-          <div className="absolute inset-0 opacity-[0.07] [background-image:radial-gradient(circle_at_1px_1px,white_1px,transparent_0)] [background-size:20px_20px]" aria-hidden />
+        <section className="relative flex w-full shrink-0 flex-col justify-center bg-brand-deep px-8 py-14 text-white lg:min-h-screen lg:w-[min(100%,26rem)] lg:px-10 xl:w-[min(100%,30rem)]">
           <div className="relative z-[1]">
-            <div className="mb-8 flex items-center gap-3">
-              <Logo width={56} height={56} src={brandLogo} alt={brandName} className="bg-white/10 p-1 ring-1 ring-white/20" />
+            <div className="mb-10 flex items-center gap-4">
+              <Logo width={52} height={52} src={brandLogo} alt={brandName} className="p-2" />
               <div>
-                <p className="text-xs font-semibold uppercase tracking-widest text-white/70">Acesso</p>
-                <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">{brandName}</h1>
+                <p className="text-xs font-medium uppercase tracking-widest text-white/60">Acesso</p>
+                <h1 className="font-heading text-2xl font-bold tracking-tight text-white sm:text-3xl">{brandName}</h1>
               </div>
             </div>
-            <p className="text-lg leading-relaxed text-white/90">{t('auth.subtitle')}</p>
-            <ul className="mt-10 space-y-4 text-sm text-white/85">
+            <p className="max-w-md text-base leading-relaxed text-white/80 sm:text-lg">{t('auth.subtitle')}</p>
+            <ul className="mt-10 max-w-md space-y-5 text-sm leading-relaxed text-white/80">
               <li className="flex gap-3">
-                <ShieldCheck className="mt-0.5 size-5 shrink-0 text-emerald-200" aria-hidden />
+                <ShieldCheck className="mt-0.5 size-5 shrink-0 stroke-[1.5] text-primary" aria-hidden />
                 <span>Multi-clínica com código da unidade e dados isolados por tenant.</span>
               </li>
               <li className="flex gap-3">
-                <Clock className="mt-0.5 size-5 shrink-0 text-emerald-200" aria-hidden />
+                <Clock className="mt-0.5 size-5 shrink-0 stroke-[1.5] text-primary" aria-hidden />
                 <span>Interface pensada para fluxo rápido no consultório.</span>
               </li>
             </ul>
@@ -143,9 +136,9 @@ export default function LoginPage() {
         {/* Formulário */}
         <div className="flex flex-1 items-center justify-center px-4 py-10 sm:px-8 lg:py-14">
           <div className="w-full max-w-md">
-            <Card className="rounded-2xl border border-border/80 bg-card shadow-sm">
-              <CardContent className="p-6 sm:p-8">
-                <h2 className="mb-6 text-center text-xl font-semibold text-foreground">
+            <Card className="rounded-xl border-border/80 shadow-[var(--shadow-card)]">
+              <CardContent className="p-6 sm:p-10">
+                <h2 className="font-heading mb-8 text-center text-xl font-semibold text-foreground">
                   {t('auth.cardTitle')}
                 </h2>
                 <form onSubmit={handleLogin} className="space-y-4">
@@ -207,7 +200,7 @@ export default function LoginPage() {
                     </div>
                   </div>
 
-                  <Button type="submit" className="mt-2 h-11 w-full text-base font-medium" disabled={loading}>
+                  <Button type="submit" className="mt-2 w-full text-base font-medium" disabled={loading}>
                     {loading && <Loader2 className="size-4 animate-spin" />}
                     {t('auth.submit')}
                   </Button>
@@ -215,7 +208,7 @@ export default function LoginPage() {
                   <div className="text-center">
                     <a
                       href="#"
-                      className="text-sm font-medium text-primary transition-colors hover:text-primary/80"
+                      className="text-sm font-medium text-primary transition-colors duration-200 hover:text-[color:var(--primary-hover)]"
                       onClick={(e) => e.preventDefault()}
                     >
                       {t('auth.forgotPassword')}

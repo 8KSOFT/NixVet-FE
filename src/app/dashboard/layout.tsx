@@ -109,7 +109,7 @@ function NotificationsBell() {
       <Button
         variant="ghost"
         size="icon"
-        className="relative text-slate-600 hover:text-blue-600"
+        className="relative text-muted-foreground transition-colors duration-200 hover:text-primary"
         onClick={() => setOpen(true)}
         aria-label={t('notifications.title')}
       >
@@ -130,16 +130,16 @@ function NotificationsBell() {
             <SheetTitle className="text-base">{t('notifications.title')}</SheetTitle>
             <SheetDescription className="sr-only">Painel de notificações</SheetDescription>
             {list.some((n) => !n.is_read) && (
-              <Button variant="ghost" size="sm" className="text-blue-600 text-xs h-auto py-1" onClick={() => void markAllRead()}>
+              <Button variant="ghost" size="sm" className="h-auto py-1 text-xs text-primary hover:text-[color:var(--primary-hover)]" onClick={() => void markAllRead()}>
                 {t('notifications.markAllRead')}
               </Button>
             )}
           </SheetHeader>
-          <ScrollArea className="flex-1 bg-slate-100 p-3">
+          <ScrollArea className="flex-1 bg-muted/60 p-3">
             {loading ? (
-              <p className="py-12 text-center text-slate-500 text-sm">{t('notifications.loading')}</p>
+              <p className="py-12 text-center text-sm text-muted-foreground">{t('notifications.loading')}</p>
             ) : list.length === 0 ? (
-              <p className="py-12 text-center text-slate-500 text-sm">{t('notifications.empty')}</p>
+              <p className="py-12 text-center text-sm text-muted-foreground">{t('notifications.empty')}</p>
             ) : (
               <div className="flex flex-col gap-2">
                 {list.map((n) => (
@@ -147,26 +147,30 @@ function NotificationsBell() {
                     key={n.id}
                     type="button"
                     className={cn(
-                      'w-full text-left rounded-lg border border-slate-200 shadow-sm p-3 transition-colors text-sm',
-                      n.is_read ? 'bg-white' : 'bg-blue-50 border-blue-200',
-                      !n.is_read && n.type === 'human_attention' && 'bg-amber-50 border-amber-300',
-                      !n.is_read && n.type === 'emergency' && 'bg-red-50 border-red-300',
-                      'hover:bg-slate-50',
+                      'w-full rounded-lg border p-4 text-left text-sm shadow-[var(--shadow-card)] transition-colors duration-200',
+                      n.is_read ? 'border-border bg-card' : 'border-primary/25 bg-primary/5',
+                      !n.is_read && n.type === 'human_attention' && 'border-amber-200/80 bg-amber-50/90',
+                      !n.is_read && n.type === 'emergency' && 'border-red-200/80 bg-red-50/90',
+                      'hover:bg-muted/80',
                     )}
                     onClick={() => void markRead(n.id)}
                   >
                     <div className="mb-1 flex items-center justify-between gap-2">
-                      <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                      <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                         {n.type === 'emergency' ? 'Emergência' : n.type === 'human_attention' ? 'Atendimento humano' : 'Notificação'}
                       </span>
                     </div>
-                    <p className="text-slate-900 whitespace-pre-wrap break-words">{n.message}</p>
+                    <p className="whitespace-pre-wrap break-words text-foreground">{n.message}</p>
                     {!n.is_read && (
-                      <div className="flex justify-end mt-2">
+                      <div className="mt-2 flex justify-end">
                         <span
                           className={cn(
                             'text-xs font-medium',
-                            n.type === 'emergency' ? 'text-red-600' : n.type === 'human_attention' ? 'text-amber-700' : 'text-blue-600',
+                            n.type === 'emergency'
+                              ? 'text-red-600'
+                              : n.type === 'human_attention'
+                                ? 'text-amber-800'
+                                : 'text-primary',
                           )}
                         >
                           Nova
@@ -260,15 +264,10 @@ function SidebarNav({
         )}
       >
         <div className={cn('flex items-center gap-3 w-full', collapsed && 'justify-center')}>
-          <div
-            className={cn(
-              'rounded-xl overflow-hidden flex items-center justify-center shrink-0',
-              medical && 'bg-white/95 p-1 ring-1 ring-white/20 shadow-sm',
-            )}
-          >
+          <div className={cn('flex shrink-0 items-center justify-center overflow-hidden rounded-lg', medical && 'p-2')}>
             <Logo
-              width={collapsed ? 32 : 40}
-              height={collapsed ? 32 : 40}
+              width={collapsed ? 36 : 44}
+              height={collapsed ? 36 : 44}
               src={brandLogo}
               alt={brandName}
             />
@@ -276,8 +275,8 @@ function SidebarNav({
           {!collapsed && (
             <span
               className={cn(
-                'font-semibold text-lg tracking-tight truncate',
-                medical ? 'text-white' : 'text-slate-800',
+                'font-heading truncate text-base font-semibold tracking-tight sm:text-lg',
+                medical ? 'text-white' : 'text-foreground',
               )}
             >
               {brandName}
@@ -296,20 +295,20 @@ function SidebarNav({
                 href={item.href}
                 onClick={() => onNavigate?.()}
                 className={cn(
-                  'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-150',
+                  'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-200',
                   medical &&
                     (isActive
-                      ? 'bg-white/20 text-white'
-                      : 'text-white/85 hover:bg-white/10 hover:text-white'),
+                      ? 'bg-white/[0.14] text-white'
+                      : 'text-white/80 hover:bg-white/10 hover:text-white'),
                   !medical &&
                     (isActive
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'),
+                      ? 'bg-primary/12 text-primary'
+                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'),
                   collapsed && 'justify-center px-2',
                 )}
                 title={collapsed ? t(item.labelKey) : undefined}
               >
-                <Icon className={cn('shrink-0', collapsed ? 'size-5' : 'size-4')} />
+                <Icon className={cn('shrink-0 stroke-[1.5]', collapsed ? 'size-5' : 'size-4')} />
                 {!collapsed && <span>{t(item.labelKey)}</span>}
               </Link>
             );
@@ -362,7 +361,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Desktop sidebar — painel sólido (menos camadas que card + sombra) */}
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 bg-primary text-primary-foreground border-r border-primary/30 transition-[width] duration-200 ease-out',
+          'fixed inset-y-0 left-0 z-50 border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-200 ease-out',
           collapsed ? 'w-[var(--app-sidebar-w-collapsed)]' : 'w-[var(--app-sidebar-w)]',
           'hidden lg:flex flex-col',
         )}
@@ -380,7 +379,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
         <SheetContent
           side="left"
-          className="w-[min(100%,280px)] p-0 border-0 bg-primary text-primary-foreground shadow-none [&>button]:text-white [&>button]:ring-offset-primary"
+          className="w-[min(100%,280px)] border-0 border-sidebar-border bg-sidebar p-0 text-sidebar-foreground shadow-none [&>button]:text-white [&>button]:ring-offset-sidebar"
         >
           <SheetHeader className="sr-only">
             <SheetTitle>Menu</SheetTitle>
@@ -406,14 +405,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         )}
       >
         {/* Header — só borda, sem sombra (composição mais leve) */}
-        <header
-          className="sticky top-0 z-40 flex h-[var(--app-header-h)] items-center justify-between gap-2 px-4 lg:px-6 bg-white/95 backdrop-blur-sm border-b border-border supports-[backdrop-filter]:bg-white/80"
-        >
+        <header className="sticky top-0 z-40 flex h-[var(--app-header-h)] items-center justify-between gap-2 border-b border-border bg-card/95 px-4 backdrop-blur-sm supports-[backdrop-filter]:bg-card/90 lg:px-6">
           <div className="flex items-center gap-1">
             <Button
               variant="ghost"
               size="icon"
-              className="lg:hidden text-slate-600"
+              className="text-muted-foreground lg:hidden"
               onClick={() => setMobileNavOpen(true)}
               aria-label="Abrir menu"
             >
@@ -422,7 +419,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <Button
               variant="ghost"
               size="icon"
-              className="hidden lg:inline-flex text-slate-600 hover:text-primary"
+              className="hidden text-muted-foreground transition-colors duration-200 hover:text-primary lg:inline-flex"
               onClick={() => setCollapsed(!collapsed)}
               aria-label={collapsed ? 'Expandir menu' : 'Recolher menu'}
             >
@@ -433,15 +430,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="flex items-center gap-2">
             <LanguageSwitcher />
             <NotificationsBell />
-            <span className="text-slate-600 text-sm hidden sm:inline">
+            <span className="hidden text-sm text-muted-foreground sm:inline">
               {t('header.greeting')}{' '}
-              <strong className="text-slate-800">{roleLabel}</strong>
+              <strong className="font-medium text-foreground">{roleLabel}</strong>
             </span>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button type="button" className="rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                  <Avatar className="cursor-pointer size-8 border border-border hover:ring-2 hover:ring-primary/25">
-                    <AvatarFallback className="bg-primary text-primary-foreground text-xs font-semibold">
+                  <Avatar className="size-9 cursor-pointer border border-border transition-shadow duration-200 hover:ring-2 hover:ring-primary/20">
+                    <AvatarFallback className="bg-brand-deep text-xs font-semibold text-white">
                       {roleLabel.substring(0, 2).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
@@ -473,7 +470,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        <main className="flex-1 p-4 lg:p-6">
+        <main className="flex-1 p-5 lg:p-8">
           {children}
         </main>
       </div>

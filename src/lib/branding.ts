@@ -12,7 +12,7 @@ export interface PublicBranding {
 const fallbackBranding: PublicBranding = {
   appName: 'NixVetApp',
   logoUrl: null,
-  primaryColor: '#2563eb',
+  primaryColor: '#0E1E2F',
   faviconUrl: null,
   tenantCode: null,
   tenantId: null,

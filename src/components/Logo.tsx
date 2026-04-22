@@ -10,7 +10,7 @@ interface LogoProps {
   className?: string;
 }
 
-const DEFAULT_LOGO = '/logo.png';
+const DEFAULT_LOGO = '/logo.svg';
 
 function mergeImgClass(className?: string) {
   // Sem rounded-xl por padrão: o PNG já traz os cantos arredondados

@@ -4,20 +4,14 @@
   "description": "Sistema de gestão para clínicas veterinárias",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#13364F",
+  "background_color": "#F5F7F9",
+  "theme_color": "#0E1E2F",
   "icons": [
     {
-      "src": "/icon.svg",
+      "src": "/logo.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
-    },
-    {
-      "src": "/icon.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
     }
   ]
 }

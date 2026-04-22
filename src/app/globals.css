@@ -6,35 +6,41 @@
   --app-header-h: 4rem;
   --app-sidebar-w: 260px;
   --app-sidebar-w-collapsed: 72px;
-  --background: #f4f7f9;
-  --foreground: #1e293b;
+  /* NixVet — healthtech clínico */
+  --brand-deep: #0e1e2f;
+  --brand-green: #7fa48e;
+  --brand-green-hover: #6d917f;
+  --brand-gold: #d4af37;
+  --background: #f5f7f9;
+  --foreground: #0e1e2f;
   --card: #ffffff;
-  --card-foreground: #1e293b;
+  --card-foreground: #0e1e2f;
   --popover: #ffffff;
-  --popover-foreground: #1e293b;
-  --primary: #0d7b94;
+  --popover-foreground: #0e1e2f;
+  --primary: #7fa48e;
+  --primary-hover: #6d917f;
   --primary-foreground: #ffffff;
-  --secondary: #f1f5f9;
-  --secondary-foreground: #1e293b;
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
-  --accent: #f1f5f9;
-  --accent-foreground: #1e293b;
-  --destructive: #ef4444;
+  --secondary: #e8ecf1;
+  --secondary-foreground: #0e1e2f;
+  --muted: #eef1f4;
+  --muted-foreground: #5c6b7a;
+  --accent: #e4e9ef;
+  --accent-foreground: #0e1e2f;
+  --destructive: #dc2626;
   --destructive-foreground: #ffffff;
-  --border: #e2e8f0;
-  --input: #e2e8f0;
-  --ring: #0d7b94;
+  --border: #e0e6ed;
+  --input: #e0e6ed;
+  --ring: #7fa48e;
   --radius: 0.625rem;
-  /* sidebar */
-  --sidebar: #ffffff;
-  --sidebar-foreground: #1e293b;
-  --sidebar-primary: #0d7b94;
+  --sidebar: #0e1e2f;
+  --sidebar-foreground: #ffffff;
+  --sidebar-primary: #7fa48e;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f1f5f9;
-  --sidebar-accent-foreground: #1e293b;
-  --sidebar-border: #e2e8f0;
-  --sidebar-ring: #0d7b94;
+  --sidebar-accent: rgba(255, 255, 255, 0.1);
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: rgba(255, 255, 255, 0.12);
+  --sidebar-ring: #7fa48e;
+  --shadow-card: 0 1px 3px rgba(14, 30, 47, 0.06), 0 1px 2px rgba(14, 30, 47, 0.04);
 }
 
 @theme inline {
@@ -57,11 +63,14 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --font-sans: var(--font-sans), "Plus Jakarta Sans", system-ui, sans-serif;
+  --color-brand-deep: var(--brand-deep);
+  --color-brand-gold: var(--brand-gold);
+  --radius-sm: 0.5rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 0.75rem;
+  --font-sans: var(--font-sans), "Inter", system-ui, sans-serif;
+  --font-heading: var(--font-heading), "Poppins", var(--font-sans), system-ui, sans-serif;
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -75,8 +84,13 @@
 body {
   background: var(--background);
   color: var(--foreground);
+  font-family: var(--font-sans), system-ui, sans-serif;
   font-feature-settings: "rlig" 1, "calt" 1;
   text-rendering: optimizeLegibility;
+}
+
+.font-heading {
+  font-family: var(--font-heading), var(--font-sans), system-ui, sans-serif;
 }
 
 * {
@@ -84,5 +98,5 @@ body {
 }
 
 .login-shell {
-  background: linear-gradient(135deg, #e8f4f7 0%, #f4f7f9 45%, #eef2f7 100%);
+  background: var(--background);
 }
