@@ -6,6 +6,7 @@ import dayjs from 'dayjs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,7 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Loader2, AlertTriangle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Loader2, AlertTriangle, Clock, User2, Stethoscope, DollarSign, FileText, CheckCircle2, CreditCard, CalendarRange, X } from 'lucide-react';
 import api from '@/lib/axios';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
@@ -272,7 +273,7 @@ export default function CalendarPage() {
         <div className="grid grid-cols-8 border-b">
           <div className="w-16" />
           {weekDays.map((d, i) => (
-            <div key={i} className={cn('text-center py-2 text-sm font-medium border-l', d.isSame(dayjs(), 'day') && 'bg-primary/10')}>
+            <div key={i} className={cn('text-center py-2 text-sm font-medium border-l cursor-pointer hover:bg-muted/50 transition', d.isSame(dayjs(), 'day') && 'bg-primary/10')} onClick={() => { setSelectedDate(d); setCurrentMonth(d); setViewMode('day'); }}>
               <div className="text-muted-foreground">{WEEKDAYS[d.day()]}</div>
               <div className={cn('w-7 h-7 rounded-full mx-auto flex items-center justify-center', d.isSame(dayjs(), 'day') && 'bg-primary text-white')}>{d.date()}</div>
             </div>
@@ -320,11 +321,15 @@ export default function CalendarPage() {
           const items = isCur ? getListData(day) : [];
           const gEv = isCur ? getGoogleByDay(day) : [];
           return (
-            <div key={idx} className={cn('border-r border-b min-h-[80px] p-1 cursor-pointer hover:bg-muted/50', !isCur && 'bg-muted/50', isSel && 'bg-primary/10')} onClick={() => { setSelectedDate(day); if (!day.isSame(currentMonth, 'month')) setCurrentMonth(day); }}>
-              <div className={cn('text-sm font-medium w-6 h-6 flex items-center justify-center rounded-full mb-1', isToday && 'bg-primary text-white', !isToday && !isCur && 'text-gray-300', !isToday && isCur && 'text-foreground')}>{day.date()}</div>
+            <div key={idx} className={cn('border-r border-b min-h-[80px] p-1 hover:bg-muted/50', !isCur && 'bg-muted/50', isSel && 'bg-primary/10')} onClick={() => { setSelectedDate(day); if (!day.isSame(currentMonth, 'month')) setCurrentMonth(day); }}>
+              <div
+                title="Ver dia"
+                className={cn('text-sm font-medium w-6 h-6 flex items-center justify-center rounded-full mb-1 cursor-pointer hover:ring-2 ring-primary/50 transition', isToday && 'bg-primary text-white', !isToday && !isCur && 'text-gray-300', !isToday && isCur && 'text-foreground hover:bg-primary/10')}
+                onClick={(e) => { e.stopPropagation(); if (!isCur) return; setSelectedDate(day); setCurrentMonth(day); setViewMode('day'); }}
+              >{day.date()}</div>
               <ul className="list-none p-0 m-0 space-y-0.5">
                 {items.slice(0, 3).map(renderDot)}
-                {items.length > 3 && <li className="text-[10px] text-muted-foreground/60">+{items.length - 3} mais</li>}
+                {items.length > 3 && <li className="text-[10px] text-muted-foreground/60 cursor-pointer hover:text-primary" onClick={(e) => { e.stopPropagation(); setSelectedDate(day); setCurrentMonth(day); setViewMode('day'); }}>+{items.length - 3} mais</li>}
                 {gEv.slice(0, 2).map(renderGoogleDot)}
               </ul>
             </div>
@@ -467,80 +472,127 @@ export default function CalendarPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Modal: Detalhes estilo Google Calendar */}
-      <Dialog open={detailsVisible} onOpenChange={o => { if (!o) { setDetailsVisible(false); setSelectedConsultation(null); } }}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <div className="flex items-start gap-3">
-              <div className={cn('w-3 h-3 rounded-full mt-1.5 shrink-0', statusColor(selectedConsultation?.status))} />
-              <div>
-                <DialogTitle className="text-lg leading-tight">
-                  {selectedConsultation?.patient?.name || 'Consulta'}
-                  {selectedConsultation?.patient?.species && (
-                    <span className="text-sm font-normal text-muted-foreground ml-2">
-                      ({selectedConsultation.patient.species}{selectedConsultation.patient.breed ? ` · ${selectedConsultation.patient.breed}` : ''})
-                    </span>
+      {/* Sheet: Detalhes estilo Google Calendar */}
+      <Sheet open={detailsVisible} onOpenChange={o => { if (!o) { setDetailsVisible(false); setSelectedConsultation(null); } }}>
+        <SheetContent side="right" className="w-full sm:max-w-md overflow-y-auto p-0">
+          {/* Color header bar */}
+          <div className={cn('h-2 w-full shrink-0', statusColor(selectedConsultation?.status))} />
+          <div className="px-6 pt-4 pb-2">
+            <SheetHeader className="mb-0">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <SheetTitle className="text-xl font-heading leading-tight">
+                    {selectedConsultation?.patient?.name || 'Consulta'}
+                  </SheetTitle>
+                  {(selectedConsultation?.patient?.species || selectedConsultation?.patient?.breed) && (
+                    <p className="text-sm text-muted-foreground mt-0.5">
+                      {selectedConsultation?.patient?.species}
+                      {selectedConsultation?.patient?.breed ? ` · ${selectedConsultation?.patient?.breed}` : ''}
+                    </p>
                   )}
-                </DialogTitle>
-                <p className="text-sm text-muted-foreground mt-0.5">
-                  {selectedConsultation && new Date(selectedConsultation.start_time || selectedConsultation.consultation_date).toLocaleString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', hour: '2-digit', minute: '2-digit' })}
-                  {selectedConsultation?.end_time && ` → ${new Date(selectedConsultation.end_time).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`}
-                </p>
-              </div>
-            </div>
-          </DialogHeader>
-
-          {detailsLoading ? (
-            <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground/60" /></div>
-          ) : selectedConsultation && (
-            <div className="space-y-3 py-1 text-sm">
-              <div className="flex items-center gap-3">
-                <span className="text-muted-foreground/60 w-28 shrink-0">Veterinário</span>
-                <span className="font-medium">{selectedConsultation.veterinarian?.name || '—'}</span>
-              </div>
-              {selectedConsultation.appointment_type && (
-                <div className="flex items-center gap-3">
-                  <span className="text-muted-foreground/60 w-28 shrink-0">Procedimento</span>
-                  <span>{selectedConsultation.appointment_type.name}
-                    <span className="text-muted-foreground/60 ml-1">· {formatDuration(selectedConsultation.appointment_type.duration_minutes)}</span>
-                  </span>
                 </div>
-              )}
-              <div className="flex items-center gap-3">
-                <span className="text-muted-foreground/60 w-28 shrink-0">Status</span>
-                <div className="flex gap-2">
-                  <Badge className={cn(statusColor(selectedConsultation.status), 'text-white')}>{formatStatus(selectedConsultation.status)}</Badge>
-                  <Badge className={selectedConsultation.paid ? 'bg-green-500 text-white' : 'bg-orange-400 text-white'}>
-                    {selectedConsultation.paid ? 'Pago' : 'Pendente'}
+                <div className="flex gap-1 shrink-0">
+                  <Badge className={cn(statusColor(selectedConsultation?.status), 'text-white text-xs')}>
+                    {formatStatus(selectedConsultation?.status)}
+                  </Badge>
+                  <Badge className={selectedConsultation?.paid ? 'bg-green-500 text-white text-xs' : 'bg-orange-400 text-white text-xs'}>
+                    {selectedConsultation?.paid ? 'Pago' : 'Pendente'}
                   </Badge>
                 </div>
               </div>
+            </SheetHeader>
+          </div>
+
+          {detailsLoading ? (
+            <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground/60" /></div>
+          ) : selectedConsultation && (
+            <div className="px-6 pb-6 space-y-4">
+              {/* Date & time */}
+              <div className="flex items-start gap-3 py-2 border-b">
+                <Clock className="w-4 h-4 text-muted-foreground/60 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-sm font-medium">
+                    {new Date(selectedConsultation.start_time || selectedConsultation.consultation_date).toLocaleString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {new Date(selectedConsultation.start_time || selectedConsultation.consultation_date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                    {selectedConsultation.end_time && ` → ${new Date(selectedConsultation.end_time).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`}
+                  </p>
+                </div>
+              </div>
+
+              {/* Vet */}
+              <div className="flex items-center gap-3">
+                <Stethoscope className="w-4 h-4 text-muted-foreground/60 shrink-0" />
+                <div>
+                  <p className="text-xs text-muted-foreground">Veterinário</p>
+                  <p className="text-sm font-medium">{selectedConsultation.veterinarian?.name || '—'}</p>
+                </div>
+              </div>
+
+              {/* Patient full info */}
+              <div className="flex items-center gap-3">
+                <User2 className="w-4 h-4 text-muted-foreground/60 shrink-0" />
+                <div>
+                  <p className="text-xs text-muted-foreground">Paciente</p>
+                  <p className="text-sm font-medium">{selectedConsultation.patient?.name}</p>
+                </div>
+              </div>
+
+              {/* Appointment type */}
+              {selectedConsultation.appointment_type && (
+                <div className="flex items-center gap-3">
+                  <CalendarRange className="w-4 h-4 text-muted-foreground/60 shrink-0" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Procedimento</p>
+                    <p className="text-sm font-medium">{selectedConsultation.appointment_type.name} <span className="text-muted-foreground font-normal">· {formatDuration(selectedConsultation.appointment_type.duration_minutes)}</span></p>
+                  </div>
+                </div>
+              )}
+
+              {/* Price */}
               {selectedConsultation.price != null && (
                 <div className="flex items-center gap-3">
-                  <span className="text-muted-foreground/60 w-28 shrink-0">Valor</span>
-                  <span className="font-medium">R$ {Number(selectedConsultation.price).toFixed(2)}</span>
+                  <DollarSign className="w-4 h-4 text-muted-foreground/60 shrink-0" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Valor</p>
+                    <p className="text-sm font-medium">R$ {Number(selectedConsultation.price).toFixed(2)}</p>
+                  </div>
                 </div>
               )}
+
+              {/* Observations */}
               {selectedConsultation.observations && (
-                <div className="pt-2 border-t">
-                  <p className="text-muted-foreground/60 text-xs mb-1">Observações</p>
-                  <p className="text-foreground bg-muted/50 rounded p-2 text-sm whitespace-pre-wrap">{selectedConsultation.observations}</p>
+                <div className="flex items-start gap-3">
+                  <FileText className="w-4 h-4 text-muted-foreground/60 mt-0.5 shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-xs text-muted-foreground mb-1">Observações</p>
+                    <p className="text-sm bg-muted/50 rounded-md p-3 whitespace-pre-wrap">{selectedConsultation.observations}</p>
+                  </div>
                 </div>
               )}
+
+              {/* Actions */}
+              <div className="pt-2 border-t flex flex-wrap gap-2">
+                {selectedConsultation?.patient?.id && (
+                  <Button variant="outline" size="sm" className="gap-1.5" onClick={() => router.push(`/dashboard/medical-records?patient_id=${selectedConsultation!.patient!.id}`)}>
+                    <FileText className="w-3.5 h-3.5" /> Prontuário
+                  </Button>
+                )}
+                <Button variant="outline" size="sm" className="gap-1.5" disabled={selectedConsultation?.status === 'cancelled'} onClick={() => { setRescheduleDate(selectedConsultation ? dayjs(selectedConsultation.start_time || selectedConsultation.consultation_date).format('YYYY-MM-DDTHH:mm') : ''); setRescheduleVisible(true); }}>
+                  <CalendarRange className="w-3.5 h-3.5" /> Reagendar
+                </Button>
+                <Button size="sm" className="gap-1.5 bg-primary" disabled={selectedConsultation?.status === 'completed' || updating} onClick={handleMarkCompleted}>
+                  {updating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />} Realizada
+                </Button>
+                <Button size="sm" className="gap-1.5 bg-green-600" disabled={!!selectedConsultation?.paid || updating} onClick={handleConfirmPayment}>
+                  {updating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CreditCard className="w-3.5 h-3.5" />} Pagamento
+                </Button>
+              </div>
             </div>
           )}
-
-          <DialogFooter className="flex-wrap gap-2 mt-2">
-            <Button variant="outline" onClick={() => { setDetailsVisible(false); setSelectedConsultation(null); }}>Fechar</Button>
-            {selectedConsultation?.patient?.id && (
-              <Button variant="outline" onClick={() => router.push(`/dashboard/medical-records?patient_id=${selectedConsultation!.patient!.id}`)}>Prontuário</Button>
-            )}
-            <Button variant="outline" disabled={selectedConsultation?.status === 'cancelled'} onClick={() => { setRescheduleDate(selectedConsultation ? dayjs(selectedConsultation.start_time || selectedConsultation.consultation_date).format('YYYY-MM-DDTHH:mm') : ''); setRescheduleVisible(true); }}>Reagendar</Button>
-            <Button disabled={selectedConsultation?.status === 'completed' || updating} onClick={handleMarkCompleted} className="bg-primary">{updating && <Loader2 className="h-4 w-4 animate-spin mr-2" />}Realizada</Button>
-            <Button disabled={!!selectedConsultation?.paid || updating} onClick={handleConfirmPayment} className="bg-green-600">{updating && <Loader2 className="h-4 w-4 animate-spin mr-2" />}Pagamento</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        </SheetContent>
+      </Sheet>
 
       {/* Modal: Reagendar */}
       <Dialog open={rescheduleVisible} onOpenChange={setRescheduleVisible}>
