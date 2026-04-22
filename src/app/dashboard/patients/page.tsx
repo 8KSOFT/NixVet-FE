@@ -281,10 +281,10 @@ export default function PatientsPage() {
   return (
     <div>
       <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold text-blue-600 flex items-center gap-2">
+        <h1 className="text-2xl font-heading font-bold text-primary flex items-center gap-2">
           <Stethoscope className="w-6 h-6" /> Pacientes
         </h1>
-        <Button onClick={handleAdd} className="bg-blue-600 hover:bg-blue-700">
+        <Button onClick={handleAdd} className="bg-primary hover:bg-blue-700">
           <Plus className="w-4 h-4 mr-2" /> Novo Paciente
         </Button>
       </div>

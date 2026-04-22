@@ -103,19 +103,19 @@ export default function AppointmentTypesPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-blue-600 mb-6">Tipos de Procedimento</h1>
+      <h1 className="text-2xl font-heading font-bold text-primary mb-6">Tipos de Procedimento</h1>
       <Card>
         <CardContent className="pt-6">
-          <p className="text-slate-600 mb-4">
+          <p className="text-muted-foreground mb-4">
             Defina os tipos de procedimento com sua duração padrão. O sistema usará essa duração ao calcular
             os slots disponíveis na agenda.
           </p>
-          <Button onClick={openNew} className="mb-4 bg-blue-600">
+          <Button onClick={openNew} className="mb-4 bg-primary">
             <Plus className="w-4 h-4 mr-2" /> Novo tipo
           </Button>
           {loading ? (
             <div className="flex justify-center py-8">
-              <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
             </div>
           ) : (
             <Table>
@@ -145,7 +145,7 @@ export default function AppointmentTypesPage() {
                       {r.color ? (
                         <Badge style={{ background: r.color, color: '#fff', borderColor: r.color }}>{r.color}</Badge>
                       ) : (
-                        <span className="text-gray-400">—</span>
+                        <span className="text-muted-foreground/60">—</span>
                       )}
                     </TableCell>
                     <TableCell>
@@ -202,7 +202,7 @@ export default function AppointmentTypesPage() {
                   step={5}
                   {...register('duration_minutes', { required: true, valueAsNumber: true })}
                 />
-                <span className="text-sm text-gray-500">min</span>
+                <span className="text-sm text-muted-foreground">min</span>
               </div>
               {errors.duration_minutes && <p className="text-red-500 text-xs mt-1">Campo obrigatório</p>}
             </div>
@@ -222,7 +222,7 @@ export default function AppointmentTypesPage() {
               </div>
             </div>
             <DialogFooter>
-              <Button type="submit" className="bg-blue-600">
+              <Button type="submit" className="bg-primary">
                 {editing ? 'Salvar' : 'Criar'}
               </Button>
             </DialogFooter>

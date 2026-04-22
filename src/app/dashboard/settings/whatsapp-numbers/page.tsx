@@ -66,7 +66,7 @@ function AlertBox({
         'rounded-lg border p-4',
         type === 'warning'
           ? 'bg-amber-50 border-amber-200 text-amber-900'
-          : 'bg-blue-50 border-blue-200 text-blue-900',
+          : 'bg-primary/10 border-primary/20 text-primary',
         className,
       )}
     >
@@ -184,16 +184,16 @@ export default function SettingsWhatsappNumbersPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-blue-600 mb-2">WhatsApp da clínica</h1>
-      <p className="text-slate-600 mb-6">
+      <h1 className="text-2xl font-heading font-bold text-primary mb-2">WhatsApp da clínica</h1>
+      <p className="text-muted-foreground mb-6">
         Cadastro do número desta clínica para <strong>receber</strong> conversas no NixVet e o sistema saber qual
         clínica é cada linha. Quem não usa Meta vai pelo modo <strong>Twilio</strong> (definido no servidor).
       </p>
 
       {canManageChatbot && (
-        <Card className="mb-6 border-blue-200 bg-gradient-to-br from-blue-50/90 to-white shadow-sm">
+        <Card className="mb-6 border-primary/20 bg-gradient-to-br from-blue-50/90 to-white shadow-sm">
           <CardHeader>
-            <CardTitle className="text-blue-800 font-semibold text-base">
+            <CardTitle className="text-primary font-semibold text-base">
               Chatbot — respostas automáticas (IA)
             </CardTitle>
           </CardHeader>
@@ -225,9 +225,9 @@ export default function SettingsWhatsappNumbersPage() {
             <span>
               Provedor ativo: <strong>{integration.effectiveProvider === 'twilio' ? 'Twilio' : 'Meta'}</strong>
               {integration.source === 'database' ? (
-                <span className="text-slate-600 font-normal"> (definido no painel — superadmin)</span>
+                <span className="text-muted-foreground font-normal"> (definido no painel — superadmin)</span>
               ) : (
-                <span className="text-slate-600 font-normal"> (definido no servidor — WHATSAPP_PROVIDER)</span>
+                <span className="text-muted-foreground font-normal"> (definido no servidor — WHATSAPP_PROVIDER)</span>
               )}
             </span>
           }
@@ -262,7 +262,7 @@ export default function SettingsWhatsappNumbersPage() {
                   <SelectItem value="twilio">Forçar Twilio</SelectItem>
                 </SelectContent>
               </Select>
-              <Button disabled={providerSaving} onClick={saveProviderOverride} className="bg-blue-600 w-fit">
+              <Button disabled={providerSaving} onClick={saveProviderOverride} className="bg-primary w-fit">
                 {providerSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 Salvar provedor
               </Button>
@@ -273,7 +273,7 @@ export default function SettingsWhatsappNumbersPage() {
 
       <Card>
         <CardContent className="pt-6">
-          <p className="text-slate-600 mb-2">Cada clínica vê e edita só o próprio cadastro (isolado por tenant).</p>
+          <p className="text-muted-foreground mb-2">Cada clínica vê e edita só o próprio cadastro (isolado por tenant).</p>
 
           {provider === 'twilio' && (
             <AlertBox
@@ -296,7 +296,7 @@ export default function SettingsWhatsappNumbersPage() {
                     <code className="text-xs break-all bg-amber-100 px-1 py-0.5 rounded">{twilioWebhookUrl}</code>
                   </li>
                 </ul>
-                <p className="text-slate-700">
+                <p className="text-foreground">
                   A URL precisa ser <strong>pública HTTPS</strong> (Twilio não alcança <code>localhost</code>). Em
                   desenvolvimento use túnel (ngrok, Cloudflare Tunnel, etc.) apontando para a API.
                 </p>
@@ -345,14 +345,14 @@ export default function SettingsWhatsappNumbersPage() {
             )}
           </p>
 
-          <Button onClick={openRegisterModal} className="mb-4 bg-blue-600">
+          <Button onClick={openRegisterModal} className="mb-4 bg-primary">
             <Plus className="w-4 h-4 mr-2" />
             {provider === 'twilio' ? 'Cadastrar número da clínica' : 'Cadastrar número (Meta)'}
           </Button>
 
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
+              <Loader2 className="w-5 h-5 animate-spin text-primary" />
             </div>
           ) : (
             <Table>
@@ -436,7 +436,7 @@ export default function SettingsWhatsappNumbersPage() {
                   : 'Ex.: +55 11 99999-9999'}
               </p>
             </div>
-            <Button type="submit" className="bg-blue-600">
+            <Button type="submit" className="bg-primary">
               Cadastrar
             </Button>
           </form>

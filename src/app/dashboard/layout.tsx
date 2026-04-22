@@ -25,6 +25,7 @@ import {
   FlaskConical,
   FileText,
   Landmark,
+  Bot,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -208,6 +209,7 @@ const NAV_ITEMS = [
   { key: 'vaccines', icon: Syringe, href: '/dashboard/vaccines', labelKey: 'nav.vaccines' },
   { key: 'tasks', icon: ClipboardList, href: '/dashboard/tasks', labelKey: 'nav.tasks' },
   { key: 'whatsapp', icon: MessageSquare, href: '/dashboard/whatsapp', labelKey: 'nav.whatsapp' },
+  { key: 'chatbot', icon: Bot, href: '/dashboard/chatbot-workflows', labelKey: 'nav.chatbot' },
   { key: 'settings', icon: Settings, href: '/dashboard/settings', labelKey: 'nav.settings' },
 ] as const;
 
@@ -226,6 +228,7 @@ function getActiveKey(pathname: string): string {
   if (pathname.includes('/dashboard/vaccines')) return 'vaccines';
   if (pathname.includes('/dashboard/tasks')) return 'tasks';
   if (pathname.includes('/dashboard/whatsapp')) return 'whatsapp';
+  if (pathname.includes('/dashboard/chatbot-workflows') || pathname.includes('/dashboard/settings/chatbot')) return 'chatbot';
   if (pathname.includes('/dashboard/team')) return 'team';
   return 'dashboard';
 }

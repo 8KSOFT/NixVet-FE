@@ -75,7 +75,7 @@ function SlotSelect({ veterinarianId, availability, availabilityLoading, value, 
     <div className="space-y-1">
       <Label>Horário disponível *</Label>
       {availabilityLoading ? (
-        <div className="flex items-center gap-2 text-sm text-gray-500 py-2"><Loader2 className="h-4 w-4 animate-spin" /> Carregando...</div>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground py-2"><Loader2 className="h-4 w-4 animate-spin" /> Carregando...</div>
       ) : (
         <Select value={value} onValueChange={onChange}>
           <SelectTrigger><SelectValue placeholder="Selecione o horário" /></SelectTrigger>
@@ -165,7 +165,7 @@ export default function CalendarPage() {
   const getGoogleByDay = (day: Dayjs) => googleEvents.filter(e => e.start && dayjs(e.start).isSame(day, 'day'));
 
   const formatStatus = (s?: string) => s === 'completed' ? 'Realizada' : s === 'cancelled' ? 'Cancelada' : 'Agendada';
-  const statusColor = (s?: string) => s === 'completed' ? 'bg-green-500' : s === 'cancelled' ? 'bg-red-500' : 'bg-blue-500';
+  const statusColor = (s?: string) => s === 'completed' ? 'bg-green-500' : s === 'cancelled' ? 'bg-red-500' : 'bg-primary/100';
 
   const fetchAvailability = async (date: Dayjs) => {
     setAvailabilityLoading(true);
@@ -243,7 +243,7 @@ export default function CalendarPage() {
             const hourGoogle = gEvents.filter(e => dayjs(e.start).hour() === h);
             return (
               <div key={h} className="flex min-h-[48px]">
-                <div className="w-16 text-xs text-gray-400 text-right pr-2 pt-1 shrink-0">{String(h).padStart(2, '0')}:00</div>
+                <div className="w-16 text-xs text-muted-foreground/60 text-right pr-2 pt-1 shrink-0">{String(h).padStart(2, '0')}:00</div>
                 <div className="flex-1 border-l px-2 py-1 space-y-0.5">
                   {hourItems.map(c => (
                     <div key={c.id} className={cn('text-xs px-2 py-1 rounded cursor-pointer', statusColor(c.status), 'text-white')} onClick={() => openDetails(c)}>
@@ -272,16 +272,16 @@ export default function CalendarPage() {
         <div className="grid grid-cols-8 border-b">
           <div className="w-16" />
           {weekDays.map((d, i) => (
-            <div key={i} className={cn('text-center py-2 text-sm font-medium border-l', d.isSame(dayjs(), 'day') && 'bg-blue-50')}>
-              <div className="text-gray-500">{WEEKDAYS[d.day()]}</div>
-              <div className={cn('w-7 h-7 rounded-full mx-auto flex items-center justify-center', d.isSame(dayjs(), 'day') && 'bg-blue-600 text-white')}>{d.date()}</div>
+            <div key={i} className={cn('text-center py-2 text-sm font-medium border-l', d.isSame(dayjs(), 'day') && 'bg-primary/10')}>
+              <div className="text-muted-foreground">{WEEKDAYS[d.day()]}</div>
+              <div className={cn('w-7 h-7 rounded-full mx-auto flex items-center justify-center', d.isSame(dayjs(), 'day') && 'bg-primary text-white')}>{d.date()}</div>
             </div>
           ))}
         </div>
         <div className="max-h-[60vh] overflow-y-auto">
           {HOURS.map(h => (
             <div key={h} className="grid grid-cols-8 border-b min-h-[40px]">
-              <div className="w-16 text-xs text-gray-400 text-right pr-2 pt-1">{String(h).padStart(2, '0')}:00</div>
+              <div className="w-16 text-xs text-muted-foreground/60 text-right pr-2 pt-1">{String(h).padStart(2, '0')}:00</div>
               {weekDays.map((d, di) => {
                 const items = getListData(d).filter(c => dayjs(c.consultation_date).hour() === h);
                 const gEv = getGoogleByDay(d).filter(e => dayjs(e.start).hour() === h);
@@ -310,7 +310,7 @@ export default function CalendarPage() {
   const renderMonthView = () => (
     <div className="bg-white p-4 rounded-lg shadow">
       <div className="grid grid-cols-7 mb-1">
-        {WEEKDAYS.map(d => <div key={d} className="text-center text-xs font-medium text-gray-500 py-1">{d}</div>)}
+        {WEEKDAYS.map(d => <div key={d} className="text-center text-xs font-medium text-muted-foreground py-1">{d}</div>)}
       </div>
       <div className="grid grid-cols-7 border-t border-l">
         {calendarDays.map((day, idx) => {
@@ -320,11 +320,11 @@ export default function CalendarPage() {
           const items = isCur ? getListData(day) : [];
           const gEv = isCur ? getGoogleByDay(day) : [];
           return (
-            <div key={idx} className={cn('border-r border-b min-h-[80px] p-1 cursor-pointer hover:bg-gray-50', !isCur && 'bg-gray-50', isSel && 'bg-blue-50')} onClick={() => { setSelectedDate(day); if (!day.isSame(currentMonth, 'month')) setCurrentMonth(day); }}>
-              <div className={cn('text-sm font-medium w-6 h-6 flex items-center justify-center rounded-full mb-1', isToday && 'bg-blue-600 text-white', !isToday && !isCur && 'text-gray-300', !isToday && isCur && 'text-gray-800')}>{day.date()}</div>
+            <div key={idx} className={cn('border-r border-b min-h-[80px] p-1 cursor-pointer hover:bg-muted/50', !isCur && 'bg-muted/50', isSel && 'bg-primary/10')} onClick={() => { setSelectedDate(day); if (!day.isSame(currentMonth, 'month')) setCurrentMonth(day); }}>
+              <div className={cn('text-sm font-medium w-6 h-6 flex items-center justify-center rounded-full mb-1', isToday && 'bg-primary text-white', !isToday && !isCur && 'text-gray-300', !isToday && isCur && 'text-foreground')}>{day.date()}</div>
               <ul className="list-none p-0 m-0 space-y-0.5">
                 {items.slice(0, 3).map(renderDot)}
-                {items.length > 3 && <li className="text-[10px] text-gray-400">+{items.length - 3} mais</li>}
+                {items.length > 3 && <li className="text-[10px] text-muted-foreground/60">+{items.length - 3} mais</li>}
                 {gEv.slice(0, 2).map(renderGoogleDot)}
               </ul>
             </div>
@@ -345,18 +345,18 @@ export default function CalendarPage() {
           <div key={m} className="bg-white rounded-lg shadow p-3 cursor-pointer hover:ring-2 ring-blue-300 transition" onClick={() => { setCurrentMonth(month); setViewMode('month'); }}>
             <h3 className="text-sm font-semibold mb-2">{PT_MONTHS_SHORT[m]}</h3>
             <div className="grid grid-cols-7 gap-0.5">
-              {WEEKDAYS.map(d => <div key={d} className="text-[8px] text-gray-400 text-center">{d[0]}</div>)}
+              {WEEKDAYS.map(d => <div key={d} className="text-[8px] text-muted-foreground/60 text-center">{d[0]}</div>)}
               {days.map((day, i) => {
                 const isCur = day.isSame(month, 'month');
                 const hasEvent = isCur && monthConsultations.some(c => dayjs(c.consultation_date).isSame(day, 'day'));
                 return (
-                  <div key={i} className={cn('text-[9px] text-center rounded', !isCur && 'text-gray-200', hasEvent && 'bg-blue-500 text-white font-bold', day.isSame(dayjs(), 'day') && !hasEvent && 'ring-1 ring-blue-400')}>
+                  <div key={i} className={cn('text-[9px] text-center rounded', !isCur && 'text-gray-200', hasEvent && 'bg-primary/100 text-white font-bold', day.isSame(dayjs(), 'day') && !hasEvent && 'ring-1 ring-blue-400')}>
                     {day.date()}
                   </div>
                 );
               })}
             </div>
-            {monthConsultations.length > 0 && <div className="text-[10px] text-blue-600 mt-1">{monthConsultations.length} consulta{monthConsultations.length > 1 ? 's' : ''}</div>}
+            {monthConsultations.length > 0 && <div className="text-[10px] text-primary mt-1">{monthConsultations.length} consulta{monthConsultations.length > 1 ? 's' : ''}</div>}
           </div>
         );
       })}
@@ -366,9 +366,9 @@ export default function CalendarPage() {
   return (
     <div>
       <div className="flex flex-wrap justify-between items-center gap-3 mb-4">
-        <h1 className="text-2xl font-bold text-blue-600 flex items-center gap-2">
+        <h1 className="text-2xl font-heading font-bold text-primary flex items-center gap-2">
           <CalendarIcon className="h-6 w-6" /> {t('calendar.title')}
-          {googleConnected && <span className="text-sm font-normal text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full">Google Calendar</span>}
+          {googleConnected && <span className="text-sm font-normal text-primary bg-primary/10 px-2 py-0.5 rounded-full">Google Calendar</span>}
         </h1>
         <div className="flex items-center gap-2">
           <Tabs value={viewMode} onValueChange={v => setViewMode(v as ViewMode)}>
@@ -380,13 +380,13 @@ export default function CalendarPage() {
             </TabsList>
           </Tabs>
           <Button onClick={() => { setCurrentMonth(dayjs()); setSelectedDate(dayjs()); }} variant="outline" size="sm">Hoje</Button>
-          <Button onClick={handleAdd} className="bg-blue-600 hover:bg-blue-700">+ {t('calendar.scheduleConsultation')}</Button>
+          <Button onClick={handleAdd} className="bg-primary hover:bg-blue-700">+ {t('calendar.scheduleConsultation')}</Button>
         </div>
       </div>
 
       {googleConnected && (
         <div className="space-y-2 mb-3">
-          <div className="flex items-center gap-4 text-xs text-gray-500">
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
             <span className="flex items-center gap-1"><span className="inline-block w-2.5 h-2.5 rounded-full bg-green-500" /> NixVet</span>
             <span className="flex items-center gap-1"><span className="inline-block w-2.5 h-2.5 rounded-full bg-purple-500" /> Google Calendar</span>
           </div>
@@ -396,7 +396,7 @@ export default function CalendarPage() {
             </div>
           )}
           {googleEvents.length === 0 && googleDiag?.tokenStatus === 'valid' && (
-            <div className="text-xs text-blue-600 bg-blue-50 border border-blue-200 rounded px-3 py-2">
+            <div className="text-xs text-primary bg-primary/10 border border-primary/20 rounded px-3 py-2">
               Nenhum evento Google Calendar neste mês. Calendário: {String(googleDiag?.calendarId || 'primary')} |
               Para debugar: acesse <code className="bg-blue-100 px-1 rounded">/api/integrations/google/debug-events</code>
             </div>
@@ -447,7 +447,7 @@ export default function CalendarPage() {
               <div className="space-y-1">
                 <Label>Recursos</Label>
                 <div className="flex flex-wrap gap-2 p-2 border rounded min-h-[40px]">
-                  {resources.map(r => <button key={r.id} type="button" onClick={() => toggleResource(r.id)} className={cn('text-xs px-2 py-1 rounded-full border', formData.required_resources.includes(r.id) ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300')}>{r.name}</button>)}
+                  {resources.map(r => <button key={r.id} type="button" onClick={() => toggleResource(r.id)} className={cn('text-xs px-2 py-1 rounded-full border', formData.required_resources.includes(r.id) ? 'bg-primary text-white border-blue-600' : 'bg-white text-foreground border-border')}>{r.name}</button>)}
                 </div>
               </div>
             )}
@@ -462,7 +462,7 @@ export default function CalendarPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setModalVisible(false)}>Cancelar</Button>
-            <Button onClick={handleSubmit} className="bg-blue-600">Agendar</Button>
+            <Button onClick={handleSubmit} className="bg-primary">Agendar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -477,12 +477,12 @@ export default function CalendarPage() {
                 <DialogTitle className="text-lg leading-tight">
                   {selectedConsultation?.patient?.name || 'Consulta'}
                   {selectedConsultation?.patient?.species && (
-                    <span className="text-sm font-normal text-gray-500 ml-2">
+                    <span className="text-sm font-normal text-muted-foreground ml-2">
                       ({selectedConsultation.patient.species}{selectedConsultation.patient.breed ? ` · ${selectedConsultation.patient.breed}` : ''})
                     </span>
                   )}
                 </DialogTitle>
-                <p className="text-sm text-gray-500 mt-0.5">
+                <p className="text-sm text-muted-foreground mt-0.5">
                   {selectedConsultation && new Date(selectedConsultation.start_time || selectedConsultation.consultation_date).toLocaleString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', hour: '2-digit', minute: '2-digit' })}
                   {selectedConsultation?.end_time && ` → ${new Date(selectedConsultation.end_time).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`}
                 </p>
@@ -491,23 +491,23 @@ export default function CalendarPage() {
           </DialogHeader>
 
           {detailsLoading ? (
-            <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>
+            <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground/60" /></div>
           ) : selectedConsultation && (
             <div className="space-y-3 py-1 text-sm">
               <div className="flex items-center gap-3">
-                <span className="text-gray-400 w-28 shrink-0">Veterinário</span>
+                <span className="text-muted-foreground/60 w-28 shrink-0">Veterinário</span>
                 <span className="font-medium">{selectedConsultation.veterinarian?.name || '—'}</span>
               </div>
               {selectedConsultation.appointment_type && (
                 <div className="flex items-center gap-3">
-                  <span className="text-gray-400 w-28 shrink-0">Procedimento</span>
+                  <span className="text-muted-foreground/60 w-28 shrink-0">Procedimento</span>
                   <span>{selectedConsultation.appointment_type.name}
-                    <span className="text-gray-400 ml-1">· {formatDuration(selectedConsultation.appointment_type.duration_minutes)}</span>
+                    <span className="text-muted-foreground/60 ml-1">· {formatDuration(selectedConsultation.appointment_type.duration_minutes)}</span>
                   </span>
                 </div>
               )}
               <div className="flex items-center gap-3">
-                <span className="text-gray-400 w-28 shrink-0">Status</span>
+                <span className="text-muted-foreground/60 w-28 shrink-0">Status</span>
                 <div className="flex gap-2">
                   <Badge className={cn(statusColor(selectedConsultation.status), 'text-white')}>{formatStatus(selectedConsultation.status)}</Badge>
                   <Badge className={selectedConsultation.paid ? 'bg-green-500 text-white' : 'bg-orange-400 text-white'}>
@@ -517,14 +517,14 @@ export default function CalendarPage() {
               </div>
               {selectedConsultation.price != null && (
                 <div className="flex items-center gap-3">
-                  <span className="text-gray-400 w-28 shrink-0">Valor</span>
+                  <span className="text-muted-foreground/60 w-28 shrink-0">Valor</span>
                   <span className="font-medium">R$ {Number(selectedConsultation.price).toFixed(2)}</span>
                 </div>
               )}
               {selectedConsultation.observations && (
                 <div className="pt-2 border-t">
-                  <p className="text-gray-400 text-xs mb-1">Observações</p>
-                  <p className="text-gray-700 bg-gray-50 rounded p-2 text-sm whitespace-pre-wrap">{selectedConsultation.observations}</p>
+                  <p className="text-muted-foreground/60 text-xs mb-1">Observações</p>
+                  <p className="text-foreground bg-muted/50 rounded p-2 text-sm whitespace-pre-wrap">{selectedConsultation.observations}</p>
                 </div>
               )}
             </div>
@@ -536,7 +536,7 @@ export default function CalendarPage() {
               <Button variant="outline" onClick={() => router.push(`/dashboard/medical-records?patient_id=${selectedConsultation!.patient!.id}`)}>Prontuário</Button>
             )}
             <Button variant="outline" disabled={selectedConsultation?.status === 'cancelled'} onClick={() => { setRescheduleDate(selectedConsultation ? dayjs(selectedConsultation.start_time || selectedConsultation.consultation_date).format('YYYY-MM-DDTHH:mm') : ''); setRescheduleVisible(true); }}>Reagendar</Button>
-            <Button disabled={selectedConsultation?.status === 'completed' || updating} onClick={handleMarkCompleted} className="bg-blue-600">{updating && <Loader2 className="h-4 w-4 animate-spin mr-2" />}Realizada</Button>
+            <Button disabled={selectedConsultation?.status === 'completed' || updating} onClick={handleMarkCompleted} className="bg-primary">{updating && <Loader2 className="h-4 w-4 animate-spin mr-2" />}Realizada</Button>
             <Button disabled={!!selectedConsultation?.paid || updating} onClick={handleConfirmPayment} className="bg-green-600">{updating && <Loader2 className="h-4 w-4 animate-spin mr-2" />}Pagamento</Button>
           </DialogFooter>
         </DialogContent>
@@ -549,7 +549,7 @@ export default function CalendarPage() {
           <div className="space-y-1 py-2"><Label>Nova data/hora *</Label><Input type="datetime-local" value={rescheduleDate} onChange={e => setRescheduleDate(e.target.value)} /></div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setRescheduleVisible(false)}>Cancelar</Button>
-            <Button onClick={handleRescheduleSubmit} disabled={rescheduleLoading} className="bg-blue-600">{rescheduleLoading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}Confirmar</Button>
+            <Button onClick={handleRescheduleSubmit} disabled={rescheduleLoading} className="bg-primary">{rescheduleLoading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}Confirmar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

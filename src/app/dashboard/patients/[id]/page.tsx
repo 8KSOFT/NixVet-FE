@@ -34,7 +34,7 @@ const typeConfig: Record<
   consultation: {
     label: 'Consulta',
     colorClass: 'border-blue-400',
-    dotClass: 'bg-blue-100 text-blue-600',
+    dotClass: 'bg-blue-100 text-primary',
     icon: <Clock className="w-4 h-4" />,
   },
   vaccine: {
@@ -89,7 +89,7 @@ export default function PatientDetailPage() {
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[200px]">
-        <Loader2 className="animate-spin w-8 h-8 text-gray-400" />
+        <Loader2 className="animate-spin w-8 h-8 text-muted-foreground/60" />
       </div>
     );
   }
@@ -100,7 +100,7 @@ export default function PatientDetailPage() {
         <Button variant="ghost" onClick={() => router.push('/dashboard/patients')}>
           <ChevronLeft className="w-4 h-4 mr-1" /> Voltar
         </Button>
-        <p className="text-slate-600 mt-4">Paciente não encontrado.</p>
+        <p className="text-muted-foreground mt-4">Paciente não encontrado.</p>
       </div>
     );
   }
@@ -130,8 +130,8 @@ export default function PatientDetailPage() {
 
       <Card className="mb-6">
         <CardHeader className="flex-row items-center justify-between space-y-0">
-          <CardTitle className="text-slate-800">{patient.name}</CardTitle>
-          <Button asChild size="sm" className="bg-blue-600 hover:bg-blue-700">
+          <CardTitle className="text-foreground">{patient.name}</CardTitle>
+          <Button asChild size="sm" className="bg-primary hover:bg-blue-700">
             <Link href={`/dashboard/medical-records?patient=${id}`}>
               <FileText className="w-4 h-4 mr-1" /> Prontuários
             </Link>
@@ -141,8 +141,8 @@ export default function PatientDetailPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {descriptionFields.map((f) => (
               <div key={f.label} className="flex gap-2 text-sm">
-                <span className="font-medium text-gray-500 min-w-[80px]">{f.label}:</span>
-                <span className="text-slate-800">{f.value}</span>
+                <span className="font-medium text-muted-foreground min-w-[80px]">{f.label}:</span>
+                <span className="text-foreground">{f.value}</span>
               </div>
             ))}
           </div>
@@ -155,14 +155,14 @@ export default function PatientDetailPage() {
         </CardHeader>
         <CardContent>
           {sortedEvents.length === 0 ? (
-            <p className="text-slate-500">Nenhum evento registrado.</p>
+            <p className="text-muted-foreground">Nenhum evento registrado.</p>
           ) : (
             <div className="space-y-0">
               {sortedEvents.map((ev, idx) => {
                 const meta = typeConfig[ev.type] ?? {
                   label: ev.type,
-                  colorClass: 'border-gray-300',
-                  dotClass: 'bg-gray-100 text-gray-600',
+                  colorClass: 'border-border',
+                  dotClass: 'bg-muted text-muted-foreground',
                   icon: null,
                 };
                 const dateStr = new Date(ev.date).toLocaleString('pt-BR');
@@ -179,12 +179,12 @@ export default function PatientDetailPage() {
                       )}
                     </div>
                     <div className="pb-4 flex-1 pt-1">
-                      <div className="font-medium text-slate-800">
+                      <div className="font-medium text-foreground">
                         {meta.label} —{' '}
-                        <span className="text-slate-500 font-normal">{dateStr}</span>
+                        <span className="text-muted-foreground font-normal">{dateStr}</span>
                       </div>
                       {ev.data && Object.keys(ev.data).length > 0 && (
-                        <div className="text-sm text-slate-600 mt-1">
+                        <div className="text-sm text-muted-foreground mt-1">
                           {ev.type === 'consultation' && (
                             <>
                               Status:{' '}

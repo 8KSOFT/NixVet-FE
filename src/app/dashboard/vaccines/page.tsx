@@ -33,7 +33,7 @@ function ReminderTable({ data, loading }: { data: VaccineReminder[]; loading: bo
   if (loading) {
     return (
       <div className="flex justify-center py-8">
-        <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+        <Loader2 className="w-6 h-6 animate-spin text-primary" />
       </div>
     );
   }
@@ -105,10 +105,10 @@ export default function VaccinesPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-blue-600 mb-6">Vacinas</h1>
+      <h1 className="text-2xl font-heading font-bold text-primary mb-6">Vacinas</h1>
       <Card>
         <CardContent className="pt-6">
-          <Button onClick={() => setModalOpen(true)} className="mb-4 bg-blue-600">
+          <Button onClick={() => setModalOpen(true)} className="mb-4 bg-primary">
             <Plus className="w-4 h-4 mr-2" /> Novo lembrete
           </Button>
           <Tabs defaultValue="due">
@@ -161,7 +161,7 @@ export default function VaccinesPage() {
               <Input type="date" {...register('next_due_date', { required: true })} />
             </div>
             <DialogFooter>
-              <Button type="submit" className="bg-blue-600">Criar</Button>
+              <Button type="submit" className="bg-primary">Criar</Button>
             </DialogFooter>
           </form>
         </DialogContent>

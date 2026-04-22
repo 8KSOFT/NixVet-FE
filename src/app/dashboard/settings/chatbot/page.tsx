@@ -1,15 +1,23 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
-import { Bot, Loader2 } from 'lucide-react';
+import { Bot, Loader2, Workflow, ArrowLeft, Info } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import api from '@/lib/axios';
 
 interface ChatbotSettings {
@@ -31,6 +39,19 @@ const DEFAULTS: Record<string, string> = {
   human_handoff_message: 'Entendido! Vou chamar um atendente humano. Em breve alguém da nossa equipe entrará em contato. 👋',
   system_prompt_extra: '',
 };
+
+function FieldTooltip({ text }: { text: string }) {
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Info className="w-3.5 h-3.5 text-muted-foreground/60 cursor-help inline-block ml-1 align-middle" />
+        </TooltipTrigger>
+        <TooltipContent className="max-w-[240px] text-xs">{text}</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
 
 export default function ChatbotSettingsPage() {
   const { register, handleSubmit, reset, formState: { errors } } = useForm<ChatbotSettings>({
@@ -78,146 +99,183 @@ export default function ChatbotSettingsPage() {
   };
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-blue-600 mb-2 flex items-center gap-2">
-        <Bot className="w-6 h-6" /> Chatbot — Persona e Respostas
-      </h1>
-      <p className="text-slate-500 mb-6 text-sm">
-        Configure a personalidade do bot e as mensagens padrão. Deixe em branco para usar o texto padrão do sistema.
-      </p>
-
-      <div className="bg-blue-50 border border-blue-200 rounded-md p-4 mb-6 text-sm text-blue-800">
-        <p className="font-semibold mb-2">Como funciona</p>
-        <ul className="list-disc pl-4 space-y-1">
-          <li><b>Persona:</b> nome que o bot usa ao se identificar nas mensagens geradas pela IA.</li>
-          <li><b>Boas-vindas:</b> enviada automaticamente quando o cliente escreve pela 1ª vez.</li>
-          <li><b>Fallback:</b> enviada quando a IA não entende a mensagem (sem OPENAI_API_KEY ou intenção desconhecida).</li>
-          <li><b>Emergência:</b> substitui a resposta padrão quando o sistema detecta urgência.</li>
-          <li><b>Atendimento humano:</b> enviada quando o cliente pede falar com uma pessoa.</li>
-          <li><b>Instruções extras:</b> injetadas no prompt do sistema — permite customizar o comportamento da IA.</li>
-        </ul>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <Link href="/dashboard/chatbot-workflows">
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-2xl font-heading font-semibold text-foreground flex items-center gap-2">
+              <Bot className="w-6 h-6 text-primary" /> Persona & Mensagens
+            </h1>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              Configure o comportamento e as mensagens padrão do bot.
+            </p>
+          </div>
+        </div>
+        <Link href="/dashboard/chatbot-workflows">
+          <Button variant="outline" size="sm" className="gap-1.5 text-muted-foreground">
+            <Workflow className="w-4 h-4" /> Ver Workflows
+          </Button>
+        </Link>
       </div>
 
-      <Card>
-        <CardContent className="pt-6">
-          {loading ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              <div>
-                <Label htmlFor="persona_name">
-                  Nome da persona{' '}
-                  <span className="text-gray-400 text-xs" title="Como o bot se identifica nas respostas geradas pela IA">(?)</span>
-                </Label>
-                <Input
-                  id="persona_name"
-                  placeholder="Ex.: Nina, Assistente Pet, Clínica PetCare"
-                  maxLength={80}
-                  {...register('persona_name', { required: true })}
-                />
-                {errors.persona_name && <p className="text-red-500 text-xs mt-1">Campo obrigatório</p>}
-              </div>
+      {loading ? (
+        <div className="flex justify-center py-16">
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <Tabs defaultValue="persona">
+            <TabsList className="mb-4">
+              <TabsTrigger value="persona">Persona & Mensagens</TabsTrigger>
+              <TabsTrigger value="advanced">Prompt Avançado</TabsTrigger>
+            </TabsList>
 
-              <Separator />
-              <p className="text-sm text-gray-500">Mensagens automáticas</p>
+            <TabsContent value="persona" className="space-y-5 mt-0">
+              <Card>
+                <CardContent className="pt-6 space-y-5">
+                  {/* Persona name */}
+                  <div>
+                    <Label htmlFor="persona_name" className="flex items-center gap-1">
+                      Nome da persona
+                      <FieldTooltip text="Como o bot se identifica nas respostas geradas pela IA (ex: Nina, Assistente Pet)." />
+                    </Label>
+                    <Input
+                      id="persona_name"
+                      placeholder="Ex.: Nina, Assistente Pet, Clínica PetCare"
+                      maxLength={80}
+                      className="mt-1.5"
+                      {...register('persona_name', { required: true })}
+                    />
+                    {errors.persona_name && (
+                      <p className="text-destructive text-xs mt-1">Campo obrigatório</p>
+                    )}
+                  </div>
 
-              <div>
-                <Label htmlFor="greeting_message">
-                  Boas-vindas{' '}
-                  <span className="text-gray-400 text-xs" title="Enviada na 1ª mensagem recebida do cliente. Deixe vazio para não enviar.">(?)</span>
-                </Label>
-                <Textarea
-                  id="greeting_message"
-                  rows={2}
-                  placeholder={DEFAULTS.greeting_message}
-                  maxLength={500}
-                  {...register('greeting_message')}
-                />
-              </div>
+                  <Separator />
 
-              <div>
-                <Label htmlFor="fallback_message">
-                  Resposta de fallback (IA indisponível ou intenção desconhecida){' '}
-                  <span className="text-gray-400 text-xs" title="Enviada quando a IA não consegue responder">(?)</span>
-                </Label>
-                <Textarea
-                  id="fallback_message"
-                  rows={2}
-                  placeholder={DEFAULTS.fallback_message}
-                  maxLength={500}
-                  {...register('fallback_message')}
-                />
-              </div>
+                  {/* Greeting */}
+                  <div>
+                    <Label htmlFor="greeting_message" className="flex items-center gap-1">
+                      Mensagem de boas-vindas
+                      <FieldTooltip text="Enviada automaticamente quando o cliente escreve pela 1ª vez. Deixe vazio para não enviar." />
+                    </Label>
+                    <Textarea
+                      id="greeting_message"
+                      rows={2}
+                      placeholder={DEFAULTS.greeting_message}
+                      maxLength={500}
+                      className="mt-1.5"
+                      {...register('greeting_message')}
+                    />
+                  </div>
 
-              <div>
-                <Label htmlFor="emergency_message">
-                  Mensagem de emergência{' '}
-                  <span className="text-gray-400 text-xs" title="Enviada quando o sistema detecta intenção de urgência/emergência">(?)</span>
-                </Label>
-                <Textarea
-                  id="emergency_message"
-                  rows={2}
-                  placeholder={DEFAULTS.emergency_message}
-                  maxLength={500}
-                  {...register('emergency_message')}
-                />
-              </div>
+                  {/* Fallback */}
+                  <div>
+                    <Label htmlFor="fallback_message" className="flex items-center gap-1">
+                      Resposta de fallback
+                      <FieldTooltip text="Enviada quando a IA não consegue responder (ex: sem OpenAI key ou intenção desconhecida)." />
+                    </Label>
+                    <Textarea
+                      id="fallback_message"
+                      rows={2}
+                      placeholder={DEFAULTS.fallback_message}
+                      maxLength={500}
+                      className="mt-1.5"
+                      {...register('fallback_message')}
+                    />
+                  </div>
 
-              <div>
-                <Label htmlFor="human_handoff_message">
-                  Transferência para humano{' '}
-                  <span className="text-gray-400 text-xs" title="Enviada quando o cliente solicita atendimento humano — depois disso o bot pausa">(?)</span>
-                </Label>
-                <Textarea
-                  id="human_handoff_message"
-                  rows={2}
-                  placeholder={DEFAULTS.human_handoff_message}
-                  maxLength={500}
-                  {...register('human_handoff_message')}
-                />
-              </div>
+                  {/* Emergency */}
+                  <div>
+                    <Label htmlFor="emergency_message" className="flex items-center gap-1">
+                      Mensagem de emergência
+                      <FieldTooltip text="Enviada quando o sistema detecta uma emergência real (atropelamento, convulsão, envenenamento etc.)." />
+                    </Label>
+                    <Textarea
+                      id="emergency_message"
+                      rows={2}
+                      placeholder={DEFAULTS.emergency_message}
+                      maxLength={500}
+                      className="mt-1.5"
+                      {...register('emergency_message')}
+                    />
+                  </div>
 
-              <div>
-                <Label htmlFor="farewell_message">
-                  Encerramento{' '}
-                  <span className="text-gray-400 text-xs" title="Pode ser usada manualmente ou por automações ao finalizar atendimento">(?)</span>
-                </Label>
-                <Textarea
-                  id="farewell_message"
-                  rows={2}
-                  placeholder={DEFAULTS.farewell_message}
-                  maxLength={500}
-                  {...register('farewell_message')}
-                />
-              </div>
+                  {/* Human handoff */}
+                  <div>
+                    <Label htmlFor="human_handoff_message" className="flex items-center gap-1">
+                      Transferência para humano
+                      <FieldTooltip text="Enviada quando o cliente solicita atendimento humano. Após isso o bot é pausado para essa conversa." />
+                    </Label>
+                    <Textarea
+                      id="human_handoff_message"
+                      rows={2}
+                      placeholder={DEFAULTS.human_handoff_message}
+                      maxLength={500}
+                      className="mt-1.5"
+                      {...register('human_handoff_message')}
+                    />
+                  </div>
 
-              <Separator />
-              <p className="text-sm text-gray-500">Prompt avançado</p>
+                  {/* Farewell */}
+                  <div>
+                    <Label htmlFor="farewell_message" className="flex items-center gap-1">
+                      Mensagem de encerramento
+                      <FieldTooltip text="Pode ser usada manualmente ou por automações ao finalizar um atendimento." />
+                    </Label>
+                    <Textarea
+                      id="farewell_message"
+                      rows={2}
+                      placeholder={DEFAULTS.farewell_message}
+                      maxLength={500}
+                      className="mt-1.5"
+                      {...register('farewell_message')}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-              <div>
-                <Label htmlFor="system_prompt_extra">
-                  Instruções adicionais para a IA{' '}
-                  <span className="text-gray-400 text-xs" title='Texto injetado no system prompt. Ex.: "Somos especializados em animais exóticos.", "Não mencione preços.", "Sempre sugira vacinas para filhotes."'>(?)</span>
-                </Label>
-                <Textarea
-                  id="system_prompt_extra"
-                  rows={4}
-                  placeholder="Ex.: Somos uma clínica especializada em animais exóticos. Sempre mencione que temos pronto-socorro 24h."
-                  maxLength={1000}
-                  {...register('system_prompt_extra')}
-                />
-              </div>
+            <TabsContent value="advanced" className="space-y-5 mt-0">
+              <Card>
+                <CardContent className="pt-6 space-y-5">
+                  <div>
+                    <Label htmlFor="system_prompt_extra" className="flex items-center gap-1">
+                      Instruções adicionais para a IA
+                      <FieldTooltip text='Texto injetado no system prompt. Permite customizar o comportamento da IA. Ex: "Somos especializados em animais exóticos.", "Não mencione preços."' />
+                    </Label>
+                    <p className="text-xs text-muted-foreground mt-1 mb-2">
+                      Este texto é concatenado ao prompt base da IA. Use para customizar o comportamento,
+                      adicionar contexto da clínica ou restringir tópicos.
+                    </p>
+                    <Textarea
+                      id="system_prompt_extra"
+                      rows={6}
+                      placeholder="Ex.: Somos uma clínica especializada em animais exóticos. Sempre mencione que temos pronto-socorro 24h. Nunca mencione preços sem antes consultar a recepção."
+                      maxLength={1000}
+                      {...register('system_prompt_extra')}
+                    />
+                    <p className="text-xs text-muted-foreground/60 mt-1">Máximo 1000 caracteres</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
 
-              <Button type="submit" disabled={saving} className="bg-blue-600">
-                {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                Salvar configurações
-              </Button>
-            </form>
-          )}
-        </CardContent>
-      </Card>
+          <div className="flex justify-end mt-4">
+            <Button type="submit" disabled={saving} className="bg-primary gap-2">
+              {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+              Salvar configurações
+            </Button>
+          </div>
+        </form>
+      )}
     </div>
   );
 }

@@ -210,10 +210,10 @@ export default function SuperadminClinicsPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Clínicas (global)</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Clínicas (global)</h1>
           <p className="text-muted-foreground mt-1">Painel exclusivo do superadmin — crie, edite e gerencie os tenants.</p>
         </div>
-        <Button className="bg-blue-600" onClick={() => { setCreateForm(emptyCreate()); setCreateOpen(true); }}>
+        <Button className="bg-primary" onClick={() => { setCreateForm(emptyCreate()); setCreateOpen(true); }}>
           <Plus className="size-4 mr-1" /> Nova clínica
         </Button>
       </div>
@@ -384,7 +384,7 @@ export default function SuperadminClinicsPage() {
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setCreateOpen(false)}>Cancelar</Button>
-            <Button className="bg-blue-600" onClick={() => void submitCreate()} disabled={creating}>
+            <Button className="bg-primary" onClick={() => void submitCreate()} disabled={creating}>
               {creating && <Loader2 className="size-4 animate-spin mr-1" />} Criar
             </Button>
           </DialogFooter>
@@ -442,7 +442,7 @@ export default function SuperadminClinicsPage() {
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setEditRow(null)}>Cancelar</Button>
-            <Button className="bg-blue-600" onClick={() => void submitEdit()} disabled={editing}>
+            <Button className="bg-primary" onClick={() => void submitEdit()} disabled={editing}>
               {editing ? <Loader2 className="size-4 animate-spin mr-1" /> : <Save className="size-4 mr-1" />} Salvar
             </Button>
           </DialogFooter>

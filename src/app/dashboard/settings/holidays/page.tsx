@@ -202,7 +202,7 @@ export default function HolidaysPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-blue-600 mb-6">Feriados</h1>
+      <h1 className="text-2xl font-heading font-bold text-primary mb-6">Feriados</h1>
 
       <Card>
         <CardHeader>
@@ -227,7 +227,7 @@ export default function HolidaysPage() {
                 max={2030}
               />
             </div>
-            <Button onClick={() => { resetAddForm(); setAddOpen(true); }} className="bg-blue-600">
+            <Button onClick={() => { resetAddForm(); setAddOpen(true); }} className="bg-primary">
               <Plus className="w-4 h-4 mr-2" /> Adicionar
             </Button>
             <Button onClick={() => setAiOpen(true)} variant="outline" className="border-purple-300 text-purple-700 hover:bg-purple-50">
@@ -237,10 +237,10 @@ export default function HolidaysPage() {
 
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
             </div>
           ) : holidays.length === 0 ? (
-            <p className="text-slate-500 text-center py-8">
+            <p className="text-muted-foreground text-center py-8">
               Nenhum feriado cadastrado para {year}. Use o botão &quot;Buscar com IA&quot; para importar automaticamente.
             </p>
           ) : (
@@ -265,7 +265,7 @@ export default function HolidaysPage() {
                           Regional {h.city ? `(${h.city}/${h.state})` : ''}
                         </Badge>
                       ) : (
-                        <Badge variant="outline" className="border-blue-300 text-blue-700">Nacional</Badge>
+                        <Badge variant="outline" className="border-blue-300 text-primary">Nacional</Badge>
                       )}
                     </TableCell>
                     <TableCell>
@@ -340,7 +340,7 @@ export default function HolidaysPage() {
                 </div>
               </div>
             )}
-            <Button onClick={handleAdd} disabled={saving} className="bg-blue-600">
+            <Button onClick={handleAdd} disabled={saving} className="bg-primary">
               {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Salvar
             </Button>
@@ -380,7 +380,7 @@ export default function HolidaysPage() {
               <>
                 <Separator />
                 <div className="flex items-center justify-between">
-                  <p className="text-sm text-slate-600">{suggestions.length} feriados encontrados. Selecione os que deseja salvar:</p>
+                  <p className="text-sm text-muted-foreground">{suggestions.length} feriados encontrados. Selecione os que deseja salvar:</p>
                   <div className="flex gap-2">
                     <Button
                       type="button"
@@ -420,7 +420,7 @@ export default function HolidaysPage() {
                             {s.is_regional ? (
                               <Badge variant="outline" className="border-orange-300 text-orange-700 text-xs">Regional</Badge>
                             ) : (
-                              <Badge variant="outline" className="border-blue-300 text-blue-700 text-xs">Nacional</Badge>
+                              <Badge variant="outline" className="border-blue-300 text-primary text-xs">Nacional</Badge>
                             )}
                           </TableCell>
                         </TableRow>
@@ -428,7 +428,7 @@ export default function HolidaysPage() {
                     </TableBody>
                   </Table>
                 </div>
-                <Button onClick={handleSaveSuggestions} disabled={aiSaving || selectedSuggestions.size === 0} className="bg-blue-600">
+                <Button onClick={handleSaveSuggestions} disabled={aiSaving || selectedSuggestions.size === 0} className="bg-primary">
                   {aiSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                   Salvar {selectedSuggestions.size} feriado{selectedSuggestions.size !== 1 ? 's' : ''}
                 </Button>

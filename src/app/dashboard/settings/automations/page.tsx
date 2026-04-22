@@ -99,16 +99,16 @@ export default function SettingsAutomationsPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-blue-600 mb-6">Automações</h1>
+      <h1 className="text-2xl font-heading font-bold text-primary mb-6">Automações</h1>
       <Card>
         <CardContent className="pt-6">
-          <p className="text-slate-600 mb-4">Regras por evento (ex.: ao criar consulta → enviar lembrete WhatsApp).</p>
-          <Button onClick={() => setModalOpen(true)} className="mb-4 bg-blue-600">
+          <p className="text-muted-foreground mb-4">Regras por evento (ex.: ao criar consulta → enviar lembrete WhatsApp).</p>
+          <Button onClick={() => setModalOpen(true)} className="mb-4 bg-primary">
             <Plus className="w-4 h-4 mr-2" /> Nova regra
           </Button>
           {loading ? (
             <div className="flex justify-center py-8">
-              <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
             </div>
           ) : (
             <Table>
@@ -202,7 +202,7 @@ export default function SettingsAutomationsPage() {
               <Label htmlFor="is_active">Ativo</Label>
             </div>
             <DialogFooter>
-              <Button type="submit" className="bg-blue-600">Salvar</Button>
+              <Button type="submit" className="bg-primary">Salvar</Button>
             </DialogFooter>
           </form>
         </DialogContent>

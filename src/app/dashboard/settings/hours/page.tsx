@@ -321,11 +321,11 @@ export default function SettingsHoursPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-blue-600 mb-6">Horários</h1>
+      <h1 className="text-2xl font-heading font-bold text-primary mb-6">Horários</h1>
 
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
         </div>
       ) : (
         <Card>
@@ -339,10 +339,10 @@ export default function SettingsHoursPage() {
 
               {/* ── Business Hours ── */}
               <TabsContent value="business">
-                <p className="text-slate-600 mb-4">
+                <p className="text-muted-foreground mb-4">
                   Define o horário de abertura/fechamento da clínica por dia da semana. Selecione vários dias para aplicar o mesmo horário de uma vez.
                 </p>
-                <Button onClick={() => openBusinessModal()} className="mb-4 bg-blue-600">
+                <Button onClick={() => openBusinessModal()} className="mb-4 bg-primary">
                   <Plus className="w-4 h-4 mr-2" /> Configurar dias
                 </Button>
                 <Table>
@@ -387,10 +387,10 @@ export default function SettingsHoursPage() {
 
               {/* ── Emergency Hours ── */}
               <TabsContent value="emergency">
-                <p className="text-slate-600 mb-4">
+                <p className="text-muted-foreground mb-4">
                   Janelas de plantão ou emergência por dia da semana. Selecione vários dias de uma vez.
                 </p>
-                <Button onClick={() => openEmergencyModal()} className="mb-4 bg-blue-600">
+                <Button onClick={() => openEmergencyModal()} className="mb-4 bg-primary">
                   <Plus className="w-4 h-4 mr-2" /> Configurar plantão
                 </Button>
                 <Table>
@@ -429,7 +429,7 @@ export default function SettingsHoursPage() {
 
               {/* ── Vet Schedules ── */}
               <TabsContent value="vet">
-                <p className="text-slate-600 mb-4">
+                <p className="text-muted-foreground mb-4">
                   Dias e horários de cada veterinário. Horários convencionais são &quot;Regular&quot; — Plantão é separado.
                 </p>
                 <Button
@@ -438,7 +438,7 @@ export default function SettingsHoursPage() {
                     setVetSelectedDays([]);
                     setVetModalOpen(true);
                   }}
-                  className="mb-4 bg-blue-600"
+                  className="mb-4 bg-primary"
                 >
                   <Plus className="w-4 h-4 mr-2" /> Adicionar horário
                 </Button>
@@ -468,7 +468,7 @@ export default function SettingsHoursPage() {
                           {r.schedule_type === 'on_call' ? (
                             <Badge className="bg-orange-500">Plantão</Badge>
                           ) : (
-                            <Badge className="bg-blue-500">Regular</Badge>
+                            <Badge className="bg-primary/100">Regular</Badge>
                           )}
                         </TableCell>
                         <TableCell>
@@ -559,7 +559,7 @@ export default function SettingsHoursPage() {
               </>
             )}
 
-            <Button onClick={onBusinessSubmit} disabled={bhSaving} className="bg-blue-600">
+            <Button onClick={onBusinessSubmit} disabled={bhSaving} className="bg-primary">
               {bhSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Salvar
             </Button>
@@ -613,7 +613,7 @@ export default function SettingsHoursPage() {
               <Label htmlFor="eh_active">Ativo</Label>
             </div>
 
-            <Button onClick={onEmergencySubmit} disabled={ehSaving} className="bg-blue-600">
+            <Button onClick={onEmergencySubmit} disabled={ehSaving} className="bg-primary">
               {ehSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Salvar
             </Button>
@@ -696,7 +696,7 @@ export default function SettingsHoursPage() {
                 )}
               />
             </div>
-            <Button type="submit" className="bg-blue-600">
+            <Button type="submit" className="bg-primary">
               Adicionar
             </Button>
           </form>

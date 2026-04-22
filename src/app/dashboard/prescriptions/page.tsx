@@ -351,10 +351,10 @@ export default function PrescriptionsPage() {
   return (
     <div>
       <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold text-blue-600 flex items-center gap-2">
+        <h1 className="text-2xl font-heading font-bold text-primary flex items-center gap-2">
           <BookOpen className="w-6 h-6" /> Prescrição
         </h1>
-        <Button onClick={handleAdd} className="bg-blue-600 hover:bg-blue-700 text-white">
+        <Button onClick={handleAdd} className="bg-primary hover:bg-blue-700 text-white">
           <Plus className="w-4 h-4 mr-1" /> Nova Prescrição
         </Button>
       </div>
@@ -400,7 +400,7 @@ export default function PrescriptionsPage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="text-blue-500 border-blue-500 hover:bg-blue-50"
+                      className="text-primary border-blue-500 hover:bg-primary/10"
                       onClick={() => handleOpenEmailModal(record)}
                     >
                       <Mail className="w-3 h-3 mr-1" /> Email
@@ -460,7 +460,7 @@ export default function PrescriptionsPage() {
               <>
                 <div>
                   <Label>Consulta (opcional)</Label>
-                  <p className="text-xs text-gray-500 mb-1">
+                  <p className="text-xs text-muted-foreground mb-1">
                     Se não houver consulta, preencha a data abaixo
                   </p>
                   <Controller
@@ -488,7 +488,7 @@ export default function PrescriptionsPage() {
                 </div>
                 <div>
                   <Label>Data da prescrição (quando não houver consulta)</Label>
-                  <p className="text-xs text-gray-500 mb-1">
+                  <p className="text-xs text-muted-foreground mb-1">
                     Obrigatório se não selecionar uma consulta
                   </p>
                   <Controller
@@ -550,7 +550,7 @@ export default function PrescriptionsPage() {
             )}
 
             {prescriptionType === 'receita' && (
-              <div className="bg-gray-50 p-4 rounded">
+              <div className="bg-muted/50 p-4 rounded">
                 <h3 className="font-bold mb-2">Medicamentos</h3>
                 <div className="space-y-3">
                   {fields.map((field, index) => {
@@ -579,7 +579,7 @@ export default function PrescriptionsPage() {
                             {activeMedIndex === index && bularioOptions.length > 0 && (
                               <div className="absolute z-10 top-full left-0 right-0 bg-white border rounded shadow-md max-h-40 overflow-y-auto">
                                 {searchingBulario ? (
-                                  <div className="px-3 py-2 text-sm text-gray-500">
+                                  <div className="px-3 py-2 text-sm text-muted-foreground">
                                     Buscando...
                                   </div>
                                 ) : (
@@ -587,7 +587,7 @@ export default function PrescriptionsPage() {
                                     <button
                                       key={item.id}
                                       type="button"
-                                      className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100"
+                                      className="w-full text-left px-3 py-2 text-sm hover:bg-muted"
                                       onClick={() => {
                                         setValue(`medications.${index}.name`, item.title);
                                         setValue(
@@ -832,7 +832,7 @@ export default function PrescriptionsPage() {
               <Button type="button" variant="outline" onClick={() => setModalVisible(false)}>
                 Cancelar
               </Button>
-              <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white">
+              <Button type="submit" className="bg-primary hover:bg-blue-700 text-white">
                 Gerar prescrição
               </Button>
             </DialogFooter>
@@ -849,14 +849,14 @@ export default function PrescriptionsPage() {
             Enviar prescrição por email para o tutor de{' '}
             <strong>{selectedPrescription && getPatient(selectedPrescription)?.name}</strong>?
           </p>
-          <p className="text-gray-500 text-sm mt-2">
+          <p className="text-muted-foreground text-sm mt-2">
             O email será enviado para o endereço cadastrado no perfil do tutor.
           </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEmailModalVisible(false)}>
               Cancelar
             </Button>
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={handleSendEmail}>
+            <Button className="bg-primary hover:bg-blue-700 text-white" onClick={handleSendEmail}>
               Enviar
             </Button>
           </DialogFooter>
@@ -870,23 +870,23 @@ export default function PrescriptionsPage() {
           </DialogHeader>
           {bularioDetailLoading && (
             <div className="flex justify-center py-8">
-              <Loader2 className="animate-spin w-6 h-6 text-gray-400" />
+              <Loader2 className="animate-spin w-6 h-6 text-muted-foreground/60" />
             </div>
           )}
           {!bularioDetailLoading && bularioDetail && (
             <div className="max-h-[60vh] overflow-y-auto">
               {bularioDetail.subtitle && (
-                <p className="text-gray-600 mb-2">{bularioDetail.subtitle}</p>
+                <p className="text-muted-foreground mb-2">{bularioDetail.subtitle}</p>
               )}
               {/* link externo removido */}
               {bularioDetail.details?.length ? (
                 bularioDetail.details.map((section, idx) => (
                   <div key={idx} className="mb-3">
-                    <h4 className="font-semibold text-blue-600 text-sm mb-1">{section.title}</h4>
+                    <h4 className="font-semibold text-primary text-sm mb-1">{section.title}</h4>
                     <div className="border rounded divide-y text-sm">
                       {section.data?.map((entry, i) => (
                         <div key={i} className="grid grid-cols-3 px-3 py-2">
-                          <span className="font-medium text-gray-600">{entry.title ?? '—'}</span>
+                          <span className="font-medium text-muted-foreground">{entry.title ?? '—'}</span>
                           <span className="col-span-2">{entry.data || '—'}</span>
                         </div>
                       ))}
@@ -894,7 +894,7 @@ export default function PrescriptionsPage() {
                   </div>
                 ))
               ) : (
-                <p className="text-gray-500">Sem detalhes cadastrados.</p>
+                <p className="text-muted-foreground">Sem detalhes cadastrados.</p>
               )}
             </div>
           )}

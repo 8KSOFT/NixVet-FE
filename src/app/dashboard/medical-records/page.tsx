@@ -158,16 +158,16 @@ export default function MedicalRecordsListPage() {
 
   const statusBadge = (s: string) => {
     if (s === 'closed') return <Badge className="bg-green-500 text-white">Fechado</Badge>;
-    return <Badge className="bg-blue-500 text-white">Aberto</Badge>;
+    return <Badge className="bg-primary/100 text-white">Aberto</Badge>;
   };
 
   return (
     <div>
       <div className="flex flex-wrap justify-between items-center gap-3 mb-4">
-        <h1 className="text-2xl font-bold text-blue-600 flex items-center gap-2">
+        <h1 className="text-2xl font-heading font-bold text-primary flex items-center gap-2">
           <FileText className="h-6 w-6" /> Prontuários
         </h1>
-        <Button onClick={() => { setForm(emptyForm()); setModalVisible(true); }} className="bg-blue-600 hover:bg-blue-700">
+        <Button onClick={() => { setForm(emptyForm()); setModalVisible(true); }} className="bg-primary hover:bg-blue-700">
           <Plus className="h-4 w-4 mr-1" /> Novo Prontuário
         </Button>
       </div>
@@ -177,7 +177,7 @@ export default function MedicalRecordsListPage() {
           <div className="flex flex-wrap gap-3">
             <div className="flex-1 min-w-[200px]">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60" />
                 <Input placeholder="Buscar por paciente, veterinário, queixa..." className="pl-9" value={search} onChange={e => setSearch(e.target.value)} />
               </div>
             </div>
@@ -197,9 +197,9 @@ export default function MedicalRecordsListPage() {
       <Card>
         <CardContent className="p-0">
           {loading ? (
-            <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-gray-400" /></div>
+            <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground/60" /></div>
           ) : filtered.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">Nenhum prontuário encontrado.</div>
+            <div className="text-center py-12 text-muted-foreground">Nenhum prontuário encontrado.</div>
           ) : (
             <Table>
               <TableHeader>
@@ -215,7 +215,7 @@ export default function MedicalRecordsListPage() {
               </TableHeader>
               <TableBody>
                 {filtered.map(r => (
-                  <TableRow key={r.id} className="cursor-pointer hover:bg-gray-50" onClick={() => router.push(`/dashboard/medical-records/${r.id}`)}>
+                  <TableRow key={r.id} className="cursor-pointer hover:bg-muted/50" onClick={() => router.push(`/dashboard/medical-records/${r.id}`)}>
                     <TableCell className="whitespace-nowrap">{dayjs(r.record_date).format('DD/MM/YYYY')}</TableCell>
                     <TableCell className="font-medium">{r.patient?.name || '—'}</TableCell>
                     <TableCell><Badge variant="outline">{typeLabel(r.record_type)}</Badge></TableCell>
@@ -254,7 +254,7 @@ export default function MedicalRecordsListPage() {
                   <PawPrint className="h-4 w-4 mr-1" /> Novo animal
                 </Button>
               </div>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted-foreground">
                 Sem tutor cadastrado? Use o botão <strong>Novo animal</strong> e clique em <strong>+ Novo tutor</strong> dentro dele — ou deixe sem tutor (emergência).
               </p>
             </div>
@@ -292,7 +292,7 @@ export default function MedicalRecordsListPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setModalVisible(false)}>Cancelar</Button>
-            <Button onClick={handleCreate} className="bg-blue-600">Criar e Abrir</Button>
+            <Button onClick={handleCreate} className="bg-primary">Criar e Abrir</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -366,7 +366,7 @@ export default function MedicalRecordsListPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setPatientModal(false)}>Cancelar</Button>
-            <Button onClick={handleCreatePatient} disabled={patientSaving} className="bg-blue-600">
+            <Button onClick={handleCreatePatient} disabled={patientSaving} className="bg-primary">
               {patientSaving && <Loader2 className="h-4 w-4 mr-1 animate-spin" />} Salvar animal
             </Button>
           </DialogFooter>
@@ -412,11 +412,11 @@ export default function MedicalRecordsListPage() {
               <Label>Número</Label>
               <Input value={tutorForm.number} onChange={e => setTutorForm(p => ({ ...p, number: e.target.value }))} />
             </div>
-            <p className="text-xs text-gray-500">Cadastro rápido — campos de endereço completos podem ser preenchidos depois em <strong>Tutores</strong>.</p>
+            <p className="text-xs text-muted-foreground">Cadastro rápido — campos de endereço completos podem ser preenchidos depois em <strong>Tutores</strong>.</p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setTutorModal(false)}>Cancelar</Button>
-            <Button onClick={handleCreateTutor} disabled={tutorSaving} className="bg-blue-600">
+            <Button onClick={handleCreateTutor} disabled={tutorSaving} className="bg-primary">
               {tutorSaving && <Loader2 className="h-4 w-4 mr-1 animate-spin" />} Salvar tutor
             </Button>
           </DialogFooter>

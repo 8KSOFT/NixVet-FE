@@ -338,21 +338,21 @@ export default function SettingsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+        <Loader2 className="w-6 h-6 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-blue-600 flex items-center gap-2 mb-6">
-        <Settings className="w-6 h-6" /> Configurações
+      <h1 className="text-2xl font-heading font-semibold text-foreground flex items-center gap-2 mb-6">
+        <Settings className="w-6 h-6 text-primary" /> Configurações
       </h1>
 
       {canManageChatbot && (
-        <Card className="mb-6 shadow-sm border-blue-200 bg-gradient-to-br from-blue-50/80 to-white">
+        <Card className="mb-6 shadow-sm border-primary/20 bg-gradient-to-br from-primary/5 to-background">
           <CardHeader>
-            <CardTitle className="text-blue-800 font-semibold text-base">
+            <CardTitle className="text-foreground font-semibold text-base">
               Chatbot WhatsApp — respostas automáticas com IA
             </CardTitle>
           </CardHeader>
@@ -374,7 +374,7 @@ export default function SettingsPage() {
               </p>
               <a
                 href="/dashboard/chatbot-workflows"
-                className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-800 mt-2"
+                className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 mt-2"
               >
                 Configurar Workflow Visual do Chatbot →
               </a>
@@ -435,7 +435,7 @@ export default function SettingsPage() {
                       size="icon"
                       onClick={handleCepSearch}
                       disabled={loadingCep}
-                      className="bg-blue-600"
+                      className="bg-primary"
                     >
                       {loadingCep ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
                     </Button>
@@ -478,7 +478,7 @@ export default function SettingsPage() {
               </div>
 
               <div>
-                <Button type="submit" className="bg-blue-600">
+                <Button type="submit" className="bg-primary">
                   <Save className="w-4 h-4 mr-2" />
                   Salvar Alterações
                 </Button>
@@ -494,15 +494,15 @@ export default function SettingsPage() {
           <CardContent>
             <div className="flex flex-col gap-3">
               <div>
-                <h4 className="font-bold text-gray-700">Status</h4>
-                <p className="text-gray-500">
+                <h4 className="font-bold text-foreground">Status</h4>
+                <p className="text-muted-foreground">
                   {googleStatus.connected
                     ? `Conectado${googleStatus.accountEmail ? ` (${googleStatus.accountEmail})` : ''}`
                     : 'Desconectado'}
                 </p>
               </div>
               <div className="flex gap-2 flex-wrap">
-                <Button onClick={handleGoogleConnect} disabled={googleLoading} className="bg-blue-600">
+                <Button onClick={handleGoogleConnect} disabled={googleLoading} className="bg-primary">
                   {googleLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                   Conectar Google
                 </Button>
@@ -553,12 +553,12 @@ export default function SettingsPage() {
                         <option value="nixvet_to_google">NixVet → Google (somente enviar)</option>
                         <option value="google_to_nixvet">Google → NixVet (somente receber)</option>
                       </select>
-                      <p className="text-xs text-gray-400 mt-1">
+                        <p className="text-xs text-muted-foreground/60 mt-1">
                         Com &quot;Bidirecional&quot;, eventos criados no Google Calendar aparecem automaticamente na agenda do NixVet (sync a cada 1 minuto).
                       </p>
                     </div>
                     <div className="flex gap-2">
-                      <Button onClick={handleGoogleSaveCalendar} disabled={googleLoading} className="bg-blue-600">
+                      <Button onClick={handleGoogleSaveCalendar} disabled={googleLoading} className="bg-primary">
                         Salvar configurações
                       </Button>
                       <Button onClick={handleForceSync} disabled={forceSyncing} variant="outline">
@@ -567,7 +567,7 @@ export default function SettingsPage() {
                       </Button>
                     </div>
                     {googleStatus.lastSyncAt && (
-                      <p className="text-xs text-gray-400">
+                      <p className="text-xs text-muted-foreground/60">
                         Última sincronização: {new Date(googleStatus.lastSyncAt).toLocaleString('pt-BR')}
                       </p>
                     )}
@@ -585,12 +585,12 @@ export default function SettingsPage() {
           <CardContent>
             <div className="flex flex-col sm:flex-row sm:items-start sm:gap-10 gap-4">
               <div>
-                <h4 className="font-bold text-gray-700">Versão do Sistema</h4>
-                <p className="text-gray-500">v1.0.0</p>
+                <h4 className="font-bold text-foreground">Versão do Sistema</h4>
+                <p className="text-muted-foreground">v1.0.0</p>
               </div>
-              <div className="sm:border-l sm:border-gray-200 sm:pl-10 flex-1 min-w-0">
-                <h4 className="font-bold text-gray-700">Tenant ID</h4>
-                <p className="text-gray-500 font-mono text-xs bg-gray-100 p-2 rounded break-all mt-1">
+              <div className="sm:border-l sm:border-border sm:pl-10 flex-1 min-w-0">
+                <h4 className="font-bold text-foreground">Tenant ID</h4>
+                <p className="text-muted-foreground font-mono text-xs bg-muted p-2 rounded break-all mt-1">
                   {typeof window !== 'undefined' ? localStorage.getItem('tenantId') : 'Loading...'}
                 </p>
               </div>
@@ -604,7 +604,7 @@ export default function SettingsPage() {
               <CardTitle>Nova clínica (para testes)</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-500 mb-4">
+              <p className="text-muted-foreground mb-4">
                 Crie uma clínica para usuários testarem. Informe o <strong>código</strong> na tela de login. Opcional:
                 cadastre o primeiro usuário (admin) da clínica.
               </p>
@@ -632,7 +632,7 @@ export default function SettingsPage() {
                   <Input {...registerTenant('initialUserPassword')} type="password" placeholder="Senha de acesso" />
                 </div>
                 <div>
-                  <Button type="submit" disabled={creatingTenant} className="bg-blue-600">
+                  <Button type="submit" disabled={creatingTenant} className="bg-primary">
                     {creatingTenant ? (
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     ) : (

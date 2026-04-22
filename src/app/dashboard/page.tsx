@@ -243,12 +243,12 @@ export default function DashboardPage() {
   const statusClass = (statusKey: string) => {
     if (statusKey === 'completed') return 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100';
     if (statusKey === 'cancelled') return 'bg-red-100 text-red-700 hover:bg-red-100';
-    return 'bg-blue-100 text-blue-700 hover:bg-blue-100';
+    return 'bg-primary/10 text-primary hover:bg-primary/10';
   };
 
   return (
     <div className="space-y-8">
-      <h2 className="text-2xl font-semibold text-slate-800">{t('dashboardHome.title')}</h2>
+      <h2 className="text-2xl font-heading font-semibold text-foreground">{t('dashboardHome.title')}</h2>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {statCards.map((card) => {
@@ -256,7 +256,7 @@ export default function DashboardPage() {
           const cardContent = (
             <Card
               className={cn(
-                'rounded-xl border border-slate-200/80 shadow-sm transition-shadow',
+                'rounded-xl border border-border shadow-[var(--shadow-card)] transition-shadow',
                 card.href && 'cursor-pointer hover:shadow-md',
               )}
             >
@@ -269,7 +269,7 @@ export default function DashboardPage() {
                 ) : (
                   <div className="flex items-start justify-between gap-3">
                     <div className="space-y-1">
-                      <p className="text-sm text-slate-500">{card.label}</p>
+                      <p className="text-sm text-muted-foreground">{card.label}</p>
                       <p className={cn('text-3xl font-bold', card.valueColor)}>{card.value}</p>
                     </div>
                     <div className={cn('rounded-lg p-2.5', card.bg)}>
@@ -291,9 +291,9 @@ export default function DashboardPage() {
         })}
       </div>
 
-      <Card className="rounded-xl border border-slate-200/80 shadow-sm">
+      <Card className="rounded-xl border border-border shadow-[var(--shadow-card)]">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base font-semibold text-slate-800">
+          <CardTitle className="text-base font-semibold text-foreground">
             {t('dashboardHome.tableTitle')}
           </CardTitle>
         </CardHeader>
@@ -320,7 +320,7 @@ export default function DashboardPage() {
                   <TableRow>
                     <TableCell
                       colSpan={5}
-                      className="py-8 text-center text-sm text-slate-400"
+                      className="py-8 text-center text-sm text-muted-foreground/60"
                     >
                       {t('dashboardHome.noAppointments', 'Nenhuma consulta hoje')}
                     </TableCell>
@@ -328,10 +328,10 @@ export default function DashboardPage() {
                 ) : (
                   recentAppointments.map((row) => (
                     <TableRow key={row.key}>
-                      <TableCell className="text-slate-600">{row.date}</TableCell>
-                      <TableCell className="text-slate-600">{row.time}</TableCell>
-                      <TableCell className="font-medium text-slate-800">{row.patient}</TableCell>
-                      <TableCell className="text-slate-600">{row.veterinarian}</TableCell>
+                      <TableCell className="text-muted-foreground">{row.date}</TableCell>
+                      <TableCell className="text-muted-foreground">{row.time}</TableCell>
+                      <TableCell className="font-medium text-foreground">{row.patient}</TableCell>
+                      <TableCell className="text-muted-foreground">{row.veterinarian}</TableCell>
                       <TableCell>
                         <Badge
                           variant={statusVariant(row.statusKey)}

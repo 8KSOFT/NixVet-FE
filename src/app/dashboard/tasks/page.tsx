@@ -84,18 +84,18 @@ export default function TasksPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-blue-600 mb-6 flex items-center gap-2">
+      <h1 className="text-2xl font-heading font-bold text-primary mb-6 flex items-center gap-2">
         Tarefas clínicas
       </h1>
       <Card>
         <CardContent className="pt-6">
-          <Button onClick={() => setModalOpen(true)} className="mb-4 bg-blue-600">
+          <Button onClick={() => setModalOpen(true)} className="mb-4 bg-primary">
             <Plus className="w-4 h-4 mr-2" /> Nova tarefa
           </Button>
 
           {loading ? (
             <div className="flex justify-center py-8">
-              <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
             </div>
           ) : (
             <Table>
@@ -130,7 +130,7 @@ export default function TasksPage() {
 
           {completed.length > 0 && (
             <>
-              <h3 className="font-medium text-slate-700 mt-6 mb-2">Concluídas</h3>
+              <h3 className="font-medium text-foreground mt-6 mb-2">Concluídas</h3>
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -191,7 +191,7 @@ export default function TasksPage() {
               <Input type="date" {...register('due_date')} />
             </div>
             <DialogFooter>
-              <Button type="submit" className="bg-blue-600">Criar</Button>
+              <Button type="submit" className="bg-primary">Criar</Button>
             </DialogFooter>
           </form>
         </DialogContent>

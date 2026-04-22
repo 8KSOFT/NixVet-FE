@@ -98,19 +98,19 @@ export default function FollowupsPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-blue-600 mb-6 flex items-center gap-2">
+      <h1 className="text-2xl font-heading font-bold text-primary mb-6 flex items-center gap-2">
         <FileSearch className="w-6 h-6" /> Acompanhamento de exames
       </h1>
       <Card>
         <CardContent className="pt-6">
-          <Button onClick={() => setModalOpen(true)} className="mb-4 bg-blue-600">
+          <Button onClick={() => setModalOpen(true)} className="mb-4 bg-primary">
             Novo acompanhamento
           </Button>
 
-          <h3 className="font-medium text-slate-700 mb-2">Aguardando retorno</h3>
+          <h3 className="font-medium text-foreground mb-2">Aguardando retorno</h3>
           {loading ? (
             <div className="flex justify-center py-8">
-              <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
             </div>
           ) : (
             <Table>
@@ -146,7 +146,7 @@ export default function FollowupsPage() {
             </Table>
           )}
 
-          <h3 className="font-medium text-slate-700 mt-6 mb-2">Todos</h3>
+          <h3 className="font-medium text-foreground mt-6 mb-2">Todos</h3>
           <Table>
             <TableHeader>
               <TableRow>
@@ -234,7 +234,7 @@ export default function FollowupsPage() {
               <Input type="date" {...register('expected_result_date')} />
             </div>
             <DialogFooter>
-              <Button type="submit" className="bg-blue-600">Criar</Button>
+              <Button type="submit" className="bg-primary">Criar</Button>
             </DialogFooter>
           </form>
         </DialogContent>

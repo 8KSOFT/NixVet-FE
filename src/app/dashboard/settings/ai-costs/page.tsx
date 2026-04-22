@@ -103,8 +103,8 @@ export default function AiCostsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">Custos de IA</h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <h1 className="text-xl font-heading font-bold text-foreground">Custos de IA</h1>
+          <p className="text-sm text-muted-foreground mt-1">
             Acompanhe o consumo de tokens e custos estimados da OpenAI
           </p>
         </div>
@@ -116,11 +116,11 @@ export default function AiCostsPage() {
 
       <div className="flex items-end gap-4">
         <div className="space-y-1">
-          <Label className="text-xs text-slate-500">De</Label>
+          <Label className="text-xs text-muted-foreground">De</Label>
           <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="w-40" />
         </div>
         <div className="space-y-1">
-          <Label className="text-xs text-slate-500">Até</Label>
+          <Label className="text-xs text-muted-foreground">Até</Label>
           <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="w-40" />
         </div>
       </div>
@@ -132,19 +132,19 @@ export default function AiCostsPage() {
               <DollarSign className="size-5 text-green-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-slate-900">{formatCost(totalCost)}</p>
-              <p className="text-xs text-slate-500">Custo estimado (USD)</p>
+              <p className="text-2xl font-bold text-foreground">{formatCost(totalCost)}</p>
+              <p className="text-xs text-muted-foreground">Custo estimado (USD)</p>
             </div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-5 flex items-center gap-4">
-            <div className="flex size-10 items-center justify-center rounded-lg bg-blue-100">
-              <Cpu className="size-5 text-blue-600" />
+            <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10">
+              <Cpu className="size-5 text-primary" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-slate-900">{formatTokens(totalTokens)}</p>
-              <p className="text-xs text-slate-500">Tokens consumidos</p>
+              <p className="text-2xl font-bold text-foreground">{formatTokens(totalTokens)}</p>
+              <p className="text-xs text-muted-foreground">Tokens consumidos</p>
             </div>
           </CardContent>
         </Card>
@@ -154,8 +154,8 @@ export default function AiCostsPage() {
               <MessageSquare className="size-5 text-purple-600" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-slate-900">{totalCalls}</p>
-              <p className="text-xs text-slate-500">Chamadas à API</p>
+              <p className="text-2xl font-bold text-foreground">{totalCalls}</p>
+              <p className="text-xs text-muted-foreground">Chamadas à API</p>
             </div>
           </CardContent>
         </Card>
@@ -164,7 +164,7 @@ export default function AiCostsPage() {
       {(data?.by_operation?.length ?? 0) > 0 && (
         <Card>
           <CardContent className="p-5">
-            <h2 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+            <h2 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
               <TrendingUp className="size-4" />
               Consumo por operação
             </h2>
@@ -197,7 +197,7 @@ export default function AiCostsPage() {
       {(data?.daily?.length ?? 0) > 0 && (
         <Card>
           <CardContent className="p-5">
-            <h2 className="text-sm font-semibold text-slate-700 mb-3">Consumo diário</h2>
+            <h2 className="text-sm font-semibold text-foreground mb-3">Consumo diário</h2>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -225,7 +225,7 @@ export default function AiCostsPage() {
       {(data?.recent?.length ?? 0) > 0 && (
         <Card>
           <CardContent className="p-5">
-            <h2 className="text-sm font-semibold text-slate-700 mb-3">Últimas chamadas</h2>
+            <h2 className="text-sm font-semibold text-foreground mb-3">Últimas chamadas</h2>
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
@@ -264,7 +264,7 @@ export default function AiCostsPage() {
 
       {!loading && !data && (
         <Card>
-          <CardContent className="p-8 text-center text-slate-500">
+          <CardContent className="p-8 text-center text-muted-foreground">
             Nenhum dado de consumo encontrado para o período selecionado.
           </CardContent>
         </Card>

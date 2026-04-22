@@ -106,15 +106,15 @@ export default function SettingsExamsPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-blue-600 mb-6">Exames</h1>
+      <h1 className="text-2xl font-heading font-bold text-primary mb-6">Exames</h1>
       <Card>
         <CardContent className="pt-6">
-          <Button onClick={openCreate} className="mb-4 bg-blue-600">
+          <Button onClick={openCreate} className="mb-4 bg-primary">
             <Plus className="w-4 h-4 mr-2" /> Novo exame
           </Button>
           {loading ? (
             <div className="flex justify-center py-8">
-              <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
             </div>
           ) : (
             <Table>
@@ -179,7 +179,7 @@ export default function SettingsExamsPage() {
               {errors.name && <p className="text-red-500 text-xs mt-1">Campo obrigatório</p>}
             </div>
             <DialogFooter>
-              <Button type="submit" className="bg-blue-600">Salvar</Button>
+              <Button type="submit" className="bg-primary">Salvar</Button>
             </DialogFooter>
           </form>
         </DialogContent>

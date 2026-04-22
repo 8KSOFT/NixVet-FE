@@ -71,7 +71,7 @@ function ThreadStatusTag({ status }: { status: ThreadStatus | undefined }) {
   }
   if (status === 'waiting_tutor') {
     return (
-      <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100 m-0">
+      <Badge className="bg-blue-100 text-primary hover:bg-blue-100 m-0">
         Aguardando resposta do tutor
       </Badge>
     );
@@ -265,10 +265,10 @@ export default function WhatsAppPage() {
   return (
     <div>
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 mb-6">
-        <h1 className="text-2xl font-bold text-blue-600 flex items-center gap-2 m-0">
+        <h1 className="text-2xl font-heading font-bold text-primary flex items-center gap-2 m-0">
           <MessageSquare className="w-6 h-6" /> WhatsApp
         </h1>
-        <span className="text-xs text-slate-500">
+        <span className="text-xs text-muted-foreground">
           Lista e mensagens atualizam automaticamente a cada {WHATSAPP_REFRESH_MS / 1000}s (aba visível)
         </span>
       </div>
@@ -280,7 +280,7 @@ export default function WhatsAppPage() {
             <strong className="block mb-1">Configure o WhatsApp da clínica</strong>
             <span className="text-sm">
               Cadastre o número em{' '}
-              <Link href="/dashboard/settings/whatsapp-numbers" className="text-blue-600 font-medium">
+              <Link href="/dashboard/settings/whatsapp-numbers" className="text-primary font-medium">
                 Configurações → WhatsApp da clínica
               </Link>{' '}
               (código interno + número que o Twilio envia no campo To). Sem isso, as mensagens não entram aqui.
@@ -294,15 +294,15 @@ export default function WhatsAppPage() {
           <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
             <Clock className="w-3 h-3" /> Aguardando resposta
           </div>
-          <div className="text-2xl font-bold">{metrics?.conversations_waiting_clinic ?? 0}</div>
+          <div className="text-2xl font-heading font-bold">{metrics?.conversations_waiting_clinic ?? 0}</div>
         </div>
         <div className="rounded-lg border bg-card p-4 shadow-sm">
           <div className="text-xs text-muted-foreground mb-1">Aguardando tutor</div>
-          <div className="text-2xl font-bold">{metrics?.conversations_waiting_tutor ?? 0}</div>
+          <div className="text-2xl font-heading font-bold">{metrics?.conversations_waiting_tutor ?? 0}</div>
         </div>
         <div className="rounded-lg border bg-card p-4 shadow-sm">
           <div className="text-xs text-muted-foreground mb-1">Tempo médio resposta</div>
-          <div className="text-2xl font-bold">
+          <div className="text-2xl font-heading font-bold">
             {metrics?.average_response_time ?? 0}
             <span className="text-sm font-normal ml-1">s</span>
           </div>
@@ -316,7 +316,7 @@ export default function WhatsAppPage() {
           ) : (
             <>
               <div className="text-xs text-muted-foreground mb-1">Alertas</div>
-              <div className="text-2xl font-bold">0</div>
+              <div className="text-2xl font-heading font-bold">0</div>
             </>
           )}
         </div>
@@ -330,7 +330,7 @@ export default function WhatsAppPage() {
               <div key={a.id} className="flex items-center gap-2 py-1">
                 <Badge variant="outline">{a.tutor_phone}</Badge>
                 {a.waiting_since && (
-                  <span className="text-slate-500 text-sm">
+                  <span className="text-muted-foreground text-sm">
                     desde {dayjs(a.waiting_since).format('DD/MM HH:mm')}
                   </span>
                 )}
@@ -354,7 +354,7 @@ export default function WhatsAppPage() {
                 ))}
               </div>
             ) : conversations.length === 0 ? (
-              <div className="py-8 text-center text-gray-400 text-sm">Nenhuma conversa</div>
+              <div className="py-8 text-center text-muted-foreground/60 text-sm">Nenhuma conversa</div>
             ) : (
               <div>
                 {conversations.map((c) => (
@@ -362,7 +362,7 @@ export default function WhatsAppPage() {
                     key={c.id}
                     className={cn(
                       'cursor-pointer rounded px-2 py-2',
-                      selectedId === c.id ? 'bg-blue-50 border border-blue-200' : 'hover:bg-gray-50',
+                      selectedId === c.id ? 'bg-primary/10 border border-primary/20' : 'hover:bg-muted/50',
                     )}
                     onClick={() => setSelectedId(c.id)}
                   >
@@ -372,7 +372,7 @@ export default function WhatsAppPage() {
                         <AiPausedTag paused={c.ai_paused} />
                         {!c.ai_paused && <ThreadStatusTag status={c.thread_status ?? null} />}
                       </div>
-                      <div className="text-xs text-gray-500 mt-0.5">
+                      <div className="text-xs text-muted-foreground mt-0.5">
                         {c.wa_id}
                         {c.last_message_at && ` · ${dayjs(c.last_message_at).fromNow()}`}
                       </div>
@@ -447,7 +447,7 @@ export default function WhatsAppPage() {
 
           <div className="flex flex-col flex-1 p-4 min-h-[400px]">
             {!selectedId ? (
-              <div className="flex-1 flex items-center justify-center text-gray-400">
+              <div className="flex-1 flex items-center justify-center text-muted-foreground/60">
                 Clique em uma conversa para ver as mensagens
               </div>
             ) : (
@@ -455,10 +455,10 @@ export default function WhatsAppPage() {
                 <div className="flex-1 overflow-auto mb-4 space-y-2 min-h-[280px]">
                   {loadingMsg ? (
                     <div className="flex justify-center py-8">
-                      <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+                      <Loader2 className="w-6 h-6 animate-spin text-muted-foreground/60" />
                     </div>
                   ) : messages.length === 0 ? (
-                    <div className="py-8 text-center text-gray-400 text-sm">Nenhuma mensagem</div>
+                    <div className="py-8 text-center text-muted-foreground/60 text-sm">Nenhuma mensagem</div>
                   ) : (
                     messages.map((m) => (
                       <div
@@ -469,15 +469,15 @@ export default function WhatsAppPage() {
                           className={cn(
                             'max-w-[80%] rounded-lg px-3 py-2',
                             m.direction === 'outbound'
-                              ? 'bg-blue-600 text-white'
-                              : 'bg-gray-100 text-gray-800',
+                              ? 'bg-primary text-white'
+                              : 'bg-muted text-foreground',
                           )}
                         >
                           <div className="text-sm whitespace-pre-wrap">{m.body_text || '—'}</div>
                           <div
                             className={cn(
                               'text-xs mt-1',
-                              m.direction === 'outbound' ? 'text-blue-100' : 'text-gray-400',
+                              m.direction === 'outbound' ? 'text-blue-100' : 'text-muted-foreground/60',
                             )}
                           >
                             {dayjs(m.created_at ?? m.createdAt).format('DD/MM HH:mm')}
@@ -490,7 +490,7 @@ export default function WhatsAppPage() {
 
                 {suggestions.length > 0 && (
                   <div className="mb-2 flex flex-wrap gap-2">
-                    <span className="text-slate-600 text-sm self-center">Sugestões:</span>
+                    <span className="text-muted-foreground text-sm self-center">Sugestões:</span>
                     {suggestions.map((s, i) => (
                       <Button
                         key={i}
@@ -544,7 +544,7 @@ export default function WhatsAppPage() {
                     onClick={handleSend}
                     disabled={sending || !sendText.trim()}
                     size="icon"
-                    className="bg-blue-600 hover:bg-blue-700 shrink-0"
+                    className="bg-primary hover:bg-blue-700 shrink-0"
                   >
                     {sending ? (
                       <Loader2 className="w-4 h-4 animate-spin" />

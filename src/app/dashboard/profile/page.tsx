@@ -90,14 +90,14 @@ export default function ProfilePage() {
 
   return (
     <div>
-      <h2 className="text-2xl font-semibold text-slate-800 mb-6 flex items-center gap-2">
+      <h2 className="text-2xl font-semibold text-foreground mb-6 flex items-center gap-2">
         <User className="w-6 h-6" /> {t('profile.title')}
       </h2>
-      <Card className="max-w-xl rounded-xl shadow-sm border border-slate-200/80">
+      <Card className="max-w-xl rounded-xl shadow-sm border border-border/80">
         <CardContent className="pt-6">
           {loading ? (
             <div className="flex justify-center py-8">
-              <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
             </div>
           ) : (
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -125,7 +125,7 @@ export default function ProfilePage() {
                 <Label>{t('profile.specialty')}</Label>
                 <Input {...register('specialty')} />
               </div>
-              <Button type="submit" disabled={saving} className="bg-blue-600">
+              <Button type="submit" disabled={saving} className="bg-primary">
                 {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                 {t('profile.save')}
               </Button>

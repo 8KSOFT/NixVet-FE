@@ -138,11 +138,11 @@ export default function MedicalRecordDetailPage() {
     } catch { toast.error('Erro ao adicionar anexo'); }
   };
 
-  if (loading) return <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-gray-400" /></div>;
+  if (loading) return <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground/60" /></div>;
   if (!record) return (
     <div>
       <Button asChild variant="ghost"><Link href="/dashboard/medical-records"><ChevronLeft className="w-4 h-4 mr-1" /> Voltar</Link></Button>
-      <p className="text-gray-500 mt-4">Prontuário não encontrado.</p>
+      <p className="text-muted-foreground mt-4">Prontuário não encontrado.</p>
     </div>
   );
 
@@ -155,19 +155,19 @@ export default function MedicalRecordDetailPage() {
         <div className="flex items-center gap-3">
           <Button asChild variant="ghost" size="sm"><Link href="/dashboard/medical-records"><ChevronLeft className="w-4 h-4" /></Link></Button>
           <div>
-            <h1 className="text-xl font-bold text-blue-600 flex items-center gap-2">
+            <h1 className="text-xl font-bold text-primary flex items-center gap-2">
               <FileText className="w-5 h-5" /> Prontuário #{id.substring(0, 8)}
             </h1>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted-foreground">
               {record.patient?.name} — {dayjs(record.record_date).format('DD/MM/YYYY')} — {record.veterinarian?.name || 'Sem veterinário'}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Badge className={isClosed ? 'bg-green-500 text-white' : 'bg-blue-500 text-white'}>{isClosed ? 'Fechado' : 'Aberto'}</Badge>
+          <Badge className={isClosed ? 'bg-green-500 text-white' : 'bg-primary/100 text-white'}>{isClosed ? 'Fechado' : 'Aberto'}</Badge>
           {!isClosed && (
             <>
-              <Button onClick={handleSave} disabled={saving} className="bg-blue-600 hover:bg-blue-700">
+              <Button onClick={handleSave} disabled={saving} className="bg-primary hover:bg-blue-700">
                 {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Save className="h-4 w-4 mr-1" />} Salvar
               </Button>
               <Button onClick={handleClose} disabled={saving} variant="outline" className="border-green-500 text-green-600 hover:bg-green-50">
@@ -182,10 +182,10 @@ export default function MedicalRecordDetailPage() {
       <Card>
         <CardContent className="pt-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-            <div><span className="text-gray-500">Paciente:</span> <span className="font-medium">{record.patient?.name}</span></div>
-            <div><span className="text-gray-500">Espécie:</span> <span className="font-medium">{record.patient?.species || '—'}</span></div>
-            <div><span className="text-gray-500">Raça:</span> <span className="font-medium">{record.patient?.breed || '—'}</span></div>
-            <div><span className="text-gray-500">Tipo:</span> <Badge variant="outline">{record.record_type}</Badge></div>
+            <div><span className="text-muted-foreground">Paciente:</span> <span className="font-medium">{record.patient?.name}</span></div>
+            <div><span className="text-muted-foreground">Espécie:</span> <span className="font-medium">{record.patient?.species || '—'}</span></div>
+            <div><span className="text-muted-foreground">Raça:</span> <span className="font-medium">{record.patient?.breed || '—'}</span></div>
+            <div><span className="text-muted-foreground">Tipo:</span> <Badge variant="outline">{record.record_type}</Badge></div>
           </div>
         </CardContent>
       </Card>
@@ -251,7 +251,7 @@ export default function MedicalRecordDetailPage() {
             </CardHeader>
             <CardContent>
               {prescriptions.length === 0 ? (
-                <p className="text-sm text-gray-500 py-4">Nenhuma prescrição registrada.</p>
+                <p className="text-sm text-muted-foreground py-4">Nenhuma prescrição registrada.</p>
               ) : (
                 <Table>
                   <TableHeader><TableRow><TableHead>Data</TableHead><TableHead>Tipo</TableHead><TableHead>Medicamentos</TableHead></TableRow></TableHeader>
@@ -278,7 +278,7 @@ export default function MedicalRecordDetailPage() {
             </CardHeader>
             <CardContent>
               {examRequests.length === 0 ? (
-                <p className="text-sm text-gray-500 py-4">Nenhum exame solicitado.</p>
+                <p className="text-sm text-muted-foreground py-4">Nenhum exame solicitado.</p>
               ) : (
                 <Table>
                   <TableHeader><TableRow><TableHead>Data</TableHead><TableHead>Tipo</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
@@ -312,7 +312,7 @@ export default function MedicalRecordDetailPage() {
               {/* Vaccines from this record */}
               {(record.vaccines ?? []).length > 0 && (
                 <div className="mb-4">
-                  <h4 className="text-sm font-semibold mb-2 text-gray-700">Neste prontuário</h4>
+                  <h4 className="text-sm font-semibold mb-2 text-foreground">Neste prontuário</h4>
                   <Table>
                     <TableHeader><TableRow><TableHead>Vacina</TableHead><TableHead>Data</TableHead><TableHead>Lote</TableHead><TableHead>Próxima dose</TableHead></TableRow></TableHeader>
                     <TableBody>
@@ -331,7 +331,7 @@ export default function MedicalRecordDetailPage() {
               {/* All vaccines from patient */}
               {vaccineRecords.length > 0 && (
                 <div>
-                  <h4 className="text-sm font-semibold mb-2 text-gray-700">Histórico geral</h4>
+                  <h4 className="text-sm font-semibold mb-2 text-foreground">Histórico geral</h4>
                   <Table>
                     <TableHeader><TableRow><TableHead>Vacina</TableHead><TableHead>Data</TableHead><TableHead>Lote</TableHead><TableHead>Próxima dose</TableHead></TableRow></TableHeader>
                     <TableBody>
@@ -348,7 +348,7 @@ export default function MedicalRecordDetailPage() {
                 </div>
               )}
               {(record.vaccines ?? []).length === 0 && vaccineRecords.length === 0 && (
-                <p className="text-sm text-gray-500 py-4">Nenhuma vacina registrada.</p>
+                <p className="text-sm text-muted-foreground py-4">Nenhuma vacina registrada.</p>
               )}
             </CardContent>
           </Card>
@@ -367,22 +367,22 @@ export default function MedicalRecordDetailPage() {
             </CardHeader>
             <CardContent>
               {(record.attachments ?? []).length === 0 ? (
-                <p className="text-sm text-gray-500 py-4">Nenhum anexo.</p>
+                <p className="text-sm text-muted-foreground py-4">Nenhum anexo.</p>
               ) : (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   {(record.attachments ?? []).map((a, i) => (
-                    <a key={i} href={a.url} target="_blank" rel="noopener noreferrer" className="border rounded-lg p-3 hover:bg-gray-50 transition block">
+                    <a key={i} href={a.url} target="_blank" rel="noopener noreferrer" className="border rounded-lg p-3 hover:bg-muted/50 transition block">
                       {a.type === 'image' ? (
-                        <div className="w-full h-24 bg-gray-100 rounded flex items-center justify-center mb-2">
-                          <ImageIcon className="w-8 h-8 text-gray-400" />
+                        <div className="w-full h-24 bg-muted rounded flex items-center justify-center mb-2">
+                          <ImageIcon className="w-8 h-8 text-muted-foreground/60" />
                         </div>
                       ) : (
-                        <div className="w-full h-24 bg-gray-100 rounded flex items-center justify-center mb-2">
-                          <Paperclip className="w-8 h-8 text-gray-400" />
+                        <div className="w-full h-24 bg-muted rounded flex items-center justify-center mb-2">
+                          <Paperclip className="w-8 h-8 text-muted-foreground/60" />
                         </div>
                       )}
                       <div className="text-sm font-medium truncate">{a.name}</div>
-                      <div className="text-xs text-gray-400">{dayjs(a.uploaded_at).format('DD/MM/YYYY HH:mm')}</div>
+                      <div className="text-xs text-muted-foreground/60">{dayjs(a.uploaded_at).format('DD/MM/YYYY HH:mm')}</div>
                     </a>
                   ))}
                 </div>
@@ -404,7 +404,7 @@ export default function MedicalRecordDetailPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setVaccineModal(false)}>Cancelar</Button>
-            <Button onClick={handleAddVaccine} className="bg-blue-600">Adicionar</Button>
+            <Button onClick={handleAddVaccine} className="bg-primary">Adicionar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -428,7 +428,7 @@ export default function MedicalRecordDetailPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAttachModal(false)}>Cancelar</Button>
-            <Button onClick={handleAddAttachment} className="bg-blue-600">Anexar</Button>
+            <Button onClick={handleAddAttachment} className="bg-primary">Anexar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

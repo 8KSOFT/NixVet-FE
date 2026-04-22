@@ -60,7 +60,7 @@ export default function BularioPage() {
   return (
     <div>
       <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
-        <h1 className="text-2xl font-bold text-blue-600 flex items-center gap-2">
+        <h1 className="text-2xl font-heading font-bold text-primary flex items-center gap-2">
           <BookOpen className="w-6 h-6" /> Bulário – Consulta de Medicamentos
         </h1>
       </div>
@@ -69,7 +69,7 @@ export default function BularioPage() {
         <CardContent className="pt-4">
           <div className="flex gap-2 flex-wrap">
             <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/60 w-4 h-4" />
               <Input
                 placeholder="Buscar por nome do medicamento"
                 value={query}
@@ -78,7 +78,7 @@ export default function BularioPage() {
                 className="pl-9"
               />
             </div>
-            <Button onClick={handleSearch} className="bg-blue-600 hover:bg-blue-700 text-white">
+            <Button onClick={handleSearch} className="bg-primary hover:bg-blue-700 text-white">
               Buscar
             </Button>
             {query && (
@@ -93,7 +93,7 @@ export default function BularioPage() {
               </Button>
             )}
           </div>
-          <p className="text-gray-500 text-sm mt-2">
+          <p className="text-muted-foreground text-sm mt-2">
             Digite pelo menos 2 caracteres e clique em Buscar para listar os medicamentos.
           </p>
         </CardContent>
@@ -103,10 +103,10 @@ export default function BularioPage() {
         <CardContent className="pt-4">
           {loading ? (
             <div className="flex justify-center py-8">
-              <Loader2 className="animate-spin w-6 h-6 text-gray-400" />
+              <Loader2 className="animate-spin w-6 h-6 text-muted-foreground/60" />
             </div>
           ) : dataSource.length === 0 ? (
-            <p className="text-center text-gray-500 py-8">
+            <p className="text-center text-muted-foreground py-8">
               {query ? 'Nenhum medicamento encontrado.' : 'Use a busca acima para consultar o bulário.'}
             </p>
           ) : (
@@ -126,7 +126,7 @@ export default function BularioPage() {
                     <TableCell>
                       <button
                         onClick={() => openDetail(item.id)}
-                        className="flex items-center gap-1 text-blue-600 hover:underline text-sm"
+                        className="flex items-center gap-1 text-primary hover:underline text-sm"
                       >
                         <Info className="w-4 h-4" /> Ver detalhes
                       </button>
@@ -146,17 +146,17 @@ export default function BularioPage() {
           </DialogHeader>
           {detailLoading && (
             <div className="flex justify-center py-8">
-              <Loader2 className="animate-spin w-6 h-6 text-gray-400" />
+              <Loader2 className="animate-spin w-6 h-6 text-muted-foreground/60" />
             </div>
           )}
           {!detailLoading && detailItem && (
             <div className="max-h-[70vh] overflow-y-auto">
               {detailItem.subtitle && (
-                <p className="text-gray-600 mb-3">{detailItem.subtitle}</p>
+                <p className="text-muted-foreground mb-3">{detailItem.subtitle}</p>
               )}
               {detailItem.link_details && (
                 <p className="text-sm mb-3">
-                  <a href={detailItem.link_details} target="_blank" rel="noopener noreferrer" className="text-blue-600">
+                  <a href={detailItem.link_details} target="_blank" rel="noopener noreferrer" className="text-primary">
                     Link externo
                   </a>
                 </p>
@@ -164,11 +164,11 @@ export default function BularioPage() {
               {detailItem.details && detailItem.details.length > 0 ? (
                 detailItem.details.map((section, idx) => (
                   <div key={idx} className="mb-4">
-                    <h4 className="font-semibold text-blue-600 mb-2">{section.title}</h4>
+                    <h4 className="font-semibold text-primary mb-2">{section.title}</h4>
                     <div className="border rounded divide-y text-sm">
                       {section.data?.map((entry, i) => (
                         <div key={i} className="grid grid-cols-3 px-3 py-2">
-                          <span className="font-medium text-gray-600 col-span-1">{entry.title ?? '—'}</span>
+                          <span className="font-medium text-muted-foreground col-span-1">{entry.title ?? '—'}</span>
                           <span className="col-span-2">{entry.data || '—'}</span>
                         </div>
                       ))}
@@ -176,7 +176,7 @@ export default function BularioPage() {
                   </div>
                 ))
               ) : (
-                <p className="text-gray-500">Sem detalhes cadastrados.</p>
+                <p className="text-muted-foreground">Sem detalhes cadastrados.</p>
               )}
             </div>
           )}

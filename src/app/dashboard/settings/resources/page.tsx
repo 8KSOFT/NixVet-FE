@@ -66,23 +66,23 @@ export default function SettingsResourcesPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-blue-600 mb-6">Recursos</h1>
+      <h1 className="text-2xl font-heading font-bold text-primary mb-6">Recursos</h1>
       <Card>
         <CardContent className="pt-6">
-          <p className="text-slate-600 mb-4">Salas e equipamentos para agendamento (opcional na agenda).</p>
+          <p className="text-muted-foreground mb-4">Salas e equipamentos para agendamento (opcional na agenda).</p>
           <Button
             onClick={() => {
               form.reset();
               setModalOpen(true);
             }}
-            className="mb-4 bg-blue-600"
+            className="mb-4 bg-primary"
           >
             <Plus className="w-4 h-4 mr-2" /> Novo recurso
           </Button>
 
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
+              <Loader2 className="w-5 h-5 animate-spin text-primary" />
             </div>
           ) : (
             <Table>
@@ -137,7 +137,7 @@ export default function SettingsResourcesPage() {
                 )}
               />
             </div>
-            <Button type="submit" className="bg-blue-600">
+            <Button type="submit" className="bg-primary">
               Salvar
             </Button>
           </form>

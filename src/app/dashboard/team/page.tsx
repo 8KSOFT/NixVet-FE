@@ -142,10 +142,10 @@ export default function TeamPage() {
   if (forbidden) {
     return (
       <div>
-        <h1 className="text-2xl font-bold text-blue-600 mb-4 flex items-center gap-2">
+        <h1 className="text-2xl font-heading font-bold text-primary mb-4 flex items-center gap-2">
           <Users className="w-6 h-6" /> {t('team.title')}
         </h1>
-        <p className="text-slate-600">{t('team.forbidden')}</p>
+        <p className="text-muted-foreground">{t('team.forbidden')}</p>
       </div>
     );
   }
@@ -153,17 +153,17 @@ export default function TeamPage() {
   return (
     <div>
       <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold text-blue-600 flex items-center gap-2">
+        <h1 className="text-2xl font-heading font-bold text-primary flex items-center gap-2">
           <Users className="w-6 h-6" /> {t('team.title')}
         </h1>
-        <Button onClick={handleAdd} className="bg-blue-600">
+        <Button onClick={handleAdd} className="bg-primary">
           <Plus className="w-4 h-4 mr-2" /> {t('team.newMember')}
         </Button>
       </div>
 
       {loading ? (
         <div className="flex justify-center py-8">
-          <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
         </div>
       ) : (
         <Table>

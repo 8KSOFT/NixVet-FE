@@ -288,10 +288,10 @@ function ExamRequestsContent() {
   return (
     <div>
       <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold text-blue-600 flex items-center gap-2">
+        <h1 className="text-2xl font-heading font-bold text-primary flex items-center gap-2">
           <FlaskConical className="w-6 h-6" /> Solicitações de Exames
         </h1>
-        <Button onClick={handleAdd} className="bg-blue-600 hover:bg-blue-700 text-white">
+        <Button onClick={handleAdd} className="bg-primary hover:bg-blue-700 text-white">
           <Plus className="w-4 h-4 mr-1" /> Nova Solicitação
         </Button>
       </div>
@@ -342,7 +342,7 @@ function ExamRequestsContent() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="text-blue-500 border-blue-500 hover:bg-blue-50"
+                      className="text-primary border-blue-500 hover:bg-primary/10"
                       onClick={() => handleOpenEmailModal(record)}
                     >
                       Email
@@ -394,7 +394,7 @@ function ExamRequestsContent() {
               <>
                 <div>
                   <Label>Consulta (opcional)</Label>
-                  <p className="text-xs text-gray-500 mb-1">
+                  <p className="text-xs text-muted-foreground mb-1">
                     Se não houver consulta, preencha a data abaixo
                   </p>
                   <Controller
@@ -467,7 +467,7 @@ function ExamRequestsContent() {
                         <button
                           key={o.value}
                           type="button"
-                          className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100"
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-muted"
                           onClick={() => addExamTag(o.value)}
                         >
                           {o.label}
@@ -477,7 +477,7 @@ function ExamRequestsContent() {
                         !examsFromCatalog.find((e) => e.name === examInput.trim()) && (
                           <button
                             type="button"
-                            className="w-full text-left px-3 py-2 text-sm hover:bg-blue-50 text-blue-600"
+                            className="w-full text-left px-3 py-2 text-sm hover:bg-primary/10 text-primary"
                             onClick={() => addExamTag(examInput)}
                           >
                             + Adicionar &quot;{examInput.trim()}&quot;
@@ -485,7 +485,7 @@ function ExamRequestsContent() {
                         )}
                       <button
                         type="button"
-                        className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50 text-blue-600 border-t"
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-muted/50 text-primary border-t"
                         onClick={() => {
                           setShowExamDropdown(false);
                           setAddExamModalVisible(true);
@@ -511,7 +511,7 @@ function ExamRequestsContent() {
               <Button type="button" variant="outline" onClick={() => setModalVisible(false)}>
                 Cancelar
               </Button>
-              <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white">
+              <Button type="submit" className="bg-primary hover:bg-blue-700 text-white">
                 Gerar solicitação
               </Button>
             </DialogFooter>
@@ -554,7 +554,7 @@ function ExamRequestsContent() {
               Cancelar
             </Button>
             <Button
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              className="bg-primary hover:bg-blue-700 text-white"
               onClick={handleAddExamToCatalog}
             >
               Adicionar
@@ -572,14 +572,14 @@ function ExamRequestsContent() {
             Enviar solicitação de exames por email para o tutor de{' '}
             <strong>{selectedExamRequest && getPatient(selectedExamRequest)?.name}</strong>?
           </p>
-          <p className="text-gray-500 text-sm mt-2">
+          <p className="text-muted-foreground text-sm mt-2">
             O email será enviado para o endereço cadastrado no perfil do tutor.
           </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEmailModalVisible(false)}>
               Cancelar
             </Button>
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white" onClick={handleSendEmail}>
+            <Button className="bg-primary hover:bg-blue-700 text-white" onClick={handleSendEmail}>
               Enviar
             </Button>
           </DialogFooter>
