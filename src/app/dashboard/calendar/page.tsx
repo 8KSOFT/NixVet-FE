@@ -14,7 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Loader2, AlertTriangle, Clock, User2, Stethoscope, DollarSign, FileText, CheckCircle2, CreditCard, CalendarRange, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Loader2, AlertTriangle, Clock, User2, Stethoscope, DollarSign, FileText, CheckCircle2, CreditCard, CalendarRange, X, PawPrint, ChevronDown, ChevronUp } from 'lucide-react';
 import api from '@/lib/axios';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
@@ -34,6 +34,7 @@ interface Consultation {
 }
 interface Patient { id: string; name: string; }
 interface User { id: string; name: string; role: string; }
+interface Tutor { id: string; name: string; }
 interface GoogleEvent { id: string; title: string; start: string; end: string; description: string | null; isFromNixVet: boolean; }
 
 type ViewMode = 'day' | 'week' | 'month' | 'year';
@@ -114,6 +115,15 @@ export default function CalendarPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('month');
   const [detailsLoading, setDetailsLoading] = useState(false);
 
+  // ── Quick-register new patient/tutor inline ──
+  const [tutors, setTutors] = useState<Tutor[]>([]);
+  const [newPatientMode, setNewPatientMode] = useState(false);
+  const [newTutorMode, setNewTutorMode] = useState(false); // false = select existing, true = create new
+  const [creatingPatient, setCreatingPatient] = useState(false);
+  const [newPet, setNewPet] = useState({ name: '', species: '', breed: '', sex: '', age: '', weight: '' });
+  const [newTutorId, setNewTutorId] = useState(''); // existing tutor id
+  const [newTutor, setNewTutor] = useState({ name: '', phone: '', email: '', cpf: '', cep: '' });
+
   const openDetails = async (c: Consultation) => {
     setSelectedConsultation(c);
     setDetailsVisible(true);
@@ -134,6 +144,7 @@ export default function CalendarPage() {
   const fetchVeterinarians = async () => { try { const r = await api.get('/users/veterinarians'); setVeterinarians(r.data); } catch {} };
   const fetchResources = async () => { try { const r = await api.get<Resource[]>('/resources'); setResources(Array.isArray(r.data) ? r.data : []); } catch { setResources([]); } };
   const fetchAppointmentTypes = async () => { try { const r = await api.get<AppointmentType[]>('/appointment-types'); setAppointmentTypes(Array.isArray(r.data) ? r.data : []); } catch { setAppointmentTypes([]); } };
+  const fetchTutors = async () => { try { const r = await api.get<Tutor[]>('/tutors'); setTutors(Array.isArray(r.data) ? r.data : []); } catch { setTutors([]); } };
 
   const fetchGoogleStatus = useCallback(async () => {
     try {
@@ -159,7 +170,7 @@ export default function CalendarPage() {
     } catch { setGoogleEvents([]); }
   }, []);
 
-  useEffect(() => { fetchConsultations(); fetchPatients(); fetchVeterinarians(); fetchResources(); fetchAppointmentTypes(); fetchGoogleStatus(); }, [fetchGoogleStatus]);
+  useEffect(() => { fetchConsultations(); fetchPatients(); fetchVeterinarians(); fetchResources(); fetchAppointmentTypes(); fetchGoogleStatus(); fetchTutors(); }, [fetchGoogleStatus]);
   useEffect(() => { if (googleConnected) fetchGoogleEvents(currentMonth); }, [currentMonth, googleConnected, fetchGoogleEvents]);
 
   const getListData = (day: Dayjs) => consultations.filter(c => dayjs(c.consultation_date).isSame(day, 'day'));
@@ -176,7 +187,47 @@ export default function CalendarPage() {
 
   const handleAdd = () => {
     setFormData({ patient_id: '', consultation_date: selectedDate.format('YYYY-MM-DD'), veterinarian_id: '', slot_datetime: '', price: '', appointment_type_id: '', required_resources: [], observations: '' });
+    setNewPatientMode(false);
+    setNewTutorMode(false);
+    setNewPet({ name: '', species: '', breed: '', sex: '', age: '', weight: '' });
+    setNewTutor({ name: '', phone: '', email: '', cpf: '', cep: '' });
+    setNewTutorId('');
     setModalVisible(true); fetchAvailability(selectedDate);
+  };
+
+  const handleCreatePatientAndSubmit = async () => {
+    if (!newPet.name || !newPet.species || !newPet.breed || !newPet.sex || !newPet.age || !newPet.weight) {
+      toast.error('Preencha todos os campos do pet'); return;
+    }
+    setCreatingPatient(true);
+    try {
+      let tutorId: string | null = null;
+      if (newTutorMode) {
+        if (!newTutor.name || !newTutor.phone || !newTutor.email || !newTutor.cpf || !newTutor.cep) {
+          toast.error('Preencha nome, telefone, e-mail, CPF e CEP do tutor'); setCreatingPatient(false); return;
+        }
+        const tRes = await api.post<{ id: string }>('/tutors', { name: newTutor.name, phone: newTutor.phone, email: newTutor.email, cpf: newTutor.cpf, cep: newTutor.cep, address: '-' });
+        tutorId = tRes.data.id;
+        toast.success(`Tutor ${newTutor.name} cadastrado`);
+      } else if (newTutorId) {
+        tutorId = newTutorId;
+      }
+      const pRes = await api.post<{ id: string }>('/patients', {
+        name: newPet.name, species: newPet.species, breed: newPet.breed, sex: newPet.sex,
+        age: Number(newPet.age), weight: Number(newPet.weight),
+        tutor_id: tutorId ?? undefined,
+        no_tutor_reason: !tutorId ? 'EMERGENCIA' : undefined,
+      });
+      const patientId = pRes.data.id;
+      toast.success(`Pet ${newPet.name} cadastrado`);
+      await fetchPatients();
+      setNewPatientMode(false);
+      setFormData(prev => ({ ...prev, patient_id: patientId }));
+    } catch (e: any) {
+      toast.error(e?.response?.data?.message ?? 'Erro ao cadastrar pet/tutor');
+    } finally {
+      setCreatingPatient(false);
+    }
   };
 
   const handleSubmit = async () => {
@@ -427,10 +478,95 @@ export default function CalendarPage() {
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Agendar Consulta</DialogTitle></DialogHeader>
           <div className="space-y-4 py-2">
+
+            {/* ── Paciente ── */}
             <div className="space-y-1">
               <Label>Paciente *</Label>
-              <Select value={formData.patient_id} onValueChange={v => setFormData(p => ({ ...p, patient_id: v }))}><SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>{patients.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent></Select>
+              {!newPatientMode ? (
+                <>
+                  <Select value={formData.patient_id} onValueChange={v => setFormData(p => ({ ...p, patient_id: v }))}>
+                    <SelectTrigger><SelectValue placeholder="Selecione o paciente" /></SelectTrigger>
+                    <SelectContent>
+                      {patients.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <button type="button" className="text-xs text-primary underline flex items-center gap-1 mt-1" onClick={() => setNewPatientMode(true)}>
+                    <PawPrint className="w-3 h-3" /> Cadastrar novo pet
+                  </button>
+                </>
+              ) : (
+                <div className="border border-primary/30 rounded-lg p-3 bg-primary/5 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium text-primary flex items-center gap-1.5"><PawPrint className="w-4 h-4" /> Novo Pet</p>
+                    <button type="button" className="text-xs text-muted-foreground hover:text-foreground" onClick={() => setNewPatientMode(false)}>Cancelar</button>
+                  </div>
+
+                  {/* Pet fields */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1"><Label className="text-xs">Nome *</Label><Input className="h-8 text-sm" value={newPet.name} onChange={e => setNewPet(p => ({ ...p, name: e.target.value }))} /></div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Espécie *</Label>
+                      <Select value={newPet.species} onValueChange={v => setNewPet(p => ({ ...p, species: v }))}>
+                        <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                        <SelectContent>
+                          {['Canino','Felino','Ave','Coelho','Réptil','Outro'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1"><Label className="text-xs">Raça *</Label><Input className="h-8 text-sm" value={newPet.breed} onChange={e => setNewPet(p => ({ ...p, breed: e.target.value }))} /></div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Sexo *</Label>
+                      <Select value={newPet.sex} onValueChange={v => setNewPet(p => ({ ...p, sex: v }))}>
+                        <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Macho">Macho</SelectItem>
+                          <SelectItem value="Fêmea">Fêmea</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1"><Label className="text-xs">Idade (anos) *</Label><Input className="h-8 text-sm" type="number" min={0} value={newPet.age} onChange={e => setNewPet(p => ({ ...p, age: e.target.value }))} /></div>
+                    <div className="space-y-1"><Label className="text-xs">Peso (kg) *</Label><Input className="h-8 text-sm" type="number" step="0.1" min={0} value={newPet.weight} onChange={e => setNewPet(p => ({ ...p, weight: e.target.value }))} /></div>
+                  </div>
+
+                  {/* Tutor section */}
+                  <div className="border-t pt-2 space-y-2">
+                    <p className="text-xs font-medium text-muted-foreground">Tutor</p>
+                    <div className="flex gap-3 text-xs">
+                      <label className="flex items-center gap-1.5 cursor-pointer">
+                        <input type="radio" checked={!newTutorMode} onChange={() => setNewTutorMode(false)} className="accent-primary" />
+                        Vincular existente
+                      </label>
+                      <label className="flex items-center gap-1.5 cursor-pointer">
+                        <input type="radio" checked={newTutorMode} onChange={() => setNewTutorMode(true)} className="accent-primary" />
+                        Cadastrar novo tutor
+                      </label>
+                    </div>
+
+                    {!newTutorMode ? (
+                      <Select value={newTutorId} onValueChange={setNewTutorId}>
+                        <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Selecione o tutor (opcional)" /></SelectTrigger>
+                        <SelectContent>
+                          {tutors.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="col-span-2 space-y-1"><Label className="text-xs">Nome *</Label><Input className="h-8 text-sm" value={newTutor.name} onChange={e => setNewTutor(p => ({ ...p, name: e.target.value }))} /></div>
+                        <div className="space-y-1"><Label className="text-xs">Telefone *</Label><Input className="h-8 text-sm" placeholder="(11) 99999-9999" value={newTutor.phone} onChange={e => setNewTutor(p => ({ ...p, phone: e.target.value }))} /></div>
+                        <div className="space-y-1"><Label className="text-xs">E-mail *</Label><Input className="h-8 text-sm" type="email" value={newTutor.email} onChange={e => setNewTutor(p => ({ ...p, email: e.target.value }))} /></div>
+                        <div className="space-y-1"><Label className="text-xs">CPF *</Label><Input className="h-8 text-sm" placeholder="000.000.000-00" value={newTutor.cpf} onChange={e => setNewTutor(p => ({ ...p, cpf: e.target.value }))} /></div>
+                        <div className="space-y-1"><Label className="text-xs">CEP *</Label><Input className="h-8 text-sm" placeholder="00000-000" value={newTutor.cep} onChange={e => setNewTutor(p => ({ ...p, cep: e.target.value }))} /></div>
+                      </div>
+                    )}
+                  </div>
+
+                  <Button type="button" size="sm" className="w-full bg-primary" disabled={creatingPatient} onClick={handleCreatePatientAndSubmit}>
+                    {creatingPatient ? <><Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" /> Cadastrando...</> : <><CheckCircle2 className="w-3.5 h-3.5 mr-2" /> Salvar pet e continuar</>}
+                  </Button>
+                </div>
+              )}
             </div>
+
             <div className="space-y-1">
               <Label>Data *</Label>
               <Input type="date" value={formData.consultation_date} onChange={e => { setFormData(p => ({ ...p, consultation_date: e.target.value })); if (e.target.value) fetchAvailability(dayjs(e.target.value)); }} />
@@ -467,7 +603,7 @@ export default function CalendarPage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setModalVisible(false)}>Cancelar</Button>
-            <Button onClick={handleSubmit} className="bg-primary">Agendar</Button>
+            <Button onClick={handleSubmit} className="bg-primary" disabled={newPatientMode}>Agendar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
