@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { Loader2, KeyRound, Plus, Settings2, Save } from 'lucide-react';
+import { Loader2, KeyRound, Plus, Settings2, Save, MessageCircle } from 'lucide-react';
 import api from '@/lib/axios';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -79,6 +79,11 @@ export default function SuperadminClinicsPage() {
   const [editRow, setEditRow] = useState<ClinicRow | null>(null);
   const [editForm, setEditForm] = useState<Partial<ClinicRow>>({});
   const [editing, setEditing] = useState(false);
+
+  // WhatsApp provisioning
+  const [whatsappTenantId, setWhatsappTenantId] = useState<string | null>(null);
+  const [whatsappClinicName, setWhatsappClinicName] = useState('');
+  const [whatsappProvisioning, setWhatsappProvisioning] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -196,6 +201,26 @@ export default function SuperadminClinicsPage() {
     }
   };
 
+  const submitProvisionWhatsapp = async () => {
+    if (!whatsappTenantId) return;
+    setWhatsappProvisioning(true);
+    try {
+      await api.post('/whatsapp/provision', {
+        tenantId: whatsappTenantId,
+        instanceName: `NixVet - ${whatsappClinicName}`,
+      });
+      toast.success(`Instância Z-API provisionada para ${whatsappClinicName}. A clínica pode escanear o QR Code em Configurações → WhatsApp.`);
+      setWhatsappTenantId(null);
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { message?: string | string[] } } };
+      const msg = err.response?.data?.message;
+      const text = Array.isArray(msg) ? msg.join(' | ') : (msg as string) || 'Erro ao provisionar';
+      toast.error(text);
+    } finally {
+      setWhatsappProvisioning(false);
+    }
+  };
+
   const quickToggle = async (row: ClinicRow, field: 'whatsapp_ai_chatbot_enabled' | 'ai_platform_enabled', value: boolean) => {
     setRows((prev) => prev.map((r) => (r.id === row.id ? { ...r, [field]: value } : r)));
     try {
@@ -285,6 +310,16 @@ export default function SuperadminClinicsPage() {
                         disabled={!row.admin_email}
                       >
                         <KeyRound className="size-3.5" /> Senha
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="gap-1 text-green-700 border-green-200 hover:bg-green-50"
+                        title="Provisionar WhatsApp (Z-API)"
+                        onClick={() => { setWhatsappTenantId(row.id); setWhatsappClinicName(row.name); }}
+                      >
+                        <MessageCircle className="size-3.5" /> WhatsApp
                       </Button>
                     </TableCell>
                   </TableRow>
@@ -444,6 +479,36 @@ export default function SuperadminClinicsPage() {
             <Button variant="ghost" onClick={() => setEditRow(null)}>Cancelar</Button>
             <Button className="bg-primary" onClick={() => void submitEdit()} disabled={editing}>
               {editing ? <Loader2 className="size-4 animate-spin mr-1" /> : <Save className="size-4 mr-1" />} Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* WhatsApp provisioning */}
+      <Dialog open={Boolean(whatsappTenantId)} onOpenChange={(o) => !o && setWhatsappTenantId(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MessageCircle className="size-5 text-green-600" /> Provisionar WhatsApp
+            </DialogTitle>
+            <DialogDescription>
+              Cria uma instância Z-API para <strong>{whatsappClinicName}</strong> e salva as credenciais no tenant.
+              A clínica verá o QR Code em <strong>Configurações → WhatsApp</strong>.
+            </DialogDescription>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Requer <code className="text-xs">ZAPI_PARTNER_TOKEN</code> configurado no servidor. Se a clínica já tiver
+            uma instância, uma segunda será criada.
+          </p>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setWhatsappTenantId(null)}>Cancelar</Button>
+            <Button
+              className="bg-green-600 hover:bg-green-700 text-white"
+              onClick={() => void submitProvisionWhatsapp()}
+              disabled={whatsappProvisioning}
+            >
+              {whatsappProvisioning && <Loader2 className="size-4 animate-spin mr-1" />}
+              Provisionar instância
             </Button>
           </DialogFooter>
         </DialogContent>
