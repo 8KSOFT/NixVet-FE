@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -8,6 +8,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { BookOpen, Search, Info, Loader2 } from 'lucide-react';
 import api from '@/lib/axios';
+import { API_PAGE_SIZE, listQueryParams, parseListResponse } from '@/lib/pagination';
+import { ListPagination } from '@/components/list-pagination';
 
 interface BularioItem {
   id: string;
@@ -21,18 +23,25 @@ interface BularioItem {
 export default function BularioPage() {
   const [loading, setLoading] = useState(false);
   const [dataSource, setDataSource] = useState<BularioItem[]>([]);
+  const [listPage, setListPage] = useState(1);
+  const [listTotal, setListTotal] = useState(0);
+  const [listTotalPages, setListTotalPages] = useState(1);
   const [query, setQuery] = useState('');
+  const [activeQuery, setActiveQuery] = useState('');
   const [detailVisible, setDetailVisible] = useState(false);
   const [detailItem, setDetailItem] = useState<BularioItem | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
 
-  const search = useCallback(async (q: string, limit = 50) => {
+  const runSearch = useCallback(async (q: string, page: number) => {
     setLoading(true);
     try {
-      const response = await api.get<BularioItem[]>('/bulario', {
-        params: { q: q || undefined, limit },
+      const response = await api.get('/bulario', {
+        params: { q: q || undefined, ...listQueryParams(page) },
       });
-      setDataSource(response.data || []);
+      const p = parseListResponse<BularioItem>(response.data, page);
+      setDataSource(p.items);
+      setListTotal(p.total);
+      setListTotalPages(p.totalPages);
     } catch (error) {
       console.error('Error searching bulario:', error);
       setDataSource([]);
@@ -41,7 +50,18 @@ export default function BularioPage() {
     }
   }, []);
 
-  const handleSearch = () => search(query);
+  useEffect(() => {
+    if (activeQuery.length < 2) return;
+    void runSearch(activeQuery, listPage);
+  }, [activeQuery, listPage, runSearch]);
+
+  const handleSearch = () => {
+    if (!query || query.trim().length < 2) {
+      return;
+    }
+    setListPage(1);
+    setActiveQuery(query.trim());
+  };
 
   const openDetail = async (id: string) => {
     setDetailVisible(true);
@@ -86,7 +106,11 @@ export default function BularioPage() {
                 variant="outline"
                 onClick={() => {
                   setQuery('');
-                  search('', 50);
+                  setActiveQuery('');
+                  setListPage(1);
+                  setDataSource([]);
+                  setListTotal(0);
+                  setListTotalPages(1);
                 }}
               >
                 Limpar
@@ -107,9 +131,10 @@ export default function BularioPage() {
             </div>
           ) : dataSource.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">
-              {query ? 'Nenhum medicamento encontrado.' : 'Use a busca acima para consultar o bulário.'}
+              {activeQuery ? 'Nenhum medicamento encontrado.' : 'Use a busca acima para consultar o bulário.'}
             </p>
           ) : (
+            <>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -135,6 +160,17 @@ export default function BularioPage() {
                 ))}
               </TableBody>
             </Table>
+            {activeQuery ? (
+              <ListPagination
+                page={listPage}
+                totalPages={listTotalPages}
+                total={listTotal}
+                pageSize={API_PAGE_SIZE}
+                onPageChange={setListPage}
+                disabled={loading}
+              />
+            ) : null}
+            </>
           )}
         </CardContent>
       </Card>

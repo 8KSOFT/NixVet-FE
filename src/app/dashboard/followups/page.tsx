@@ -13,6 +13,8 @@ import { toast } from 'sonner';
 import { useForm, Controller } from 'react-hook-form';
 import { Loader2, FileSearch } from 'lucide-react';
 import api from '@/lib/axios';
+import { API_PAGE_SIZE, fetchAllListPages, listQueryParams, parseListResponse } from '@/lib/pagination';
+import { ListPagination } from '@/components/list-pagination';
 
 interface ExamFollowup {
   id: string;
@@ -34,6 +36,12 @@ interface FollowupFormValues {
 export default function FollowupsPage() {
   const [awaiting, setAwaiting] = useState<ExamFollowup[]>([]);
   const [all, setAll] = useState<ExamFollowup[]>([]);
+  const [awaitingPage, setAwaitingPage] = useState(1);
+  const [awaitingTotal, setAwaitingTotal] = useState(0);
+  const [awaitingTotalPages, setAwaitingTotalPages] = useState(1);
+  const [allPage, setAllPage] = useState(1);
+  const [allTotal, setAllTotal] = useState(0);
+  const [allTotalPages, setAllTotalPages] = useState(1);
   const [examRequests, setExamRequests] = useState<{ id: string }[]>([]);
   const [patients, setPatients] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(false);
@@ -43,16 +51,22 @@ export default function FollowupsPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [awaitRes, allRes, examsRes, patientsRes] = await Promise.all([
-        api.get<ExamFollowup[]>('/exam-followups/awaiting-followup'),
-        api.get<ExamFollowup[]>('/exam-followups'),
-        api.get<{ id: string }[]>('/exam-requests'),
-        api.get<{ id: string; name: string }[]>('/patients'),
+      const [awaitRes, allRes, exams, patients] = await Promise.all([
+        api.get('/exam-followups/awaiting-followup', { params: listQueryParams(awaitingPage) }),
+        api.get('/exam-followups', { params: listQueryParams(allPage) }),
+        fetchAllListPages<{ id: string }>('/exam-requests'),
+        fetchAllListPages<{ id: string; name: string }>('/patients'),
       ]);
-      setAwaiting(Array.isArray(awaitRes.data) ? awaitRes.data : []);
-      setAll(Array.isArray(allRes.data) ? allRes.data : []);
-      setExamRequests(Array.isArray(examsRes.data) ? examsRes.data : []);
-      setPatients(Array.isArray(patientsRes.data) ? patientsRes.data : []);
+      const a = parseListResponse<ExamFollowup>(awaitRes.data, awaitingPage);
+      setAwaiting(a.items);
+      setAwaitingTotal(a.total);
+      setAwaitingTotalPages(a.totalPages);
+      const t = parseListResponse<ExamFollowup>(allRes.data, allPage);
+      setAll(t.items);
+      setAllTotal(t.total);
+      setAllTotalPages(t.totalPages);
+      setExamRequests(exams);
+      setPatients(patients);
     } catch {
       toast.error('Erro ao carregar');
     } finally {
@@ -62,7 +76,7 @@ export default function FollowupsPage() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [awaitingPage, allPage]);
 
   const onSubmit = async (values: FollowupFormValues) => {
     try {
@@ -113,6 +127,7 @@ export default function FollowupsPage() {
               <Loader2 className="w-6 h-6 animate-spin text-primary" />
             </div>
           ) : (
+            <div className="rounded-md border overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -144,9 +159,19 @@ export default function FollowupsPage() {
                 ))}
               </TableBody>
             </Table>
+            <ListPagination
+              page={awaitingPage}
+              totalPages={awaitingTotalPages}
+              total={awaitingTotal}
+              pageSize={API_PAGE_SIZE}
+              onPageChange={setAwaitingPage}
+              disabled={loading}
+            />
+            </div>
           )}
 
           <h3 className="font-medium text-foreground mt-6 mb-2">Todos</h3>
+          <div className="rounded-md border overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
@@ -180,6 +205,15 @@ export default function FollowupsPage() {
               ))}
             </TableBody>
           </Table>
+          <ListPagination
+            page={allPage}
+            totalPages={allTotalPages}
+            total={allTotal}
+            pageSize={API_PAGE_SIZE}
+            onPageChange={setAllPage}
+            disabled={loading}
+          />
+          </div>
         </CardContent>
       </Card>
 

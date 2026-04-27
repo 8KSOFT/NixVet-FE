@@ -13,6 +13,8 @@ import { toast } from 'sonner';
 import { useForm, Controller } from 'react-hook-form';
 import { Plus, Pencil, Trash2, Loader2, Users } from 'lucide-react';
 import api from '@/lib/axios';
+import { API_PAGE_SIZE, listQueryParams, parseListResponse } from '@/lib/pagination';
+import { ListPagination } from '@/components/list-pagination';
 import { getStoredUserRole } from '@/lib/role-permissions';
 import { useTranslation } from 'react-i18next';
 
@@ -46,6 +48,9 @@ export default function TeamPage() {
   const { t } = useTranslation('common');
   const [users, setUsers] = useState<UserRow[]>([]);
   const [loading, setLoading] = useState(false);
+  const [listPage, setListPage] = useState(1);
+  const [listTotal, setListTotal] = useState(0);
+  const [listTotalPages, setListTotalPages] = useState(1);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [forbidden, setForbidden] = useState(false);
@@ -65,8 +70,11 @@ export default function TeamPage() {
     setLoading(true);
     setForbidden(false);
     try {
-      const response = await api.get<UserRow[]>('/users/staff');
-      setUsers(Array.isArray(response.data) ? response.data : []);
+      const response = await api.get('/users/staff', { params: listQueryParams(listPage) });
+      const p = parseListResponse<UserRow>(response.data, listPage);
+      setUsers(p.items);
+      setListTotal(p.total);
+      setListTotalPages(p.totalPages);
     } catch (error: any) {
       if (error.response?.status === 403) {
         setForbidden(true);
@@ -82,7 +90,7 @@ export default function TeamPage() {
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [listPage]);
 
   const handleAdd = () => {
     setEditingId(null);
@@ -166,6 +174,7 @@ export default function TeamPage() {
           <Loader2 className="w-6 h-6 animate-spin text-primary" />
         </div>
       ) : (
+        <div className="rounded-md border overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
@@ -219,6 +228,15 @@ export default function TeamPage() {
             ))}
           </TableBody>
         </Table>
+        <ListPagination
+          page={listPage}
+          totalPages={listTotalPages}
+          total={listTotal}
+          pageSize={API_PAGE_SIZE}
+          onPageChange={setListPage}
+          disabled={loading}
+        />
+        </div>
       )}
 
       <Dialog open={modalVisible} onOpenChange={setModalVisible}>

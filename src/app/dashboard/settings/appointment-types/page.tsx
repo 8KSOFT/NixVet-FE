@@ -13,6 +13,8 @@ import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
 import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
 import api from '@/lib/axios';
+import { API_PAGE_SIZE, listQueryParams, parseListResponse } from '@/lib/pagination';
+import { ListPagination } from '@/components/list-pagination';
 
 interface AppointmentType {
   id: string;
@@ -32,6 +34,9 @@ type FormValues = { name: string; duration_minutes: number; color?: string };
 export default function AppointmentTypesPage() {
   const [list, setList] = useState<AppointmentType[]>([]);
   const [loading, setLoading] = useState(false);
+  const [listPage, setListPage] = useState(1);
+  const [listTotal, setListTotal] = useState(0);
+  const [listTotalPages, setListTotalPages] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<AppointmentType | null>(null);
   const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<FormValues>({
@@ -41,8 +46,11 @@ export default function AppointmentTypesPage() {
   const fetchList = async () => {
     setLoading(true);
     try {
-      const res = await api.get<AppointmentType[]>('/appointment-types');
-      setList(res.data ?? []);
+      const res = await api.get('/appointment-types', { params: listQueryParams(listPage) });
+      const p = parseListResponse<AppointmentType>(res.data, listPage);
+      setList(p.items);
+      setListTotal(p.total);
+      setListTotalPages(p.totalPages);
     } catch {
       toast.error('Erro ao carregar tipos de procedimento');
     } finally {
@@ -52,7 +60,7 @@ export default function AppointmentTypesPage() {
 
   useEffect(() => {
     fetchList();
-  }, []);
+  }, [listPage]);
 
   const openNew = () => {
     setEditing(null);
@@ -118,6 +126,7 @@ export default function AppointmentTypesPage() {
               <Loader2 className="w-6 h-6 animate-spin text-primary" />
             </div>
           ) : (
+            <div className="rounded-md border overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -176,6 +185,15 @@ export default function AppointmentTypesPage() {
                 ))}
               </TableBody>
             </Table>
+            <ListPagination
+              page={listPage}
+              totalPages={listTotalPages}
+              total={listTotal}
+              pageSize={API_PAGE_SIZE}
+              onPageChange={setListPage}
+              disabled={loading}
+            />
+            </div>
           )}
         </CardContent>
       </Card>

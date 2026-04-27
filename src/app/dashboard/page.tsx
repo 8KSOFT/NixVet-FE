@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import api from '@/lib/axios';
+import { fetchAllListPages } from '@/lib/pagination';
 import { cn } from '@/lib/utils';
 
 export default function DashboardPage() {
@@ -61,10 +62,13 @@ export default function DashboardPage() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [metricsRes, consultationsRes, patientsRes] = await Promise.all([
+      const [metricsRes, consultations, patients] = await Promise.all([
         api.get('/metrics/dashboard'),
-        api.get('/consultations'),
-        api.get('/patients'),
+        fetchAllListPages<{
+          consultation_date?: string;
+          status?: string;
+        }>('/consultations'),
+        fetchAllListPages<{ createdAt?: string }>('/patients'),
       ]);
 
       const metrics = metricsRes.data as {
@@ -74,8 +78,6 @@ export default function DashboardPage() {
         unanswered_conversations: number;
         monthly_revenue: number;
       };
-      const consultations = consultationsRes.data;
-      const patients = patientsRes.data;
 
       const now = new Date();
       const todayStr = now.toISOString().split('T')[0];

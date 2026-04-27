@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Loader2, AlertTriangle, Clock, User2, Stethoscope, DollarSign, FileText, CheckCircle2, CreditCard, CalendarRange, X, PawPrint, ChevronDown, ChevronUp } from 'lucide-react';
 import api from '@/lib/axios';
+import { fetchAllListPages } from '@/lib/pagination';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
 
@@ -139,12 +140,12 @@ export default function CalendarPage() {
     price: '', appointment_type_id: '', required_resources: [] as string[], observations: '',
   });
 
-  const fetchConsultations = async () => { try { const r = await api.get('/consultations'); setConsultations(r.data); } catch {} };
-  const fetchPatients = async () => { try { const r = await api.get('/patients'); setPatients(r.data); } catch {} };
-  const fetchVeterinarians = async () => { try { const r = await api.get('/users/veterinarians'); setVeterinarians(r.data); } catch {} };
-  const fetchResources = async () => { try { const r = await api.get<Resource[]>('/resources'); setResources(Array.isArray(r.data) ? r.data : []); } catch { setResources([]); } };
-  const fetchAppointmentTypes = async () => { try { const r = await api.get<AppointmentType[]>('/appointment-types'); setAppointmentTypes(Array.isArray(r.data) ? r.data : []); } catch { setAppointmentTypes([]); } };
-  const fetchTutors = async () => { try { const r = await api.get<Tutor[]>('/tutors'); setTutors(Array.isArray(r.data) ? r.data : []); } catch { setTutors([]); } };
+  const fetchConsultations = async () => { try { const rows = await fetchAllListPages<Consultation>('/consultations'); setConsultations(rows); } catch { setConsultations([]); } };
+  const fetchPatients = async () => { try { const rows = await fetchAllListPages<Patient>('/patients'); setPatients(rows); } catch { setPatients([]); } };
+  const fetchVeterinarians = async () => { try { const rows = await fetchAllListPages<User>('/users/veterinarians'); setVeterinarians(rows); } catch { setVeterinarians([]); } };
+  const fetchResources = async () => { try { const rows = await fetchAllListPages<Resource>('/resources'); setResources(rows); } catch { setResources([]); } };
+  const fetchAppointmentTypes = async () => { try { const rows = await fetchAllListPages<AppointmentType>('/appointment-types'); setAppointmentTypes(rows); } catch { setAppointmentTypes([]); } };
+  const fetchTutors = async () => { try { const rows = await fetchAllListPages<Tutor>('/tutors'); setTutors(rows); } catch { setTutors([]); } };
 
   const fetchGoogleStatus = useCallback(async () => {
     try {

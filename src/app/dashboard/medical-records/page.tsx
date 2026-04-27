@@ -14,6 +14,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { toast } from 'sonner';
 import { Loader2, Plus, FileText, Eye, Search, UserPlus, PawPrint } from 'lucide-react';
 import api from '@/lib/axios';
+import { API_PAGE_SIZE, fetchAllListPages, listQueryParams, parseListResponse } from '@/lib/pagination';
+import { ListPagination } from '@/components/list-pagination';
 import dayjs from 'dayjs';
 
 interface Patient { id: string; name: string; species?: string; breed?: string; tutor_id?: string | null; }
@@ -48,6 +50,9 @@ export default function MedicalRecordsListPage() {
   const [modalVisible, setModalVisible] = useState(false);
   const [filterPatient, setFilterPatient] = useState('');
   const [search, setSearch] = useState('');
+  const [listPage, setListPage] = useState(1);
+  const [listTotal, setListTotal] = useState(0);
+  const [listTotalPages, setListTotalPages] = useState(1);
 
   const [form, setForm] = useState(emptyForm());
 
@@ -62,19 +67,23 @@ export default function MedicalRecordsListPage() {
   const fetchRecords = async () => {
     setLoading(true);
     try {
-      const params: Record<string, string> = {};
+      const params: Record<string, string | number> = { ...listQueryParams(listPage) };
       if (filterPatient) params.patient_id = filterPatient;
-      const r = await api.get<MedicalRecord[]>('/medical-records', { params });
-      setRecords(Array.isArray(r.data) ? r.data : []);
+      const r = await api.get('/medical-records', { params });
+      const p = parseListResponse<MedicalRecord>(r.data, listPage);
+      setRecords(p.items);
+      setListTotal(p.total);
+      setListTotalPages(p.totalPages);
     } catch { setRecords([]); } finally { setLoading(false); }
   };
 
-  const fetchPatients = async () => { try { const r = await api.get<Patient[]>('/patients'); setPatients(Array.isArray(r.data) ? r.data : []); } catch {} };
-  const fetchTutors = async () => { try { const r = await api.get<Tutor[]>('/tutors'); setTutors(Array.isArray(r.data) ? r.data : []); } catch {} };
-  const fetchVets = async () => { try { const r = await api.get<Vet[]>('/users/veterinarians'); setVets(Array.isArray(r.data) ? r.data : []); } catch {} };
+  const fetchPatients = async () => { try { const all = await fetchAllListPages<Patient>('/patients'); setPatients(all); } catch { setPatients([]); } };
+  const fetchTutors = async () => { try { const all = await fetchAllListPages<Tutor>('/tutors'); setTutors(all); } catch { setTutors([]); } };
+  const fetchVets = async () => { try { const all = await fetchAllListPages<Vet>('/users/veterinarians'); setVets(all); } catch { setVets([]); } };
 
   useEffect(() => { fetchPatients(); fetchTutors(); fetchVets(); }, []);
-  useEffect(() => { fetchRecords(); }, [filterPatient]);
+  useEffect(() => { setListPage(1); }, [filterPatient]);
+  useEffect(() => { fetchRecords(); }, [filterPatient, listPage]);
 
   const handleCreate = async () => {
     if (!form.patient_id) { toast.error('Selecione ou cadastre um paciente'); return; }
@@ -201,6 +210,7 @@ export default function MedicalRecordsListPage() {
           ) : filtered.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">Nenhum prontuário encontrado.</div>
           ) : (
+            <>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -227,6 +237,15 @@ export default function MedicalRecordsListPage() {
                 ))}
               </TableBody>
             </Table>
+            <ListPagination
+              page={listPage}
+              totalPages={listTotalPages}
+              total={listTotal}
+              pageSize={API_PAGE_SIZE}
+              onPageChange={setListPage}
+              disabled={loading}
+            />
+            </>
           )}
         </CardContent>
       </Card>

@@ -13,6 +13,8 @@ import { toast } from 'sonner';
 import { useForm, Controller } from 'react-hook-form';
 import { Plus, CheckCircle2, Loader2 } from 'lucide-react';
 import api from '@/lib/axios';
+import { API_PAGE_SIZE, fetchAllListPages, listQueryParams, parseListResponse } from '@/lib/pagination';
+import { ListPagination } from '@/components/list-pagination';
 
 interface ClinicalTask {
   id: string;
@@ -32,6 +34,9 @@ interface TaskFormValues {
 
 export default function TasksPage() {
   const [list, setList] = useState<ClinicalTask[]>([]);
+  const [listPage, setListPage] = useState(1);
+  const [listTotal, setListTotal] = useState(0);
+  const [listTotalPages, setListTotalPages] = useState(1);
   const [patients, setPatients] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -40,12 +45,15 @@ export default function TasksPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [tasksRes, patientsRes] = await Promise.all([
-        api.get<ClinicalTask[]>('/clinical-tasks'),
-        api.get<{ id: string; name: string }[]>('/patients'),
+      const [tasksRes, patientsList] = await Promise.all([
+        api.get('/clinical-tasks', { params: listQueryParams(listPage) }),
+        fetchAllListPages<{ id: string; name: string }>('/patients'),
       ]);
-      setList(Array.isArray(tasksRes.data) ? tasksRes.data : []);
-      setPatients(Array.isArray(patientsRes.data) ? patientsRes.data : []);
+      const p = parseListResponse<ClinicalTask>(tasksRes.data, listPage);
+      setList(p.items);
+      setListTotal(p.total);
+      setListTotalPages(p.totalPages);
+      setPatients(patientsList);
     } catch {
       toast.error('Erro ao carregar tarefas');
     } finally {
@@ -55,7 +63,7 @@ export default function TasksPage() {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [listPage]);
 
   const onSubmit = async (values: TaskFormValues) => {
     try {
@@ -79,9 +87,6 @@ export default function TasksPage() {
     }
   };
 
-  const pending = list.filter((t) => t.status !== 'completed');
-  const completed = list.filter((t) => t.status === 'completed');
-
   return (
     <div>
       <h1 className="text-2xl font-heading font-bold text-primary mb-6 flex items-center gap-2">
@@ -98,6 +103,7 @@ export default function TasksPage() {
               <Loader2 className="w-6 h-6 animate-spin text-primary" />
             </div>
           ) : (
+            <div className="rounded-md border overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -105,53 +111,42 @@ export default function TasksPage() {
                   <TableHead>Tipo</TableHead>
                   <TableHead>Vencimento</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Ações</TableHead>
+                  <TableHead className="w-[120px]">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {pending.map((task) => (
+                {list.map((task) => (
                   <TableRow key={task.id}>
                     <TableCell>{task.Patient?.name}</TableCell>
                     <TableCell>{task.task_type}</TableCell>
                     <TableCell>{task.due_date}</TableCell>
                     <TableCell>
-                      <Badge variant="secondary">{task.status}</Badge>
+                      <Badge variant={task.status === 'completed' ? 'default' : 'secondary'}>
+                        {task.status}
+                      </Badge>
                     </TableCell>
                     <TableCell>
-                      <Button size="sm" onClick={() => markDone(task.id)}>
-                        <CheckCircle2 className="w-4 h-4 mr-1" /> Concluir
-                      </Button>
+                      {task.status !== 'completed' ? (
+                        <Button size="sm" onClick={() => markDone(task.id)}>
+                          <CheckCircle2 className="w-4 h-4 mr-1" /> Concluir
+                        </Button>
+                      ) : (
+                        '—'
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
-          )}
-
-          {completed.length > 0 && (
-            <>
-              <h3 className="font-medium text-foreground mt-6 mb-2">Concluídas</h3>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Paciente</TableHead>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {completed.map((task) => (
-                    <TableRow key={task.id}>
-                      <TableCell>{task.Patient?.name}</TableCell>
-                      <TableCell>{task.task_type}</TableCell>
-                      <TableCell>
-                        <Badge>{task.status}</Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </>
+            <ListPagination
+              page={listPage}
+              totalPages={listTotalPages}
+              total={listTotal}
+              pageSize={API_PAGE_SIZE}
+              onPageChange={setListPage}
+              disabled={loading}
+            />
+            </div>
           )}
         </CardContent>
       </Card>

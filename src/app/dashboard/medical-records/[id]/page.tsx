@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import { Loader2, ChevronLeft, Save, Lock, Syringe, Paperclip, FileText, Pill, FlaskConical, Activity, ImageIcon } from 'lucide-react';
 import Link from 'next/link';
 import api from '@/lib/axios';
+import { fetchAllListPages } from '@/lib/pagination';
 import dayjs from 'dayjs';
 
 interface Vaccine { name: string; date: string; batch?: string; next_dose?: string; }
@@ -80,15 +81,19 @@ export default function MedicalRecordDetailPage() {
 
   const fetchRelated = useCallback(async (patientId: string) => {
     try {
-      const [pRes, eRes, vRes] = await Promise.all([
-        api.get<Prescription[]>('/prescriptions', { params: { patient_id: patientId } }).catch(() => ({ data: [] })),
-        api.get<ExamRequest[]>('/exam-requests', { params: { patient_id: patientId } }).catch(() => ({ data: [] })),
-        api.get<VaccineRecord[]>('/vaccines', { params: { patient_id: patientId } }).catch(() => ({ data: [] })),
+      const [pres, ex, vac] = await Promise.all([
+        fetchAllListPages<Prescription>('/prescriptions', { patient_id: patientId }),
+        fetchAllListPages<ExamRequest>('/exam-requests', { patient_id: patientId }),
+        fetchAllListPages<VaccineRecord>('/vaccines', { patient_id: patientId }),
       ]);
-      setPrescriptions(Array.isArray(pRes.data) ? pRes.data : []);
-      setExamRequests(Array.isArray(eRes.data) ? eRes.data : []);
-      setVaccineRecords(Array.isArray(vRes.data) ? vRes.data : []);
-    } catch {}
+      setPrescriptions(pres);
+      setExamRequests(ex);
+      setVaccineRecords(vac);
+    } catch {
+      setPrescriptions([]);
+      setExamRequests([]);
+      setVaccineRecords([]);
+    }
   }, []);
 
   useEffect(() => { if (id) fetchRecord(); }, [id, fetchRecord]);

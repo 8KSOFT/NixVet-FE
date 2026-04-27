@@ -14,6 +14,8 @@ import { toast } from 'sonner';
 import { useForm, Controller } from 'react-hook-form';
 import { Plus, Trash2, Loader2 } from 'lucide-react';
 import api from '@/lib/axios';
+import { API_PAGE_SIZE, listQueryParams, parseListResponse } from '@/lib/pagination';
+import { ListPagination } from '@/components/list-pagination';
 
 interface WorkflowConfig {
   id: string;
@@ -46,6 +48,9 @@ type FormValues = {
 export default function SettingsAutomationsPage() {
   const [list, setList] = useState<WorkflowConfig[]>([]);
   const [loading, setLoading] = useState(false);
+  const [listPage, setListPage] = useState(1);
+  const [listTotal, setListTotal] = useState(0);
+  const [listTotalPages, setListTotalPages] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const { register, handleSubmit, reset, control, formState: { errors } } = useForm<FormValues>({
     defaultValues: { delay_minutes: 0, is_active: true },
@@ -54,8 +59,11 @@ export default function SettingsAutomationsPage() {
   const fetchList = async () => {
     setLoading(true);
     try {
-      const res = await api.get<WorkflowConfig[]>('/workflow-configs');
-      setList(Array.isArray(res.data) ? res.data : []);
+      const res = await api.get('/workflow-configs', { params: listQueryParams(listPage) });
+      const p = parseListResponse<WorkflowConfig>(res.data, listPage);
+      setList(p.items);
+      setListTotal(p.total);
+      setListTotalPages(p.totalPages);
     } catch {
       toast.error('Erro ao carregar automações');
     } finally {
@@ -65,7 +73,7 @@ export default function SettingsAutomationsPage() {
 
   useEffect(() => {
     fetchList();
-  }, []);
+  }, [listPage]);
 
   const onSubmit = async (values: FormValues) => {
     try {
@@ -111,6 +119,7 @@ export default function SettingsAutomationsPage() {
               <Loader2 className="w-6 h-6 animate-spin text-primary" />
             </div>
           ) : (
+            <div className="rounded-md border overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -139,6 +148,15 @@ export default function SettingsAutomationsPage() {
                 ))}
               </TableBody>
             </Table>
+            <ListPagination
+              page={listPage}
+              totalPages={listTotalPages}
+              total={listTotal}
+              pageSize={API_PAGE_SIZE}
+              onPageChange={setListPage}
+              disabled={loading}
+            />
+            </div>
           )}
         </CardContent>
       </Card>

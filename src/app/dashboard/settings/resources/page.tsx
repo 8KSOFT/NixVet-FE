@@ -12,6 +12,8 @@ import { toast } from 'sonner';
 import { useForm, Controller } from 'react-hook-form';
 import { Plus, Loader2 } from 'lucide-react';
 import api from '@/lib/axios';
+import { API_PAGE_SIZE, listQueryParams, parseListResponse } from '@/lib/pagination';
+import { ListPagination } from '@/components/list-pagination';
 
 interface Resource {
   id: string;
@@ -33,14 +35,20 @@ const TYPES = [
 export default function SettingsResourcesPage() {
   const [list, setList] = useState<Resource[]>([]);
   const [loading, setLoading] = useState(false);
+  const [listPage, setListPage] = useState(1);
+  const [listTotal, setListTotal] = useState(0);
+  const [listTotalPages, setListTotalPages] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const form = useForm<ResourceFormValues>();
 
   const fetchList = async () => {
     setLoading(true);
     try {
-      const res = await api.get<Resource[]>('/resources');
-      setList(res.data ?? []);
+      const res = await api.get('/resources', { params: listQueryParams(listPage) });
+      const p = parseListResponse<Resource>(res.data, listPage);
+      setList(p.items);
+      setListTotal(p.total);
+      setListTotalPages(p.totalPages);
     } catch {
       toast.error('Erro ao carregar recursos');
     } finally {
@@ -50,7 +58,7 @@ export default function SettingsResourcesPage() {
 
   useEffect(() => {
     fetchList();
-  }, []);
+  }, [listPage]);
 
   const onFinish = async (values: ResourceFormValues) => {
     try {
@@ -85,6 +93,7 @@ export default function SettingsResourcesPage() {
               <Loader2 className="w-5 h-5 animate-spin text-primary" />
             </div>
           ) : (
+            <div className="rounded-md border overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -101,6 +110,15 @@ export default function SettingsResourcesPage() {
                 ))}
               </TableBody>
             </Table>
+            <ListPagination
+              page={listPage}
+              totalPages={listTotalPages}
+              total={listTotal}
+              pageSize={API_PAGE_SIZE}
+              onPageChange={setListPage}
+              disabled={loading}
+            />
+            </div>
           )}
         </CardContent>
       </Card>

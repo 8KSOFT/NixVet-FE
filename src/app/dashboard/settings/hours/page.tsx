@@ -27,6 +27,7 @@ import { toast } from 'sonner';
 import { useForm, Controller } from 'react-hook-form';
 import { Plus, Trash2, Loader2 } from 'lucide-react';
 import api from '@/lib/axios';
+import { fetchAllListPages } from '@/lib/pagination';
 
 const DAYS = [
   { value: 0, label: 'Domingo' },
@@ -140,8 +141,8 @@ export default function SettingsHoursPage() {
 
   const fetchVets = async () => {
     try {
-      const res = await api.get('/users/veterinarians');
-      setVeterinarians(res.data ?? []);
+      const list = await fetchAllListPages<{ id: string; name: string }>('/users/veterinarians');
+      setVeterinarians(list);
     } catch {
       toast.error('Erro ao carregar veterinários');
     }

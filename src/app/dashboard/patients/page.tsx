@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { Plus, Pencil, Trash2, Stethoscope, History, ChevronsUpDown, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/lib/axios';
+import { API_PAGE_SIZE, fetchAllListPages, listQueryParams, parseListResponse } from '@/lib/pagination';
+import { ListPagination } from '@/components/list-pagination';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -105,6 +107,9 @@ export default function PatientsPage() {
   const [breedOpen, setBreedOpen] = useState(false);
   const [sexOptions, setSexOptions] = useState<SupportOption[]>([]);
   const [loading, setLoading] = useState(false);
+  const [listPage, setListPage] = useState(1);
+  const [listTotal, setListTotal] = useState(0);
+  const [listTotalPages, setListTotalPages] = useState(1);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -124,8 +129,11 @@ export default function PatientsPage() {
   const fetchPatients = async () => {
     setLoading(true);
     try {
-      const response = await api.get('/patients');
-      setPatients(response.data);
+      const response = await api.get('/patients', { params: listQueryParams(listPage) });
+      const p = parseListResponse<Patient>(response.data, listPage);
+      setPatients(p.items);
+      setListTotal(p.total);
+      setListTotalPages(p.totalPages);
     } catch (error) {
       console.error('Error fetching patients:', error);
       toast.error('Erro ao carregar pacientes');
@@ -136,8 +144,8 @@ export default function PatientsPage() {
 
   const fetchTutors = async () => {
     try {
-      const response = await api.get('/tutors');
-      setTutors(response.data);
+      const all = await fetchAllListPages<Tutor>('/tutors');
+      setTutors(all);
     } catch (error) {
       console.error('Error fetching tutors:', error);
     }
@@ -206,10 +214,13 @@ export default function PatientsPage() {
   };
 
   useEffect(() => {
-    fetchPatients();
     fetchTutors();
     fetchSupportOptions();
   }, []);
+
+  useEffect(() => {
+    fetchPatients();
+  }, [listPage]);
 
   const handleAdd = () => {
     setEditingId(null);
@@ -292,6 +303,7 @@ export default function PatientsPage() {
       {loading ? (
         <div className="text-center py-8 text-muted-foreground">Carregando...</div>
       ) : (
+        <div className="rounded-md border overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
@@ -358,6 +370,15 @@ export default function PatientsPage() {
             )}
           </TableBody>
         </Table>
+        <ListPagination
+          page={listPage}
+          totalPages={listTotalPages}
+          total={listTotal}
+          pageSize={API_PAGE_SIZE}
+          onPageChange={setListPage}
+          disabled={loading}
+        />
+        </div>
       )}
 
       <Dialog open={modalVisible} onOpenChange={setModalVisible}>

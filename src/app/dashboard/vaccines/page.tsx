@@ -13,6 +13,8 @@ import { toast } from 'sonner';
 import { useForm, Controller } from 'react-hook-form';
 import { Plus, Loader2 } from 'lucide-react';
 import api from '@/lib/axios';
+import { API_PAGE_SIZE, fetchAllListPages, listQueryParams, parseListResponse } from '@/lib/pagination';
+import { ListPagination } from '@/components/list-pagination';
 
 interface VaccineReminder {
   id: string;
@@ -64,6 +66,12 @@ function ReminderTable({ data, loading }: { data: VaccineReminder[]; loading: bo
 export default function VaccinesPage() {
   const [allReminders, setAllReminders] = useState<VaccineReminder[]>([]);
   const [dueSoon, setDueSoon] = useState<VaccineReminder[]>([]);
+  const [duePage, setDuePage] = useState(1);
+  const [dueTotal, setDueTotal] = useState(0);
+  const [dueTotalPages, setDueTotalPages] = useState(1);
+  const [allPage, setAllPage] = useState(1);
+  const [allTotal, setAllTotal] = useState(0);
+  const [allTotalPages, setAllTotalPages] = useState(1);
   const [patients, setPatients] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -72,14 +80,20 @@ export default function VaccinesPage() {
   const fetchAll = async () => {
     setLoading(true);
     try {
-      const [allRes, dueRes, patientsRes] = await Promise.all([
-        api.get<VaccineReminder[]>('/vaccine/reminders'),
-        api.get<VaccineReminder[]>('/vaccine/reminders/due', { params: { days: 30 } }),
-        api.get<{ id: string; name: string }[]>('/patients'),
+      const [allRes, dueRes, patientsList] = await Promise.all([
+        api.get('/vaccine/reminders', { params: listQueryParams(allPage) }),
+        api.get('/vaccine/reminders/due', { params: { days: 30, ...listQueryParams(duePage) } }),
+        fetchAllListPages<{ id: string; name: string }>('/patients'),
       ]);
-      setAllReminders(Array.isArray(allRes.data) ? allRes.data : []);
-      setDueSoon(Array.isArray(dueRes.data) ? dueRes.data : []);
-      setPatients(Array.isArray(patientsRes.data) ? patientsRes.data : []);
+      const a = parseListResponse<VaccineReminder>(allRes.data, allPage);
+      setAllReminders(a.items);
+      setAllTotal(a.total);
+      setAllTotalPages(a.totalPages);
+      const d = parseListResponse<VaccineReminder>(dueRes.data, duePage);
+      setDueSoon(d.items);
+      setDueTotal(d.total);
+      setDueTotalPages(d.totalPages);
+      setPatients(patientsList);
     } catch {
       toast.error('Erro ao carregar lembretes');
     } finally {
@@ -89,7 +103,7 @@ export default function VaccinesPage() {
 
   useEffect(() => {
     fetchAll();
-  }, []);
+  }, [allPage, duePage]);
 
   const onSubmit = async (values: VaccineFormValues) => {
     try {
@@ -117,10 +131,30 @@ export default function VaccinesPage() {
               <TabsTrigger value="all">Todos os lembretes</TabsTrigger>
             </TabsList>
             <TabsContent value="due">
-              <ReminderTable data={dueSoon} loading={loading} />
+              <div className="rounded-md border overflow-hidden">
+                <ReminderTable data={dueSoon} loading={loading} />
+                <ListPagination
+                  page={duePage}
+                  totalPages={dueTotalPages}
+                  total={dueTotal}
+                  pageSize={API_PAGE_SIZE}
+                  onPageChange={setDuePage}
+                  disabled={loading}
+                />
+              </div>
             </TabsContent>
             <TabsContent value="all">
-              <ReminderTable data={allReminders} loading={loading} />
+              <div className="rounded-md border overflow-hidden">
+                <ReminderTable data={allReminders} loading={loading} />
+                <ListPagination
+                  page={allPage}
+                  totalPages={allTotalPages}
+                  total={allTotal}
+                  pageSize={API_PAGE_SIZE}
+                  onPageChange={setAllPage}
+                  disabled={loading}
+                />
+              </div>
             </TabsContent>
           </Tabs>
         </CardContent>

@@ -40,6 +40,8 @@ import {
 
 import api from '@/lib/axios';
 import { formatCepMask } from '@/lib/format-cep';
+import { API_PAGE_SIZE, listQueryParams, parseListResponse } from '@/lib/pagination';
+import { ListPagination } from '@/components/list-pagination';
 
 interface Tutor {
   id: string;
@@ -112,6 +114,9 @@ const formatCpfDisplay = (text: string) => {
 export default function OwnersPage() {
   const [tutors, setTutors] = useState<Tutor[]>([]);
   const [loading, setLoading] = useState(false);
+  const [listPage, setListPage] = useState(1);
+  const [listTotal, setListTotal] = useState(0);
+  const [listTotalPages, setListTotalPages] = useState(1);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingRecord, setEditingRecord] = useState<Tutor | null>(null);
@@ -131,8 +136,11 @@ export default function OwnersPage() {
   const fetchTutors = async () => {
     setLoading(true);
     try {
-      const response = await api.get('/tutors');
-      setTutors(response.data);
+      const response = await api.get('/tutors', { params: listQueryParams(listPage) });
+      const p = parseListResponse<Tutor>(response.data, listPage);
+      setTutors(p.items);
+      setListTotal(p.total);
+      setListTotalPages(p.totalPages);
     } catch (error) {
       console.error('Error fetching tutors:', error);
       toast.error('Erro ao carregar tutores');
@@ -143,7 +151,7 @@ export default function OwnersPage() {
 
   useEffect(() => {
     fetchTutors();
-  }, []);
+  }, [listPage]);
 
   useEffect(() => {
     if (!modalVisible) return;
@@ -315,7 +323,7 @@ export default function OwnersPage() {
         </Button>
       </div>
 
-      <div className="rounded-md border">
+      <div className="rounded-md border overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
@@ -386,6 +394,14 @@ export default function OwnersPage() {
             )}
           </TableBody>
         </Table>
+        <ListPagination
+          page={listPage}
+          totalPages={listTotalPages}
+          total={listTotal}
+          pageSize={API_PAGE_SIZE}
+          onPageChange={setListPage}
+          disabled={loading}
+        />
       </div>
 
       <Dialog open={modalVisible} onOpenChange={(open) => { if (!open) closeModal(); }}>

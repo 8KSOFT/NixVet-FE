@@ -5,6 +5,8 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Loader2, KeyRound, Plus, Settings2, Save, MessageCircle } from 'lucide-react';
 import api from '@/lib/axios';
+import { API_PAGE_SIZE, listQueryParams, parseListResponse } from '@/lib/pagination';
+import { ListPagination } from '@/components/list-pagination';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -66,6 +68,9 @@ export default function SuperadminClinicsPage() {
   const router = useRouter();
   const [rows, setRows] = useState<ClinicRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [listPage, setListPage] = useState(1);
+  const [listTotal, setListTotal] = useState(0);
+  const [listTotalPages, setListTotalPages] = useState(1);
 
   const [resetTenantId, setResetTenantId] = useState<string | null>(null);
   const [resetClinicName, setResetClinicName] = useState('');
@@ -88,8 +93,11 @@ export default function SuperadminClinicsPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const { data } = await api.get<ClinicRow[]>('/superadmin/tenants');
-      setRows(Array.isArray(data) ? data : []);
+      const { data } = await api.get('/superadmin/tenants', { params: listQueryParams(listPage) });
+      const p = parseListResponse<ClinicRow>(data, listPage);
+      setRows(p.items);
+      setListTotal(p.total);
+      setListTotalPages(p.totalPages);
     } catch (e: unknown) {
       const err = e as { response?: { status?: number } };
       if (err.response?.status === 403) {
@@ -102,7 +110,7 @@ export default function SuperadminClinicsPage() {
     } finally {
       setLoading(false);
     }
-  }, [router]);
+  }, [router, listPage]);
 
   useEffect(() => {
     const role = getStoredUserRole();
@@ -249,6 +257,7 @@ export default function SuperadminClinicsPage() {
             <Loader2 className="size-5 animate-spin" /> Carregando...
           </div>
         ) : (
+          <>
           <Table>
             <TableHeader>
               <TableRow>
@@ -327,6 +336,15 @@ export default function SuperadminClinicsPage() {
               )}
             </TableBody>
           </Table>
+          <ListPagination
+            page={listPage}
+            totalPages={listTotalPages}
+            total={listTotal}
+            pageSize={API_PAGE_SIZE}
+            onPageChange={setListPage}
+            disabled={loading}
+          />
+          </>
         )}
       </div>
 

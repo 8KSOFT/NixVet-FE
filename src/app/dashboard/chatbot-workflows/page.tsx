@@ -19,6 +19,8 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import api from '@/lib/axios';
+import { API_PAGE_SIZE, listQueryParams, parseListResponse } from '@/lib/pagination';
+import { ListPagination } from '@/components/list-pagination';
 
 interface WorkflowItem {
   id: string;
@@ -29,6 +31,9 @@ interface WorkflowItem {
 
 export default function ChatbotWorkflowsPage() {
   const [workflows, setWorkflows] = useState<WorkflowItem[]>([]);
+  const [listPage, setListPage] = useState(1);
+  const [listTotal, setListTotal] = useState(0);
+  const [listTotalPages, setListTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
   const [newName, setNewName] = useState('');
@@ -40,10 +45,13 @@ export default function ChatbotWorkflowsPage() {
     setLoading(true);
     try {
       const [wfRes, tenantRes] = await Promise.all([
-        api.get<WorkflowItem[]>('/chatbot-workflows'),
+        api.get('/chatbot-workflows', { params: listQueryParams(listPage) }),
         api.get<{ whatsapp_ai_chatbot_enabled?: boolean }>('/tenants/me'),
       ]);
-      setWorkflows(Array.isArray(wfRes.data) ? wfRes.data : []);
+      const p = parseListResponse<WorkflowItem>(wfRes.data, listPage);
+      setWorkflows(p.items);
+      setListTotal(p.total);
+      setListTotalPages(p.totalPages);
       setBotEnabled(Boolean(tenantRes.data?.whatsapp_ai_chatbot_enabled));
     } catch {
       toast.error('Erro ao carregar dados');
@@ -52,7 +60,7 @@ export default function ChatbotWorkflowsPage() {
     }
   };
 
-  useEffect(() => { fetchWorkflows(); }, []);
+  useEffect(() => { fetchWorkflows(); }, [listPage]);
 
   const toggleBot = async (enabled: boolean) => {
     setBotSaving(true);
@@ -234,6 +242,7 @@ export default function ChatbotWorkflowsPage() {
               </Button>
             </div>
           ) : (
+            <div className="rounded-md border overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -295,6 +304,15 @@ export default function ChatbotWorkflowsPage() {
                 ))}
               </TableBody>
             </Table>
+            <ListPagination
+              page={listPage}
+              totalPages={listTotalPages}
+              total={listTotal}
+              pageSize={API_PAGE_SIZE}
+              onPageChange={setListPage}
+              disabled={loading}
+            />
+            </div>
           )}
         </CardContent>
       </Card>

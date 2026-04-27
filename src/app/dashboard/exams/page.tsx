@@ -13,6 +13,8 @@ import { toast } from 'sonner';
 import { useForm, Controller } from 'react-hook-form';
 import { Plus, FlaskConical, Loader2, X } from 'lucide-react';
 import api from '@/lib/axios';
+import { API_PAGE_SIZE, fetchAllListPages, listQueryParams, parseListResponse } from '@/lib/pagination';
+import { ListPagination } from '@/components/list-pagination';
 import dayjs from 'dayjs';
 import { useSearchParams } from 'next/navigation';
 
@@ -49,6 +51,9 @@ function ExamRequestsContent() {
 
   const [examRequests, setExamRequests] = useState<ExamRequest[]>([]);
   const [loading, setLoading] = useState(false);
+  const [listPage, setListPage] = useState(1);
+  const [listTotal, setListTotal] = useState(0);
+  const [listTotalPages, setListTotalPages] = useState(1);
   const [modalVisible, setModalVisible] = useState(false);
   const [patients, setPatients] = useState<any[]>([]);
   const [consultationsByPatient, setConsultationsByPatient] = useState<any[]>([]);
@@ -64,8 +69,11 @@ function ExamRequestsContent() {
   const fetchExamRequests = async () => {
     setLoading(true);
     try {
-      const response = await api.get('/exam-requests');
-      setExamRequests(response.data);
+      const response = await api.get('/exam-requests', { params: listQueryParams(listPage) });
+      const p = parseListResponse<ExamRequest>(response.data, listPage);
+      setExamRequests(p.items);
+      setListTotal(p.total);
+      setListTotalPages(p.totalPages);
     } catch {
       toast.error('Erro ao carregar solicitações de exames');
     } finally {
@@ -75,8 +83,7 @@ function ExamRequestsContent() {
 
   const fetchPatients = async () => {
     try {
-      const response = await api.get('/patients');
-      setPatients(response.data ?? []);
+      setPatients(await fetchAllListPages('/patients'));
     } catch (error) {
       console.error(error);
     }
@@ -84,12 +91,12 @@ function ExamRequestsContent() {
 
   const fetchExamsAndAreas = async () => {
     try {
-      const [examsRes, areasRes] = await Promise.all([
-        api.get<ExamOption[]>('/catalog/exams'),
-        api.get<ExamAreaOption[]>('/catalog/exam-areas'),
+      const [exams, areas] = await Promise.all([
+        fetchAllListPages<ExamOption>('/catalog/exams'),
+        fetchAllListPages<ExamAreaOption>('/catalog/exam-areas'),
       ]);
-      setExamsFromCatalog(examsRes.data ?? []);
-      setExamAreas(areasRes.data ?? []);
+      setExamsFromCatalog(exams);
+      setExamAreas(areas);
     } catch (error) {
       console.error(error);
     }
@@ -97,9 +104,9 @@ function ExamRequestsContent() {
 
   const fetchConsultationsForPatient = async (patientId: string) => {
     try {
-      const response = await api.get('/consultations');
-      const all = (response.data ?? []).filter(
-        (c: any) => c.patient_id === patientId || c.patient?.id === patientId,
+      const raw = await fetchAllListPages<any>('/consultations');
+      const all = (raw ?? []).filter(
+        (c: { patient_id?: string; patient?: { id: string } }) => c.patient_id === patientId || c.patient?.id === patientId,
       );
       setConsultationsByPatient(all);
     } catch {
@@ -108,10 +115,13 @@ function ExamRequestsContent() {
   };
 
   useEffect(() => {
-    fetchExamRequests();
     fetchPatients();
     fetchExamsAndAreas();
   }, []);
+
+  useEffect(() => {
+    fetchExamRequests();
+  }, [listPage]);
 
   useEffect(() => {
     if (preselectedPatientId && modalVisible) {
@@ -301,6 +311,7 @@ function ExamRequestsContent() {
           <Loader2 className="animate-spin w-6 h-6" />
         </div>
       ) : (
+        <div className="rounded-md border overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
@@ -353,6 +364,15 @@ function ExamRequestsContent() {
             ))}
           </TableBody>
         </Table>
+        <ListPagination
+          page={listPage}
+          totalPages={listTotalPages}
+          total={listTotal}
+          pageSize={API_PAGE_SIZE}
+          onPageChange={setListPage}
+          disabled={loading}
+        />
+        </div>
       )}
 
       <Dialog open={modalVisible} onOpenChange={setModalVisible}>

@@ -13,6 +13,8 @@ import { toast } from 'sonner';
 import { useForm, Controller, useFieldArray } from 'react-hook-form';
 import { Plus, BookOpen, Loader2, X, Info, Search, FileText, Mail, FlaskConical } from 'lucide-react';
 import api from '@/lib/axios';
+import { API_PAGE_SIZE, fetchAllListPages, listQueryParams, parseListResponse } from '@/lib/pagination';
+import { ListPagination } from '@/components/list-pagination';
 import dayjs from 'dayjs';
 import { useRouter } from 'next/navigation';
 
@@ -105,6 +107,9 @@ export default function PrescriptionsPage() {
   const router = useRouter();
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
   const [loading, setLoading] = useState(false);
+  const [listPage, setListPage] = useState(1);
+  const [listTotal, setListTotal] = useState(0);
+  const [listTotalPages, setListTotalPages] = useState(1);
   const [modalVisible, setModalVisible] = useState(false);
   const [patients, setPatients] = useState<PatientOption[]>([]);
   const [consultationsByPatient, setConsultationsByPatient] = useState<ConsultationOption[]>([]);
@@ -140,8 +145,9 @@ export default function PrescriptionsPage() {
     }
     setSearchingBulario(true);
     try {
-      const response = await api.get('/bulario', { params: { q: value, limit: 20 } });
-      setBularioOptions(response.data);
+      const response = await api.get('/bulario', { params: { q: value, ...listQueryParams(1, 20) } });
+      const p = parseListResponse<BularioItem>(response.data, 1, 20);
+      setBularioOptions(p.items);
     } catch {
       toast.error('Erro ao buscar no bulário');
     } finally {
@@ -152,8 +158,11 @@ export default function PrescriptionsPage() {
   const fetchPrescriptions = async () => {
     setLoading(true);
     try {
-      const response = await api.get('/prescriptions');
-      setPrescriptions(response.data);
+      const response = await api.get('/prescriptions', { params: listQueryParams(listPage) });
+      const p = parseListResponse<Prescription>(response.data, listPage);
+      setPrescriptions(p.items);
+      setListTotal(p.total);
+      setListTotalPages(p.totalPages);
     } catch {
       toast.error('Erro ao carregar prescrições');
     } finally {
@@ -163,8 +172,8 @@ export default function PrescriptionsPage() {
 
   const fetchPatients = async () => {
     try {
-      const response = await api.get('/patients');
-      setPatients(response.data ?? []);
+      const all = await fetchAllListPages<PatientOption>('/patients');
+      setPatients(all);
     } catch (error) {
       console.error(error);
     }
@@ -172,9 +181,9 @@ export default function PrescriptionsPage() {
 
   const fetchConsultationsForPatient = async (patientId: string) => {
     try {
-      const response = await api.get('/consultations');
-      const all = (response.data ?? []).filter(
-        (c: any) => c.patient_id === patientId || c.patient?.id === patientId,
+      const raw = await fetchAllListPages<ConsultationOption & { patient_id?: string }>('/consultations');
+      const all = raw.filter(
+        (c) => c.patient_id === patientId || (c as { patient?: { id?: string } }).patient?.id === patientId,
       );
       setConsultationsByPatient(all);
     } catch {
@@ -184,18 +193,21 @@ export default function PrescriptionsPage() {
 
   const fetchSurgicalProcedures = async () => {
     try {
-      const response = await api.get('/catalog/surgical-procedures');
-      setSurgicalProcedures(response.data ?? []);
+      const all = await fetchAllListPages<SurgicalProcedureOption>('/catalog/surgical-procedures');
+      setSurgicalProcedures(all);
     } catch (error) {
       console.error(error);
     }
   };
 
   useEffect(() => {
-    fetchPrescriptions();
     fetchPatients();
     fetchSurgicalProcedures();
   }, []);
+
+  useEffect(() => {
+    fetchPrescriptions();
+  }, [listPage]);
 
   const handleAdd = () => {
     reset({ prescription_type: 'receita', medications: [] });
@@ -364,6 +376,7 @@ export default function PrescriptionsPage() {
           <Loader2 className="animate-spin w-6 h-6" />
         </div>
       ) : (
+        <div className="rounded-md border overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
@@ -419,6 +432,15 @@ export default function PrescriptionsPage() {
             ))}
           </TableBody>
         </Table>
+        <ListPagination
+          page={listPage}
+          totalPages={listTotalPages}
+          total={listTotal}
+          pageSize={API_PAGE_SIZE}
+          onPageChange={setListPage}
+          disabled={loading}
+        />
+        </div>
       )}
 
       <Dialog open={modalVisible} onOpenChange={setModalVisible}>

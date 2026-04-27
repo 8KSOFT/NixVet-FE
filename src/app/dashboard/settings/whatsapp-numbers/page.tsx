@@ -13,6 +13,8 @@ import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
 import { Plus, Loader2, ExternalLink, RefreshCw, Wifi, WifiOff, Trash2, QrCode } from 'lucide-react';
 import api from '@/lib/axios';
+import { API_PAGE_SIZE, listQueryParams, parseListResponse } from '@/lib/pagination';
+import { ListPagination } from '@/components/list-pagination';
 import { getApiBaseUrl } from '@/lib/api-base';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
@@ -65,6 +67,9 @@ function StatusBadge({ status, loading }: { status: NumberStatus | null; loading
 
 export default function SettingsWhatsappNumbersPage() {
   const [list, setList] = useState<WhatsappNumberRow[]>([]);
+  const [listPage, setListPage] = useState(1);
+  const [listTotal, setListTotal] = useState(0);
+  const [listTotalPages, setListTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
   const [registerOpen, setRegisterOpen] = useState(false);
   const [provisionAvailable, setProvisionAvailable] = useState(false);
@@ -92,14 +97,17 @@ export default function SettingsWhatsappNumbersPage() {
   const fetchList = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.get<WhatsappNumberRow[]>('/whatsapp/numbers');
-      setList(Array.isArray(res.data) ? res.data : []);
+      const res = await api.get('/whatsapp/numbers', { params: listQueryParams(listPage) });
+      const p = parseListResponse<WhatsappNumberRow>(res.data, listPage);
+      setList(p.items);
+      setListTotal(p.total);
+      setListTotalPages(p.totalPages);
     } catch {
       toast.error('Erro ao carregar números');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [listPage]);
 
   const fetchProvisionAvailable = useCallback(async () => {
     try {
@@ -300,6 +308,7 @@ export default function SettingsWhatsappNumbersPage() {
               <Loader2 className="w-5 h-5 animate-spin text-primary" />
             </div>
           ) : (
+            <div className="rounded-md border overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -365,6 +374,15 @@ export default function SettingsWhatsappNumbersPage() {
                 )}
               </TableBody>
             </Table>
+            <ListPagination
+              page={listPage}
+              totalPages={listTotalPages}
+              total={listTotal}
+              pageSize={API_PAGE_SIZE}
+              onPageChange={setListPage}
+              disabled={loading}
+            />
+            </div>
           )}
         </CardContent>
       </Card>
