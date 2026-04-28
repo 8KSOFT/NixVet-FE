@@ -18,6 +18,7 @@ import { ListPagination } from '@/components/list-pagination';
 import { getApiBaseUrl } from '@/lib/api-base';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
+import QRCode from 'react-qr-code';
 
 interface WhatsappNumberRow {
   id: string;
@@ -402,8 +403,12 @@ export default function SettingsWhatsappNumbersPage() {
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
               </div>
             ) : qrCode ? (
-              <div className="border rounded-lg overflow-hidden">
-                <Image src={qrCode} alt="QR Code WhatsApp" width={240} height={240} unoptimized />
+              <div className="border rounded-lg p-3 bg-white">
+                {qrCode.startsWith('data:') ? (
+                  <Image src={qrCode} alt="QR Code WhatsApp" width={240} height={240} unoptimized />
+                ) : (
+                  <QRCode value={qrCode} size={240} />
+                )}
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">QR Code indisponível — a instância pode já estar conectada.</p>

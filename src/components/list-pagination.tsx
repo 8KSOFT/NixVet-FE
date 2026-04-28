@@ -26,15 +26,18 @@ export function ListPagination({
   showTotal = true,
   disabled = false,
 }: Props) {
-  if (totalPages <= 1 && !showTotal) {
-    return null;
-  }
-  if (total === 0) {
-    return null;
-  }
+  const safeTotal = Number.isFinite(total) && total >= 0 ? total : 0;
+  const safeTotalPages = Number.isFinite(totalPages) && totalPages >= 1 ? totalPages : 1;
 
+  if (safeTotalPages <= 1 && !showTotal) {
+    return null;
+  }
+  if (safeTotal === 0) {
+    return null;
+  }
   const from = (page - 1) * pageSize + 1;
-  const to = Math.min(page * pageSize, total);
+  const to = Math.min(page * pageSize, safeTotal);
+  const fmt = (n: number) => n.toLocaleString('pt-BR');
 
   return (
     <div
@@ -45,12 +48,12 @@ export function ListPagination({
     >
       {showTotal ? (
         <p className="tabular-nums">
-          {from}–{to} de {total}
+          {fmt(from)}–{fmt(to)} de {fmt(safeTotal)}
         </p>
       ) : (
         <span />
       )}
-      {totalPages > 1 ? (
+      {safeTotalPages > 1 ? (
         <div className="flex items-center gap-1">
           <Button
             type="button"
@@ -75,14 +78,14 @@ export function ListPagination({
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <span className="px-2 tabular-nums">
-            Pág. {page} / {totalPages}
+            Pág. {fmt(page)} / {fmt(safeTotalPages)}
           </span>
           <Button
             type="button"
             variant="outline"
             size="icon"
             className="h-8 w-8"
-            disabled={disabled || page >= totalPages}
+            disabled={disabled || page >= safeTotalPages}
             onClick={() => onPageChange(page + 1)}
             aria-label="Próxima página"
           >
@@ -93,8 +96,8 @@ export function ListPagination({
             variant="outline"
             size="icon"
             className="h-8 w-8"
-            disabled={disabled || page >= totalPages}
-            onClick={() => onPageChange(totalPages)}
+            disabled={disabled || page >= safeTotalPages}
+            onClick={() => onPageChange(safeTotalPages)}
             aria-label="Última página"
           >
             <ChevronsRight className="h-4 w-4" />

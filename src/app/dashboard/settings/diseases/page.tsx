@@ -37,8 +37,8 @@ export default function SettingsDiseasesPage() {
 
   const fetchCategories = async () => {
     try {
-      const res = await api.get<Category[]>('/catalog/disease-categories');
-      setCategories(res.data ?? []);
+      const res = await api.get<any>('/catalog/disease-categories');
+      setCategories(Array.isArray(res.data) ? res.data : (res.data?.data ?? []));
     } catch {
       toast.error('Erro ao carregar categorias');
     }
@@ -47,8 +47,8 @@ export default function SettingsDiseasesPage() {
   const fetchDiseases = async () => {
     setLoading(true);
     try {
-      const res = await api.get<Disease[]>('/catalog/diseases');
-      setList(res.data ?? []);
+      const res = await api.get<any>('/catalog/diseases');
+      setList(Array.isArray(res.data) ? res.data : (res.data?.data ?? []));
     } catch {
       toast.error('Erro ao carregar doenças');
     } finally {

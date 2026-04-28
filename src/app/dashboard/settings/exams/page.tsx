@@ -37,8 +37,8 @@ export default function SettingsExamsPage() {
 
   const fetchAreas = async () => {
     try {
-      const res = await api.get<Area[]>('/catalog/exam-areas');
-      setAreas(res.data ?? []);
+      const res = await api.get<any>('/catalog/exam-areas');
+      setAreas(Array.isArray(res.data) ? res.data : (res.data?.data ?? []));
     } catch {
       toast.error('Erro ao carregar áreas');
     }
@@ -47,8 +47,8 @@ export default function SettingsExamsPage() {
   const fetchExams = async () => {
     setLoading(true);
     try {
-      const res = await api.get<Exam[]>('/catalog/exams');
-      setList(res.data ?? []);
+      const res = await api.get<any>('/catalog/exams');
+      setList(Array.isArray(res.data) ? res.data : (res.data?.data ?? []));
     } catch {
       toast.error('Erro ao carregar exames');
     } finally {

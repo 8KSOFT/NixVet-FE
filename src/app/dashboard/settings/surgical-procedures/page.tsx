@@ -37,8 +37,8 @@ export default function SettingsSurgicalProceduresPage() {
 
   const fetchCategories = async () => {
     try {
-      const res = await api.get<Category[]>('/catalog/surgical-procedure-categories');
-      setCategories(res.data ?? []);
+      const res = await api.get<any>('/catalog/surgical-procedure-categories');
+      setCategories(Array.isArray(res.data) ? res.data : (res.data?.data ?? []));
     } catch {
       toast.error('Erro ao carregar categorias');
     }
@@ -47,8 +47,8 @@ export default function SettingsSurgicalProceduresPage() {
   const fetchProcedures = async () => {
     setLoading(true);
     try {
-      const res = await api.get<SurgicalProcedure[]>('/catalog/surgical-procedures');
-      setList(res.data ?? []);
+      const res = await api.get<any>('/catalog/surgical-procedures');
+      setList(Array.isArray(res.data) ? res.data : (res.data?.data ?? []));
     } catch {
       toast.error('Erro ao carregar procedimentos');
     } finally {
