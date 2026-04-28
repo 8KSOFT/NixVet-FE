@@ -9,7 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { Send, Bot, Loader2, MessageSquare, Lightbulb, Clock, AlertTriangle, User } from 'lucide-react';
+import { Send, Bot, Loader2, MessageSquare, Lightbulb, Clock, AlertTriangle, User, Archive, ArchiveRestore } from 'lucide-react';
 import api from '@/lib/axios';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -44,6 +44,8 @@ interface Conversation {
   status: string;
   ai_paused: boolean;
   last_message_at: string | null;
+  archived_at?: string | null;
+  archived_reason?: string | null;
   thread_status?: ThreadStatus;
   thread_waiting_since?: string | null;
   whatsapp_number?: { display_phone: string };
@@ -97,15 +99,18 @@ export default function WhatsAppPage() {
   const [alerts, setAlerts] = useState<AlertConversation[]>([]);
   const [suggestLoading, setSuggestLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [archivedFilter, setArchivedFilter] = useState<'false' | 'true'>('false');
 
   const selectedIdRef = useRef<string | null>(null);
   selectedIdRef.current = selectedId;
+  const archivedFilterRef = useRef<'false' | 'true'>('false');
+  archivedFilterRef.current = archivedFilter;
 
   const fetchConversations = useCallback(async (silent = false) => {
     if (!silent) setLoadingConv(true);
     try {
       const res = await api.get<{ data: Conversation[]; total: number }>('/whatsapp/conversations', {
-        params: { limit: 50, order: 'desc' },
+        params: { limit: 50, order: 'desc', archived: archivedFilterRef.current },
       });
       setConversations(res.data?.data ?? []);
     } catch {
@@ -223,10 +228,43 @@ export default function WhatsAppPage() {
     }
   };
 
+  const [archiveLoading, setArchiveLoading] = useState(false);
+  const handleArchive = async () => {
+    if (!selectedId) return;
+    setArchiveLoading(true);
+    try {
+      await api.post(`/whatsapp/conversations/${selectedId}/archive`);
+      toast.success('Conversa arquivada — pode acessá-la em "Arquivadas".');
+      setSelectedId(null);
+      setMessages([]);
+      await fetchConversations(false);
+    } catch (e: any) {
+      toast.error(e.response?.data?.message ?? 'Erro ao arquivar conversa');
+    } finally {
+      setArchiveLoading(false);
+    }
+  };
+
+  const handleUnarchive = async () => {
+    if (!selectedId) return;
+    setArchiveLoading(true);
+    try {
+      await api.post(`/whatsapp/conversations/${selectedId}/unarchive`);
+      toast.success('Conversa desarquivada.');
+      setSelectedId(null);
+      setMessages([]);
+      await fetchConversations(false);
+    } catch (e: any) {
+      toast.error(e.response?.data?.message ?? 'Erro ao desarquivar conversa');
+    } finally {
+      setArchiveLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchConversations(false);
     fetchMetricsAndAlerts(false);
-  }, [fetchConversations, fetchMetricsAndAlerts]);
+  }, [fetchConversations, fetchMetricsAndAlerts, archivedFilter]);
 
   useEffect(() => {
     if (selectedId) loadMessages(selectedId, false);
@@ -320,8 +358,30 @@ export default function WhatsAppPage() {
       <div className="flex flex-1 min-h-0 flex-col gap-4 lg:flex-row">
         {/* Lista de conversas */}
         <div className="rounded-lg border bg-card shadow-sm flex flex-col min-h-0 shrink-0 max-h-[min(40vh,320px)] lg:max-h-none lg:w-80 lg:self-stretch">
-          <div className="px-4 py-3 border-b shrink-0">
+          <div className="px-4 py-3 border-b shrink-0 flex items-center gap-2">
             <span className="font-medium text-sm">Conversas</span>
+            <div className="ml-auto inline-flex rounded-md border overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setArchivedFilter('false')}
+                className={cn(
+                  'px-2 py-1 text-xs',
+                  archivedFilter === 'false' ? 'bg-primary text-white' : 'bg-card hover:bg-muted/50',
+                )}
+              >
+                Ativas
+              </button>
+              <button
+                type="button"
+                onClick={() => setArchivedFilter('true')}
+                className={cn(
+                  'px-2 py-1 text-xs border-l',
+                  archivedFilter === 'true' ? 'bg-primary text-white' : 'bg-card hover:bg-muted/50',
+                )}
+              >
+                Arquivadas
+              </button>
+            </div>
           </div>
           <ScrollArea className="flex-1 min-h-0">
             <div className="p-2">
@@ -349,6 +409,12 @@ export default function WhatsAppPage() {
                           <span>{c.contact_name || c.wa_id || 'Sem nome'}</span>
                           <AiPausedTag paused={c.ai_paused} />
                           {!c.ai_paused && <ThreadStatusTag status={c.thread_status ?? null} />}
+                          {c.archived_at && (
+                            <Badge variant="outline" className="border-muted-foreground/40 text-muted-foreground gap-1 m-0">
+                              <Archive className="w-3 h-3" />
+                              {c.archived_reason?.startsWith('inactive_') ? 'Arquivada (inativa 7d)' : 'Arquivada'}
+                            </Badge>
+                          )}
                         </div>
                         <div className="text-xs text-muted-foreground mt-0.5">
                           {c.wa_id}
@@ -418,6 +484,35 @@ export default function WhatsAppPage() {
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>Pausar bot e assumir atendimento manualmente</TooltipContent>
+                  </Tooltip>
+                )}
+                {selectedConv.archived_at ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button size="sm" variant="outline" onClick={handleUnarchive} disabled={archiveLoading}>
+                        {archiveLoading ? (
+                          <Loader2 className="w-4 h-4 animate-spin mr-1" />
+                        ) : (
+                          <ArchiveRestore className="w-4 h-4 mr-1" />
+                        )}
+                        Desarquivar
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Trazer conversa de volta para a lista de ativas</TooltipContent>
+                  </Tooltip>
+                ) : (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button size="sm" variant="outline" onClick={handleArchive} disabled={archiveLoading}>
+                        {archiveLoading ? (
+                          <Loader2 className="w-4 h-4 animate-spin mr-1" />
+                        ) : (
+                          <Archive className="w-4 h-4 mr-1" />
+                        )}
+                        Arquivar
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Arquivar conversa (reaberta automaticamente em nova mensagem)</TooltipContent>
                   </Tooltip>
                 )}
               </div>
