@@ -12,6 +12,8 @@ import { toast } from 'sonner';
 import { useForm, Controller } from 'react-hook-form';
 import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
 import api from '@/lib/axios';
+import { API_PAGE_SIZE, fetchAllListPages, listQueryParams, parseListResponse } from '@/lib/pagination';
+import { ListPagination } from '@/components/list-pagination';
 
 interface Area {
   id: number;
@@ -31,14 +33,17 @@ export default function SettingsExamsPage() {
   const [areas, setAreas] = useState<Area[]>([]);
   const [list, setList] = useState<Exam[]>([]);
   const [loading, setLoading] = useState(false);
+  const [listPage, setListPage] = useState(1);
+  const [listTotal, setListTotal] = useState(0);
+  const [listTotalPages, setListTotalPages] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const { register, handleSubmit, reset, control, formState: { errors } } = useForm<FormValues>();
 
   const fetchAreas = async () => {
     try {
-      const res = await api.get<any>('/catalog/exam-areas');
-      setAreas(Array.isArray(res.data) ? res.data : (res.data?.data ?? []));
+      const rows = await fetchAllListPages<Area>('/catalog/exam-areas');
+      setAreas(rows);
     } catch {
       toast.error('Erro ao carregar áreas');
     }
@@ -47,8 +52,11 @@ export default function SettingsExamsPage() {
   const fetchExams = async () => {
     setLoading(true);
     try {
-      const res = await api.get<any>('/catalog/exams');
-      setList(Array.isArray(res.data) ? res.data : (res.data?.data ?? []));
+      const res = await api.get('/catalog/exams', { params: listQueryParams(listPage) });
+      const p = parseListResponse<Exam>(res.data, listPage);
+      setList(p.items);
+      setListTotal(p.total);
+      setListTotalPages(p.totalPages);
     } catch {
       toast.error('Erro ao carregar exames');
     } finally {
@@ -57,9 +65,12 @@ export default function SettingsExamsPage() {
   };
 
   useEffect(() => {
-    fetchAreas();
-    fetchExams();
+    void fetchAreas();
   }, []);
+
+  useEffect(() => {
+    void fetchExams();
+  }, [listPage]);
 
   const openCreate = () => {
     setEditingId(null);
@@ -78,7 +89,7 @@ export default function SettingsExamsPage() {
     try {
       await api.delete(`/catalog/exams/${id}`);
       toast.success('Removido');
-      fetchExams();
+      void fetchExams();
     } catch (e: any) {
       toast.error(e.response?.data?.message ?? 'Erro ao remover');
     }
@@ -98,7 +109,7 @@ export default function SettingsExamsPage() {
         toast.success('Criado');
       }
       setModalOpen(false);
-      fetchExams();
+      void fetchExams();
     } catch (e: any) {
       toast.error(e.response?.data?.message ?? 'Erro ao salvar');
     }
@@ -117,33 +128,43 @@ export default function SettingsExamsPage() {
               <Loader2 className="w-6 h-6 animate-spin text-primary" />
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Área</TableHead>
-                  <TableHead className="w-[120px]">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {list.map((r) => (
-                  <TableRow key={r.id}>
-                    <TableCell>{r.name}</TableCell>
-                    <TableCell>{r.exam_area?.name ?? r.exam_area_id ?? '—'}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="sm" onClick={() => openEdit(r)}>
-                          <Pencil className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" onClick={() => handleDelete(r.id)}>
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
+            <div className="rounded-md border overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>Área</TableHead>
+                    <TableHead className="w-[120px]">Ações</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {list.map((r) => (
+                    <TableRow key={r.id}>
+                      <TableCell>{r.name}</TableCell>
+                      <TableCell>{r.exam_area?.name ?? r.exam_area_id ?? '—'}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Button variant="ghost" size="sm" onClick={() => openEdit(r)}>
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" onClick={() => handleDelete(r.id)}>
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <ListPagination
+                page={listPage}
+                totalPages={listTotalPages}
+                total={listTotal}
+                pageSize={API_PAGE_SIZE}
+                onPageChange={setListPage}
+                disabled={loading}
+              />
+            </div>
           )}
         </CardContent>
       </Card>

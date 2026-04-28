@@ -1,11 +1,9 @@
 'use client';
 
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -99,7 +97,6 @@ export default function WhatsAppPage() {
   const [alerts, setAlerts] = useState<AlertConversation[]>([]);
   const [suggestLoading, setSuggestLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [whatsappConfigured, setWhatsappConfigured] = useState<boolean | null>(null);
 
   const selectedIdRef = useRef<string | null>(null);
   selectedIdRef.current = selectedId;
@@ -229,10 +226,6 @@ export default function WhatsAppPage() {
   useEffect(() => {
     fetchConversations(false);
     fetchMetricsAndAlerts(false);
-    api
-      .get<unknown[]>('/whatsapp/numbers')
-      .then((r) => setWhatsappConfigured(Array.isArray(r.data) && r.data.length > 0))
-      .catch(() => setWhatsappConfigured(false));
   }, [fetchConversations, fetchMetricsAndAlerts]);
 
   useEffect(() => {
@@ -263,8 +256,8 @@ export default function WhatsAppPage() {
   const selectedConv = conversations.find((c) => c.id === selectedId);
 
   return (
-    <div>
-      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 mb-6">
+    <div className="flex flex-col gap-4 min-h-0 h-[calc(100dvh-var(--app-header-h)-6.5rem)] min-h-[420px]">
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 shrink-0">
         <h1 className="text-2xl font-heading font-bold text-primary flex items-center gap-2 m-0">
           <MessageSquare className="w-6 h-6" /> WhatsApp
         </h1>
@@ -273,23 +266,7 @@ export default function WhatsAppPage() {
         </span>
       </div>
 
-      {whatsappConfigured === false && (
-        <Alert className="mb-6">
-          <MessageSquare className="h-4 w-4" />
-          <AlertDescription>
-            <strong className="block mb-1">Configure o WhatsApp da clínica</strong>
-            <span className="text-sm">
-              Cadastre o número em{' '}
-              <Link href="/dashboard/settings/whatsapp-numbers" className="text-primary font-medium">
-                Configurações → WhatsApp da clínica
-              </Link>{' '}
-              (código interno + número que o Twilio envia no campo To). Sem isso, as mensagens não entram aqui.
-            </span>
-          </AlertDescription>
-        </Alert>
-      )}
-
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 shrink-0">
         <div className="rounded-lg border bg-card p-4 shadow-sm">
           <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
             <Clock className="w-3 h-3" /> Aguardando resposta
@@ -323,7 +300,7 @@ export default function WhatsAppPage() {
       </div>
 
       {alerts.length > 0 && (
-        <div className="rounded-lg border bg-card p-4 shadow-sm mb-4">
+        <div className="rounded-lg border bg-card p-4 shadow-sm shrink-0">
           <div className="text-sm font-medium mb-3">Conversas aguardando há mais de 20 min</div>
           <div className="space-y-2">
             {alerts.map((a) => (
@@ -340,53 +317,55 @@ export default function WhatsAppPage() {
         </div>
       )}
 
-      <div className="flex gap-4 flex-col lg:flex-row">
+      <div className="flex flex-1 min-h-0 flex-col gap-4 lg:flex-row">
         {/* Lista de conversas */}
-        <div className="rounded-lg border bg-card shadow-sm lg:w-80 shrink-0">
-          <div className="px-4 py-3 border-b">
+        <div className="rounded-lg border bg-card shadow-sm flex flex-col min-h-0 shrink-0 max-h-[min(40vh,320px)] lg:max-h-none lg:w-80 lg:self-stretch">
+          <div className="px-4 py-3 border-b shrink-0">
             <span className="font-medium text-sm">Conversas</span>
           </div>
-          <div className="p-2">
-            {loadingConv ? (
-              <div className="space-y-3 p-2">
-                {[...Array(5)].map((_, i) => (
-                  <Skeleton key={i} className="h-14 w-full rounded" />
-                ))}
-              </div>
-            ) : conversations.length === 0 ? (
-              <div className="py-8 text-center text-muted-foreground/60 text-sm">Nenhuma conversa</div>
-            ) : (
-              <div>
-                {conversations.map((c) => (
-                  <div
-                    key={c.id}
-                    className={cn(
-                      'cursor-pointer rounded px-2 py-2',
-                      selectedId === c.id ? 'bg-primary/10 border border-primary/20' : 'hover:bg-muted/50',
-                    )}
-                    onClick={() => setSelectedId(c.id)}
-                  >
-                    <div className="w-full min-h-[52px] flex flex-col justify-center">
-                      <div className="font-medium flex items-center gap-2 flex-wrap text-sm">
-                        <span>{c.contact_name || c.wa_id || 'Sem nome'}</span>
-                        <AiPausedTag paused={c.ai_paused} />
-                        {!c.ai_paused && <ThreadStatusTag status={c.thread_status ?? null} />}
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-0.5">
-                        {c.wa_id}
-                        {c.last_message_at && ` · ${dayjs(c.last_message_at).fromNow()}`}
+          <ScrollArea className="flex-1 min-h-0">
+            <div className="p-2">
+              {loadingConv ? (
+                <div className="space-y-3 p-2">
+                  {[...Array(5)].map((_, i) => (
+                    <Skeleton key={i} className="h-14 w-full rounded" />
+                  ))}
+                </div>
+              ) : conversations.length === 0 ? (
+                <div className="py-8 text-center text-muted-foreground/60 text-sm">Nenhuma conversa</div>
+              ) : (
+                <div>
+                  {conversations.map((c) => (
+                    <div
+                      key={c.id}
+                      className={cn(
+                        'cursor-pointer rounded px-2 py-2',
+                        selectedId === c.id ? 'bg-primary/10 border border-primary/20' : 'hover:bg-muted/50',
+                      )}
+                      onClick={() => setSelectedId(c.id)}
+                    >
+                      <div className="w-full min-h-[52px] flex flex-col justify-center">
+                        <div className="font-medium flex items-center gap-2 flex-wrap text-sm">
+                          <span>{c.contact_name || c.wa_id || 'Sem nome'}</span>
+                          <AiPausedTag paused={c.ai_paused} />
+                          {!c.ai_paused && <ThreadStatusTag status={c.thread_status ?? null} />}
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-0.5">
+                          {c.wa_id}
+                          {c.last_message_at && ` · ${dayjs(c.last_message_at).fromNow()}`}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </ScrollArea>
         </div>
 
         {/* Painel de mensagens */}
-        <div className="rounded-lg border bg-card shadow-sm flex-1 min-w-0 flex flex-col">
-          <div className="px-4 py-3 border-b flex items-center justify-between">
+        <div className="rounded-lg border bg-card shadow-sm flex-1 min-w-0 min-h-0 flex flex-col">
+          <div className="px-4 py-3 border-b flex items-center justify-between shrink-0">
             <div className="flex items-center gap-2 flex-wrap">
               {selectedConv ? (
                 <>
@@ -445,51 +424,53 @@ export default function WhatsAppPage() {
             )}
           </div>
 
-          <div className="flex flex-col flex-1 p-4 min-h-[400px]">
+          <div className="flex flex-col flex-1 min-h-0 p-0">
             {!selectedId ? (
-              <div className="flex-1 flex items-center justify-center text-muted-foreground/60">
+              <div className="flex-1 flex items-center justify-center text-muted-foreground/60 p-4">
                 Clique em uma conversa para ver as mensagens
               </div>
             ) : (
               <>
-                <div className="flex-1 overflow-auto mb-4 space-y-2 min-h-[280px]">
-                  {loadingMsg ? (
-                    <div className="flex justify-center py-8">
-                      <Loader2 className="w-6 h-6 animate-spin text-muted-foreground/60" />
-                    </div>
-                  ) : messages.length === 0 ? (
-                    <div className="py-8 text-center text-muted-foreground/60 text-sm">Nenhuma mensagem</div>
-                  ) : (
-                    messages.map((m) => (
-                      <div
-                        key={m.id}
-                        className={`flex ${m.direction === 'outbound' ? 'justify-end' : 'justify-start'}`}
-                      >
+                <ScrollArea className="flex-1 min-h-0 px-4 pt-4">
+                  <div className="space-y-2 pb-2">
+                    {loadingMsg ? (
+                      <div className="flex justify-center py-8">
+                        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground/60" />
+                      </div>
+                    ) : messages.length === 0 ? (
+                      <div className="py-8 text-center text-muted-foreground/60 text-sm">Nenhuma mensagem</div>
+                    ) : (
+                      messages.map((m) => (
                         <div
-                          className={cn(
-                            'max-w-[80%] rounded-lg px-3 py-2',
-                            m.direction === 'outbound'
-                              ? 'bg-primary text-white'
-                              : 'bg-muted text-foreground',
-                          )}
+                          key={m.id}
+                          className={`flex ${m.direction === 'outbound' ? 'justify-end' : 'justify-start'}`}
                         >
-                          <div className="text-sm whitespace-pre-wrap">{m.body_text || '—'}</div>
                           <div
                             className={cn(
-                              'text-xs mt-1',
-                              m.direction === 'outbound' ? 'text-blue-100' : 'text-muted-foreground/60',
+                              'max-w-[80%] rounded-lg px-3 py-2',
+                              m.direction === 'outbound'
+                                ? 'bg-primary text-white'
+                                : 'bg-muted text-foreground',
                             )}
                           >
-                            {dayjs(m.created_at ?? m.createdAt).format('DD/MM HH:mm')}
+                            <div className="text-sm whitespace-pre-wrap">{m.body_text || '—'}</div>
+                            <div
+                              className={cn(
+                                'text-xs mt-1',
+                                m.direction === 'outbound' ? 'text-blue-100' : 'text-muted-foreground/60',
+                              )}
+                            >
+                              {dayjs(m.created_at ?? m.createdAt).format('DD/MM HH:mm')}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))
-                  )}
-                </div>
+                      ))
+                    )}
+                  </div>
+                </ScrollArea>
 
                 {suggestions.length > 0 && (
-                  <div className="mb-2 flex flex-wrap gap-2">
+                  <div className="mb-2 flex flex-wrap gap-2 shrink-0 px-4">
                     <span className="text-muted-foreground text-sm self-center">Sugestões:</span>
                     {suggestions.map((s, i) => (
                       <Button
@@ -507,7 +488,7 @@ export default function WhatsAppPage() {
                   </div>
                 )}
 
-                <div className="flex gap-2">
+                <div className="flex gap-2 shrink-0 px-4 pb-4 pt-2 border-t border-border/60 bg-card">
                   <Textarea
                     value={sendText}
                     onChange={(e) => setSendText(e.target.value)}

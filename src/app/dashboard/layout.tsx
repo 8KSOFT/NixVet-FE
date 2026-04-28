@@ -54,8 +54,23 @@ interface ClinicNotification {
   createdAt?: string;
 }
 
+type NotificationsPaged = {
+  data: ClinicNotification[];
+  total: number;
+  page: number;
+  totalPages: number;
+};
+
+function notificationTypeLabel(type: string): string {
+  if (type === 'emergency') return 'Emergência';
+  if (type === 'human_attention') return 'Atendimento humano';
+  if (type === 'conversation_alert') return 'Conversa aguardando resposta';
+  return 'Notificação';
+}
+
 function NotificationsBell() {
-  const isUrgent = (type: string) => type === 'emergency' || type === 'human_attention';
+  const isUrgent = (type: string) =>
+    type === 'emergency' || type === 'human_attention' || type === 'conversation_alert';
 
   const { t } = useTranslation('common');
   const [unreadCount, setUnreadCount] = useState(0);
@@ -64,14 +79,24 @@ function NotificationsBell() {
   const [open, setOpen] = useState(false);
 
   const fetchUnread = () => {
-    api.get<number>('/notifications/unread-count').then((r) => setUnreadCount(Number(r.data ?? 0))).catch(() => {});
+    api
+      .get<number>('/notifications/unread-count', { params: { attention_only: true } })
+      .then((r) => setUnreadCount(Number(r.data ?? 0)))
+      .catch(() => {});
   };
 
   const fetchList = () => {
     setLoading(true);
     api
-      .get<ClinicNotification[]>('/notifications')
-      .then((r) => setList(Array.isArray(r.data) ? r.data : []))
+      .get<NotificationsPaged | ClinicNotification[]>('/notifications', {
+        params: { attention_only: true, limit: 50, page: 1 },
+      })
+      .then((r) => {
+        const body = r.data;
+        if (Array.isArray(body)) setList(body);
+        else if (body && Array.isArray(body.data)) setList(body.data);
+        else setList([]);
+      })
       .catch(() => setList([]))
       .finally(() => setLoading(false));
   };
@@ -151,6 +176,7 @@ function NotificationsBell() {
                       'w-full rounded-lg border p-4 text-left text-sm shadow-[var(--shadow-card)] transition-colors duration-200',
                       n.is_read ? 'border-border bg-card' : 'border-primary/25 bg-primary/5',
                       !n.is_read && n.type === 'human_attention' && 'border-amber-200/80 bg-amber-50/90',
+                      !n.is_read && n.type === 'conversation_alert' && 'border-amber-200/80 bg-amber-50/90',
                       !n.is_read && n.type === 'emergency' && 'border-red-200/80 bg-red-50/90',
                       'hover:bg-muted/80',
                     )}
@@ -158,7 +184,7 @@ function NotificationsBell() {
                   >
                     <div className="mb-1 flex items-center justify-between gap-2">
                       <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                        {n.type === 'emergency' ? 'Emergência' : n.type === 'human_attention' ? 'Atendimento humano' : 'Notificação'}
+                        {notificationTypeLabel(n.type)}
                       </span>
                     </div>
                     <p className="whitespace-pre-wrap break-words text-foreground">{n.message}</p>
@@ -169,7 +195,7 @@ function NotificationsBell() {
                             'text-xs font-medium',
                             n.type === 'emergency'
                               ? 'text-red-600'
-                              : n.type === 'human_attention'
+                              : n.type === 'human_attention' || n.type === 'conversation_alert'
                                 ? 'text-amber-800'
                                 : 'text-primary',
                           )}
