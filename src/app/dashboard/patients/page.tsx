@@ -108,6 +108,7 @@ export default function PatientsPage() {
   const [sexOptions, setSexOptions] = useState<SupportOption[]>([]);
   const [loading, setLoading] = useState(false);
   const [listPage, setListPage] = useState(1);
+  const [listTutorFilter, setListTutorFilter] = useState('');
   const [listTotal, setListTotal] = useState(0);
   const [listTotalPages, setListTotalPages] = useState(1);
   const [modalVisible, setModalVisible] = useState(false);
@@ -129,7 +130,9 @@ export default function PatientsPage() {
   const fetchPatients = async () => {
     setLoading(true);
     try {
-      const response = await api.get('/patients', { params: listQueryParams(listPage) });
+      const response = await api.get('/patients', {
+        params: listQueryParams(listPage, API_PAGE_SIZE, { tutor_id: listTutorFilter || undefined }),
+      });
       const p = parseListResponse<Patient>(response.data, listPage);
       setPatients(p.items);
       setListTotal(p.total);
@@ -220,7 +223,11 @@ export default function PatientsPage() {
 
   useEffect(() => {
     fetchPatients();
-  }, [listPage]);
+  }, [listPage, listTutorFilter]);
+
+  useEffect(() => {
+    setListPage(1);
+  }, [listTutorFilter]);
 
   const handleAdd = () => {
     setEditingId(null);
@@ -291,13 +298,31 @@ export default function PatientsPage() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center mb-4">
         <h1 className="text-2xl font-heading font-bold text-primary flex items-center gap-2">
           <Stethoscope className="w-6 h-6" /> Pacientes
         </h1>
-        <Button onClick={handleAdd} className="bg-primary hover:bg-blue-700">
-          <Plus className="w-4 h-4 mr-2" /> Novo Paciente
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-2 min-w-[200px]">
+            <Label className="text-xs text-muted-foreground whitespace-nowrap shrink-0">Tutor</Label>
+            <Select value={listTutorFilter || '_all'} onValueChange={(v) => setListTutorFilter(v === '_all' ? '' : v)}>
+              <SelectTrigger className="h-9 w-[220px]">
+                <SelectValue placeholder="Todos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="_all">Todos</SelectItem>
+                {tutors.map((t) => (
+                  <SelectItem key={t.id} value={t.id}>
+                    {t.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <Button onClick={handleAdd} className="bg-primary hover:bg-blue-700">
+            <Plus className="w-4 h-4 mr-2" /> Novo Paciente
+          </Button>
+        </div>
       </div>
 
       {loading ? (

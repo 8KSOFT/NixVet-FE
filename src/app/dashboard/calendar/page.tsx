@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Loader2, AlertTriangle, Clock, User2, Stethoscope, DollarSign, FileText, CheckCircle2, CreditCard, CalendarRange, X, PawPrint, ChevronDown, ChevronUp } from 'lucide-react';
 import api from '@/lib/axios';
 import { fetchAllListPages } from '@/lib/pagination';
+import { formatTimeBr, formatConsultationWeekdayDate, formatTimeRangeBr } from '@/lib/datetime-br';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
 
@@ -73,7 +74,7 @@ function SlotSelect({ veterinarianId, availability, availabilityLoading, value, 
   veterinarianId: string; availability: AvailabilitySlot[]; availabilityLoading: boolean; value: string; onChange: (v: string) => void;
 }) {
   const opts = (veterinarianId ? availability.find(a => a.vetId === veterinarianId)?.slots ?? [] : [])
-    .map(s => ({ value: s, label: new Date(s).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) }));
+    .map(s => ({ value: s, label: formatTimeBr(s) }));
   return (
     <div className="space-y-1">
       <Label>Horário disponível *</Label>
@@ -115,6 +116,8 @@ export default function CalendarPage() {
   const [structureLoading, setStructureLoading] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('month');
   const [detailsLoading, setDetailsLoading] = useState(false);
+  /** Filtro opcional: `GET /patients?tutor_id=` */
+  const [patientFilterTutorId, setPatientFilterTutorId] = useState('');
 
   // ── Quick-register new patient/tutor inline ──
   const [tutors, setTutors] = useState<Tutor[]>([]);
@@ -141,10 +144,28 @@ export default function CalendarPage() {
   });
 
   const fetchConsultations = async () => { try { const rows = await fetchAllListPages<Consultation>('/consultations'); setConsultations(rows); } catch { setConsultations([]); } };
-  const fetchPatients = async () => { try { const rows = await fetchAllListPages<Patient>('/patients'); setPatients(rows); } catch { setPatients([]); } };
+  const fetchPatients = useCallback(async (tutorId?: string) => {
+    try {
+      const rows = await fetchAllListPages<Patient>('/patients', tutorId ? { tutor_id: tutorId } : {});
+      setPatients(rows);
+    } catch { setPatients([]); }
+  }, []);
   const fetchVeterinarians = async () => { try { const rows = await fetchAllListPages<User>('/users/veterinarians'); setVeterinarians(rows); } catch { setVeterinarians([]); } };
   const fetchResources = async () => { try { const rows = await fetchAllListPages<Resource>('/resources'); setResources(rows); } catch { setResources([]); } };
-  const fetchAppointmentTypes = async () => { try { const rows = await fetchAllListPages<AppointmentType>('/appointment-types'); setAppointmentTypes(rows); } catch { setAppointmentTypes([]); } };
+  const fetchAppointmentTypes = async () => {
+    try {
+      const res = await api.get<{ consultation_types?: AppointmentType[] }>('/tenants/me/schedule-config');
+      const ct = res.data?.consultation_types;
+      if (Array.isArray(ct) && ct.length > 0) {
+        setAppointmentTypes(ct);
+        return;
+      }
+    } catch { /* fallback abaixo */ }
+    try {
+      const rows = await fetchAllListPages<AppointmentType>('/appointment-types');
+      setAppointmentTypes(rows);
+    } catch { setAppointmentTypes([]); }
+  };
   const fetchTutors = async () => { try { const rows = await fetchAllListPages<Tutor>('/tutors'); setTutors(rows); } catch { setTutors([]); } };
 
   const fetchGoogleStatus = useCallback(async () => {
@@ -171,7 +192,8 @@ export default function CalendarPage() {
     } catch { setGoogleEvents([]); }
   }, []);
 
-  useEffect(() => { fetchConsultations(); fetchPatients(); fetchVeterinarians(); fetchResources(); fetchAppointmentTypes(); fetchGoogleStatus(); fetchTutors(); }, [fetchGoogleStatus]);
+  useEffect(() => { fetchConsultations(); fetchVeterinarians(); fetchResources(); fetchAppointmentTypes(); fetchGoogleStatus(); fetchTutors(); }, [fetchGoogleStatus]);
+  useEffect(() => { void fetchPatients(patientFilterTutorId || undefined); }, [patientFilterTutorId, fetchPatients]);
   useEffect(() => { if (googleConnected) fetchGoogleEvents(currentMonth); }, [currentMonth, googleConnected, fetchGoogleEvents]);
 
   const getListData = (day: Dayjs) => consultations.filter(c => dayjs(c.consultation_date).isSame(day, 'day'));
@@ -180,20 +202,44 @@ export default function CalendarPage() {
   const formatStatus = (s?: string) => s === 'completed' ? 'Realizada' : s === 'cancelled' ? 'Cancelada' : 'Agendada';
   const statusColor = (s?: string) => s === 'completed' ? 'bg-green-500' : s === 'cancelled' ? 'bg-red-500' : 'bg-primary/100';
 
-  const fetchAvailability = async (date: Dayjs) => {
+  const fetchAvailabilitySlots = useCallback(async (date: Dayjs, veterinarianId: string, appointmentTypeId: string) => {
     setAvailabilityLoading(true);
-    try { const r = await api.get('/availability', { params: { date: date.format('YYYY-MM-DD') } }); setAvailability(r.data?.veterinarians ?? []); }
-    catch { setAvailability([]); } finally { setAvailabilityLoading(false); }
-  };
+    try {
+      const params: Record<string, string> = { date: date.format('YYYY-MM-DD') };
+      if (veterinarianId) params.vet_id = veterinarianId;
+      if (appointmentTypeId) params.appointment_type_id = appointmentTypeId;
+      const r = await api.get<AvailabilitySlot[] | { veterinarians?: AvailabilitySlot[] }>('/consultations/available-slots', { params });
+      const raw = r.data as unknown;
+      const list = Array.isArray(raw) ? raw : (raw as { veterinarians?: AvailabilitySlot[] })?.veterinarians ?? [];
+      setAvailability(Array.isArray(list) ? list : []);
+    } catch (e: unknown) {
+      const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      toast.error(typeof msg === 'string' ? msg : 'Erro ao carregar horários');
+      setAvailability([]);
+    } finally {
+      setAvailabilityLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!modalVisible || !formData.consultation_date) return;
+    const d = dayjs(formData.consultation_date);
+    if (!d.isValid()) return;
+    void fetchAvailabilitySlots(d, formData.veterinarian_id, formData.appointment_type_id);
+  }, [modalVisible, formData.consultation_date, formData.veterinarian_id, formData.appointment_type_id, fetchAvailabilitySlots]);
 
   const handleAdd = () => {
-    setFormData({ patient_id: '', consultation_date: selectedDate.format('YYYY-MM-DD'), veterinarian_id: '', slot_datetime: '', price: '', appointment_type_id: '', required_resources: [], observations: '' });
+    const maxD = dayjs().add(30, 'day');
+    let day = selectedDate;
+    if (day.isAfter(maxD, 'day')) day = maxD;
+    if (day.isBefore(dayjs(), 'day')) day = dayjs();
+    setFormData({ patient_id: '', consultation_date: day.format('YYYY-MM-DD'), veterinarian_id: '', slot_datetime: '', price: '', appointment_type_id: '', required_resources: [], observations: '' });
     setNewPatientMode(false);
     setNewTutorMode(false);
     setNewPet({ name: '', species: '', breed: '', sex: '', age: '', weight: '' });
     setNewTutor({ name: '', phone: '', email: '', cpf: '', cep: '' });
     setNewTutorId('');
-    setModalVisible(true); fetchAvailability(selectedDate);
+    setModalVisible(true);
   };
 
   const handleCreatePatientAndSubmit = async () => {
@@ -221,7 +267,7 @@ export default function CalendarPage() {
       });
       const patientId = pRes.data.id;
       toast.success(`Pet ${newPet.name} cadastrado`);
-      await fetchPatients();
+      await fetchPatients(patientFilterTutorId || undefined);
       setNewPatientMode(false);
       setFormData(prev => ({ ...prev, patient_id: patientId }));
     } catch (e: any) {
@@ -233,12 +279,33 @@ export default function CalendarPage() {
 
   const handleSubmit = async () => {
     if (!formData.patient_id || !formData.veterinarian_id || !formData.price) { toast.error('Preencha os campos obrigatórios'); return; }
+    const tp = appointmentTypes.find(t => t.id === formData.appointment_type_id);
+    const durationMinutes = tp?.duration_minutes ?? 30;
+    const startIso = formData.slot_datetime || dayjs(formData.consultation_date).startOf('day').toISOString();
+    if (dayjs(startIso).isAfter(dayjs().add(30, 'day').endOf('day'))) {
+      toast.error('Agendamentos online são permitidos apenas até 30 dias à frente.');
+      return;
+    }
+    const endIso = dayjs(startIso).add(durationMinutes, 'minute').toISOString();
     try {
-      const date = formData.slot_datetime || dayjs(formData.consultation_date).toISOString();
-      const tp = appointmentTypes.find(t => t.id === formData.appointment_type_id);
-      await api.post('/consultations', { patient_id: formData.patient_id, veterinarian_id: formData.veterinarian_id, consultation_date: date, price: parseFloat(formData.price), observations: formData.observations, required_resources: formData.required_resources.length ? formData.required_resources : undefined, appointment_type_id: formData.appointment_type_id || undefined, duration_minutes: tp?.duration_minutes });
+      await api.post('/consultations', {
+        patient_id: formData.patient_id,
+        veterinarian_id: formData.veterinarian_id,
+        consultation_date: startIso,
+        start_time: startIso,
+        end_time: endIso,
+        price: parseFloat(formData.price),
+        observations: formData.observations,
+        required_resources: formData.required_resources.length ? formData.required_resources : undefined,
+        appointment_type_id: formData.appointment_type_id || undefined,
+        duration_minutes: tp?.duration_minutes,
+        channel_origin: 'WEB',
+      });
       toast.success('Consulta agendada'); setModalVisible(false); fetchConsultations();
-    } catch { toast.error('Erro ao agendar consulta'); }
+    } catch (e: unknown) {
+      const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
+      toast.error(typeof msg === 'string' ? msg : 'Erro ao agendar consulta');
+    }
   };
 
   const handleMarkCompleted = async () => { if (!selectedConsultation) return; setUpdating(true); try { await api.put(`/consultations/${selectedConsultation.id}`, { status: 'completed' }); toast.success('Marcada como realizada'); setDetailsVisible(false); fetchConsultations(); } catch { toast.error('Erro'); } finally { setUpdating(false); } };
@@ -482,6 +549,23 @@ export default function CalendarPage() {
 
             {/* ── Paciente ── */}
             <div className="space-y-1">
+              <Label>Tutor (filtrar pets)</Label>
+              <Select
+                value={patientFilterTutorId || '_all'}
+                onValueChange={(v) => {
+                  const id = v === '_all' ? '' : v;
+                  setPatientFilterTutorId(id);
+                  setFormData((p) => ({ ...p, patient_id: '' }));
+                }}
+              >
+                <SelectTrigger><SelectValue placeholder="Todos os tutores" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_all">Todos</SelectItem>
+                  {tutors.map((t) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
               <Label>Paciente *</Label>
               {!newPatientMode ? (
                 <>
@@ -570,7 +654,28 @@ export default function CalendarPage() {
 
             <div className="space-y-1">
               <Label>Data *</Label>
-              <Input type="date" value={formData.consultation_date} onChange={e => { setFormData(p => ({ ...p, consultation_date: e.target.value })); if (e.target.value) fetchAvailability(dayjs(e.target.value)); }} />
+              <Input
+                type="date"
+                min={dayjs().format('YYYY-MM-DD')}
+                max={dayjs().add(30, 'day').format('YYYY-MM-DD')}
+                value={formData.consultation_date}
+                onChange={e => setFormData(p => ({ ...p, consultation_date: e.target.value, slot_datetime: '' }))}
+              />
+              <p className="text-xs text-muted-foreground">Agendamento online: até 30 dias à frente.</p>
+            </div>
+            <div className="space-y-1">
+              <Label>Tipo de procedimento</Label>
+              <Select
+                value={formData.appointment_type_id || '_none'}
+                onValueChange={v => setFormData(p => ({ ...p, appointment_type_id: v === '_none' ? '' : v, slot_datetime: '' }))}
+              >
+                <SelectTrigger><SelectValue placeholder="Nenhum" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_none">Nenhum</SelectItem>
+                  {appointmentTypes.map(tp => <SelectItem key={tp.id} value={tp.id}>{tp.name} — {formatDuration(tp.duration_minutes)}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">Envie o tipo para horários alinhados à duração (API).</p>
             </div>
             <div className="space-y-1">
               <Label>Veterinário *</Label>
@@ -580,10 +685,6 @@ export default function CalendarPage() {
             <div className="space-y-1">
               <Label>Valor (R$) *</Label>
               <Input type="number" step="0.01" value={formData.price} onChange={e => setFormData(p => ({ ...p, price: e.target.value }))} />
-            </div>
-            <div className="space-y-1">
-              <Label>Tipo de procedimento</Label>
-              <Select value={formData.appointment_type_id} onValueChange={v => setFormData(p => ({ ...p, appointment_type_id: v === '_none' ? '' : v }))}><SelectTrigger><SelectValue placeholder="Nenhum" /></SelectTrigger><SelectContent><SelectItem value="_none">Nenhum</SelectItem>{appointmentTypes.map(tp => <SelectItem key={tp.id} value={tp.id}>{tp.name} — {formatDuration(tp.duration_minutes)}</SelectItem>)}</SelectContent></Select>
             </div>
             {resources.length > 0 && (
               <div className="space-y-1">
@@ -649,11 +750,12 @@ export default function CalendarPage() {
                 <Clock className="w-4 h-4 text-muted-foreground/60 mt-0.5 shrink-0" />
                 <div>
                   <p className="text-sm font-medium">
-                    {new Date(selectedConsultation.start_time || selectedConsultation.consultation_date).toLocaleString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}
+                    {formatConsultationWeekdayDate(selectedConsultation.start_time || selectedConsultation.consultation_date)}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    {new Date(selectedConsultation.start_time || selectedConsultation.consultation_date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                    {selectedConsultation.end_time && ` → ${new Date(selectedConsultation.end_time).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`}
+                    {selectedConsultation.end_time
+                      ? formatTimeRangeBr(selectedConsultation.start_time || selectedConsultation.consultation_date, selectedConsultation.end_time)
+                      : formatTimeBr(selectedConsultation.start_time || selectedConsultation.consultation_date)}
                   </p>
                 </div>
               </div>
