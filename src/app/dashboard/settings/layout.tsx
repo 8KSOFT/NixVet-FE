@@ -19,12 +19,14 @@ import {
   CalendarOff,
   Landmark,
   Wallet,
+  CreditCard,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getStoredUserRole } from '@/lib/role-permissions';
 
 const items = [
   { key: '/dashboard/settings', icon: Settings, label: 'Dados da Clínica' },
+  { key: '/dashboard/settings/billing', icon: CreditCard, label: 'Assinatura' },
   { key: '/dashboard/settings/hours', icon: Clock, label: 'Horários' },
   { key: '/dashboard/settings/holidays', icon: CalendarOff, label: 'Feriados' },
   { key: '/dashboard/settings/appointment-types', icon: List, label: 'Tipos de Procedimento' },

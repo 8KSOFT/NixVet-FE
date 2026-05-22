@@ -218,7 +218,14 @@ export default function LoginPage() {
               </CardContent>
             </Card>
 
-            <p className="mt-8 text-center text-sm text-muted-foreground">
+            <p className="mt-4 text-center text-sm text-muted-foreground">
+              Não tem conta?{' '}
+              <a href="/register" className="font-semibold text-primary hover:underline">
+                Comece grátis por 14 dias
+              </a>
+            </p>
+
+            <p className="mt-4 text-center text-sm text-muted-foreground">
               © {new Date().getFullYear()} {brandName}. {t('auth.footer')}
             </p>
           </div>
