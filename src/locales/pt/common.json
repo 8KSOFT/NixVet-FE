@@ -8,6 +8,7 @@
   "nav": {
     "dashboard": "Dashboard",
     "clinicsAdmin": "Clínicas (global)",
+    "financeAdmin": "Financeiro (global)",
     "patients": "Pacientes",
     "owners": "Tutores",
     "team": "Equipe",

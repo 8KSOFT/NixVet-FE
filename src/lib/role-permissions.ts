@@ -5,6 +5,7 @@ const MENU_BY_ROLE: Record<string, readonly string[]> = {
   superadmin: [
     'dashboard',
     'clinics-admin',
+    'finance-admin',
     'patients',
     'owners',
     'team',
