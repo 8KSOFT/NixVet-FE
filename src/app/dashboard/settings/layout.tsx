@@ -17,8 +17,11 @@ import {
   Zap,
   DollarSign,
   CalendarOff,
+  Landmark,
+  Wallet,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getStoredUserRole } from '@/lib/role-permissions';
 
 const items = [
   { key: '/dashboard/settings', icon: Settings, label: 'Dados da Clínica' },
@@ -38,11 +41,46 @@ const items = [
 
 export default function SettingsLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const isSuperAdmin = getStoredUserRole() === 'superadmin';
+
+  const platformItems = isSuperAdmin
+    ? [
+        { key: '/dashboard/superadmin/clinics', icon: Landmark, label: 'Clínicas (global)' },
+        { key: '/dashboard/superadmin/finance', icon: Wallet, label: 'Financeiro (global)' },
+      ]
+    : [];
 
   return (
     <div className="flex gap-6">
       <div className="w-56 shrink-0">
         <nav className="flex flex-col gap-0.5 rounded-lg border border-slate-200 bg-white p-1.5">
+          {platformItems.length > 0 && (
+            <>
+              <p className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                Plataforma
+              </p>
+              {platformItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = pathname === item.key || pathname.startsWith(`${item.key}/`);
+                return (
+                  <Link
+                    key={item.key}
+                    href={item.key}
+                    className={cn(
+                      'flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                      isActive
+                        ? 'bg-primary/10 text-primary'
+                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
+                    )}
+                  >
+                    <Icon className="size-4 shrink-0" />
+                    {item.label}
+                  </Link>
+                );
+              })}
+              <div className="my-1 border-t border-slate-200" />
+            </>
+          )}
           {items.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.key;

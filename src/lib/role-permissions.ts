@@ -91,10 +91,15 @@ export function getStoredMenuKeys(): string[] {
   try {
     const raw = localStorage.getItem('user');
     const user = raw ? JSON.parse(raw) : null;
+    const roleKeys = menuKeysForRole(user?.role);
     if (Array.isArray(user?.permissions) && user.permissions.length > 0) {
+      // Superadmin: menu completo do frontend (ignora sessão antiga sem finance-admin)
+      if ((user?.role ?? '').toLowerCase() === 'superadmin') {
+        return roleKeys;
+      }
       return user.permissions as string[];
     }
-    return menuKeysForRole(user?.role);
+    return roleKeys;
   } catch {
     return menuKeysForRole('veterinarian');
   }

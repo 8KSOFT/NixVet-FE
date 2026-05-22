@@ -45,7 +45,7 @@ import Logo from '@/components/Logo';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import api from '@/lib/axios';
 import { fetchPublicBranding } from '@/lib/branding';
-import { getStoredMenuKeys, getStoredUserRole } from '@/lib/role-permissions';
+import { getStoredMenuKeys, getStoredUserRole, menuKeysForRole } from '@/lib/role-permissions';
 import { useBillingStatus } from '@/hooks/useBillingStatus';
 import { TrialBanner } from '@/components/billing/TrialBanner';
 
@@ -391,8 +391,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, []);
 
   useEffect(() => {
-    setMenuAllow(new Set(getStoredMenuKeys()));
-    setHeaderRole(getStoredUserRole() || '');
+    const role = getStoredUserRole() || '';
+    const keys =
+      role === 'superadmin' ? menuKeysForRole('superadmin') : getStoredMenuKeys();
+    setMenuAllow(new Set(keys));
+    setHeaderRole(role);
   }, [pathname]);
 
   const handleLogout = () => {

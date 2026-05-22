@@ -49,6 +49,10 @@ interface DashboardData {
     ai_cost_usd: number;
     ai_tokens: number;
     ai_calls: number;
+    ai_cost_usd_period?: number;
+    ai_calls_period?: number;
+    ai_cost_usd_all_time?: number;
+    ai_calls_all_time?: number;
     tenants_total: number;
     active: number;
     overdue: number;
@@ -122,7 +126,10 @@ function formatBrl(value: number): string {
 }
 
 function formatUsd(value: number): string {
-  return `$${Number(value).toFixed(4)}`;
+  const n = Number(value);
+  if (!Number.isFinite(n) || n === 0) return '$0.0000';
+  if (n < 0.01) return `$${n.toFixed(6)}`;
+  return `$${n.toFixed(4)}`;
 }
 
 function formatTokens(n: number): string {
@@ -139,7 +146,7 @@ function formatMonth(ym: string): string {
 
 export default function SuperadminFinancePage() {
   const router = useRouter();
-  const [from, setFrom] = useState(() => dayjs().startOf('year').format('YYYY-MM-DD'));
+  const [from, setFrom] = useState(() => dayjs().startOf('month').format('YYYY-MM-DD'));
   const [to, setTo] = useState(() => dayjs().endOf('month').format('YYYY-MM-DD'));
   const [dashboard, setDashboard] = useState<DashboardData | null>(null);
   const [loadingDash, setLoadingDash] = useState(true);
@@ -212,6 +219,9 @@ export default function SuperadminFinancePage() {
 
   const kpis = dashboard?.kpis;
   const refreshing = loadingDash || loadingTenants;
+  const aiUsingAllTime =
+    (kpis?.ai_calls_period ?? kpis?.ai_calls ?? 0) === 0 &&
+    (kpis?.ai_calls_all_time ?? 0) > 0;
 
   return (
     <div className="space-y-6">
@@ -289,7 +299,11 @@ export default function SuperadminFinancePage() {
           icon={Cpu}
           label="Custo IA"
           value={formatUsd(kpis?.ai_cost_usd ?? 0)}
-          sub={`${formatTokens(kpis?.ai_tokens ?? 0)} tokens · ${kpis?.ai_calls ?? 0} chamadas`}
+          sub={
+            aiUsingAllTime
+              ? `${formatTokens(kpis?.ai_tokens ?? 0)} tokens · ${kpis?.ai_calls ?? 0} chamadas (total histórico — fora do filtro)`
+              : `${formatTokens(kpis?.ai_tokens ?? 0)} tokens · ${kpis?.ai_calls ?? 0} chamadas no período`
+          }
           color="text-purple-600 bg-purple-100"
         />
       </div>
