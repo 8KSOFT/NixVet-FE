@@ -45,6 +45,8 @@ import LanguageSwitcher from '@/components/LanguageSwitcher';
 import api from '@/lib/axios';
 import { fetchPublicBranding } from '@/lib/branding';
 import { getStoredMenuKeys, getStoredUserRole } from '@/lib/role-permissions';
+import { useBillingStatus } from '@/hooks/useBillingStatus';
+import { TrialBanner } from '@/components/billing/TrialBanner';
 
 interface ClinicNotification {
   id: string;
@@ -358,8 +360,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
   const pathname = usePathname();
   const { t } = useTranslation('common');
+  const billing = useBillingStatus();
 
   const activeKey = getActiveKey(pathname);
+
+  useEffect(() => {
+    if (
+      !billing.loading &&
+      (billing.status === 'trial_expired' || billing.status === 'suspended') &&
+      !pathname.includes('/billing/upgrade')
+    ) {
+      router.replace('/dashboard/billing/upgrade');
+    }
+  }, [billing.loading, billing.status, pathname, router]);
 
   useEffect(() => {
     fetchPublicBranding().then((branding) => {
@@ -500,6 +513,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </header>
 
         <main className="flex-1 p-5 lg:p-8">
+          <TrialBanner billing={billing} />
           {children}
         </main>
       </div>

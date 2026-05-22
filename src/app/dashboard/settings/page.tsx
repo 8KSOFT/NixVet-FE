@@ -9,10 +9,11 @@ import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
-import { Settings, Save, Search, Plus, Loader2 } from 'lucide-react';
+import { Settings, Save, Search, Plus, Loader2, Bell } from 'lucide-react';
 import api from '@/lib/axios';
 import axios from 'axios';
 import { formatCepMask } from '@/lib/format-cep';
+import Link from 'next/link';
 
 function getCurrentUserRole(): string | null {
   if (typeof window === 'undefined') return null;
@@ -382,6 +383,25 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
       )}
+
+      <Card className="mb-6 shadow-sm border-blue-100 bg-blue-50/60">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base text-foreground font-semibold">
+            <Bell className="size-4 text-blue-600" />
+            Lembretes Automáticos de Consulta
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground mb-3">
+            Configure quando o sistema envia confirmações de presença, lembretes e mensagens de acompanhamento pós-consulta via WhatsApp.
+          </p>
+          <Link href="/dashboard/settings/reminders">
+            <Button variant="outline" size="sm">
+              Configurar lembretes →
+            </Button>
+          </Link>
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card className="shadow-sm">
