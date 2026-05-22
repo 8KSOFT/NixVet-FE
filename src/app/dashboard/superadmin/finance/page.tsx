@@ -506,6 +506,7 @@ export default function SuperadminFinancePage() {
             page={listPage}
             totalPages={listTotalPages}
             total={listTotal}
+            pageSize={API_PAGE_SIZE}
             onPageChange={setListPage}
           />
         </CardContent>
