@@ -51,6 +51,7 @@ interface Conversation {
   archived_at?: string | null;
   archived_reason?: string | null;
   closed_at?: string | null;
+  closed_by?: string | null;
   classification?: string | null;
   classification_note?: string | null;
   thread_status?: ThreadStatus;
@@ -364,6 +365,23 @@ export default function WhatsAppPage() {
     }
   };
 
+  const [alertActionPhone, setAlertActionPhone] = useState<string | null>(null);
+  const [alertActionLoading, setAlertActionLoading] = useState(false);
+
+  const handleCloseByPhone = async (phone: string, classification: string) => {
+    setAlertActionLoading(true);
+    try {
+      await api.post('/whatsapp/conversations/close-by-phone', { phone, classification });
+      toast.success('Conversa encerrada');
+      setAlertActionPhone(null);
+      await Promise.all([fetchConversations(false), fetchMetricsAndAlerts(true)]);
+    } catch {
+      toast.error('Erro ao encerrar conversa');
+    } finally {
+      setAlertActionLoading(false);
+    }
+  };
+
   const [classifyLoading, setClassifyLoading] = useState(false);
   const handleQuickClassify = async (classification: string) => {
     if (!selectedId) return;
@@ -471,16 +489,63 @@ export default function WhatsAppPage() {
       </div>
 
       {alerts.length > 0 && (
-        <div className="rounded-lg border bg-card p-4 shadow-sm shrink-0">
-          <div className="text-sm font-medium mb-3">Conversas aguardando há mais de 20 min</div>
-          <div className="space-y-2">
+        <div className="rounded-lg border border-amber-200 bg-amber-50/60 p-4 shadow-sm shrink-0">
+          <div className="flex items-center gap-2 mb-3">
+            <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+            <span className="text-sm font-semibold text-amber-800">{alerts.length} conversa(s) aguardando há mais de 20 min</span>
+            <span className="text-xs text-amber-600 ml-auto">Clique em uma linha para ações rápidas</span>
+          </div>
+          <div className="space-y-1.5">
             {alerts.map((a) => (
-              <div key={a.id} className="flex items-center gap-2 py-1">
-                <Badge variant="outline">{a.tutor_phone}</Badge>
-                {a.waiting_since && (
-                  <span className="text-muted-foreground text-sm">
-                    desde {dayjs(a.waiting_since).format('DD/MM HH:mm')}
-                  </span>
+              <div key={a.id} className="rounded-lg border border-amber-200 bg-white">
+                <div
+                  className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-amber-50/80 transition-colors"
+                  onClick={() => setAlertActionPhone(alertActionPhone === a.tutor_phone ? null : a.tutor_phone)}
+                >
+                  <Badge variant="outline" className="font-mono text-xs shrink-0">{a.tutor_phone}</Badge>
+                  {a.waiting_since && (
+                    <span className="text-muted-foreground text-xs flex-1">
+                      aguardando desde {dayjs(a.waiting_since).format('DD/MM HH:mm')} ({dayjs(a.waiting_since).fromNow()})
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    className="text-primary text-xs hover:underline shrink-0"
+                    onClick={(e) => { e.stopPropagation(); setSelectedId(null); fetchConversations(false); }}
+                  >
+                    Ver na lista
+                  </button>
+                </div>
+
+                {/* Ações rápidas inline */}
+                {alertActionPhone === a.tutor_phone && (
+                  <div className="border-t border-amber-100 px-3 py-2.5 bg-amber-50/40 space-y-2">
+                    <p className="text-xs text-muted-foreground font-medium">Encerrar com classificação:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {CLASSIFICATIONS.map((c) => (
+                        <button
+                          key={c.value}
+                          type="button"
+                          disabled={alertActionLoading}
+                          onClick={() => handleCloseByPhone(a.tutor_phone, c.value)}
+                          className={cn(
+                            'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-all hover:ring-2 hover:ring-offset-1 hover:ring-current disabled:opacity-50',
+                            c.badgeClass,
+                          )}
+                        >
+                          {alertActionLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCheck className="w-3 h-3" />}
+                          {c.label}
+                        </button>
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      className="text-xs text-muted-foreground hover:text-foreground mt-1"
+                      onClick={() => setAlertActionPhone(null)}
+                    >
+                      Cancelar
+                    </button>
+                  </div>
                 )}
               </div>
             ))}
@@ -567,8 +632,11 @@ export default function WhatsAppPage() {
                             {c.last_message_at && ` · ${dayjs(c.last_message_at).fromNow()}`}
                           </div>
                           {c.classification && (
-                            <div className="mt-1">
+                            <div className="mt-1 flex items-center gap-2 flex-wrap">
                               <ClassificationBadge classification={c.classification} />
+                              {c.closed_by && (
+                                <span className="text-[10px] text-muted-foreground">por {c.closed_by}</span>
+                              )}
                             </div>
                           )}
                         </div>
@@ -583,14 +651,24 @@ export default function WhatsAppPage() {
         {/* Painel de mensagens */}
         <div className="rounded-lg border bg-card shadow-sm flex-1 min-w-0 min-h-0 flex flex-col">
           <div className="px-4 py-3 border-b flex items-center justify-between shrink-0">
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap min-w-0">
               {selectedConv ? (
                 <>
-                  <span className="font-medium text-sm">
+                  <span className="font-medium text-sm truncate">
                     {selectedConv.contact_name || selectedConv.wa_id}
                   </span>
                   <AiPausedTag paused={selectedConv.ai_paused} />
                   {!selectedConv.ai_paused && <ThreadStatusTag status={selectedConv.thread_status ?? null} />}
+                  {selectedConv.classification && (
+                    <ClassificationBadge classification={selectedConv.classification} />
+                  )}
+                  {selectedConv.status === 'closed' && selectedConv.closed_by && (
+                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                      <CheckCheck className="w-3 h-3 text-green-600" />
+                      Encerrado por <strong>{selectedConv.closed_by}</strong>
+                      {selectedConv.closed_at && ` em ${dayjs(selectedConv.closed_at).format('DD/MM HH:mm')}`}
+                    </span>
+                  )}
                 </>
               ) : (
                 <span className="font-medium text-sm">Selecione uma conversa</span>
