@@ -27,6 +27,9 @@ import {
   Landmark,
   Wallet,
   Bot,
+  BarChart2,
+  BedDouble,
+  FileCheck,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -241,6 +244,9 @@ const NAV_ITEMS = [
   { key: 'exams', icon: FlaskConical, href: '/dashboard/exams', labelKey: 'nav.exams' },
   { key: 'followups', icon: FileSearch, href: '/dashboard/followups', labelKey: 'nav.followups' },
   { key: 'calendar', icon: CalendarDays, href: '/dashboard/calendar', labelKey: 'nav.calendar' },
+  { key: 'hospitalizations', icon: BedDouble, href: '/dashboard/internacoes', labelKey: 'nav.hospitalizations' },
+  { key: 'financeiro', icon: BarChart2, href: '/dashboard/financeiro', labelKey: 'nav.financeiro' },
+  { key: 'budgets', icon: FileCheck, href: '/dashboard/financeiro/orcamentos', labelKey: 'nav.budgets' },
   { key: 'vaccines', icon: Syringe, href: '/dashboard/vaccines', labelKey: 'nav.vaccines' },
   { key: 'tasks', icon: ClipboardList, href: '/dashboard/tasks', labelKey: 'nav.tasks' },
   { key: 'whatsapp', icon: MessageSquare, href: '/dashboard/whatsapp', labelKey: 'nav.whatsapp' },
@@ -261,6 +267,9 @@ function getActiveKey(pathname: string): string {
   if (pathname.includes('/dashboard/prescriptions')) return 'prescriptions';
   if (pathname.includes('/dashboard/exams')) return 'exams';
   if (pathname.includes('/dashboard/followups')) return 'followups';
+  if (pathname.includes('/dashboard/internacoes')) return 'hospitalizations';
+  if (pathname.includes('/dashboard/financeiro/orcamentos')) return 'budgets';
+  if (pathname.includes('/dashboard/financeiro')) return 'financeiro';
   if (pathname.includes('/dashboard/vaccines')) return 'vaccines';
   if (pathname.includes('/dashboard/tasks')) return 'tasks';
   if (pathname.includes('/dashboard/whatsapp')) return 'whatsapp';

@@ -20,6 +20,8 @@ import {
   Landmark,
   Wallet,
   CreditCard,
+  HeartHandshake,
+  BadgeDollarSign,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getStoredUserRole } from '@/lib/role-permissions';
@@ -39,6 +41,8 @@ const items = [
   { key: '/dashboard/settings/chatbot', icon: Bot, label: 'Chatbot / IA' },
   { key: '/dashboard/settings/ai-costs', icon: DollarSign, label: 'Custos IA' },
   { key: '/dashboard/settings/automations', icon: Zap, label: 'Automações' },
+  { key: '/dashboard/settings/planos-saude', icon: HeartHandshake, label: 'Planos de Saúde' },
+  { key: '/dashboard/settings/pagamentos', icon: BadgeDollarSign, label: 'Taxas de Pagamento' },
 ];
 
 export default function SettingsLayout({ children }: { children: React.ReactNode }) {

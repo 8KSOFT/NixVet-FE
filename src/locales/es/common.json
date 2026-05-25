@@ -22,7 +22,10 @@
     "tasks": "Tareas",
     "whatsapp": "WhatsApp",
     "chatbot": "Chatbot / IA",
-    "settings": "Configuración"
+    "settings": "Configuración",
+    "hospitalizations": "Internaciones",
+    "financeiro": "Financiero",
+    "budgets": "Presupuestos"
   },
   "header": {
     "greeting": "Hola,",

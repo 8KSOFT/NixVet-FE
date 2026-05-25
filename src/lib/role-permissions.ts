@@ -19,6 +19,9 @@ const MENU_BY_ROLE: Record<string, readonly string[]> = {
     'whatsapp',
     'chatbot',
     'medical-records',
+    'hospitalizations',
+    'financeiro',
+    'budgets',
     'settings',
   ],
   admin: [
@@ -36,6 +39,9 @@ const MENU_BY_ROLE: Record<string, readonly string[]> = {
     'whatsapp',
     'chatbot',
     'medical-records',
+    'hospitalizations',
+    'financeiro',
+    'budgets',
     'settings',
   ],
   manager: [
@@ -53,6 +59,9 @@ const MENU_BY_ROLE: Record<string, readonly string[]> = {
     'whatsapp',
     'chatbot',
     'medical-records',
+    'hospitalizations',
+    'financeiro',
+    'budgets',
     'settings',
   ],
   reception: [
