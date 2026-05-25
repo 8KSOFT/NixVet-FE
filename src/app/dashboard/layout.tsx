@@ -32,6 +32,7 @@ import {
   FileCheck,
   TrendingUp,
   CreditCard,
+  ChevronDown,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -223,40 +224,88 @@ function NotificationsBell() {
   );
 }
 
-const NAV_ITEMS = [
-  { key: 'dashboard', icon: LayoutDashboard, href: '/dashboard', labelKey: 'nav.dashboard' },
+type NavLeaf = { type?: 'leaf'; key: string; icon: React.ElementType; href: string; labelKey: string };
+type NavGroup = { type: 'group'; key: string; icon: React.ElementType; labelKey: string; href: string; children: NavLeaf[] };
+type NavItem = NavLeaf | NavGroup;
+type NavSection = { sectionKey: string; labelKey?: string; items: NavItem[] };
+
+const NAV_SECTIONS: NavSection[] = [
   {
-    key: 'clinics-admin',
-    icon: Landmark,
-    href: '/dashboard/superadmin/clinics',
-    labelKey: 'nav.clinicsAdmin',
+    sectionKey: 'general',
+    items: [
+      { key: 'dashboard', icon: LayoutDashboard, href: '/dashboard', labelKey: 'nav.dashboard' },
+    ],
   },
   {
-    key: 'finance-admin',
-    icon: Wallet,
-    href: '/dashboard/superadmin/finance',
-    labelKey: 'nav.financeAdmin',
+    sectionKey: 'superadmin',
+    items: [
+      { key: 'clinics-admin', icon: Landmark, href: '/dashboard/superadmin/clinics', labelKey: 'nav.clinicsAdmin' },
+      { key: 'finance-admin', icon: Wallet, href: '/dashboard/superadmin/finance', labelKey: 'nav.financeAdmin' },
+    ],
   },
-  { key: 'patients', icon: Stethoscope, href: '/dashboard/patients', labelKey: 'nav.patients' },
-  { key: 'owners', icon: Users, href: '/dashboard/owners', labelKey: 'nav.owners' },
-  { key: 'team', icon: User, href: '/dashboard/team', labelKey: 'nav.team' },
-  { key: 'medical-records', icon: FileText, href: '/dashboard/medical-records', labelKey: 'nav.medicalRecords' },
-  { key: 'prescriptions', icon: ClipboardList, href: '/dashboard/prescriptions', labelKey: 'nav.prescriptions' },
-  { key: 'bulario', icon: BookOpen, href: '/dashboard/bulario', labelKey: 'nav.bulario' },
-  { key: 'exams', icon: FlaskConical, href: '/dashboard/exams', labelKey: 'nav.exams' },
-  { key: 'followups', icon: FileSearch, href: '/dashboard/followups', labelKey: 'nav.followups' },
-  { key: 'calendar', icon: CalendarDays, href: '/dashboard/calendar', labelKey: 'nav.calendar' },
-  { key: 'hospitalizations', icon: BedDouble, href: '/dashboard/internacoes', labelKey: 'nav.hospitalizations' },
-  { key: 'financeiro', icon: BarChart2, href: '/dashboard/financeiro', labelKey: 'nav.financeiro' },
-  { key: 'financeiro-receitas', icon: TrendingUp, href: '/dashboard/financeiro/receitas', labelKey: 'nav.financeiroReceitas', isChild: true },
-  { key: 'financeiro-custos', icon: CreditCard, href: '/dashboard/financeiro/custos-pagamento', labelKey: 'nav.financeiroCustos', isChild: true },
-  { key: 'budgets', icon: FileCheck, href: '/dashboard/financeiro/orcamentos', labelKey: 'nav.budgets', isChild: true },
-  { key: 'vaccines', icon: Syringe, href: '/dashboard/vaccines', labelKey: 'nav.vaccines' },
-  { key: 'tasks', icon: ClipboardList, href: '/dashboard/tasks', labelKey: 'nav.tasks' },
-  { key: 'whatsapp', icon: MessageSquare, href: '/dashboard/whatsapp', labelKey: 'nav.whatsapp' },
-  { key: 'chatbot', icon: Bot, href: '/dashboard/chatbot-workflows', labelKey: 'nav.chatbot' },
-  { key: 'settings', icon: Settings, href: '/dashboard/settings', labelKey: 'nav.settings' },
-] as const;
+  {
+    sectionKey: 'clinic',
+    labelKey: 'nav.sectionClinic',
+    items: [
+      { key: 'patients', icon: Stethoscope, href: '/dashboard/patients', labelKey: 'nav.patients' },
+      { key: 'owners', icon: Users, href: '/dashboard/owners', labelKey: 'nav.owners' },
+      { key: 'team', icon: User, href: '/dashboard/team', labelKey: 'nav.team' },
+    ],
+  },
+  {
+    sectionKey: 'schedule',
+    labelKey: 'nav.sectionSchedule',
+    items: [
+      { key: 'calendar', icon: CalendarDays, href: '/dashboard/calendar', labelKey: 'nav.calendar' },
+      { key: 'vaccines', icon: Syringe, href: '/dashboard/vaccines', labelKey: 'nav.vaccines' },
+      { key: 'tasks', icon: ClipboardList, href: '/dashboard/tasks', labelKey: 'nav.tasks' },
+    ],
+  },
+  {
+    sectionKey: 'clinical',
+    labelKey: 'nav.sectionClinical',
+    items: [
+      { key: 'medical-records', icon: FileText, href: '/dashboard/medical-records', labelKey: 'nav.medicalRecords' },
+      { key: 'prescriptions', icon: ClipboardList, href: '/dashboard/prescriptions', labelKey: 'nav.prescriptions' },
+      { key: 'bulario', icon: BookOpen, href: '/dashboard/bulario', labelKey: 'nav.bulario' },
+      { key: 'exams', icon: FlaskConical, href: '/dashboard/exams', labelKey: 'nav.exams' },
+      { key: 'followups', icon: FileSearch, href: '/dashboard/followups', labelKey: 'nav.followups' },
+      { key: 'hospitalizations', icon: BedDouble, href: '/dashboard/internacoes', labelKey: 'nav.hospitalizations' },
+    ],
+  },
+  {
+    sectionKey: 'finance',
+    labelKey: 'nav.sectionFinance',
+    items: [
+      {
+        type: 'group',
+        key: 'financeiro',
+        icon: BarChart2,
+        href: '/dashboard/financeiro',
+        labelKey: 'nav.financeiro',
+        children: [
+          { key: 'financeiro-receitas', icon: TrendingUp, href: '/dashboard/financeiro/receitas', labelKey: 'nav.financeiroReceitas' },
+          { key: 'financeiro-custos', icon: CreditCard, href: '/dashboard/financeiro/custos-pagamento', labelKey: 'nav.financeiroCustos' },
+          { key: 'budgets', icon: FileCheck, href: '/dashboard/financeiro/orcamentos', labelKey: 'nav.budgets' },
+        ],
+      },
+    ],
+  },
+  {
+    sectionKey: 'comms',
+    labelKey: 'nav.sectionComms',
+    items: [
+      { key: 'whatsapp', icon: MessageSquare, href: '/dashboard/whatsapp', labelKey: 'nav.whatsapp' },
+      { key: 'chatbot', icon: Bot, href: '/dashboard/chatbot-workflows', labelKey: 'nav.chatbot' },
+    ],
+  },
+  {
+    sectionKey: 'admin',
+    items: [
+      { key: 'settings', icon: Settings, href: '/dashboard/settings', labelKey: 'nav.settings' },
+    ],
+  },
+];
 
 function getActiveKey(pathname: string): string {
   if (pathname.includes('/dashboard/profile')) return 'profile';
@@ -290,7 +339,6 @@ interface SidebarNavProps {
   activeKey: string;
   brandName: string;
   brandLogo: string | null;
-  /** Painel escuro (referência estilo clínica / Mediplus) */
   variant?: 'medical' | 'light';
   onNavigate?: () => void;
 }
@@ -305,74 +353,159 @@ function SidebarNav({
   onNavigate,
 }: SidebarNavProps) {
   const { t } = useTranslation('common');
-  const items = NAV_ITEMS.filter((item) => menuAllow.has(item.key));
-  const visibleItems = items.length > 0 ? items : NAV_ITEMS.filter((i) => i.key === 'dashboard');
   const medical = variant === 'medical';
+
+  // grupos colapsáveis — auto-abre se algum filho estiver ativo
+  const financeChildKeys = ['financeiro-receitas', 'financeiro-custos', 'budgets'];
+  const financeActive = financeChildKeys.includes(activeKey) || activeKey === 'financeiro';
+  const [openGroups, setOpenGroups] = useState<Set<string>>(() => new Set(financeActive ? ['financeiro'] : []));
+
+  // auto-abre o grupo quando um filho se torna ativo
+  React.useEffect(() => {
+    if (financeChildKeys.includes(activeKey)) {
+      setOpenGroups((prev) => new Set([...prev, 'financeiro']));
+    }
+  }, [activeKey]);
+
+  const toggleGroup = (key: string) => {
+    setOpenGroups((prev) => {
+      const next = new Set(prev);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    });
+  };
+
+  const linkClass = (isActive: boolean, isChild = false) =>
+    cn(
+      'flex items-center gap-2.5 rounded-lg px-3 transition-colors duration-150',
+      isChild ? 'py-1.5 text-xs' : 'py-2 text-sm font-medium',
+      medical
+        ? isActive
+          ? 'bg-white/[0.14] text-white'
+          : isChild
+            ? 'text-white/55 hover:bg-white/10 hover:text-white'
+            : 'text-white/80 hover:bg-white/10 hover:text-white'
+        : isActive
+          ? 'bg-primary/12 text-primary font-medium'
+          : isChild
+            ? 'text-muted-foreground/70 hover:bg-muted hover:text-foreground'
+            : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+      collapsed && 'justify-center px-2',
+    );
+
+  // filtra seções e itens por permissão
+  const visibleSections = NAV_SECTIONS.map((section) => {
+    const visibleItems = section.items.filter((item) => {
+      if (item.type === 'group') {
+        const visibleChildren = item.children.filter((c) => menuAllow.has(c.key));
+        return menuAllow.has(item.key) || visibleChildren.length > 0;
+      }
+      return menuAllow.has(item.key);
+    });
+    return { ...section, items: visibleItems };
+  }).filter((s) => s.items.length > 0);
 
   return (
     <div className="flex flex-col h-full">
-      <div
-        className={cn(
-          'flex items-center h-16 px-4 shrink-0 border-b',
-          medical ? 'border-white/15' : 'border-slate-200/80',
-        )}
-      >
+      <div className={cn('flex items-center h-16 px-4 shrink-0 border-b', medical ? 'border-white/15' : 'border-slate-200/80')}>
         <div className={cn('flex items-center gap-3 w-full', collapsed && 'justify-center')}>
           <div className={cn('flex shrink-0 items-center justify-center overflow-hidden rounded-lg', medical && 'p-2')}>
-            <Logo
-              width={collapsed ? 36 : 44}
-              height={collapsed ? 36 : 44}
-              src={brandLogo}
-              alt={brandName}
-            />
+            <Logo width={collapsed ? 36 : 44} height={collapsed ? 36 : 44} src={brandLogo} alt={brandName} />
           </div>
           {!collapsed && (
-            <span
-              className={cn(
-                'font-heading truncate text-base font-semibold tracking-tight sm:text-lg',
-                medical ? 'text-white' : 'text-foreground',
-              )}
-            >
+            <span className={cn('font-heading truncate text-base font-semibold tracking-tight sm:text-lg', medical ? 'text-white' : 'text-foreground')}>
               {brandName}
             </span>
           )}
         </div>
       </div>
-      <ScrollArea className="flex-1 py-3">
-        <nav className="flex flex-col gap-0.5 px-2">
-          {visibleItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeKey === item.key;
-            const isChild = 'isChild' in item && item.isChild;
-            return (
-              <Link
-                key={item.key}
-                href={item.href}
-                onClick={() => onNavigate?.()}
-                className={cn(
-                  'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-200',
-                  isChild && !collapsed && 'ml-4 py-1.5 text-xs',
-                  medical &&
-                    (isActive
-                      ? 'bg-white/[0.14] text-white'
-                      : isChild
-                        ? 'text-white/60 hover:bg-white/10 hover:text-white'
-                        : 'text-white/80 hover:bg-white/10 hover:text-white'),
-                  !medical &&
-                    (isActive
-                      ? 'bg-primary/12 text-primary'
-                      : isChild
-                        ? 'text-muted-foreground/70 hover:bg-muted hover:text-foreground'
-                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'),
-                  collapsed && 'justify-center px-2',
-                )}
-                title={collapsed ? t(item.labelKey) : undefined}
-              >
-                <Icon className={cn('shrink-0 stroke-[1.5]', collapsed ? 'size-5' : isChild ? 'size-3.5' : 'size-4')} />
-                {!collapsed && <span>{t(item.labelKey)}</span>}
-              </Link>
-            );
-          })}
+
+      <ScrollArea className="flex-1 py-2">
+        <nav className="flex flex-col px-2">
+          {visibleSections.map((section, si) => (
+            <div key={section.sectionKey}>
+              {/* separador entre seções (exceto a primeira) */}
+              {si > 0 && (
+                <div className={cn('mx-3 my-2 border-t', medical ? 'border-white/10' : 'border-border')} />
+              )}
+
+              {/* label da seção */}
+              {!collapsed && section.labelKey && (
+                <p className={cn('mb-1 mt-0.5 px-3 text-[10px] font-semibold uppercase tracking-widest', medical ? 'text-white/35' : 'text-muted-foreground/50')}>
+                  {t(section.labelKey)}
+                </p>
+              )}
+
+              <div className="flex flex-col gap-0.5">
+                {section.items.map((item) => {
+                  if (item.type === 'group') {
+                    const isOpen = openGroups.has(item.key);
+                    const groupActive = activeKey === item.key || item.children.some((c) => c.key === activeKey);
+                    const visibleChildren = item.children.filter((c) => menuAllow.has(c.key));
+
+                    return (
+                      <div key={item.key}>
+                        {/* cabeçalho do grupo */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            toggleGroup(item.key);
+                            onNavigate?.();
+                          }}
+                          className={cn(
+                            linkClass(groupActive && !isOpen),
+                            'w-full',
+                            collapsed && 'justify-center',
+                          )}
+                          title={collapsed ? t(item.labelKey) : undefined}
+                        >
+                          <item.icon className={cn('shrink-0 stroke-[1.5]', collapsed ? 'size-5' : 'size-4')} />
+                          {!collapsed && (
+                            <>
+                              <span className="flex-1 text-left">{t(item.labelKey)}</span>
+                              <ChevronDown className={cn('size-3.5 shrink-0 transition-transform duration-200', isOpen && 'rotate-180')} />
+                            </>
+                          )}
+                        </button>
+
+                        {/* filhos */}
+                        {isOpen && !collapsed && (
+                          <div className="ml-3 mt-0.5 flex flex-col gap-0.5 border-l pl-2.5 border-white/10">
+                            {visibleChildren.map((child) => (
+                              <Link
+                                key={child.key}
+                                href={child.href}
+                                onClick={() => onNavigate?.()}
+                                className={linkClass(activeKey === child.key, true)}
+                              >
+                                <child.icon className="size-3.5 shrink-0 stroke-[1.5]" />
+                                <span>{t(child.labelKey)}</span>
+                              </Link>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  }
+
+                  const Icon = item.icon;
+                  const isActive = activeKey === item.key;
+                  return (
+                    <Link
+                      key={item.key}
+                      href={item.href}
+                      onClick={() => onNavigate?.()}
+                      className={linkClass(isActive)}
+                      title={collapsed ? t(item.labelKey) : undefined}
+                    >
+                      <Icon className={cn('shrink-0 stroke-[1.5]', collapsed ? 'size-5' : 'size-4')} />
+                      {!collapsed && <span>{t(item.labelKey)}</span>}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
       </ScrollArea>
     </div>
