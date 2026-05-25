@@ -36,6 +36,7 @@ const PLAN_LABELS: Record<string, string> = {
   essencial: 'Essencial — R$179/mês',
   clinica: 'Clínica — R$299/mês',
   hospital: 'Hospital — R$499/mês',
+  enterprise: 'Enterprise',
 };
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ElementType }> = {

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import api from '@/lib/axios';
 
-export type BillingStatus = 'active' | 'trial' | 'trial_expired' | 'overdue' | 'suspended';
+export type BillingStatus = 'active' | 'trial' | 'trial_expired' | 'overdue' | 'suspended' | 'exempt' | 'cancelled';
 
 export interface BillingStatusData {
   status: BillingStatus;

@@ -3,7 +3,14 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { Loader2, KeyRound, Plus, Settings2, Save, MessageCircle, ShieldCheck, ShieldOff } from 'lucide-react';
+import { Loader2, KeyRound, Plus, Settings2, Save, MessageCircle, ShieldCheck, ShieldOff, MoreHorizontal, ExternalLink } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import api from '@/lib/axios';
 import { API_PAGE_SIZE, listQueryParams, parseListResponse } from '@/lib/pagination';
 import { ListPagination } from '@/components/list-pagination';
@@ -43,6 +50,7 @@ type ClinicRow = {
   billing_plan: string | null;
   subscription_status: string | null;
   trial_ends_at: string | null;
+  cancel_at?: string | null;
   admin_email: string | null;
   admin_name: string | null;
 };
@@ -61,15 +69,26 @@ const STATUS_OPTIONS = [
   { value: 'overdue', label: 'Em Atraso' },
   { value: 'suspended', label: 'Suspenso' },
   { value: 'cancelled', label: 'Cancelado' },
+  { value: 'exempt', label: 'Isento (cortesia)' },
 ];
 
-function statusBadgeVariant(status: string | null) {
+const addDays = (d: number) => new Date(Date.now() + d * 86400000).toISOString();
+const addMonths = (m: number) => { const dt = new Date(); dt.setMonth(dt.getMonth() + m); return dt.toISOString(); };
+
+function statusBadgeVariant(status: string | null): 'default' | 'secondary' | 'outline' | 'destructive' {
   switch (status) {
     case 'active': return 'default';
+    case 'exempt': return 'secondary';
     case 'trial': return 'secondary';
     case 'overdue': return 'outline';
     default: return 'destructive';
   }
+}
+
+function statusBadgeClass(status: string | null): string {
+  if (status === 'exempt') return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+  if (status === 'active') return 'bg-green-100 text-green-800 border-green-200';
+  return '';
 }
 
 function statusLabel(status: string | null) {
@@ -216,13 +235,13 @@ export default function SuperadminClinicsPage() {
     });
   };
 
-  const quickActivate = async (row: ClinicRow) => {
+  const quickPatch = async (tenantId: string, payload: Record<string, unknown>) => {
     try {
-      await api.patch(`/superadmin/tenants/${row.id}`, { subscription_status: 'active' });
-      toast.success(`Acesso de ${row.name} liberado`);
+      await api.patch(`/superadmin/tenants/${tenantId}`, payload);
+      toast.success('Atualizado');
       await load();
     } catch {
-      toast.error('Falha ao liberar acesso');
+      toast.error('Falha ao atualizar');
     }
   };
 
@@ -302,13 +321,14 @@ export default function SuperadminClinicsPage() {
                 <TableHead>Chatbot WhatsApp</TableHead>
                 <TableHead>Plataforma IA</TableHead>
                 <TableHead>Plano</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {rows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground py-12">
+                  <TableCell colSpan={8} className="text-center text-muted-foreground py-12">
                     Nenhuma clínica cadastrada.
                   </TableCell>
                 </TableRow>
@@ -337,72 +357,89 @@ export default function SuperadminClinicsPage() {
                       />
                     </TableCell>
                     <TableCell>
+                      <Badge variant="outline" className="capitalize w-fit">
+                        {row.billing_plan?.trim() || '—'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
                       <div className="flex flex-col gap-1">
-                        <Badge variant="outline" className="capitalize w-fit">
-                          {row.billing_plan?.trim() || '—'}
-                        </Badge>
-                        <Badge variant={statusBadgeVariant(row.subscription_status)} className="capitalize w-fit text-xs">
+                        <Badge
+                          variant={statusBadgeVariant(row.subscription_status)}
+                          className={`capitalize w-fit text-xs ${statusBadgeClass(row.subscription_status)}`}
+                        >
                           {statusLabel(row.subscription_status)}
                         </Badge>
-                        {row.trial_ends_at && row.subscription_status === 'trial' && (
+                        {row.trial_ends_at && (row.subscription_status === 'trial' || row.subscription_status === 'exempt') && (
                           <span className="text-xs text-muted-foreground">
                             até {new Date(row.trial_ends_at).toLocaleDateString('pt-BR')}
                           </span>
                         )}
+                        {row.cancel_at && (
+                          <span className="text-xs text-orange-600">
+                            ⚠️ cancel. {new Date(row.cancel_at).toLocaleDateString('pt-BR')}
+                          </span>
+                        )}
                       </div>
                     </TableCell>
-                    <TableCell className="text-right space-x-1">
-                      {row.subscription_status !== 'active' && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="gap-1 text-emerald-700 border-emerald-200 hover:bg-emerald-50"
-                          title="Liberar acesso (setar status → active)"
-                          onClick={() => void quickActivate(row)}
-                        >
-                          <ShieldCheck className="size-3.5" /> Liberar
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1 flex-wrap">
+                        {(row.subscription_status !== 'active' && row.subscription_status !== 'exempt') && (
+                          <Button
+                            type="button" variant="outline" size="sm"
+                            className="gap-1 text-emerald-700 border-emerald-200 hover:bg-emerald-50"
+                            onClick={() => void quickPatch(row.id, { subscription_status: 'active' })}
+                          >
+                            <ShieldCheck className="size-3.5" /> Liberar
+                          </Button>
+                        )}
+                        {(row.subscription_status === 'active' || row.subscription_status === 'exempt') && (
+                          <Button
+                            type="button" variant="outline" size="sm"
+                            className="gap-1 text-red-600 border-red-200 hover:bg-red-50"
+                            onClick={() => void quickPatch(row.id, { subscription_status: 'suspended' })}
+                          >
+                            <ShieldOff className="size-3.5" /> Suspender
+                          </Button>
+                        )}
+                        <Button type="button" variant="outline" size="sm" className="gap-1" onClick={() => openEdit(row)}>
+                          <Settings2 className="size-3.5" /> Editar
                         </Button>
-                      )}
-                      {row.subscription_status === 'active' && (
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="gap-1 text-red-600 border-red-200 hover:bg-red-50"
-                          title="Suspender acesso"
-                          onClick={async () => {
-                            await api.patch(`/superadmin/tenants/${row.id}`, { subscription_status: 'suspended' });
-                            toast.success(`${row.name} suspenso`);
-                            await load();
-                          }}
-                        >
-                          <ShieldOff className="size-3.5" /> Suspender
+                        <Button type="button" variant="outline" size="sm" className="gap-1" onClick={() => openReset(row)} disabled={!row.admin_email}>
+                          <KeyRound className="size-3.5" /> Senha
                         </Button>
-                      )}
-                      <Button type="button" variant="outline" size="sm" className="gap-1" onClick={() => openEdit(row)}>
-                        <Settings2 className="size-3.5" /> Editar
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="gap-1"
-                        onClick={() => openReset(row)}
-                        disabled={!row.admin_email}
-                      >
-                        <KeyRound className="size-3.5" /> Senha
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="gap-1 text-green-700 border-green-200 hover:bg-green-50"
-                        title="Provisionar WhatsApp (Z-API)"
-                        onClick={() => { setWhatsappTenantId(row.id); setWhatsappClinicName(row.name); }}
-                      >
-                        <MessageCircle className="size-3.5" /> WhatsApp
-                      </Button>
+                        <Button
+                          type="button" variant="outline" size="sm"
+                          className="gap-1 text-green-700 border-green-200 hover:bg-green-50"
+                          onClick={() => { setWhatsappTenantId(row.id); setWhatsappClinicName(row.name); }}
+                        >
+                          <MessageCircle className="size-3.5" /> WhatsApp
+                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button type="button" variant="outline" size="sm" className="px-2">
+                              <MoreHorizontal className="size-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-48">
+                            <DropdownMenuItem onClick={() => void quickPatch(row.id, { subscription_status: 'trial', trial_ends_at: addDays(14) })}>
+                              Trial 14 dias
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => void quickPatch(row.id, { subscription_status: 'trial', trial_ends_at: addDays(30) })}>
+                              Trial 30 dias
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => void quickPatch(row.id, { subscription_status: 'exempt', trial_ends_at: addMonths(3) })}>
+                              Isentar 3 meses
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => void quickPatch(row.id, { subscription_status: 'exempt', trial_ends_at: addMonths(6) })}>
+                              Isentar 6 meses
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => router.push(`/dashboard/superadmin/clinics/${row.id}`)}>
+                              <ExternalLink className="size-3.5 mr-2" /> Ver detalhes
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -561,7 +598,22 @@ export default function SuperadminClinicsPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-3 pt-5">
+            {(['trial', 'exempt'].includes(editForm.subscription_status as string)) && (
+              <div className="space-y-1 col-span-2">
+                <Label>Válido até</Label>
+                <Input
+                  type="date"
+                  value={(editForm.trial_ends_at as string ?? '').slice(0, 10)}
+                  onChange={(e) => setEditForm((p) => ({ ...p, trial_ends_at: e.target.value ? new Date(e.target.value).toISOString() : undefined }))}
+                />
+              </div>
+            )}
+            {editRow?.cancel_at && (
+              <div className="col-span-2 text-sm text-orange-600 bg-orange-50 border border-orange-200 rounded-md px-3 py-2">
+                ⚠️ Cancelamento agendado: {new Date(editRow.cancel_at).toLocaleDateString('pt-BR')}
+              </div>
+            )}
+            <div className="space-y-3 pt-2 col-span-2">
               <label className="flex items-center gap-2 text-sm">
                 <Switch
                   checked={Boolean(editForm.whatsapp_ai_chatbot_enabled)}
