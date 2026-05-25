@@ -190,7 +190,10 @@ export default function BillingSettingsPage() {
 
       {/* Invoices */}
       <div>
-        <h2 className="mb-3 text-base font-semibold text-slate-800">Notas fiscais e pagamentos</h2>
+        <h2 className="mb-3 text-base font-semibold text-slate-800">Histórico de Pagamentos e NFS-e</h2>
+        <p className="text-xs text-slate-500 mb-3">
+          As Notas Fiscais de Serviço (NFS-e) são emitidas automaticamente após confirmação de cada pagamento via Asaas.
+        </p>
         {loadingInvoices ? (
           <div className="flex items-center gap-2 text-sm text-slate-400">
             <Loader2 className="size-4 animate-spin" /> Carregando...
@@ -202,33 +205,45 @@ export default function BillingSettingsPage() {
           </Card>
         ) : (
           <Card className="divide-y overflow-hidden">
-            {invoices.map((inv, i) => (
-              <div key={i} className="flex items-center justify-between px-5 py-3">
-                <div>
-                  <p className="text-sm font-medium text-slate-800">
-                    {new Date(inv.date).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
-                  </p>
-                  <p className="text-xs text-slate-400">
-                    {inv.status === 'DONE' ? '✅ NFS-e emitida' : inv.status === 'PENDING' ? '⏳ Nota pendente' : inv.status}
-                  </p>
+            {invoices.map((inv, i) => {
+              const hasNfse = inv.status === 'DONE' && (inv.pdfUrl || inv.invoiceUrl);
+              return (
+                <div key={i} className="flex items-center justify-between px-5 py-3">
+                  <div>
+                    <p className="text-sm font-medium text-slate-800">
+                      {new Date(inv.date).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+                    </p>
+                    <p className="text-xs text-slate-400">
+                      {inv.status === 'DONE' ? '✅ NFS-e emitida' : inv.status === 'PENDING' ? '⏳ Nota pendente' : inv.status}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-semibold text-slate-700">
+                      R${inv.value.toFixed(2).replace('.', ',')}
+                    </span>
+                    {hasNfse ? (
+                      <a
+                        href={inv.pdfUrl ?? inv.invoiceUrl ?? '#'}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 rounded-md bg-green-50 border border-green-200 text-green-700 px-2 py-1 text-xs font-medium hover:bg-green-100 transition-colors"
+                      >
+                        <FileText className="size-3" /> Baixar NFS-e <ExternalLink className="size-3" />
+                      </a>
+                    ) : (inv.invoiceUrl || inv.pdfUrl) ? (
+                      <a
+                        href={inv.pdfUrl ?? inv.invoiceUrl ?? '#'}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-xs text-primary hover:underline"
+                      >
+                        Ver nota <ExternalLink className="size-3" />
+                      </a>
+                    ) : null}
+                  </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-semibold text-slate-700">
-                    R${inv.value.toFixed(2).replace('.', ',')}
-                  </span>
-                  {(inv.invoiceUrl || inv.pdfUrl) && (
-                    <a
-                      href={inv.pdfUrl ?? inv.invoiceUrl ?? '#'}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1 text-xs text-primary hover:underline"
-                    >
-                      NFS-e <ExternalLink className="size-3" />
-                    </a>
-                  )}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </Card>
         )}
       </div>

@@ -118,22 +118,43 @@ export default function InternacoesPage() {
 
   useEffect(() => {
     fetchData();
-    api.get('/patients').then((r) => setPatients(Array.isArray(r.data) ? r.data : (r.data as any)?.data ?? [])).catch(() => {});
-    api.get('/users').then((r) => setUsers(Array.isArray(r.data) ? r.data : (r.data as any)?.data ?? [])).catch(() => {});
-    api.get('/health-plans').then((r) => setHealthPlans(Array.isArray(r.data) ? r.data : [])).catch(() => {});
+    api.get('/patients', { params: { limit: 200 } }).then((r) => {
+      const d = (r.data as any)?.data ?? (r.data as any)?.items ?? r.data;
+      setPatients(Array.isArray(d) ? d : []);
+    }).catch(() => {});
+    api.get('/users/veterinarians', { params: { limit: 200 } })
+      .then((r) => {
+        const d = (r.data as any)?.data ?? (r.data as any)?.items ?? r.data;
+        setUsers(Array.isArray(d) ? d : []);
+      })
+      .catch(() => {
+        // fallback: tenta staff se veterinarians retornar erro de permissão
+        api.get('/users/staff', { params: { limit: 200 } }).then((r2) => {
+          const d = (r2.data as any)?.data ?? (r2.data as any)?.items ?? r2.data;
+          setUsers(Array.isArray(d) ? d : []);
+        }).catch(() => {});
+      });
+    api.get('/health-plans').then((r) => {
+      const d = (r.data as any)?.data ?? (r.data as any)?.items ?? r.data;
+      setHealthPlans(Array.isArray(d) ? d : []);
+    }).catch(() => {});
   }, [fetchData]);
 
   const handleCreate = async () => {
+    if (!form.patient_id) { toast.error('Selecione o paciente'); return; }
+    if (!form.veterinarian_id) { toast.error('Selecione o veterinário'); return; }
+    if (!form.reason.trim()) { toast.error('Informe o motivo'); return; }
     try {
       await api.post('/hospitalizations', {
         ...form,
+        veterinarian_id: form.veterinarian_id || undefined,
         health_plan_id: form.health_plan_id || undefined,
       });
       toast.success('Internação aberta');
       setOpenNew(false);
       fetchData();
-    } catch {
-      toast.error('Erro ao abrir internação');
+    } catch (e: any) {
+      toast.error(e.response?.data?.message?.[0] ?? e.response?.data?.message ?? 'Erro ao abrir internação');
     }
   };
 

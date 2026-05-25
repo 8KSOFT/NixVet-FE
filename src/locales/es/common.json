@@ -32,7 +32,8 @@
     "financeiro": "Financiero",
     "financeiroReceitas": "Ingresos",
     "financeiroCustos": "Costos de Pago",
-    "budgets": "Presupuestos"
+    "budgets": "Presupuestos",
+    "financeiroReceita": "Análisis de Ingresos"
   },
   "header": {
     "greeting": "Hola,",

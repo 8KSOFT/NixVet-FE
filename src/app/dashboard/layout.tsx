@@ -287,6 +287,7 @@ const NAV_SECTIONS: NavSection[] = [
           { key: 'financeiro-receitas', icon: TrendingUp, href: '/dashboard/financeiro/receitas', labelKey: 'nav.financeiroReceitas' },
           { key: 'financeiro-custos', icon: CreditCard, href: '/dashboard/financeiro/custos-pagamento', labelKey: 'nav.financeiroCustos' },
           { key: 'budgets', icon: FileCheck, href: '/dashboard/financeiro/orcamentos', labelKey: 'nav.budgets' },
+          { key: 'financeiro-receita', icon: BarChart2, href: '/dashboard/financeiro/receita', labelKey: 'nav.financeiroReceita' },
         ],
       },
     ],
@@ -324,6 +325,7 @@ function getActiveKey(pathname: string): string {
   if (pathname.includes('/dashboard/financeiro/orcamentos')) return 'budgets';
   if (pathname.includes('/dashboard/financeiro/receitas')) return 'financeiro-receitas';
   if (pathname.includes('/dashboard/financeiro/custos-pagamento')) return 'financeiro-custos';
+  if (pathname.includes('/dashboard/financeiro/receita')) return 'financeiro-receita';
   if (pathname.includes('/dashboard/financeiro')) return 'financeiro';
   if (pathname.includes('/dashboard/vaccines')) return 'vaccines';
   if (pathname.includes('/dashboard/tasks')) return 'tasks';
@@ -356,7 +358,7 @@ function SidebarNav({
   const medical = variant === 'medical';
 
   // grupos colapsáveis — auto-abre se algum filho estiver ativo
-  const financeChildKeys = ['financeiro-receitas', 'financeiro-custos', 'budgets'];
+  const financeChildKeys = ['financeiro-receitas', 'financeiro-custos', 'budgets', 'financeiro-receita'];
   const financeActive = financeChildKeys.includes(activeKey) || activeKey === 'financeiro';
   const [openGroups, setOpenGroups] = useState<Set<string>>(() => new Set(financeActive ? ['financeiro'] : []));
 

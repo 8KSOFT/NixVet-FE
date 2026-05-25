@@ -32,7 +32,8 @@
     "financeiro": "Financial",
     "financeiroReceitas": "Revenue",
     "financeiroCustos": "Payment Costs",
-    "budgets": "Budgets"
+    "budgets": "Budgets",
+    "financeiroReceita": "Revenue Analysis"
   },
   "header": {
     "greeting": "Hello,",
