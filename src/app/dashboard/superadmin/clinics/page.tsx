@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { Loader2, KeyRound, Plus, Settings2, Save, MessageCircle } from 'lucide-react';
+import { Loader2, KeyRound, Plus, Settings2, Save, MessageCircle, ShieldCheck, ShieldOff } from 'lucide-react';
 import api from '@/lib/axios';
 import { API_PAGE_SIZE, listQueryParams, parseListResponse } from '@/lib/pagination';
 import { ListPagination } from '@/components/list-pagination';
@@ -41,16 +41,40 @@ type ClinicRow = {
   whatsapp_ai_chatbot_enabled: boolean;
   ai_platform_enabled: boolean;
   billing_plan: string | null;
+  subscription_status: string | null;
+  trial_ends_at: string | null;
   admin_email: string | null;
   admin_name: string | null;
 };
 
 const PLAN_OPTIONS = [
-  { value: 'free', label: 'Free' },
-  { value: 'basic', label: 'Basic' },
-  { value: 'pro', label: 'Pro' },
-  { value: 'enterprise', label: 'Enterprise' },
+  { value: 'essencial', label: 'Essencial — R$179/mês' },
+  { value: 'clinica', label: 'Clínica — R$299/mês' },
+  { value: 'hospital', label: 'Hospital — R$499/mês' },
+  { value: 'enterprise', label: 'Enterprise (manual)' },
 ];
+
+const STATUS_OPTIONS = [
+  { value: 'active', label: 'Ativo' },
+  { value: 'trial', label: 'Trial' },
+  { value: 'trial_expired', label: 'Trial Expirado' },
+  { value: 'overdue', label: 'Em Atraso' },
+  { value: 'suspended', label: 'Suspenso' },
+  { value: 'cancelled', label: 'Cancelado' },
+];
+
+function statusBadgeVariant(status: string | null) {
+  switch (status) {
+    case 'active': return 'default';
+    case 'trial': return 'secondary';
+    case 'overdue': return 'outline';
+    default: return 'destructive';
+  }
+}
+
+function statusLabel(status: string | null) {
+  return STATUS_OPTIONS.find((s) => s.value === status)?.label ?? status ?? '—';
+}
 
 const emptyCreate = () => ({
   name: '',
@@ -187,8 +211,19 @@ export default function SuperadminClinicsPage() {
       phone: row.phone,
       whatsapp_ai_chatbot_enabled: row.whatsapp_ai_chatbot_enabled,
       ai_platform_enabled: row.ai_platform_enabled,
-      billing_plan: row.billing_plan ?? 'basic',
+      billing_plan: row.billing_plan ?? 'essencial',
+      subscription_status: row.subscription_status ?? 'trial',
     });
+  };
+
+  const quickActivate = async (row: ClinicRow) => {
+    try {
+      await api.patch(`/superadmin/tenants/${row.id}`, { subscription_status: 'active' });
+      toast.success(`Acesso de ${row.name} liberado`);
+      await load();
+    } catch {
+      toast.error('Falha ao liberar acesso');
+    }
   };
 
   const submitEdit = async () => {
@@ -302,11 +337,49 @@ export default function SuperadminClinicsPage() {
                       />
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className="capitalize">
-                        {row.billing_plan?.trim() || '—'}
-                      </Badge>
+                      <div className="flex flex-col gap-1">
+                        <Badge variant="outline" className="capitalize w-fit">
+                          {row.billing_plan?.trim() || '—'}
+                        </Badge>
+                        <Badge variant={statusBadgeVariant(row.subscription_status)} className="capitalize w-fit text-xs">
+                          {statusLabel(row.subscription_status)}
+                        </Badge>
+                        {row.trial_ends_at && row.subscription_status === 'trial' && (
+                          <span className="text-xs text-muted-foreground">
+                            até {new Date(row.trial_ends_at).toLocaleDateString('pt-BR')}
+                          </span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="text-right space-x-1">
+                      {row.subscription_status !== 'active' && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="gap-1 text-emerald-700 border-emerald-200 hover:bg-emerald-50"
+                          title="Liberar acesso (setar status → active)"
+                          onClick={() => void quickActivate(row)}
+                        >
+                          <ShieldCheck className="size-3.5" /> Liberar
+                        </Button>
+                      )}
+                      {row.subscription_status === 'active' && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="gap-1 text-red-600 border-red-200 hover:bg-red-50"
+                          title="Suspender acesso"
+                          onClick={async () => {
+                            await api.patch(`/superadmin/tenants/${row.id}`, { subscription_status: 'suspended' });
+                            toast.success(`${row.name} suspenso`);
+                            await load();
+                          }}
+                        >
+                          <ShieldOff className="size-3.5" /> Suspender
+                        </Button>
+                      )}
                       <Button type="button" variant="outline" size="sm" className="gap-1" onClick={() => openEdit(row)}>
                         <Settings2 className="size-3.5" /> Editar
                       </Button>
@@ -467,12 +540,24 @@ export default function SuperadminClinicsPage() {
             <div className="space-y-1">
               <Label>Plano</Label>
               <Select
-                value={(editForm.billing_plan as string) || 'basic'}
+                value={(editForm.billing_plan as string) || 'essencial'}
                 onValueChange={(v) => setEditForm((p) => ({ ...p, billing_plan: v }))}
               >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {PLAN_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label>Status de Acesso</Label>
+              <Select
+                value={(editForm.subscription_status as string) || 'trial'}
+                onValueChange={(v) => setEditForm((p) => ({ ...p, subscription_status: v }))}
+              >
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {STATUS_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
