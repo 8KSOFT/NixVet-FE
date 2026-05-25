@@ -205,7 +205,7 @@ export default function ReceitaLiquidaPage() {
                     <XAxis dataKey="date" tick={{ fontSize: 11 }} />
                     <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `R$${Number(v).toFixed(0)}`} />
                     <Tooltip
-                      formatter={(value: number) => fmtBRL(value)}
+                      formatter={(value) => fmtBRL(Number(value))}
                     />
                     <Legend />
                     <Bar dataKey="gross" name="Receita Bruta" fill="#3b82f6" radius={[3, 3, 0, 0]} />
