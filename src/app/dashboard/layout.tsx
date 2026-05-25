@@ -25,6 +25,7 @@ import {
   FlaskConical,
   FileText,
   Landmark,
+  Wallet,
   Bot,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -44,7 +45,7 @@ import Logo from '@/components/Logo';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import api from '@/lib/axios';
 import { fetchPublicBranding } from '@/lib/branding';
-import { getStoredMenuKeys, getStoredUserRole } from '@/lib/role-permissions';
+import { getStoredMenuKeys, getStoredUserRole, menuKeysForRole } from '@/lib/role-permissions';
 import { useBillingStatus } from '@/hooks/useBillingStatus';
 import { TrialBanner } from '@/components/billing/TrialBanner';
 
@@ -225,6 +226,12 @@ const NAV_ITEMS = [
     href: '/dashboard/superadmin/clinics',
     labelKey: 'nav.clinicsAdmin',
   },
+  {
+    key: 'finance-admin',
+    icon: Wallet,
+    href: '/dashboard/superadmin/finance',
+    labelKey: 'nav.financeAdmin',
+  },
   { key: 'patients', icon: Stethoscope, href: '/dashboard/patients', labelKey: 'nav.patients' },
   { key: 'owners', icon: Users, href: '/dashboard/owners', labelKey: 'nav.owners' },
   { key: 'team', icon: User, href: '/dashboard/team', labelKey: 'nav.team' },
@@ -243,6 +250,7 @@ const NAV_ITEMS = [
 
 function getActiveKey(pathname: string): string {
   if (pathname.includes('/dashboard/profile')) return 'profile';
+  if (pathname.includes('/dashboard/superadmin/finance')) return 'finance-admin';
   if (pathname.includes('/dashboard/superadmin/clinics')) return 'clinics-admin';
   if (pathname.includes('/dashboard/patients')) return 'patients';
   if (pathname.includes('/dashboard/owners')) return 'owners';
@@ -365,6 +373,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const activeKey = getActiveKey(pathname);
 
   useEffect(() => {
+    if (headerRole === 'superadmin') return;
     if (
       !billing.loading &&
       (billing.status === 'trial_expired' || billing.status === 'suspended') &&
@@ -372,7 +381,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     ) {
       router.replace('/dashboard/billing/upgrade');
     }
-  }, [billing.loading, billing.status, pathname, router]);
+  }, [billing.loading, billing.status, pathname, router, headerRole]);
 
   useEffect(() => {
     fetchPublicBranding().then((branding) => {
@@ -382,8 +391,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, []);
 
   useEffect(() => {
-    setMenuAllow(new Set(getStoredMenuKeys()));
-    setHeaderRole(getStoredUserRole() || '');
+    const role = getStoredUserRole() || '';
+    const keys =
+      role === 'superadmin' ? menuKeysForRole('superadmin') : getStoredMenuKeys();
+    setMenuAllow(new Set(keys));
+    setHeaderRole(role);
   }, [pathname]);
 
   const handleLogout = () => {
