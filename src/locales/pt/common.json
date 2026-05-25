@@ -25,6 +25,8 @@
     "settings": "Configurações",
     "hospitalizations": "Internações",
     "financeiro": "Financeiro",
+    "financeiroReceitas": "Receitas",
+    "financeiroCustos": "Custos de Pagamento",
     "budgets": "Orçamentos"
   },
   "header": {

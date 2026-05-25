@@ -30,6 +30,8 @@ import {
   BarChart2,
   BedDouble,
   FileCheck,
+  TrendingUp,
+  CreditCard,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -246,7 +248,9 @@ const NAV_ITEMS = [
   { key: 'calendar', icon: CalendarDays, href: '/dashboard/calendar', labelKey: 'nav.calendar' },
   { key: 'hospitalizations', icon: BedDouble, href: '/dashboard/internacoes', labelKey: 'nav.hospitalizations' },
   { key: 'financeiro', icon: BarChart2, href: '/dashboard/financeiro', labelKey: 'nav.financeiro' },
-  { key: 'budgets', icon: FileCheck, href: '/dashboard/financeiro/orcamentos', labelKey: 'nav.budgets' },
+  { key: 'financeiro-receitas', icon: TrendingUp, href: '/dashboard/financeiro/receitas', labelKey: 'nav.financeiroReceitas', isChild: true },
+  { key: 'financeiro-custos', icon: CreditCard, href: '/dashboard/financeiro/custos-pagamento', labelKey: 'nav.financeiroCustos', isChild: true },
+  { key: 'budgets', icon: FileCheck, href: '/dashboard/financeiro/orcamentos', labelKey: 'nav.budgets', isChild: true },
   { key: 'vaccines', icon: Syringe, href: '/dashboard/vaccines', labelKey: 'nav.vaccines' },
   { key: 'tasks', icon: ClipboardList, href: '/dashboard/tasks', labelKey: 'nav.tasks' },
   { key: 'whatsapp', icon: MessageSquare, href: '/dashboard/whatsapp', labelKey: 'nav.whatsapp' },
@@ -269,6 +273,8 @@ function getActiveKey(pathname: string): string {
   if (pathname.includes('/dashboard/followups')) return 'followups';
   if (pathname.includes('/dashboard/internacoes')) return 'hospitalizations';
   if (pathname.includes('/dashboard/financeiro/orcamentos')) return 'budgets';
+  if (pathname.includes('/dashboard/financeiro/receitas')) return 'financeiro-receitas';
+  if (pathname.includes('/dashboard/financeiro/custos-pagamento')) return 'financeiro-custos';
   if (pathname.includes('/dashboard/financeiro')) return 'financeiro';
   if (pathname.includes('/dashboard/vaccines')) return 'vaccines';
   if (pathname.includes('/dashboard/tasks')) return 'tasks';
@@ -337,26 +343,32 @@ function SidebarNav({
           {visibleItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeKey === item.key;
+            const isChild = 'isChild' in item && item.isChild;
             return (
               <Link
                 key={item.key}
                 href={item.href}
                 onClick={() => onNavigate?.()}
                 className={cn(
-                  'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-200',
+                  'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-200',
+                  isChild && !collapsed && 'ml-4 py-1.5 text-xs',
                   medical &&
                     (isActive
                       ? 'bg-white/[0.14] text-white'
-                      : 'text-white/80 hover:bg-white/10 hover:text-white'),
+                      : isChild
+                        ? 'text-white/60 hover:bg-white/10 hover:text-white'
+                        : 'text-white/80 hover:bg-white/10 hover:text-white'),
                   !medical &&
                     (isActive
                       ? 'bg-primary/12 text-primary'
-                      : 'text-muted-foreground hover:bg-muted hover:text-foreground'),
+                      : isChild
+                        ? 'text-muted-foreground/70 hover:bg-muted hover:text-foreground'
+                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'),
                   collapsed && 'justify-center px-2',
                 )}
                 title={collapsed ? t(item.labelKey) : undefined}
               >
-                <Icon className={cn('shrink-0 stroke-[1.5]', collapsed ? 'size-5' : 'size-4')} />
+                <Icon className={cn('shrink-0 stroke-[1.5]', collapsed ? 'size-5' : isChild ? 'size-3.5' : 'size-4')} />
                 {!collapsed && <span>{t(item.labelKey)}</span>}
               </Link>
             );

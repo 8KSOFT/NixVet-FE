@@ -25,6 +25,8 @@
     "settings": "Settings",
     "hospitalizations": "Hospitalizations",
     "financeiro": "Financial",
+    "financeiroReceitas": "Revenue",
+    "financeiroCustos": "Payment Costs",
     "budgets": "Budgets"
   },
   "header": {

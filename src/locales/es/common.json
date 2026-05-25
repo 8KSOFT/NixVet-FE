@@ -25,6 +25,8 @@
     "settings": "Configuración",
     "hospitalizations": "Internaciones",
     "financeiro": "Financiero",
+    "financeiroReceitas": "Ingresos",
+    "financeiroCustos": "Costos de Pago",
     "budgets": "Presupuestos"
   },
   "header": {
