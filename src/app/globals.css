@@ -1,3 +1,11 @@
+@font-face {
+  font-family: 'InterDoFigma';
+  font-style: normal;
+  font-weight: 100 900; /* 900 é o peso correspondente ao Black */
+  font-display: swap;
+  src: url('/fonts/inter-black/Inter-VariableFont_opsz,wght.ttf') format('truetype');
+}
+
 @import "tailwindcss";
 
 @custom-variant dark (&:is(.dark *));
@@ -7,7 +15,7 @@
   --app-sidebar-w: 260px;
   --app-sidebar-w-collapsed: 72px;
   /* NixVet — healthtech clínico */
-  --brand-deep: #0e1e2f;
+  --brand-deep: #12B37F;
   --brand-green: #7fa48e;
   --brand-green-hover: #6d917f;
   --brand-gold: #d4af37;
@@ -17,8 +25,8 @@
   --card-foreground: #0e1e2f;
   --popover: #ffffff;
   --popover-foreground: #0e1e2f;
-  --primary: #7fa48e;
-  --primary-hover: #6d917f;
+  --primary: #12B37F;
+  --primary-hover: #12b380c5;
   --primary-foreground: #ffffff;
   --secondary: #e8ecf1;
   --secondary-foreground: #0e1e2f;
@@ -93,9 +101,9 @@ body {
   font-family: var(--font-heading), var(--font-sans), system-ui, sans-serif;
 }
 
-* {
+/* * {
   border-color: var(--border);
-}
+} */
 
 .login-shell {
   background: var(--background);
