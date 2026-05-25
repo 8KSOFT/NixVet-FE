@@ -376,32 +376,34 @@ function ExamRequestsContent() {
       )}
 
       <Dialog open={modalVisible} onOpenChange={setModalVisible}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Nova Solicitação de Exames</DialogTitle>
+        <DialogContent
+          className="flex flex-col w-full max-w-2xl h-[96dvh] max-h-[96dvh] p-0 gap-0 sm:h-[90dvh]"
+          onInteractOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
+          {/* Header fixo */}
+          <DialogHeader className="px-6 pt-5 pb-4 border-b shrink-0">
+            <DialogTitle className="text-lg">Nova Solicitação de Exames</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div>
-              <Label>Paciente *</Label>
+
+          {/* Corpo com scroll */}
+          <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+            {/* Paciente */}
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">Paciente *</Label>
               <Controller
                 control={control}
                 name="patient_id"
                 rules={{ required: true }}
                 render={({ field }) => (
-                  <Select
-                    value={field.value}
-                    onValueChange={(v) => {
-                      field.onChange(v);
-                      handlePatientChange(v);
-                    }}
-                  >
-                    <SelectTrigger>
+                  <Select value={field.value} onValueChange={(v) => { field.onChange(v); handlePatientChange(v); }}>
+                    <SelectTrigger className="h-10">
                       <SelectValue placeholder="Selecione o paciente" />
                     </SelectTrigger>
                     <SelectContent>
                       {patients.map((p) => (
                         <SelectItem key={p.id} value={p.id}>
-                          {p.name} ({p.species}) - {p.tutor?.name ?? ''}
+                          {p.name} ({p.species}){p.tutor?.name ? ` — ${p.tutor.name}` : ''}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -410,29 +412,23 @@ function ExamRequestsContent() {
               />
             </div>
 
+            {/* Consulta + Data */}
             {selectedPatientId && (
-              <>
-                <div>
-                  <Label>Consulta (opcional)</Label>
-                  <p className="text-xs text-muted-foreground mb-1">
-                    Se não houver consulta, preencha a data abaixo
-                  </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium">Consulta (opcional)</Label>
                   <Controller
                     control={control}
                     name="consultation_id"
                     render={({ field }) => (
-                      <Select
-                        value={field.value ?? ''}
-                        onValueChange={(v) => field.onChange(v || undefined)}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione a consulta ou deixe em branco" />
+                      <Select value={field.value ?? ''} onValueChange={(v) => field.onChange(v || undefined)}>
+                        <SelectTrigger className="h-10">
+                          <SelectValue placeholder="Sem consulta vinculada" />
                         </SelectTrigger>
                         <SelectContent>
                           {consultationsByPatient.map((c) => (
                             <SelectItem key={c.id} value={c.id}>
-                              {new Date(c.consultation_date).toLocaleDateString('pt-BR')} - Dr.{' '}
-                              {c.veterinarian?.name ?? ''}
+                              {new Date(c.consultation_date).toLocaleDateString('pt-BR')} — Dr. {c.veterinarian?.name ?? ''}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -440,102 +436,95 @@ function ExamRequestsContent() {
                     )}
                   />
                 </div>
-                <div>
-                  <Label>Data da solicitação (quando não houver consulta)</Label>
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-medium">Data (sem consulta)</Label>
                   <Controller
                     control={control}
                     name="request_date"
-                    render={({ field }) => <Input type="date" {...field} />}
+                    render={({ field }) => <Input type="date" className="h-10" {...field} />}
                   />
                 </div>
-              </>
+              </div>
             )}
 
-            <div>
-              <Label>Exames *</Label>
-              <div className="border rounded p-2 min-h-[40px] flex flex-wrap gap-1 mb-1">
-                {selectedExams.map((exam) => (
-                  <Badge key={exam} variant="secondary" className="flex items-center gap-1">
-                    {exam}
-                    <button type="button" onClick={() => removeExamTag(exam)}>
-                      <X className="w-3 h-3" />
-                    </button>
-                  </Badge>
-                ))}
+            {/* Exames */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-medium">Exames *</Label>
+                <span className="text-xs text-muted-foreground">Selecione da lista, digite para filtrar ou adicione texto livre (Enter)</span>
               </div>
+
+              {/* Tags selecionadas */}
+              {selectedExams.length > 0 && (
+                <div className="border rounded-lg p-3 flex flex-wrap gap-2 bg-muted/30">
+                  {selectedExams.map((exam) => (
+                    <Badge key={exam} variant="secondary" className="flex items-center gap-1.5 py-1 px-2 text-sm">
+                      {exam}
+                      <button type="button" onClick={() => removeExamTag(exam)} className="hover:text-destructive">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+
+              {/* Input de busca / texto livre */}
               <div className="relative">
                 <Input
-                  placeholder="Selecione da lista ou digite um novo exame"
+                  placeholder="Buscar exame ou digitar nome livre (Enter para adicionar)"
+                  className="h-10"
                   value={examInput}
-                  onChange={(e) => {
-                    setExamInput(e.target.value);
-                    setShowExamDropdown(true);
-                  }}
+                  onChange={(e) => { setExamInput(e.target.value); setShowExamDropdown(true); }}
                   onFocus={() => setShowExamDropdown(true)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      if (examInput.trim()) addExamTag(examInput);
-                    }
+                    if (e.key === 'Enter') { e.preventDefault(); if (examInput.trim()) addExamTag(examInput); }
                     if (e.key === 'Escape') setShowExamDropdown(false);
                   }}
                 />
-                {showExamDropdown &&
-                  (filteredExamOptions.length > 0 || examInput.trim()) && (
-                    <div className="absolute z-10 top-full left-0 right-0 bg-white border rounded shadow-md max-h-48 overflow-y-auto">
-                      {filteredExamOptions.map((o) => (
-                        <button
-                          key={o.value}
-                          type="button"
-                          className="w-full text-left px-3 py-2 text-sm hover:bg-muted"
-                          onClick={() => addExamTag(o.value)}
-                        >
-                          {o.label}
-                        </button>
-                      ))}
-                      {examInput.trim() &&
-                        !examsFromCatalog.find((e) => e.name === examInput.trim()) && (
-                          <button
-                            type="button"
-                            className="w-full text-left px-3 py-2 text-sm hover:bg-primary/10 text-primary"
-                            onClick={() => addExamTag(examInput)}
-                          >
-                            + Adicionar &quot;{examInput.trim()}&quot;
-                          </button>
-                        )}
-                      <button
-                        type="button"
-                        className="w-full text-left px-3 py-2 text-sm hover:bg-muted/50 text-primary border-t"
-                        onClick={() => {
-                          setShowExamDropdown(false);
-                          setAddExamModalVisible(true);
-                        }}
-                      >
-                        + Cadastrar novo exame (escolher área)
+                {showExamDropdown && (filteredExamOptions.length > 0 || examInput.trim()) && (
+                  <div className="absolute z-20 top-full left-0 right-0 bg-white border rounded-lg shadow-lg max-h-52 overflow-y-auto mt-1">
+                    {/* Lista do catálogo */}
+                    {filteredExamOptions.slice(0, 12).map((o) => (
+                      <button key={o.value} type="button" className="w-full text-left px-4 py-2.5 text-sm hover:bg-muted border-b last:border-0" onClick={() => addExamTag(o.value)}>
+                        {o.label}
                       </button>
-                    </div>
-                  )}
+                    ))}
+                    {/* Adicionar texto livre */}
+                    {examInput.trim() && !examsFromCatalog.find((e) => e.name === examInput.trim()) && (
+                      <button type="button" className="w-full text-left px-4 py-2.5 text-sm bg-primary/5 hover:bg-primary/10 text-primary font-medium border-t" onClick={() => addExamTag(examInput)}>
+                        + Usar &quot;{examInput.trim()}&quot; (texto livre)
+                      </button>
+                    )}
+                    {/* Cadastrar no catálogo */}
+                    <button type="button" className="w-full text-left px-4 py-2.5 text-xs text-muted-foreground hover:bg-muted border-t" onClick={() => { setShowExamDropdown(false); setAddExamModalVisible(true); }}>
+                      Cadastrar novo exame no catálogo da clínica...
+                    </button>
+                  </div>
+                )}
               </div>
+              <p className="text-xs text-muted-foreground">Você pode adicionar exames não cadastrados digitando o nome e pressionando Enter.</p>
             </div>
 
-            <div>
-              <Label>Suspeita Clínica / Observações</Label>
+            {/* Suspeita / Notas */}
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">Suspeita clínica / Observações</Label>
               <Controller
                 control={control}
                 name="clinical_notes"
-                render={({ field }) => <Textarea rows={4} {...field} />}
+                render={({ field }) => <Textarea rows={4} placeholder="Descreva a suspeita clínica, informações relevantes ou outras orientações..." className="resize-none" {...field} />}
               />
             </div>
+          </div>
 
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setModalVisible(false)}>
-                Cancelar
-              </Button>
-              <Button type="submit" className="bg-primary hover:bg-blue-700 text-white">
-                Gerar solicitação
-              </Button>
-            </DialogFooter>
-          </form>
+          {/* Footer fixo */}
+          <DialogFooter className="px-6 py-4 border-t shrink-0 flex flex-row gap-3 justify-end">
+            <Button type="button" variant="outline" className="h-10" onClick={() => setModalVisible(false)}>
+              Cancelar
+            </Button>
+            <Button className="h-10 bg-primary hover:bg-blue-700 text-white" onClick={handleSubmit(onSubmit)}>
+              Gerar solicitação
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
