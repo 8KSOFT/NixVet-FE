@@ -119,7 +119,7 @@ export default function PagamentosSettingsPage() {
               </TableHeader>
               <TableBody>
                 {settings.map((s) => {
-                  const isEditing = method in editing ? true : s.method in editing;
+                  const isEditing = s.method in editing;
                   const row = editing[s.method];
                   return (
                     <TableRow key={s.id}>

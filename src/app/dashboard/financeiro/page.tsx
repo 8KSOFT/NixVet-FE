@@ -221,7 +221,7 @@ export default function FinanceiroDREPage() {
               <BarChart data={chartData}>
                 <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                 <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
-                <Tooltip formatter={(v: number) => fmt(v)} />
+                <Tooltip formatter={(v) => fmt(Number(v))} />
                 <Bar dataKey="receita" fill="#3b82f6" radius={[3, 3, 0, 0]} name="Receita Bruta" />
                 <Bar dataKey="liquida" fill="#22c55e" radius={[3, 3, 0, 0]} name="Receita Líquida" />
               </BarChart>

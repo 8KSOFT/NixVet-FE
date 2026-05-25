@@ -104,12 +104,12 @@ export default function ReceitasPage() {
           ) : (
             <ResponsiveContainer width="100%" height={280}>
               <PieChart>
-                <Pie data={chartData} cx="50%" cy="50%" outerRadius={100} dataKey="value" label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}>
+                <Pie data={chartData} cx="50%" cy="50%" outerRadius={100} dataKey="value" label={((props: any) => `${props.name ?? ''} (${((props.percent ?? 0) * 100).toFixed(0)}%)`) as any}>
                   {chartData.map((_, index) => (
                     <Cell key={index} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(v: number) => fmt(v)} />
+                <Tooltip formatter={(v) => fmt(Number(v))} />
                 <Legend />
               </PieChart>
             </ResponsiveContainer>
