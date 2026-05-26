@@ -122,13 +122,19 @@ export default function InternacoesPage() {
       const d = (r.data as any)?.data ?? (r.data as any)?.items ?? r.data;
       setPatients(Array.isArray(d) ? d : []);
     }).catch(() => {});
+    // /users/veterinarians agora inclui roles admin+manager+veterinarian
     api.get('/users/veterinarians', { params: { limit: 200 } })
       .then((r) => {
         const d = (r.data as any)?.data ?? (r.data as any)?.items ?? r.data;
-        setUsers(Array.isArray(d) ? d : []);
+        const list = Array.isArray(d) ? d : [];
+        if (list.length > 0) { setUsers(list); return; }
+        // fallback: se lista vazia, carrega todos os usuários do tenant
+        return api.get('/users/staff', { params: { limit: 200 } }).then((r2) => {
+          const d2 = (r2.data as any)?.data ?? (r2.data as any)?.items ?? r2.data;
+          setUsers(Array.isArray(d2) ? d2 : []);
+        });
       })
       .catch(() => {
-        // fallback: tenta staff se veterinarians retornar erro de permissão
         api.get('/users/staff', { params: { limit: 200 } }).then((r2) => {
           const d = (r2.data as any)?.data ?? (r2.data as any)?.items ?? r2.data;
           setUsers(Array.isArray(d) ? d : []);
