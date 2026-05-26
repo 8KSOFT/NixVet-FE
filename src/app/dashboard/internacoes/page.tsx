@@ -118,32 +118,46 @@ export default function InternacoesPage() {
 
   useEffect(() => {
     fetchData();
-    api.get('/patients', { params: { limit: 200 } }).then((r) => {
-      const d = (r.data as any)?.data ?? (r.data as any)?.items ?? r.data;
-      setPatients(Array.isArray(d) ? d : []);
-    }).catch(() => {});
-    // /users/veterinarians agora inclui roles admin+manager+veterinarian
-    api.get('/users/veterinarians', { params: { limit: 200 } })
+
+    const parseList = (data: unknown): unknown[] => {
+      if (Array.isArray(data)) return data;
+      const d = (data as any)?.data ?? (data as any)?.items ?? [];
+      return Array.isArray(d) ? d : [];
+    };
+
+    // Pacientes
+    api.get('/patients', { params: { limit: 500, page: 1 } })
       .then((r) => {
-        const d = (r.data as any)?.data ?? (r.data as any)?.items ?? r.data;
-        const list = Array.isArray(d) ? d : [];
-        if (list.length > 0) { setUsers(list); return; }
-        // fallback: se lista vazia, carrega todos os usuários do tenant
-        return api.get('/users/staff', { params: { limit: 200 } }).then((r2) => {
-          const d2 = (r2.data as any)?.data ?? (r2.data as any)?.items ?? r2.data;
-          setUsers(Array.isArray(d2) ? d2 : []);
-        });
+        const list = parseList(r.data);
+        if (list.length === 0) toast.warning('Nenhum paciente encontrado');
+        setPatients(list as Patient[]);
       })
-      .catch(() => {
-        api.get('/users/staff', { params: { limit: 200 } }).then((r2) => {
-          const d = (r2.data as any)?.data ?? (r2.data as any)?.items ?? r2.data;
-          setUsers(Array.isArray(d) ? d : []);
-        }).catch(() => {});
+      .catch((e) => {
+        toast.error(`Erro ao carregar pacientes: ${e?.response?.data?.message ?? e?.message ?? 'desconhecido'}`);
       });
-    api.get('/health-plans').then((r) => {
-      const d = (r.data as any)?.data ?? (r.data as any)?.items ?? r.data;
-      setHealthPlans(Array.isArray(d) ? d : []);
-    }).catch(() => {});
+
+    // Veterinários — tenta rota específica, fallback para staff
+    const loadUsers = async () => {
+      try {
+        const r = await api.get('/users/veterinarians', { params: { limit: 200, page: 1 } });
+        const list = parseList(r.data) as User[];
+        if (list.length > 0) { setUsers(list); return; }
+      } catch { /* segue para fallback */ }
+      try {
+        const r2 = await api.get('/users/staff', { params: { limit: 200, page: 1 } });
+        const list = parseList(r2.data) as User[];
+        if (list.length === 0) toast.warning('Nenhum veterinário encontrado');
+        setUsers(list);
+      } catch (e: any) {
+        toast.error(`Erro ao carregar veterinários: ${e?.response?.data?.message ?? e?.message ?? 'desconhecido'}`);
+      }
+    };
+    loadUsers();
+
+    // Planos
+    api.get('/health-plans', { params: { limit: 200 } })
+      .then((r) => setHealthPlans(parseList(r.data) as { id: string; name: string }[]))
+      .catch(() => {});
   }, [fetchData]);
 
   const handleCreate = async () => {
