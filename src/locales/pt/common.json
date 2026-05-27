@@ -22,7 +22,18 @@
     "tasks": "Tarefas",
     "whatsapp": "WhatsApp",
     "chatbot": "Chatbot / IA",
-    "settings": "Configurações"
+    "settings": "Configurações",
+    "sectionClinic": "Clínica",
+    "sectionSchedule": "Agenda",
+    "sectionClinical": "Atendimento",
+    "sectionFinance": "Financeiro",
+    "sectionComms": "Comunicação",
+    "hospitalizations": "Internações",
+    "financeiro": "Financeiro",
+    "financeiroReceitas": "Receitas",
+    "financeiroCustos": "Custos de Pagamento",
+    "budgets": "Orçamentos",
+    "financeiroReceita": "Análise de Receita"
   },
   "header": {
     "greeting": "Olá,",

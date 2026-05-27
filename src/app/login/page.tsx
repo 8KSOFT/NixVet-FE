@@ -33,9 +33,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [brandName, setBrandName] = useState("");
   const [brandLogo, setBrandLogo] = useState<string | null>(null);
-  const [defaultTenantCode, setDefaultTenantCode] = useState<string | null>(
-    null,
-  );
+  const [defaultTenantCode, setDefaultTenantCode] = useState<string | null>(null);
   const [brandingLoading, setBrandingLoading] = useState(true);
 
   useEffect(() => {
@@ -194,10 +192,6 @@ export default function LoginPage() {
               <form onSubmit={handleLogin} className="space-y-4 w-full">
                 <div className="space-y-1.5">
                   <div className="relative">
-                    {/* <Building2
-                    className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-                    aria-hidden
-                  /> */}
                     <Input
                       id="tenantCode"
                       name="tenantCode"
@@ -214,10 +208,6 @@ export default function LoginPage() {
 
                 <div className="space-y-1.5">
                   <div className="relative">
-                    {/* <Mail
-                    className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-                    aria-hidden
-                  /> */}
                     <Input
                       id="email"
                       name="email"
@@ -234,10 +224,6 @@ export default function LoginPage() {
 
                 <div className="space-y-1.5">
                   <div className="relative">
-                    {/* <Lock
-                    className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-                    aria-hidden
-                  /> */}
                     <Input
                       id="password"
                       name="password"
@@ -271,6 +257,13 @@ export default function LoginPage() {
                   </Button>
                 </div>
               </form>
+
+              <p className="mt-8 text-center text-sm text-muted-foreground w-full">
+                Não tem conta?{" "}
+                <a href="/register" className="font-semibold text-primary hover:underline">
+                  Comece grátis por 14 dias
+                </a>
+              </p>
             </div>
           </div>
           <p className="mt-8 text-center text-sm text-muted-foreground">

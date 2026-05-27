@@ -8,9 +8,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { useForm, Controller } from 'react-hook-form';
-import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Loader2, DollarSign, X } from 'lucide-react';
 import api from '@/lib/axios';
 import { API_PAGE_SIZE, fetchAllListPages, listQueryParams, parseListResponse } from '@/lib/pagination';
 import { ListPagination } from '@/components/list-pagination';
@@ -25,9 +26,209 @@ interface SurgicalProcedure {
   name: string;
   surgical_procedure_category_id?: number;
   surgical_procedure_category?: Category;
+  private_price?: number | null;
+  cost_price?: number | null;
 }
 
-type FormValues = { name: string; category_id?: string };
+interface HealthPlan {
+  id: string;
+  name: string;
+}
+
+interface PlanPrice {
+  id: string;
+  health_plan_id: string;
+  health_plan_name: string | null;
+  plan_price: number;
+  reimbursement: number;
+}
+
+type FormValues = {
+  name: string;
+  category_id?: string;
+  private_price?: string;
+  cost_price?: string;
+};
+
+function fmtBRL(v?: number | null) {
+  if (v == null) return '—';
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+}
+
+function PlanPricesDialog({
+  procedure,
+  open,
+  onClose,
+}: {
+  procedure: SurgicalProcedure;
+  open: boolean;
+  onClose: () => void;
+}) {
+  const [prices, setPrices] = useState<PlanPrice[]>([]);
+  const [plans, setPlans] = useState<HealthPlan[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [addMode, setAddMode] = useState(false);
+  const [newPlanId, setNewPlanId] = useState('');
+  const [newPlanPrice, setNewPlanPrice] = useState('');
+  const [newReimbursement, setNewReimbursement] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const [priceRes, planRes] = await Promise.all([
+        api.get(`/catalog/surgical-procedures/${procedure.id}/plan-prices`),
+        api.get('/health-plans', { params: { limit: 200 } }),
+      ]);
+      setPrices(priceRes.data);
+      const planData = planRes.data?.items ?? planRes.data?.data ?? planRes.data ?? [];
+      setPlans(Array.isArray(planData) ? planData : []);
+    } catch {
+      toast.error('Erro ao carregar preços por convênio');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (open) {
+      void load();
+      setAddMode(false);
+    }
+  }, [open]);
+
+  const handleSaveNew = async () => {
+    if (!newPlanId || !newPlanPrice) return;
+    setSaving(true);
+    try {
+      await api.put(`/catalog/surgical-procedures/${procedure.id}/plan-prices`, {
+        health_plan_id: newPlanId,
+        plan_price: parseFloat(newPlanPrice),
+        reimbursement: newReimbursement ? parseFloat(newReimbursement) : 0,
+      });
+      toast.success('Preço salvo');
+      setAddMode(false);
+      setNewPlanId('');
+      setNewPlanPrice('');
+      setNewReimbursement('');
+      void load();
+    } catch (e: any) {
+      toast.error(e.response?.data?.message ?? 'Erro ao salvar');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (healthPlanId: string) => {
+    try {
+      await api.delete(`/catalog/surgical-procedures/${procedure.id}/plan-prices/${healthPlanId}`);
+      toast.success('Removido');
+      void load();
+    } catch {
+      toast.error('Erro ao remover');
+    }
+  };
+
+  const usedPlanIds = new Set(prices.map((p) => p.health_plan_id));
+  const availablePlans = plans.filter((p) => !usedPlanIds.has(p.id));
+
+  return (
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Preços por convênio — {procedure.name}</DialogTitle>
+        </DialogHeader>
+        {loading ? (
+          <div className="flex justify-center py-6">
+            <Loader2 className="w-5 h-5 animate-spin text-primary" />
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Convênio</TableHead>
+                  <TableHead>Valor cobrado</TableHead>
+                  <TableHead>Reembolso recebido</TableHead>
+                  <TableHead className="w-[60px]" />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {prices.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center text-muted-foreground py-6">
+                      Nenhum convênio configurado
+                    </TableCell>
+                  </TableRow>
+                )}
+                {prices.map((p) => (
+                  <TableRow key={p.id}>
+                    <TableCell>{p.health_plan_name ?? p.health_plan_id}</TableCell>
+                    <TableCell>{fmtBRL(p.plan_price)}</TableCell>
+                    <TableCell>{fmtBRL(p.reimbursement)}</TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="sm" className="text-red-500" onClick={() => handleDelete(p.health_plan_id)}>
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {addMode && (
+                  <TableRow>
+                    <TableCell>
+                      <Select value={newPlanId} onValueChange={setNewPlanId}>
+                        <SelectTrigger className="h-8">
+                          <SelectValue placeholder="Selecionar convênio" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availablePlans.map((p) => (
+                            <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="0,00"
+                        className="h-8"
+                        value={newPlanPrice}
+                        onChange={(e) => setNewPlanPrice(e.target.value)}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="0,00"
+                        className="h-8"
+                        value={newReimbursement}
+                        onChange={(e) => setNewReimbursement(e.target.value)}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Button size="sm" variant="ghost" disabled={saving} onClick={handleSaveNew}>
+                        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'OK'}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+            {!addMode && availablePlans.length > 0 && (
+              <Button variant="outline" size="sm" onClick={() => setAddMode(true)}>
+                <Plus className="w-4 h-4 mr-1" /> Adicionar convênio
+              </Button>
+            )}
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 export default function SettingsSurgicalProceduresPage() {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -38,6 +239,7 @@ export default function SettingsSurgicalProceduresPage() {
   const [listTotalPages, setListTotalPages] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [planPricesFor, setPlanPricesFor] = useState<SurgicalProcedure | null>(null);
   const { register, handleSubmit, reset, control, formState: { errors } } = useForm<FormValues>();
 
   const fetchCategories = async () => {
@@ -74,14 +276,19 @@ export default function SettingsSurgicalProceduresPage() {
 
   const openCreate = () => {
     setEditingId(null);
-    reset({ name: '', category_id: undefined });
+    reset({ name: '', category_id: undefined, private_price: '', cost_price: '' });
     setModalOpen(true);
   };
 
   const openEdit = (row: SurgicalProcedure) => {
     setEditingId(row.id);
     const catId = row.surgical_procedure_category_id ?? row.surgical_procedure_category?.id;
-    reset({ name: row.name, category_id: catId ? String(catId) : undefined });
+    reset({
+      name: row.name,
+      category_id: catId ? String(catId) : undefined,
+      private_price: row.private_price != null ? String(row.private_price) : '',
+      cost_price: row.cost_price != null ? String(row.cost_price) : '',
+    });
     setModalOpen(true);
   };
 
@@ -99,6 +306,8 @@ export default function SettingsSurgicalProceduresPage() {
     const payload = {
       name: values.name,
       category_id: values.category_id ? Number(values.category_id) : undefined,
+      private_price: values.private_price ? parseFloat(values.private_price) : undefined,
+      cost_price: values.cost_price ? parseFloat(values.cost_price) : undefined,
     };
     try {
       if (editingId) {
@@ -134,26 +343,45 @@ export default function SettingsSurgicalProceduresPage() {
                   <TableRow>
                     <TableHead>Nome</TableHead>
                     <TableHead>Categoria</TableHead>
-                    <TableHead className="w-[120px]">Ações</TableHead>
+                    <TableHead>Particular</TableHead>
+                    <TableHead>Custo</TableHead>
+                    <TableHead>Margem</TableHead>
+                    <TableHead className="w-[140px]">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {list.map((r) => (
-                    <TableRow key={r.id}>
-                      <TableCell>{r.name}</TableCell>
-                      <TableCell>{r.surgical_procedure_category?.name ?? r.surgical_procedure_category_id ?? '—'}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Button variant="ghost" size="sm" onClick={() => openEdit(r)}>
-                            <Pencil className="w-4 h-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" onClick={() => handleDelete(r.id)}>
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {list.map((r) => {
+                    const margin =
+                      r.private_price && r.cost_price && r.private_price > 0
+                        ? ((r.private_price - r.cost_price) / r.private_price * 100).toFixed(0) + '%'
+                        : '—';
+                    return (
+                      <TableRow key={r.id}>
+                        <TableCell>{r.name}</TableCell>
+                        <TableCell>{r.surgical_procedure_category?.name ?? r.surgical_procedure_category_id ?? '—'}</TableCell>
+                        <TableCell>{fmtBRL(r.private_price)}</TableCell>
+                        <TableCell>{fmtBRL(r.cost_price)}</TableCell>
+                        <TableCell>
+                          {margin !== '—' ? (
+                            <Badge variant="secondary">{margin}</Badge>
+                          ) : '—'}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="sm" onClick={() => openEdit(r)} title="Editar">
+                              <Pencil className="w-4 h-4" />
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={() => setPlanPricesFor(r)} title="Preços por convênio">
+                              <DollarSign className="w-4 h-4 text-blue-500" />
+                            </Button>
+                            <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" onClick={() => handleDelete(r.id)}>
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
               <ListPagination
@@ -199,12 +427,47 @@ export default function SettingsSurgicalProceduresPage() {
               <Input id="name" placeholder="Nome do procedimento" {...register('name', { required: true })} />
               {errors.name && <p className="text-red-500 text-xs mt-1">Campo obrigatório</p>}
             </div>
+            <div className="border-t pt-4">
+              <p className="text-sm font-medium text-muted-foreground mb-3">Precificação</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="private_price">Preço Particular (R$)</Label>
+                  <Input
+                    id="private_price"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0,00"
+                    {...register('private_price')}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="cost_price">Custo Interno (R$)</Label>
+                  <Input
+                    id="cost_price"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="0,00"
+                    {...register('cost_price')}
+                  />
+                </div>
+              </div>
+            </div>
             <DialogFooter>
               <Button type="submit" className="bg-primary">Salvar</Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
+
+      {planPricesFor && (
+        <PlanPricesDialog
+          procedure={planPricesFor}
+          open={!!planPricesFor}
+          onClose={() => setPlanPricesFor(null)}
+        />
+      )}
     </div>
   );
 }

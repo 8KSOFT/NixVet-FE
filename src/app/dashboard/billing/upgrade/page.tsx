@@ -18,6 +18,12 @@ import {
 type PlanName = 'essencial' | 'clinica' | 'hospital';
 type BillingType = 'CREDIT_CARD' | 'BOLETO' | 'PIX';
 
+function formatCpfCnpj(value: string) {
+  const d = value.replace(/\D/g, '').slice(0, 14);
+  if (d.length <= 11) return d.replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+  return d.replace(/(\d{2})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1/$2').replace(/(\d{4})(\d{1,2})$/, '$1-$2');
+}
+
 interface Plan {
   id: PlanName;
   name: string;
@@ -76,16 +82,22 @@ export default function BillingUpgradePage() {
   const router = useRouter();
   const [selectedPlan, setSelectedPlan] = useState<PlanName | null>(null);
   const [billingType, setBillingType] = useState<BillingType>('PIX');
+  const [cpfCnpj, setCpfCnpj] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleActivate = async () => {
-    if (!selectedPlan) {
-      toast.error('Selecione um plano para continuar.');
+    if (!selectedPlan) { toast.error('Selecione um plano para continuar.'); return; }
+    if (!cpfCnpj || cpfCnpj.replace(/\D/g, '').length < 11) {
+      toast.error('Informe seu CPF ou CNPJ para continuar.');
       return;
     }
     setLoading(true);
     try {
-      await api.post('/billing/activate', { plan: selectedPlan, billingType });
+      await api.post('/billing/activate', {
+        plan: selectedPlan,
+        billingType,
+        cpfCnpj: cpfCnpj.replace(/\D/g, ''),
+      });
       toast.success('Assinatura ativada com sucesso!');
       router.push('/dashboard');
     } catch (err: any) {
@@ -144,6 +156,19 @@ export default function BillingUpgradePage() {
       </div>
 
       <div className="mt-8 flex w-full max-w-md flex-col gap-4">
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-foreground">
+            CPF ou CNPJ <span className="text-red-500">*</span>
+          </label>
+          <input
+            className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            placeholder="000.000.000-00 ou 00.000.000/0001-00"
+            value={cpfCnpj}
+            onChange={(e) => setCpfCnpj(formatCpfCnpj(e.target.value))}
+          />
+          <p className="mt-1 text-xs text-muted-foreground">Necessário para emissão de nota fiscal.</p>
+        </div>
+
         <div>
           <label className="mb-1.5 block text-sm font-medium text-foreground">
             Forma de pagamento
