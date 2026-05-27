@@ -42,7 +42,7 @@ export default function LandingPage() {
         <section className="relative h-screen flex items-start justify-start bg-brand-deep">
           <div className="absolute invert top-0 right-10 rotate-6 z-0 w-[120vw] h-[120vw] md:w-[70vw] md:h-[70vw] max-w-225 max-h-225 opacity-7 pointer-events-none select-none">
             <div className="motion-safe:animate-[nix-float-slow_10s_ease-in-out_infinite] motion-safe:will-change-transform">
-              <LogoCompactoDynamic width="100%" height="80%" />
+              <LogoCompactoDynamic width="85%" height="80%" />
             </div>
           </div>
           <div className="relative w-[80%] top-55 z-10 mx-auto">
