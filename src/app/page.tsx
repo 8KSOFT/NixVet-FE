@@ -1,9 +1,21 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Stethoscope, Shield, FileText, Cloud } from "lucide-react";
+import {
+  Stethoscope,
+  Shield,
+  FileText,
+  Cloud,
+  LucideArrowRight,
+  DecimalsArrowRight,
+  ArrowRight,
+  MoveRight,
+  MoveRightIcon,
+  LucideMoveRight,
+} from "lucide-react";
 import Logo from "@/components/Logo";
 import { HeaderComponent } from "@/components/shared/HeaderComponent";
+import { LogoCompactoDynamic } from "@/components/shared/LogoCompactoDynamic";
 
 const FEATURES = [
   {
@@ -43,33 +55,46 @@ export default function LandingPage() {
         <HeaderComponent width="80%" height="80%" />
         {/* Hero */}
         <section className="relative h-screen overflow-hidden flex items-center justify-start bg-brand-deep">
-          <div className="relative z-10 mx-auto max-w-5xl">
-            <h1 className="text-blue-600 mb-6 text-5xl md:text-7xl font-extrabold tracking-tight leading-tight">
-              Gestão Veterinária <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-blue-500">
-                Profissional e Segura
-              </span>
-            </h1>
-            <p className="text-xl text-gray-600 mb-12 max-w-2xl mx-auto leading-relaxed">
-              Simplifique sua rotina clínica com o NixVetApp. Prontuários
-              eletrônicos, receitas digitais inteligentes e conformidade LGPD em
-              uma interface moderna.
-            </p>
-            <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <Button
-                asChild
-                size="lg"
-                className="h-14 rounded-full px-10 text-lg"
-              >
-                <Link href="/login">Começar Agora</Link>
-              </Button>
-              <Button
-                size="lg"
-                variant="outline"
-                className="h-14 px-10 text-lg rounded-full"
-              >
-                Agendar Demonstração
-              </Button>
+          <div className="absolute invert top-10 right-10 rotate-10 z-0 w-[120vw] h-[120vw] md:w-[70vw] md:h-[70vw] max-w-225 max-h-225 opacity-10 pointer-events-none select-none">
+            <LogoCompactoDynamic width="100%" height="80%" />
+          </div>
+          <div className="relative w-[80%] z-10 mx-auto">
+            <div className="flex flex-col w-full items-start">
+              <h1 className="flex flex-col text-white mb-6 text-5xl md:text-7xl font-extrabold tracking-wide leading-thight">
+                Gestão <p>Veterinária</p>
+                <span className="text-white/65 bg-clip-text">
+                  Profissional <p> e Segura</p>
+                </span>
+              </h1>
+              <p className="text-[23px] text-white/95 tracking-normal mb-12 max-w-146">
+                Simplifique sua rotina clínica com o NixVetApp. Prontuários
+                eletrônicos, receitas digitais inteligentes e conformidade LGPD
+                em uma interface moderna.
+              </p>
+              <div className="flex flex-col sm:flex-row justify-center gap-8">
+                <Button
+                  asChild
+                  size="lg"
+                  className="h-12 p-0 pl-5 pr-1 rounded-full text-sm font-bold text-brand-deep bg-white shadow-sm hover:bg-white/90 transition-colors"
+                >
+                  <Link
+                    href="/login"
+                    className="flex items-center justify-between"
+                  >
+                    <span>Começar Agora</span>
+                    <div className="flex items-center justify-center size-10 rounded-full bg-brand-deep text-white transition-colors group-hover:bg-green-700">
+                      <ArrowRight className="size-6" />
+                    </div>
+                  </Link>
+                </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="h-12 px-5 text-sm text-white bg-brand-deep-orange border-none rounded-full"
+                >
+                  Agendar Demonstração
+                </Button>
+              </div>
             </div>
           </div>
         </section>
@@ -115,7 +140,7 @@ export default function LandingPage() {
 
         {/* CTA */}
         <section className="py-20 px-6">
-          <div className="relative mx-auto max-w-5xl overflow-hidden rounded-3xl bg-gradient-to-br from-[#0d7b94] to-[#0a5f72] p-12 text-center text-white shadow-lg md:p-20">
+          <div className="relative mx-auto max-w-5xl overflow-hidden rounded-3xl bg-linear-to-br from-[#0d7b94] to-[#0a5f72] p-12 text-center text-white shadow-lg md:p-20">
             <div
               className="pointer-events-none absolute inset-0 opacity-30"
               style={{

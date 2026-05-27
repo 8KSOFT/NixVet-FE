@@ -20,7 +20,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { getApiBaseUrl } from "@/lib/api-base";
 import { fetchPublicBranding } from "@/lib/branding";
-import { LogoNixvetDynamic } from "@/components/shared/LogoCompactoDynamic";
+import { LogoCompactoDynamic } from "@/components/shared/LogoCompactoDynamic";
 import Image from "next/image";
 
 export default function LoginPage() {
@@ -33,7 +33,9 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [brandName, setBrandName] = useState("");
   const [brandLogo, setBrandLogo] = useState<string | null>(null);
-  const [defaultTenantCode, setDefaultTenantCode] = useState<string | null>(null);
+  const [defaultTenantCode, setDefaultTenantCode] = useState<string | null>(
+    null,
+  );
   const [brandingLoading, setBrandingLoading] = useState(true);
 
   useEffect(() => {
@@ -147,7 +149,7 @@ export default function LoginPage() {
                   </div>
                 ) : (
                   <div className="flex items-end gap-2">
-                    <LogoNixvetDynamic width="41" height="41" />
+                    <LogoCompactoDynamic width="41" height="41" />
                     <h1 className="font-heading leading-7 text-2xl tracking-tight scale-y-85 sm:text-[32px]">
                       <span className="text-white">
                         {brandName.substring(0, 6)}
@@ -260,7 +262,10 @@ export default function LoginPage() {
 
               <p className="mt-8 text-center text-sm text-muted-foreground w-full">
                 Não tem conta?{" "}
-                <a href="/register" className="font-semibold text-primary hover:underline">
+                <a
+                  href="/register"
+                  className="font-semibold text-primary hover:underline"
+                >
                   Comece grátis por 14 dias
                 </a>
               </p>

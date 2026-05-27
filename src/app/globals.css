@@ -1,9 +1,10 @@
 @font-face {
-  font-family: 'InterDoFigma';
+  font-family: "InterDoFigma";
   font-style: normal;
   font-weight: 100 900; /* 900 é o peso correspondente ao Black */
   font-display: swap;
-  src: url('/fonts/inter-black/Inter-VariableFont_opsz,wght.ttf') format('truetype');
+  src: url("/fonts/inter-black/Inter-VariableFont_opsz,wght.ttf")
+    format("truetype");
 }
 
 @import "tailwindcss";
@@ -15,7 +16,8 @@
   --app-sidebar-w: 260px;
   --app-sidebar-w-collapsed: 72px;
   /* NixVet — healthtech clínico */
-  --brand-deep: #12B37F;
+  --brand-deep: #12b37f;
+  --brand-deep-orange: #fb8a2e;
   --brand-green: #7fa48e;
   --brand-green-hover: #6d917f;
   --brand-gold: #d4af37;
@@ -25,7 +27,7 @@
   --card-foreground: #0e1e2f;
   --popover: #ffffff;
   --popover-foreground: #0e1e2f;
-  --primary: #12B37F;
+  --primary: #12b37f;
   --primary-hover: #12b380c5;
   --primary-foreground: #ffffff;
   --secondary: #e8ecf1;
@@ -48,7 +50,8 @@
   --sidebar-accent-foreground: #ffffff;
   --sidebar-border: rgba(255, 255, 255, 0.12);
   --sidebar-ring: #7fa48e;
-  --shadow-card: 0 1px 3px rgba(14, 30, 47, 0.06), 0 1px 2px rgba(14, 30, 47, 0.04);
+  --shadow-card:
+    0 1px 3px rgba(14, 30, 47, 0.06), 0 1px 2px rgba(14, 30, 47, 0.04);
 }
 
 @theme inline {
@@ -72,13 +75,15 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-brand-deep: var(--brand-deep);
+  --color-brand-deep-orange: var(--brand-deep-orange);
   --color-brand-gold: var(--brand-gold);
   --radius-sm: 0.5rem;
   --radius-md: 0.625rem;
   --radius-lg: 0.75rem;
   --radius-xl: 0.75rem;
   --font-sans: var(--font-sans), "Inter", system-ui, sans-serif;
-  --font-heading: var(--font-heading), "Poppins", var(--font-sans), system-ui, sans-serif;
+  --font-heading:
+    var(--font-heading), "Poppins", var(--font-sans), system-ui, sans-serif;
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -93,7 +98,9 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
-  font-feature-settings: "rlig" 1, "calt" 1;
+  font-feature-settings:
+    "rlig" 1,
+    "calt" 1;
   text-rendering: optimizeLegibility;
 }
 
