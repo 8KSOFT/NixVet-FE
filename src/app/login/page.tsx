@@ -20,7 +20,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { getApiBaseUrl } from "@/lib/api-base";
 import { fetchPublicBranding } from "@/lib/branding";
-import { LogoCompactoDynamic } from "@/components/shared/LogoCompactoDynamic";
+import { LogoCompactoDynamic } from "@/components/shared/componentizedImages/LogoCompactoDynamic";
 import Image from "next/image";
 
 export default function LoginPage() {

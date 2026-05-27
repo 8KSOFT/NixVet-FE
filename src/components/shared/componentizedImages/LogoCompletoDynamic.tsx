@@ -3,9 +3,10 @@ import React from "react";
 interface logoProps {
   width: string;
   height: string;
+  className?: string;
 }
 
-export const LogoCompletoDynamic = ({ width, height }: logoProps) => {
+export const LogoCompletoDynamic = ({ width, height, className }: logoProps) => {
   return (
     <svg
       width={width}
@@ -14,7 +15,7 @@ export const LogoCompletoDynamic = ({ width, height }: logoProps) => {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       xmlnsXlink="http://www.w3.org/1999/xlink"
-      className="w-fit"
+      className={className || "w-fit"}
     >
       <rect width="214" height="70" fill="url(#pattern0_13_427)" />
       <defs>

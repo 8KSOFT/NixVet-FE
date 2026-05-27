@@ -1,51 +1,35 @@
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import {
-  Stethoscope,
-  Shield,
-  FileText,
-  Cloud,
-  LucideArrowRight,
-  DecimalsArrowRight,
-  ArrowRight,
-  MoveRight,
-  MoveRightIcon,
-  LucideMoveRight,
-} from "lucide-react";
-import Logo from "@/components/Logo";
-import { HeaderComponent } from "@/components/shared/HeaderComponent";
-import { LogoCompactoDynamic } from "@/components/shared/LogoCompactoDynamic";
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Stethoscope, Shield, FileText, ArrowRight } from 'lucide-react';
+import { HeaderComponent } from '@/components/shared/HeaderComponent';
+import { LogoCompactoDynamic } from '@/components/shared/componentizedImages/LogoCompactoDynamic';
+import { DogDynamic } from '@/components/shared/componentizedImages/DogDynamic';
+import { LogoCompletoDynamic } from '@/components/shared/componentizedImages/LogoCompletoDynamic';
+import type { LandingPageFeature } from '@/app/types/LandingPageFeature';
 
-const FEATURES = [
+const FEATURES: LandingPageFeature[] = [
   {
-    icon: Stethoscope,
-    iconBg: "bg-orange-50 text-blue-500",
-    title: "Gestão Clínica",
-    description:
-      "Prontuário completo com anamnese, histórico e exame físico. Tudo organizado por paciente e tutor.",
+    iconBackgroundClassName: 'bg-orange-50 text-blue-500',
+    title: 'Gestão Clínica',
+    description: 'Prontuário completo com anamnese, histórico e exame físico. Tudo organizado por paciente e tutor.',
   },
   {
-    icon: Shield,
-    iconBg: "bg-blue-50 text-blue-600",
-    title: "Segurança LGPD",
-    description:
-      "Dados sensíveis criptografados (AES-256), consentimento de tutores e logs de auditoria completos.",
+    iconBackgroundClassName: 'bg-blue-50 text-blue-600',
+    title: 'Segurança LGPD',
+    description: 'Dados sensíveis criptografados (AES-256), consentimento de tutores e logs de auditoria completos.',
   },
   {
-    icon: FileText,
-    iconBg: "bg-orange-50 text-blue-500",
-    title: "Docs Inteligentes",
-    description:
-      "Receitas e solicitações de exames em PDF com assinatura digital e envio automático por e-mail.",
+    iconBackgroundClassName: 'bg-orange-50 text-blue-500',
+    title: 'Docs Inteligentes',
+    description: 'Receitas e solicitações de exames em PDF com assinatura digital e envio automático por e-mail.',
   },
-  {
-    icon: Cloud,
-    iconBg: "bg-blue-50 text-blue-600",
-    title: "Arquitetura SaaS",
-    description:
-      "Multi-tenant, escalável e disponível 24/7. Seus dados seguros e acessíveis de qualquer lugar.",
-  },
+];
+
+const FEATURE_ANIMATION_DELAY_CLASS_NAMES = [
+  'motion-safe:[animation-delay:80ms]',
+  'motion-safe:[animation-delay:160ms]',
+  'motion-safe:[animation-delay:240ms]',
 ];
 
 export default function LandingPage() {
@@ -54,43 +38,41 @@ export default function LandingPage() {
       <main>
         <HeaderComponent width="80%" height="80%" />
         {/* Hero */}
-        <section className="relative h-screen overflow-hidden flex items-center justify-start bg-brand-deep">
-          <div className="absolute invert top-10 right-10 rotate-10 z-0 w-[120vw] h-[120vw] md:w-[70vw] md:h-[70vw] max-w-225 max-h-225 opacity-10 pointer-events-none select-none">
-            <LogoCompactoDynamic width="100%" height="80%" />
+        <section className="relative h-screen flex items-start justify-start bg-brand-deep">
+          <div className="absolute invert top-0 right-10 rotate-6 z-0 w-[120vw] h-[120vw] md:w-[70vw] md:h-[70vw] max-w-225 max-h-225 opacity-7 pointer-events-none select-none">
+            <div className="motion-safe:animate-[nix-float-slow_10s_ease-in-out_infinite] motion-safe:will-change-transform">
+              <LogoCompactoDynamic width="100%" height="80%" />
+            </div>
           </div>
-          <div className="relative w-[80%] z-10 mx-auto">
+          <div className="relative w-[80%] top-55 z-10 mx-auto">
             <div className="flex flex-col w-full items-start">
-              <h1 className="flex flex-col text-white mb-6 text-5xl md:text-7xl font-extrabold tracking-wide leading-thight">
+              <h1 className="flex flex-col text-white mb-6 text-5xl md:text-7xl font-extrabold tracking-wide leading-thight motion-safe:animate-[nix-fade-up_700ms_cubic-bezier(0.22,1,0.36,1)_both]">
                 Gestão <p>Veterinária</p>
                 <span className="text-white/65 bg-clip-text">
                   Profissional <p> e Segura</p>
                 </span>
               </h1>
-              <p className="text-[23px] text-white/95 tracking-normal mb-12 max-w-146">
-                Simplifique sua rotina clínica com o NixVetApp. Prontuários
-                eletrônicos, receitas digitais inteligentes e conformidade LGPD
-                em uma interface moderna.
+              <p className="text-[24px] text-white/95 tracking-normal mb-12 max-w-148 motion-safe:animate-[nix-fade-up_700ms_cubic-bezier(0.22,1,0.36,1)_both] motion-safe:[animation-delay:140ms]">
+                Simplifique sua rotina clínica com o NixVetApp. Prontuários eletrônicos, receitas digitais inteligentes
+                e conformidade LGPD em uma interface moderna.
               </p>
-              <div className="flex flex-col sm:flex-row justify-center gap-8">
+              <div className="flex flex-col sm:flex-row justify-center gap-8 motion-safe:animate-[nix-fade-up_700ms_cubic-bezier(0.22,1,0.36,1)_both] motion-safe:[animation-delay:260ms]">
                 <Button
                   asChild
                   size="lg"
-                  className="h-12 p-0 pl-5 pr-1 rounded-full text-sm font-bold text-brand-deep bg-white shadow-sm hover:bg-white/90 transition-colors"
+                  className="group h-13 p-0 pl-5 pr-1 text-[16px] rounded-full text-sm font-medium text-brand-deep bg-white shadow-sm hover:bg-white/90 transition-colors active:bg-white/80"
                 >
-                  <Link
-                    href="/login"
-                    className="flex items-center justify-between"
-                  >
+                  <Link href="/login" className="flex items-center justify-between">
                     <span>Começar Agora</span>
-                    <div className="flex items-center justify-center size-10 rounded-full bg-brand-deep text-white transition-colors group-hover:bg-green-700">
-                      <ArrowRight className="size-6" />
+                    <div className="flex items-center justify-center size-11 rounded-full bg-brand-deep text-white transition-colors group-hover:bg-green-700">
+                      <ArrowRight className="size-8" />
                     </div>
                   </Link>
                 </Button>
                 <Button
                   size="lg"
                   variant="outline"
-                  className="h-12 px-5 text-sm text-white bg-brand-deep-orange border-none rounded-full"
+                  className="h-13 px-5 text-[16px] text-white/90 bg-brand-deep-orange border-none rounded-full hover:text-white hover:bg-brand-deep-orange/90 transition-colors"
                 >
                   Agendar Demonstração
                 </Button>
@@ -99,97 +81,113 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* Features */}
-        <section className="py-24 px-6 md:px-12 max-w-7xl mx-auto">
-          <div className="text-center mb-20">
-            <h2 className="text-blue-600 text-3xl md:text-4xl font-bold">
-              Por que escolher o NixVetApp?
+        <section className="relative h-screen flex flex-col items-start justify-start bg-brand-deep">
+          <div className="absolute -top-30 right-20 z-10 w-200 pointer-events-none select-none">
+            <div className="motion-safe:animate-[nix-float-slow_9s_ease-in-out_infinite] motion-safe:will-change-transform">
+              <DogDynamic width="100%" height="100%" className="" />
+            </div>
+          </div>
+          {/* Quadro escuro com degradê vertical e bordas suavizadas/esmaecidas */}
+          <div className="absolute top-5 -left-70 w-[90%] h-200 rounded-[45px] bg-linear-to-b from-black/27 to-transparent blur-sm pointer-events-none" />
+          <div className="relative w-[50%] top-25 -left-20 z-10 mx-auto">
+            <h1 className="text-white text-[65px] font-bold leading-tight mb-6 motion-safe:animate-[nix-fade-up_700ms_cubic-bezier(0.22,1,0.36,1)_both]">
+              <span>Por que escolher</span>
+              <p>o NixVetApp?</p>
+            </h1>
+            <h2 className="relative text-white font-['InterDoFigma'] font-extralight text-[28px] motion-safe:animate-[nix-fade-up_700ms_cubic-bezier(0.22,1,0.36,1)_both] motion-safe:[animation-delay:140ms]">
+              <span>Tecnologia de ponta desenvolvida para</span>
+              <p>otimizar cada aspecto da sua clínica.</p>
             </h2>
-            <p className="text-gray-500 text-xl max-w-2xl mx-auto mt-4">
-              Tecnologia de ponta desenvolvida para otimizar cada aspecto da sua
-              clínica.
-            </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {FEATURES.map((feature) => {
-              const Icon = feature.icon;
-              return (
-                <Card
-                  key={feature.title}
-                  className="group h-full rounded-2xl border-gray-100 shadow-sm transition-colors duration-200 hover:border-primary/20 hover:shadow-md"
-                >
-                  <CardContent className="pt-6">
-                    <div
-                      className={`mb-6 flex h-16 w-16 items-center justify-center rounded-2xl ${feature.iconBg}`}
-                    >
-                      <Icon className="size-7" />
-                    </div>
-                    <h4 className="font-semibold text-base mb-3">
-                      {feature.title}
-                    </h4>
-                    <p className="text-gray-600 leading-relaxed text-sm">
-                      {feature.description}
-                    </p>
-                  </CardContent>
-                </Card>
-              );
-            })}
+          <div className="relative w-[80%] top-75 z-10 mx-auto">
+            <div className="flex items-center justify-center gap-8">
+              {FEATURES.map((feature, featureIndex) => {
+                const animationDelayClassName = FEATURE_ANIMATION_DELAY_CLASS_NAMES[featureIndex] ?? '';
+                return (
+                  <Card
+                    key={feature.title}
+                    className={`group w-96 h-65 rounded-2xl shadow-sm transition-all duration-300 hover:border-primary/20 hover:shadow-md hover:-translate-y-1 motion-safe:animate-[nix-fade-up_650ms_ease-out_both] ${animationDelayClassName}`}
+                  >
+                    <CardContent className="pt-6 flex flex-col gap-4">
+                      <h4 className="font-semibold text-[22px] text-brand-deep-dark mb-3">{feature.title}</h4>
+                      <p className="text-gray-500 leading-relaxed text-md">{feature.description}</p>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* CONTAINER DA BARRIGA CENTRALIZADA */}
+          <div className="absolute bottom-0 left-0 w-full pointer-events-none z-20 flex flex-col items-center transform translate-y-[99%]">
+            {/* 2. O SVG da barriguinha com transição suave (Cúbica) */}
+            <svg viewBox="0 0 500 150" preserveAspectRatio="none" className="w-[350px] h-[50px] block">
+              {/* Explicação do Path (D):
+      M 0,0     -> Começa no topo esquerdo.
+      C ...     -> Curva Cúbica com dois pontos de controle:
+                   - 125,0   : Mantém o início plano perto da linha reta (ombro esquerdo).
+                   - 125,150 : Direciona a descida para a profundidade máxima.
+                   - 250,150 : Chega ao centro exato da barriga (fundo).
+      S ...     -> Curva Cúbica espelhada automaticamente para subir:
+                   - 375,0   : Controla a suavidade da saída e o ombro direito.
+                   - 500,0   : Termina no topo direito.
+      Z         -> Fecha o path.
+    */}
+              <path d="M0,0 C125,0 125,150 250,150 S375,0 500,0 Z" className="fill-brand-deep" />
+            </svg>
           </div>
         </section>
 
         {/* CTA */}
-        <section className="py-20 px-6">
-          <div className="relative mx-auto max-w-5xl overflow-hidden rounded-3xl bg-linear-to-br from-[#0d7b94] to-[#0a5f72] p-12 text-center text-white shadow-lg md:p-20">
-            <div
-              className="pointer-events-none absolute inset-0 opacity-30"
-              style={{
-                background:
-                  "radial-gradient(circle at 90% 10%, rgba(255,255,255,0.15), transparent 45%)",
-              }}
-              aria-hidden
-            />
-
-            <h2 className="text-white mb-6 text-3xl md:text-5xl font-bold relative z-10">
-              Pronto para transformar sua clínica?
+        <section className="py-20 px-6 ">
+          <div className="relative flex flex-col items-center mx-auto max-w-5xl overflow-hiddenc p-12 text-center">
+            <h2 className="text-brand-deep mb-6 text-[68px] font-bold relative leading-tight motion-safe:animate-[nix-fade-up_700ms_cubic-bezier(0.22,1,0.36,1)_both]">
+              <span className="text-[#565656]">
+                Pronto para <span className="text-brand-deep">transformar</span>
+              </span>
+              <p className="text-[#565656]">sua clínica?</p>
             </h2>
-            <p className="mb-10 max-w-2xl mx-auto relative z-10 text-xl leading-relaxed text-white/90">
-              Junte-se a veterinários que já modernizaram seus atendimentos com
-              o NixVetApp.
+            <p className="mb-10 max-w-2xl mx-auto relative z-10 text-[28px] text-[#565656] motion-safe:animate-[nix-fade-up_700ms_cubic-bezier(0.22,1,0.36,1)_both] motion-safe:[animation-delay:160ms]">
+              Junte-se a veterinários que já modernizaram seus atendimentos com o NixVetApp.
             </p>
             <Button
               asChild
               size="lg"
               variant="secondary"
-              className="h-14 px-12 text-lg rounded-full shadow-lg relative z-10"
+              className="group w-60 p-0 pl-5 pr-2 rounded-full flex items-center justify-between text-[20px] text-brand-deep font-medium h-16 shadow-none bg-brand-deep/10 active:bg-brand-deep/30 hover:bg-brand-deep/25 border-none motion-safe:animate-[nix-fade-up_700ms_cubic-bezier(0.22,1,0.36,1)_both] motion-safe:[animation-delay:280ms]"
             >
-              <Link href="/login">Acessar Plataforma</Link>
+              <Link href="/login">
+                Começar agora
+                <div className="flex items-center justify-center size-12 rounded-full bg-brand-deep text-white transition-colors group-hover:bg-green-700">
+                  <ArrowRight className="size-8" />
+                </div>
+              </Link>
             </Button>
           </div>
         </section>
       </main>
 
-      <footer className="text-center bg-white text-gray-500 py-12 border-t border-gray-100">
+      <footer className="text-center bg-white text-gray-500 py-12 border-t-2 border-gray-200/80">
         <div className="mb-4">
-          <Logo
-            width={32}
-            height={32}
-            className="inline-block opacity-50 grayscale hover:grayscale-0 transition-all"
-          />
+          <LogoCompletoDynamic width="400px" height="" className="inline-block hover:opacity-80 transition-all" />
         </div>
-        <div className="flex flex-wrap justify-center gap-4 text-sm mb-3">
-          <Link href="/politicas-uso" className="text-blue-600 hover:underline">
+        <div className="flex flex-wrap justify-center gap-2 text-sm mb-3">
+          <Link
+            href="/politicas-uso"
+            className="text-[22px] text-brand-deep hover:text-brand-deep/80 transition-colors"
+          >
             Políticas de uso
           </Link>
-          <span className="text-gray-300">|</span>
+          <div className="w-0.5 h-7 bg-gray-600" />
           <Link
             href="/termos-servicos-aplicativo"
-            className="text-blue-600 hover:underline"
+            className="text-[22px] text-brand-deep hover:text-brand-deep/80 transition-colors"
           >
             Termos do aplicativo
           </Link>
         </div>
-        <p>
+        <p className="text-[22px] text-[#565656]">
           NixVetApp ©{new Date().getFullYear()} - Todos os direitos reservados.
         </p>
       </footer>
