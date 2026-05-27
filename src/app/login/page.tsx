@@ -20,7 +20,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { getApiBaseUrl } from "@/lib/api-base";
 import { fetchPublicBranding } from "@/lib/branding";
-import { LogoNixvetDynamic } from "@/components/shared/LogoNixvetDynamic/LogoNixvetDynamic";
+import { LogoNixvetDynamic } from "@/components/shared/LogoCompactoDynamic";
+import Image from "next/image";
 
 export default function LoginPage() {
   const { t: translation } = useTranslation("common");
@@ -125,7 +126,17 @@ export default function LoginPage() {
       </div>
 
       <div className="flex min-h-screen w-full">
-        <section className="relative flex w-[50%] shrink-0 flex-col justify-center bg-brand-deep px-8 py-14 text-white">
+        <section className="relative flex w-[50%] shrink-0 flex-col justify-center bg-brand-deep text-white">
+          <div className="p-0 m-0">
+            <Image
+              src="/images/logo/logo-bg.svg"
+              alt="Logo"
+              fill={true}
+              className="opacity-8 pb-28 invert"
+              // width={100}
+              // height={100}
+            />
+          </div>
           <div className="relative z-10 mx-auto flex items-start justify-between max-w-lg flex-col gap-2">
             <div className="mb-8">
               <div className="flex items-end justify-center gap-2">

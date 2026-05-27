@@ -252,17 +252,17 @@ export default function DashboardPage() {
     <div className="space-y-8">
       <h2 className="text-2xl font-heading font-semibold text-foreground">{t('dashboardHome.title')}</h2>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 border border-red-500">
         {statCards.map((card) => {
           const Icon = card.icon;
           const cardContent = (
             <Card
               className={cn(
-                'rounded-xl border border-border shadow-[var(--shadow-card)] transition-shadow',
+                'rounded-xl border border-black/20',
                 card.href && 'cursor-pointer hover:shadow-md',
               )}
             >
-              <CardContent className="p-5">
+              <CardContent className="p-1 h-full border border-green-500">
                 {loading ? (
                   <div className="space-y-3">
                     <Skeleton className="h-4 w-24" />
@@ -271,8 +271,8 @@ export default function DashboardPage() {
                 ) : (
                   <div className="flex items-start justify-between gap-3">
                     <div className="space-y-1">
-                      <p className="text-sm text-muted-foreground">{card.label}</p>
-                      <p className={cn('text-3xl font-bold', card.valueColor)}>{card.value}</p>
+                      <p className="text-sm text-black w-30">{card.label}</p>
+                      <p className={cn('text-3xl font-bold text-black')}>{card.value}</p>
                     </div>
                     <div className={cn('rounded-lg p-2.5', card.bg)}>
                       <Icon className={cn('h-5 w-5', card.color)} />
