@@ -80,8 +80,10 @@ export const HeaderComponent = ({ width, height }: HeaderComponentProps) => {
 
   const buttonClassName = useMemo(() => {
     const baseClassName =
-      'rounded-full shadow-none bg-brand-deep/20 active:bg-brand-deep/30 hover:bg-brand-deep/25 border-none transition-[height,padding] duration-300 ease-out';
-    return isHeaderCondensed ? `${baseClassName} min-h-0 h-8 px-4 bg-white/80` : `${baseClassName} h-16`;
+      'rounded-full shadow-none bg-brand-deep/20 active:bg-brand-deep/20 hover:bg-brand-deep/25 border-none transition-[height,padding] duration-300 ease-out';
+    return isHeaderCondensed
+      ? `${baseClassName} min-h-0 h-8 px-4 bg-white/80 hover:bg-white active:bg-white/80 hover:text-brand-deep-dark`
+      : `${baseClassName} h-16`;
   }, [isHeaderCondensed]);
 
   const buttonTextClassName = useMemo(() => {

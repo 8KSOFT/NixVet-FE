@@ -64,7 +64,7 @@ export default function LandingPage() {
                 >
                   <Link href="/login" className="flex items-center justify-between">
                     <span>Começar Agora</span>
-                    <div className="flex items-center justify-center size-11 rounded-full bg-brand-deep text-white transition-colors group-hover:bg-green-700">
+                    <div className="flex items-center justify-center size-11 rounded-full bg-brand-deep text-white transition-colors group-hover:bg-brand-deep-dark/80">
                       <ArrowRight className="size-8" />
                     </div>
                   </Link>
@@ -122,7 +122,7 @@ export default function LandingPage() {
           {/* CONTAINER DA BARRIGA CENTRALIZADA */}
           <div className="absolute bottom-0 left-0 w-full pointer-events-none z-20 flex flex-col items-center transform translate-y-[99%]">
             {/* 2. O SVG da barriguinha com transição suave (Cúbica) */}
-            <svg viewBox="0 0 500 150" preserveAspectRatio="none" className="w-[350px] h-[50px] block">
+            <svg viewBox="0 0 500 150" preserveAspectRatio="none" className="w-87.5 h-12.5 block">
               {/* Explicação do Path (D):
       M 0,0     -> Começa no topo esquerdo.
       C ...     -> Curva Cúbica com dois pontos de controle:
@@ -159,7 +159,7 @@ export default function LandingPage() {
             >
               <Link href="/login">
                 Começar agora
-                <div className="flex items-center justify-center size-12 rounded-full bg-brand-deep text-white transition-colors group-hover:bg-green-700">
+                <div className="flex items-center justify-center size-12 rounded-full bg-brand-deep text-white transition-colors group-hover:bg-brand-deep-dark/80">
                   <ArrowRight className="size-8" />
                 </div>
               </Link>
