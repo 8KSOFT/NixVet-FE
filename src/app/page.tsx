@@ -44,12 +44,12 @@ export default function LandingPage() {
       <HeaderComponent width="80%" height="80%" />
       {/* Hero */}
       <section className="relative flex h-screen items-start justify-start bg-brand-deep">
-        <div className="absolute invert top-35 -right-45 rotate-7 z-0 w-[80vw] max-w-225 min-w-125 opacity-7 pointer-events-none select-none md:w-[70vw] sm:w-[50vw] lg:top-10 md:top-20 sm:top-35 -lg:right-10 -md:right-10 -sm:right-10">
-          <div className="motion-safe:animate-[nix-float-slow_10s_ease-in-out_infinite] motion-safe:will-change-transform">
-            <LogoCompactoDynamic width={isMobile ? '70%' : '80%'} height={isMobile ? '70%' : '80%'} />
+        <div className="absolute top-10 -right-115 rotate-7 z-0 w-[80vw] max-w-225 min-w-185 opacity-7 pointer-events-none select-none md:w-[70vw] sm:w-[50vw] lg:top-10 md:top-10 sm:top-10 lg:-right-30 md:-right-30 sm:-right-30">
+          <div className="motion-safe:animate-[nix-float-slow_10s_ease-in-out_infinite] motion-safe:will-change-transform invert">
+            <LogoCompactoDynamic width={isMobile ? '50%' : '80%'} height={isMobile ? '50%' : '80%'} />
           </div>
         </div>
-        <div className="relative w-[90%] top-40 z-10 mx-auto lg:top-55 md:top-40 sm:top-40 lg:w-[80%]">
+        <div className="relative w-[90%] top-40 z-10 mx-auto lg:top-55 md:top-40 sm:top-40 lg:w-[80%] md:w-[80%] sm:w-[80%]">
           <div className="flex flex-col w-full items-start">
             <RevealOnScroll>
               <h1 className="flex flex-col text-white mb-6 text-5xl md:text-7xl font-extrabold tracking-wide leading-thight">

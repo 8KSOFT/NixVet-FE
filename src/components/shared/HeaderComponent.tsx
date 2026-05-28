@@ -60,7 +60,7 @@ export const HeaderComponent = ({ width, height }: HeaderComponentProps) => {
       return `${baseClassName} top-0 h-10 w-[100%] pl-2.5 pr-2 shadow-lg bg-white/70 rounded-none supports-backdrop-filter:bg-white/55`;
     }
 
-    return `${baseClassName} top-10 h-16 w-[95%] pl-4 pr-2.5 bg-white/95 supports-backdrop-filter:bg-white/90 lg:h-20 lg:top-17 lg:w-[80%] md:w-[80%] sm:w-[100%]`;
+    return `${baseClassName} top-10 h-16 w-[95%] pl-4 pr-2.5 bg-white/95 supports-backdrop-filter:bg-white/90 lg:h-20 lg:top-17 lg:w-[80%] md:w-[80%] sm:w-[80%]`;
   }, [isHeaderCondensed]);
 
   const logoSize = useMemo(() => {
