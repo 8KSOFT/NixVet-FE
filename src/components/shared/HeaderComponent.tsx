@@ -60,7 +60,7 @@ export const HeaderComponent = ({ width, height }: HeaderComponentProps) => {
       return `${baseClassName} top-0 h-10 w-[100%] pl-2.5 pr-2 shadow-lg bg-white/70 rounded-none supports-backdrop-filter:bg-white/55`;
     }
 
-    return `${baseClassName} top-17 h-20 w-[95%] pl-4 pr-2.5 bg-white/95 supports-backdrop-filter:bg-white/90 lg:w-[80%] md:w-[80%] sm:w-[100%]`;
+    return `${baseClassName} top-10 h-16 w-[95%] pl-4 pr-2.5 bg-white/95 supports-backdrop-filter:bg-white/90 lg:h-20 lg:top-17 lg:w-[80%] md:w-[80%] sm:w-[100%]`;
   }, [isHeaderCondensed]);
 
   const logoSize = useMemo(() => {
@@ -84,7 +84,7 @@ export const HeaderComponent = ({ width, height }: HeaderComponentProps) => {
       'rounded-full shadow-none bg-brand-deep/20 active:bg-brand-deep/20 hover:bg-brand-deep/25 border-none transition-[height,padding] duration-300 ease-out w-[100px] lg:w-[240px] md:w-[240px] sm:w-[80px]';
     return isHeaderCondensed
       ? `${baseClassName} min-h-0 h-8 px-4 bg-white/80 hover:bg-white active:bg-white/80 hover:text-brand-deep-dark`
-      : `${baseClassName} h-16`;
+      : `${baseClassName} h-13 lg:h-17`;
   }, [isHeaderCondensed]);
 
   const buttonTextClassName = useMemo(() => {
@@ -94,13 +94,15 @@ export const HeaderComponent = ({ width, height }: HeaderComponentProps) => {
 
   return (
     <header className={headerClassName}>
-      <div className={`${logoWrapperClassName} border border-red-500`}>
+      <div className={`${logoWrapperClassName}`}>
         <LogoCompletoDynamic width={logoSize.width} height={logoSize.height} />
       </div>
-      <div className="border border-red-500">
+      <div className="">
         <Button asChild size="lg" className={buttonClassName}>
           <Link href="/login">
-            <span className={buttonTextClassName}>Acessar <span className="hidden lg:inline-block md:inline-block sm:inline-block">Sistema</span></span>
+            <span className={buttonTextClassName}>
+              Acessar <span className="hidden lg:inline-block md:inline-block sm:inline-block">Sistema</span>
+            </span>
           </Link>
         </Button>
       </div>
