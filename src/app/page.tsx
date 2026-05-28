@@ -1,3 +1,5 @@
+'use client';
+
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -8,6 +10,7 @@ import { DogDynamic } from '@/components/shared/componentizedImages/DogDynamic';
 import { LogoCompletoDynamic } from '@/components/shared/componentizedImages/LogoCompletoDynamic';
 import type { LandingPageFeature } from '@/app/types/LandingPageFeature';
 import { RevealOnScroll } from '@/components/shared/RevealOnScroll';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const FEATURES: LandingPageFeature[] = [
   {
@@ -34,13 +37,15 @@ const FEATURE_ANIMATION_DELAY_CLASS_NAMES = [
 ];
 
 export default function LandingPage() {
+  const isMobile = useIsMobile();
+
   return (
     <div className="min-h-screen bg-white">
       <main>
         <HeaderComponent width="80%" height="80%" />
         {/* Hero */}
         <section className="relative h-screen flex items-start justify-start bg-brand-deep">
-          <div className="absolute invert top-0 right-10 rotate-6 z-0 w-[120vw] h-[120vw] md:w-[70vw] md:h-[70vw] max-w-225 max-h-225 opacity-7 pointer-events-none select-none">
+          <div className="absolute invert top-0 right-10 rotate-7 z-0 w-[120vw] h-[120vw] md:w-[100vw] md:h-[100vw] sm:w-[10vw] sm:h-[10vw] max-w-225 max-h-225 opacity-7 pointer-events-none select-none">
             <div className="motion-safe:animate-[nix-float-slow_10s_ease-in-out_infinite] motion-safe:will-change-transform">
               <LogoCompactoDynamic width="85%" height="80%" />
             </div>
@@ -56,7 +61,7 @@ export default function LandingPage() {
                 </h1>
               </RevealOnScroll>
               <RevealOnScroll delayClassName="motion-safe:[transition-delay:140ms]">
-                <p className="text-[24px] text-white/95 tracking-normal mb-12 max-w-148">
+                <p className="text-[16px] text-white/95 tracking-normal mb-12 max-w-148 lg:text-[24px] md:text-[24px] sm:text-[16px]">
                   Simplifique sua rotina clínica com o NixVetApp. Prontuários eletrônicos, receitas digitais
                   inteligentes e conformidade LGPD em uma interface moderna.
                 </p>
@@ -89,22 +94,22 @@ export default function LandingPage() {
         </section>
 
         <section className="relative h-screen flex flex-col items-start justify-start bg-brand-deep">
-          <div className="absolute -top-30 right-20 z-10 w-200 pointer-events-none select-none">
+          <div className="absolute -top-25 right-40 z-10 w-200 pointer-events-none select-none">
             <div className="motion-safe:animate-[nix-float-slow_9s_ease-in-out_infinite] motion-safe:will-change-transform">
-              <DogDynamic width="100%" height="100%" className="" />
+              <DogDynamic width={isMobile ? '50%' : '100%'} height={isMobile ? '50%' : '100%'} className="" />
             </div>
           </div>
           {/* Quadro escuro com degradê vertical e bordas suavizadas/esmaecidas */}
-          <div className="absolute top-5 -left-70 w-[90%] h-200 rounded-[45px] bg-linear-to-b from-black/27 to-transparent blur-sm pointer-events-none" />
-          <div className="relative w-[50%] top-25 -left-20 z-10 mx-auto">
+          <div className="absolute top-8 -left-90 w-[90%] h-200 rounded-[45px] bg-linear-to-b from-black/27 to-transparent blur-sm pointer-events-none" />
+          <div className="relative w-[80%] top-35 left-0 z-10 mx-auto lg:w-[50%] md:w-[60%] sm:w-[80%] lg:left-10 md:left-10 sm:left-10 border border-red-500">
             <RevealOnScroll>
-              <h1 className="text-white text-[65px] font-bold leading-tight mb-6">
+              <h1 className="text-white text-[32px] font-bold leading-tight mb-6 lg:text-[59.61px] md:text-[32px] sm:text-[32px] border border-blue-500">
                 <span>Por que escolher</span>
                 <p>o NixVetApp?</p>
               </h1>
             </RevealOnScroll>
             <RevealOnScroll delayClassName="motion-safe:[transition-delay:140ms]">
-              <h2 className="relative text-white font-['InterDoFigma'] font-extralight text-[28px]">
+              <h2 className="relative text-white font-['InterDoFigma'] font-extralight text-[25px]">
                 <span>Tecnologia de ponta desenvolvida para</span>
                 <p>otimizar cada aspecto da sua clínica.</p>
               </h2>
@@ -112,12 +117,12 @@ export default function LandingPage() {
           </div>
 
           <div className="relative w-[80%] top-75 z-10 mx-auto">
-            <div className="flex items-center justify-center gap-8">
+            <div className="flex flex-wrap items-center justify-center gap-8">
               {FEATURES.map((feature, featureIndex) => {
                 const transitionDelayClassName = FEATURE_ANIMATION_DELAY_CLASS_NAMES[featureIndex] ?? '';
                 return (
                   <RevealOnScroll key={feature.title} delayClassName={transitionDelayClassName}>
-                    <Card className="group w-96 h-65 rounded-2xl shadow-sm transition-all duration-300 hover:border-primary/20 hover:shadow-md hover:-translate-y-1">
+                    <Card className="group w-90 h-59.25 rounded-2xl shadow-sm transition-all duration-300 hover:border-primary/20 hover:shadow-md hover:-translate-y-1 sm:w-[200px] md:w-[300px] lg:w-90">
                       <CardContent className="pt-6 flex flex-col gap-4">
                         <h4 className="font-semibold text-[22px] text-brand-deep-dark mb-3">{feature.title}</h4>
                         <p className="text-gray-500 leading-relaxed text-md">{feature.description}</p>
@@ -186,7 +191,11 @@ export default function LandingPage() {
 
       <footer className="text-center bg-white text-gray-500 py-12 border-t-2 border-gray-200/80">
         <div className="mb-4">
-          <LogoCompletoDynamic width="400px" height="" className="inline-block hover:opacity-80 transition-all" />
+          <LogoCompletoDynamic
+            width={isMobile ? '200px' : '400px'}
+            height=""
+            className="inline-block hover:opacity-80 transition-all"
+          />
         </div>
         <div className="flex flex-wrap justify-center gap-2 text-sm mb-3">
           <Link

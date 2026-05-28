@@ -60,12 +60,12 @@ export const HeaderComponent = ({ width, height }: HeaderComponentProps) => {
       return `${baseClassName} top-0 h-10 w-[100%] pl-2.5 pr-2 shadow-lg bg-white/70 rounded-none supports-backdrop-filter:bg-white/55`;
     }
 
-    return `${baseClassName} top-17 h-20 w-[80%] pl-4 pr-2.5 bg-white/95 supports-backdrop-filter:bg-white/90`;
+    return `${baseClassName} top-17 h-20 w-[95%] pl-4 pr-2.5 bg-white/95 supports-backdrop-filter:bg-white/90 lg:w-[80%] md:w-[80%] sm:w-[100%]`;
   }, [isHeaderCondensed]);
 
   const logoSize = useMemo(() => {
     if (isHeaderCondensed) {
-      return { width: '165px', height: '38px' };
+      return { width: '110px', height: '38px' };
     }
     if (isPercentageSizing) {
       return { width: '260px', height: '56px' };
@@ -74,33 +74,36 @@ export const HeaderComponent = ({ width, height }: HeaderComponentProps) => {
   }, [height, isHeaderCondensed, isPercentageSizing, width]);
 
   const logoWrapperClassName = useMemo(() => {
-    const baseClassName = 'flex shrink-0 items-center origin-left transition-transform duration-300 ease-out';
+    const baseClassName =
+      'flex shrink-0 items-center origin-left transition-transform duration-300 ease-out w-[100px] lg:w-[300px] md:w-[300px] sm:w-[80px]';
     return isHeaderCondensed ? `${baseClassName} scale-95` : `${baseClassName} scale-100`;
   }, [isHeaderCondensed]);
 
   const buttonClassName = useMemo(() => {
     const baseClassName =
-      'rounded-full shadow-none bg-brand-deep/20 active:bg-brand-deep/20 hover:bg-brand-deep/25 border-none transition-[height,padding] duration-300 ease-out';
+      'rounded-full shadow-none bg-brand-deep/20 active:bg-brand-deep/20 hover:bg-brand-deep/25 border-none transition-[height,padding] duration-300 ease-out w-[100px] lg:w-[240px] md:w-[240px] sm:w-[80px]';
     return isHeaderCondensed
       ? `${baseClassName} min-h-0 h-8 px-4 bg-white/80 hover:bg-white active:bg-white/80 hover:text-brand-deep-dark`
       : `${baseClassName} h-16`;
   }, [isHeaderCondensed]);
 
   const buttonTextClassName = useMemo(() => {
-    const baseClassName = 'text-brand-deep font-bold';
+    const baseClassName = 'text-brand-deep font-bold text-[16px] lg:text-[20px] md:text-[20px] sm:text-[10px]';
     return isHeaderCondensed ? `${baseClassName} text-[12px]` : `${baseClassName} text-xl`;
   }, [isHeaderCondensed]);
 
   return (
     <header className={headerClassName}>
-      <div className={logoWrapperClassName}>
+      <div className={`${logoWrapperClassName} border border-red-500`}>
         <LogoCompletoDynamic width={logoSize.width} height={logoSize.height} />
       </div>
-      <Button asChild size="lg" className={buttonClassName}>
-        <Link href="/login">
-          <span className={buttonTextClassName}>Acessar Sistema</span>
-        </Link>
-      </Button>
+      <div className="border border-red-500">
+        <Button asChild size="lg" className={buttonClassName}>
+          <Link href="/login">
+            <span className={buttonTextClassName}>Acessar <span className="hidden lg:inline-block md:inline-block sm:inline-block">Sistema</span></span>
+          </Link>
+        </Button>
+      </div>
     </header>
   );
 };
