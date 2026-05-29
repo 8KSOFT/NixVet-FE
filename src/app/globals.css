@@ -11,6 +11,18 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@utility word-spacing-normal {
+  word-spacing: normal;
+}
+
+@utility word-spacing-wide {
+  word-spacing: 0.25rem; /* Ajuste o valor como quiser */
+}
+
+@utility word-spacing-widest {
+  word-spacing: 0.5rem; /* Perfeito para abrir a frase no layout pirâmide */
+}
+
 :root {
   --app-header-h: 4rem;
   --app-sidebar-w: 260px;
