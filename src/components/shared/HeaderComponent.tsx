@@ -60,7 +60,7 @@ export const HeaderComponent = ({ width, height }: HeaderComponentProps) => {
       return `${baseClassName} top-0 h-10 w-[100%] pl-2.5 pr-2 shadow-lg bg-white/70 rounded-none supports-backdrop-filter:bg-white/55`;
     }
 
-    return `${baseClassName} top-10 h-16 w-[90%] pl-4 pr-2.5 bg-white/95 supports-backdrop-filter:bg-white/90 lg:h-20 lg:top-17 lg:w-[80%] md:w-[80%] sm:w-[80%]`;
+    return `${baseClassName} top-10 h-16 w-[90%] pl-4 pr-2.5 bg-white/95 supports-backdrop-filter:bg-white/90 lg:h-20 lg:top-17 lg:w-[90%] md:w-[90%] sm:w-[90%]`;
   }, [isHeaderCondensed]);
 
   const logoSize = useMemo(() => {
@@ -75,20 +75,20 @@ export const HeaderComponent = ({ width, height }: HeaderComponentProps) => {
 
   const logoWrapperClassName = useMemo(() => {
     const baseClassName =
-      'flex shrink-0 items-center origin-left transition-transform duration-300 ease-out w-[100px] lg:w-[300px] md:w-[300px] sm:w-[80px]';
+      'flex shrink-0 items-center origin-left transition-transform duration-300 ease-out w-[100px] lg:w-[300px] md:w-[300px] sm:w-[200px]';
     return isHeaderCondensed ? `${baseClassName} scale-95` : `${baseClassName} scale-100`;
   }, [isHeaderCondensed]);
 
   const buttonClassName = useMemo(() => {
     const baseClassName =
-      'rounded-full shadow-none bg-brand-deep/20 active:bg-brand-deep/20 hover:bg-brand-deep/25 border-none transition-[height,padding] duration-300 ease-out w-[100px] lg:w-[240px] md:w-[240px] sm:w-[80px]';
+      'rounded-full shadow-none bg-brand-deep/20 active:bg-brand-deep/20 hover:bg-brand-deep/25 border-none transition-[height,padding] duration-300 ease-out w-[100px] lg:w-[240px] md:w-[240px] sm:w-[240px]';
     return isHeaderCondensed
       ? `${baseClassName} min-h-0 h-8 px-4 bg-white/80 hover:bg-white active:bg-white/80 hover:text-brand-deep-dark`
       : `${baseClassName} h-13 lg:h-17`;
   }, [isHeaderCondensed]);
 
   const buttonTextClassName = useMemo(() => {
-    const baseClassName = 'text-brand-deep font-bold text-[16px] lg:text-[20px] md:text-[20px] sm:text-[10px]';
+    const baseClassName = 'text-brand-deep font-bold text-[16px] lg:text-[18px] md:text-[18px] sm:text-[18px]';
     return isHeaderCondensed ? `${baseClassName} text-[12px]` : `${baseClassName} text-xl`;
   }, [isHeaderCondensed]);
 

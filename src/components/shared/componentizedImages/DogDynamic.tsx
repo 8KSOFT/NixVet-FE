@@ -9,13 +9,13 @@ export interface DogDynamicProps {
 export const DogDynamic = ({ width, height, className }: DogDynamicProps) => {
   return (
     <svg
-      width={width}
-      height={height}
-      viewBox="0 0 684 595"
-      fill="none"
       xmlns="http://www.w3.org/2000/svg"
       xmlnsXlink="http://www.w3.org/1999/xlink"
-      className={className || "w-fit"}
+      width={width}
+      height={height}
+      viewBox="55.674418604651166 0 445.3953488372093 515.6666666666666"
+      fill="none"
+      className={className}
     >
       <rect width="684" height="595" fill="url(#pattern0_5_242)" />
       <defs>

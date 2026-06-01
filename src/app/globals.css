@@ -29,7 +29,7 @@
   --app-sidebar-w-collapsed: 72px;
   /* NixVet — healthtech clínico */
   --brand-deep: #12b37f;
-  --brand-deep-dark: #09452D;
+  --brand-deep-dark: #09452d;
   --brand-deep-orange: #fb8a2e;
   --brand-green: #7fa48e;
   --brand-green-hover: #6d917f;
@@ -95,8 +95,8 @@
   --radius-md: 0.625rem;
   --radius-lg: 0.75rem;
   --radius-xl: 0.75rem;
-  --breakpoint-sm: 1024px;
-  --breakpoint-md: 1400px;
+  --breakpoint-sm: 958px;
+  --breakpoint-md: 1200px;
   --breakpoint-lg: 1724px; /* Garanta que o seguinte seja maior */
   --breakpoint-xl: 2280px;
   --font-sans: var(--font-sans), "Inter", system-ui, sans-serif;
