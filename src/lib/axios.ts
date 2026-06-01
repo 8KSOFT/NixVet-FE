@@ -10,12 +10,35 @@ function isPublicAuthRequest(config: { url?: string }) {
   return path.includes('auth/login') || path.includes('auth/register');
 }
 
+/** Lê um cookie pelo nome. Retorna null se não existir ou se não estiver no browser. */
+function getCookie(name: string): string | null {
+  if (typeof document === 'undefined') return null;
+  const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+/**
+ * Persiste tenantId em cookie para que novas abas no mesmo subdomínio
+ * herdem o contexto sem depender exclusivamente do localStorage.
+ * Chamado após login bem-sucedido (ver login/page.tsx).
+ */
+export function setTenantCookie(tenantId: string) {
+  const secure = location.protocol === 'https:' ? '; Secure' : '';
+  document.cookie = `nixvet_tenant_id=${encodeURIComponent(tenantId)}; max-age=86400; path=/${secure}; SameSite=Lax`;
+}
+
+/** Remove o cookie de tenant (logout). */
+export function clearTenantCookie() {
+  document.cookie = 'nixvet_tenant_id=; max-age=0; path=/';
+}
+
 api.interceptors.request.use((config) => {
   if (typeof window !== 'undefined') {
     // Login não deve enviar tenant/token antigos: o middleware usaria outro tenant e o login falha.
     if (!isPublicAuthRequest(config)) {
       const token = localStorage.getItem('accessToken');
-      const tenantId = localStorage.getItem('tenantId');
+      // Lê tenantId do localStorage; se ausente (ex: localStorage limpo mas cookie presente), usa cookie.
+      const tenantId = localStorage.getItem('tenantId') ?? getCookie('nixvet_tenant_id');
 
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
@@ -49,6 +72,7 @@ api.interceptors.response.use(
       localStorage.removeItem('tenantId');
       localStorage.removeItem('tenantCode');
       localStorage.removeItem('user');
+      clearTenantCookie();
       window.location.href = '/login';
     }
     return Promise.reject(error);
