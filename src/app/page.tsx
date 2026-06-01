@@ -108,7 +108,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="relative h-[160vh] min-h-375 flex flex-col items-start justify-start bg-brand-deep sm:h-fit sm:min-h-250">
+      <section className="relative h-fit min-h-375 flex flex-col items-start justify-start bg-brand-deep sm:h-fit sm:min-h-250">
         {/* Quadro escuro com degradê vertical e bordas suavizadas/esmaecidas */}
         <div className="absolute top-10 right-10 w-full h-200 rounded-r-[45px] bg-linear-to-b from-black/25 via-black/5 to-transparent blur-sm pointer-events-none lg:top-15 md:top-5 sm:-top-5 lg:h-screen sm:right-[30%]" />
 
