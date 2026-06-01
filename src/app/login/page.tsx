@@ -20,6 +20,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { getApiBaseUrl } from "@/lib/api-base";
 import { fetchPublicBranding } from "@/lib/branding";
+import { setTenantCookie } from "@/lib/axios";
 import { LogoNixvetDynamic } from "@/components/shared/LogoNixvetDynamic/LogoNixvetDynamic";
 
 export default function LoginPage() {
@@ -33,14 +34,31 @@ export default function LoginPage() {
   const [brandName, setBrandName] = useState("");
   const [brandLogo, setBrandLogo] = useState<string | null>(null);
   const [defaultTenantCode, setDefaultTenantCode] = useState<string | null>(null);
+  const [tenantLocked, setTenantLocked] = useState(false);
   const [brandingLoading, setBrandingLoading] = useState(true);
 
   useEffect(() => {
+    // Leitura antecipada do cookie nixvet_subdomain (setado pelo middleware)
+    // para pré-preencher o campo antes mesmo do branding carregar.
+    const cookieSubdomain = document.cookie
+      .split('; ')
+      .find((c) => c.startsWith('nixvet_subdomain='))
+      ?.split('=')[1];
+    if (cookieSubdomain) {
+      setTenantCode(decodeURIComponent(cookieSubdomain));
+    }
+
     fetchPublicBranding()
       .then((branding) => {
         setBrandName(branding.appName || "NixVetApp");
         setBrandLogo(branding.logoUrl);
         setDefaultTenantCode(branding.tenantCode);
+        // Se o branding retornou um tenantCode (via subdomínio), pré-preenche
+        // o campo e bloqueia edição — o usuário já está no contexto da clínica.
+        if (branding.tenantCode) {
+          setTenantCode(branding.tenantCode);
+          setTenantLocked(true);
+        }
       })
       .finally(() => setBrandingLoading(false));
   }, []);
@@ -103,6 +121,7 @@ export default function LoginPage() {
       localStorage.setItem("tenantId", user.tenant_id);
       localStorage.setItem("tenantCode", code);
       localStorage.setItem("user", JSON.stringify(user));
+      setTenantCookie(user.tenant_id);
 
       toast.success(translation("auth.welcome", { name: user.name }));
       router.push("/dashboard");
@@ -184,12 +203,13 @@ export default function LoginPage() {
                     <Input
                       id="tenantCode"
                       name="tenantCode"
-                      className="pl-5 shadow-none"
+                      className={`pl-5 shadow-none${tenantLocked ? " bg-muted text-muted-foreground cursor-not-allowed" : ""}`}
                       placeholder={translation("auth.tenantCodePlaceholder")}
                       value={tenantCode}
                       onChange={(e) =>
-                        setTenantCode(e.target.value.toLowerCase())
+                        !tenantLocked && setTenantCode(e.target.value.toLowerCase())
                       }
+                      readOnly={tenantLocked}
                       autoComplete="organization"
                     />
                   </div>
