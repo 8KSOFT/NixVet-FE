@@ -81,7 +81,7 @@ export default function LoginPage() {
     const subdomain = detectSubdomainClient();
     const code = (
       tenantCode.trim() ||
-      (subdomain ? defaultTenantCode?.trim() : "")
+      (subdomain ? (defaultTenantCode?.trim() ?? "") : "")
     ).toLowerCase();
 
     if (!code) {
