@@ -20,14 +20,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { getApiBaseUrl } from "@/lib/api-base";
 import { fetchPublicBranding } from "@/lib/branding";
-<<<<<<< HEAD
 import { setTenantCookie } from "@/lib/axios";
 import { detectSubdomainClient } from "@/lib/subdomain";
-import { LogoNixvetDynamic } from "@/components/shared/LogoNixvetDynamic/LogoNixvetDynamic";
-=======
 import { LogoCompactoDynamic } from "@/components/shared/componentizedImages/LogoCompactoDynamic";
 import Image from "next/image";
->>>>>>> 6af57360a284187c4ea4f4cebff616addfaa4484
 
 export default function LoginPage() {
   const { t: translation } = useTranslation("common");
@@ -39,14 +35,8 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [brandName, setBrandName] = useState("");
   const [brandLogo, setBrandLogo] = useState<string | null>(null);
-<<<<<<< HEAD
   const [defaultTenantCode, setDefaultTenantCode] = useState<string | null>(null);
   const [tenantLocked, setTenantLocked] = useState(false);
-=======
-  const [defaultTenantCode, setDefaultTenantCode] = useState<string | null>(
-    null,
-  );
->>>>>>> 6af57360a284187c4ea4f4cebff616addfaa4484
   const [brandingLoading, setBrandingLoading] = useState(true);
 
   useEffect(() => {
