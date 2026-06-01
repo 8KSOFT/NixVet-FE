@@ -1,11 +1,29 @@
+import React from 'react';
+
 interface logoProps {
   width: string;
   height: string;
+  primaryColor?: string; // Cor principal (antigo 'white')
+  secondaryColor?: string; // Cor dos detalhes (antigo '#F7F7F7')
+  className?: string; // 1. Adicionado aqui como opcional
 }
 
-export function LogoNixvetDynamic({ width, height }: logoProps) {
+export function LogoCompactoDynamic({
+  width,
+  height,
+  primaryColor = 'white',
+  secondaryColor = '#F7F7F7',
+  className, // 2. Desestruturado aqui
+}: logoProps) {
   return (
-    <svg width={width} height={height} viewBox="0 0 43 42" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <svg
+      width={width}
+      height={height}
+      viewBox="0 0 43 42"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+    >
       <path
         d="M21.4696 29.0008C18.0412 29.0008 15.2635 26.2232 15.2635 22.7948C15.2635 13.7138 20.1747 5.287 28.0816 0.808584C31.0638 -0.882146 34.8512 0.164496 36.5419 3.14676C38.2326 6.12902 37.186 9.91638 34.2037 11.6071C30.1782 13.8883 27.679 18.1755 27.679 22.7948C27.679 26.2232 24.9014 29.0008 21.473 29.0008H21.4696Z"
         fill="white"

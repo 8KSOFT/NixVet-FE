@@ -20,9 +20,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { getApiBaseUrl } from "@/lib/api-base";
 import { fetchPublicBranding } from "@/lib/branding";
+<<<<<<< HEAD
 import { setTenantCookie } from "@/lib/axios";
 import { detectSubdomainClient } from "@/lib/subdomain";
 import { LogoNixvetDynamic } from "@/components/shared/LogoNixvetDynamic/LogoNixvetDynamic";
+=======
+import { LogoCompactoDynamic } from "@/components/shared/componentizedImages/LogoCompactoDynamic";
+import Image from "next/image";
+>>>>>>> 6af57360a284187c4ea4f4cebff616addfaa4484
 
 export default function LoginPage() {
   const { t: translation } = useTranslation("common");
@@ -34,8 +39,14 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [brandName, setBrandName] = useState("");
   const [brandLogo, setBrandLogo] = useState<string | null>(null);
+<<<<<<< HEAD
   const [defaultTenantCode, setDefaultTenantCode] = useState<string | null>(null);
   const [tenantLocked, setTenantLocked] = useState(false);
+=======
+  const [defaultTenantCode, setDefaultTenantCode] = useState<string | null>(
+    null,
+  );
+>>>>>>> 6af57360a284187c4ea4f4cebff616addfaa4484
   const [brandingLoading, setBrandingLoading] = useState(true);
 
   useEffect(() => {
@@ -148,7 +159,17 @@ export default function LoginPage() {
       </div>
 
       <div className="flex min-h-screen w-full">
-        <section className="relative flex w-[50%] shrink-0 flex-col justify-center bg-brand-deep px-8 py-14 text-white">
+        <section className="relative flex w-[50%] shrink-0 flex-col justify-center bg-brand-deep text-white">
+          <div className="p-0 m-0">
+            <Image
+              src="/images/logo/logo-bg.svg"
+              alt="Logo"
+              fill={true}
+              className="opacity-8 pb-28 invert"
+              // width={100}
+              // height={100}
+            />
+          </div>
           <div className="relative z-10 mx-auto flex items-start justify-between max-w-lg flex-col gap-2">
             <div className="mb-8">
               <div className="flex items-end justify-center gap-2">
@@ -161,7 +182,7 @@ export default function LoginPage() {
                   </div>
                 ) : (
                   <div className="flex items-end gap-2">
-                    <LogoNixvetDynamic width="41" height="41" />
+                    <LogoCompactoDynamic width="41" height="41" />
                     <h1 className="font-heading leading-7 text-2xl tracking-tight scale-y-85 sm:text-[32px]">
                       <span className="text-white">
                         {brandName.substring(0, 6)}
@@ -276,7 +297,10 @@ export default function LoginPage() {
 
               <p className="mt-8 text-center text-sm text-muted-foreground w-full">
                 Não tem conta?{" "}
-                <a href="/register" className="font-semibold text-primary hover:underline">
+                <a
+                  href="/register"
+                  className="font-semibold text-primary hover:underline"
+                >
                   Comece grátis por 14 dias
                 </a>
               </p>
