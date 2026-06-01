@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { detectSubdomainFromHost } from '@/lib/subdomain';
 
 const ROOT_DOMAIN = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'nixvetapp.com.br';
 
@@ -8,16 +9,9 @@ const ROOT_DOMAIN = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'nixvetapp.com.br';
  * Não faz chamada ao backend — zero latência adicionada.
  */
 export function middleware(request: NextRequest) {
-  const host = (request.headers.get('host') || '').split(':')[0];
-
-  const subdomain = host.endsWith(`.${ROOT_DOMAIN}`)
-    ? host.slice(0, -(ROOT_DOMAIN.length + 1))
-    : null;
-
-  const isValidSubdomain =
-    subdomain !== null &&
-    subdomain.length > 0 &&
-    !['www', 'app', 'api'].includes(subdomain);
+  const host = request.headers.get('host') || '';
+  const subdomain = detectSubdomainFromHost(host, ROOT_DOMAIN);
+  const isValidSubdomain = subdomain !== null;
 
   const response = NextResponse.next();
 

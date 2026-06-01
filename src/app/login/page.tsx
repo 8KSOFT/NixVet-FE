@@ -21,6 +21,7 @@ import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { getApiBaseUrl } from "@/lib/api-base";
 import { fetchPublicBranding } from "@/lib/branding";
 import { setTenantCookie } from "@/lib/axios";
+import { detectSubdomainClient } from "@/lib/subdomain";
 import { LogoNixvetDynamic } from "@/components/shared/LogoNixvetDynamic/LogoNixvetDynamic";
 
 export default function LoginPage() {
@@ -38,14 +39,14 @@ export default function LoginPage() {
   const [brandingLoading, setBrandingLoading] = useState(true);
 
   useEffect(() => {
-    // Leitura antecipada do cookie nixvet_subdomain (setado pelo middleware)
-    // para pré-preencher o campo antes mesmo do branding carregar.
-    const cookieSubdomain = document.cookie
-      .split('; ')
-      .find((c) => c.startsWith('nixvet_subdomain='))
-      ?.split('=')[1];
-    if (cookieSubdomain) {
-      setTenantCode(decodeURIComponent(cookieSubdomain));
+    const subdomain = detectSubdomainClient();
+
+    if (subdomain) {
+      setTenantCode(subdomain);
+      setTenantLocked(true);
+    } else {
+      setTenantCode("");
+      setTenantLocked(false);
     }
 
     fetchPublicBranding()
@@ -53,10 +54,10 @@ export default function LoginPage() {
         setBrandName(branding.appName || "NixVetApp");
         setBrandLogo(branding.logoUrl);
         setDefaultTenantCode(branding.tenantCode);
-        // Se o branding retornou um tenantCode (via subdomínio), pré-preenche
-        // o campo e bloqueia edição — o usuário já está no contexto da clínica.
-        if (branding.tenantCode) {
-          setTenantCode(branding.tenantCode);
+
+        // Só pré-preenche e bloqueia quando o subdomínio foi detectado no host.
+        if (subdomain) {
+          setTenantCode(branding.tenantCode || subdomain);
           setTenantLocked(true);
         }
       })
@@ -76,11 +77,16 @@ export default function LoginPage() {
 
     setLoading(true);
 
+    const subdomain = detectSubdomainClient();
     const code = (
       tenantCode.trim() ||
-      defaultTenantCode?.trim() ||
-      "nixvet"
+      (subdomain ? defaultTenantCode?.trim() : "")
     ).toLowerCase();
+
+    if (!code) {
+      toast.error("Informe o código da clínica.");
+      return;
+    }
     const apiBase = getApiBaseUrl();
     const url = `${apiBase}/auth/login`;
 
@@ -210,6 +216,7 @@ export default function LoginPage() {
                         !tenantLocked && setTenantCode(e.target.value.toLowerCase())
                       }
                       readOnly={tenantLocked}
+                      required={!tenantLocked}
                       autoComplete="organization"
                     />
                   </div>
