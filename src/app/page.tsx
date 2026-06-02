@@ -7,11 +7,11 @@ import { ArrowRight } from "lucide-react";
 import { HeaderComponent } from "@/components/shared/HeaderComponent";
 import { LogoCompactoDynamic } from "@/components/shared/componentizedImages/LogoCompactoDynamic";
 import { DogDynamic } from "@/components/shared/componentizedImages/DogDynamic";
-import { LogoCompletoDynamic } from "@/components/shared/componentizedImages/LogoCompletoDynamic";
 import type { LandingPageFeature } from "@/app/types/LandingPageFeature";
 import { RevealOnScroll } from "@/components/shared/RevealOnScroll";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { DogbackDynamic } from "@/components/shared/componentizedImages/DogbackDynamic";
+import { LogoColored } from "@/components/shared/componentizedImages/LogoColored";
 
 const FEATURES: LandingPageFeature[] = [
   {
@@ -61,7 +61,7 @@ export default function LandingPage() {
         <div className="relative flex flex-col justify-between h-[calc(100%-200px)] w-[90%] top-40 z-10 mx-auto lg:top-55 md:top-40 sm:top-40 lg:w-[80%] md:w-[80%] sm:w-[80%] lg:h-fit lg:justify-start md:justify-start sm:justify-start">
           <div>
             <RevealOnScroll>
-              <h1 className="flex flex-col text-white mb-6 text-5xl md:text-7xl sm:text-6xl font-extrabold tracking-wide leading-thight">
+              <h1 className="flex flex-col font-black font-['InterDoFigma'] text-white mb-6 text-5xl md:text-7xl sm:text-6xl tracking-wide leading-thight">
                 Gestão <p>Veterinária</p>
                 <span className="text-white/65 bg-clip-text">
                   Profissional <p> e Segura</p>
@@ -80,17 +80,16 @@ export default function LandingPage() {
             delayClassName="motion-safe:[transition-delay:260ms]"
             className="w-full flex flex-col items-center lg:flex lg:items-start md:flex md:items-start sm:flex sm:items-start"
           >
-            <div className="flex flex-col sm:flex-row justify-center gap-4 lg:gap-6">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 lg:gap-6">
               <Button
-                asChild
                 size="lg"
-                className="group w-60 h-13 p-0 pl-5 pr-1 text-[16px] rounded-full text-sm font-medium text-brand-deep bg-white shadow-sm hover:bg-white/90 transition-colors active:bg-white/80"
+                className="group w-60 h-13 p-0 pl-5 text-[16px] rounded-full text-sm font-medium text-brand-deep bg-white shadow-sm hover:bg-white/90 transition-colors active:bg-white/80 sm:w-45"
               >
                 <Link
                   href="/login"
-                  className="flex items-center justify-between"
+                  className="flex w-full items-center justify-between pr-1"
                 >
-                  <span>Começar Agora</span>
+                  <span className="pl-8 sm:pl-0">Começar Agora</span>
                   <div className="flex items-center justify-center size-11 rounded-full bg-brand-deep text-white transition-colors group-hover:bg-brand-deep-dark/80">
                     <ArrowRight className="size-8" />
                   </div>
@@ -99,7 +98,7 @@ export default function LandingPage() {
               <Button
                 size="lg"
                 variant="outline"
-                className="h-13 px-5 text-[16px] text-white/90 bg-brand-deep-orange border-none rounded-full hover:text-white hover:bg-brand-deep-orange/90 transition-colors"
+                className="h-13 w-60 px-5 text-[16px] text-white/90 bg-brand-deep-orange border-none rounded-full hover:text-white hover:bg-brand-deep-orange/90 transition-colors"
               >
                 Agendar Demonstração
               </Button>
@@ -207,10 +206,21 @@ export default function LandingPage() {
         <div className="relative flex flex-col items-center mx-auto max-w-5xl overflow-hiddenc px-2 py-12 text-center lg:p-12">
           <RevealOnScroll>
             <h2 className="text-brand-deep mb-6 text-[32px] font-['InterDoFigma'] font-black relative word-spacing-wide leading-tight lg:text-[68px] md:text-[42px] sm:text-[32px] ">
-              <span className="text-[#565656]">
-                Pronto para <span className="text-brand-deep">transformar</span>
-              </span>
-              <p className="text-[#565656]">sua clínica?</p>
+              {isMobile ? (
+                <div>
+                  <p className="text-[#565656]">Pronto para </p>
+                  <p className="text-brand-deep">transformar</p>
+                  <p className="text-[#565656]">sua clínica?</p>
+                </div>
+              ) : (
+                <div>
+                  <span className="text-[#565656]">
+                    Pronto para{" "}
+                    <span className="text-brand-deep">transformar</span>
+                  </span>
+                  <p className="text-[#565656]">sua clínica?</p>
+                </div>
+              )}
             </h2>
           </RevealOnScroll>
           <RevealOnScroll delayClassName="motion-safe:[transition-delay:160ms]">
@@ -245,9 +255,9 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <footer className="text-center bg-white text-gray-500 py-12 border-t-2 border-gray-200/80">
+      <footer className="flex flex-col items-center justify-center text-center bg-white text-gray-500 border-t-2 border-gray-200/80 py-18">
         <div className="mb-4">
-          <LogoCompletoDynamic
+          <LogoColored
             width={isMobile ? "200px" : "400px"}
             height=""
             className="inline-block hover:opacity-80 transition-all"

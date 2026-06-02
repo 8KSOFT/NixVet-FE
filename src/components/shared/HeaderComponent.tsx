@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { LogoCompletoDynamic } from '@/components/shared/componentizedImages/LogoCompletoDynamic';
 import type { HeaderComponentProps } from '@/app/interfaces/HeaderComponentProps';
+import { LogoColored } from './componentizedImages/LogoColored';
 
 export const HeaderComponent = ({ width, height }: HeaderComponentProps) => {
   const [isHeaderCondensed, setIsHeaderCondensed] = useState(false);
@@ -75,7 +76,7 @@ export const HeaderComponent = ({ width, height }: HeaderComponentProps) => {
 
   const logoWrapperClassName = useMemo(() => {
     const baseClassName =
-      'flex shrink-0 items-center origin-left transition-transform duration-300 ease-out w-[100px] lg:w-[300px] md:w-[300px] sm:w-[200px]';
+      'flex shrink-0 ml-5 items-center origin-left transition-transform duration-300 ease-out w-[100px] lg:w-[300px] md:w-[300px] sm:w-[200px]';
     return isHeaderCondensed ? `${baseClassName} scale-95` : `${baseClassName} scale-100`;
   }, [isHeaderCondensed]);
 
@@ -95,7 +96,7 @@ export const HeaderComponent = ({ width, height }: HeaderComponentProps) => {
   return (
     <header className={headerClassName}>
       <div className={`${logoWrapperClassName}`}>
-        <LogoCompletoDynamic width={logoSize.width} height={logoSize.height} />
+        <LogoColored width={logoSize.width} height={logoSize.height} />
       </div>
       <div className="">
         <Button asChild size="lg" className={buttonClassName}>
