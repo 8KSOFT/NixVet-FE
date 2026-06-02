@@ -78,13 +78,13 @@ export default function LandingPage() {
           </div>
           <RevealOnScroll
             delayClassName="motion-safe:[transition-delay:260ms]"
-            className="w-full lg:flex lg:items-start md:flex md:items-start sm:flex sm:items-start"
+            className="w-full flex flex-col items-center lg:flex lg:items-start md:flex md:items-start sm:flex sm:items-start"
           >
             <div className="flex flex-col sm:flex-row justify-center gap-4 lg:gap-6">
               <Button
                 asChild
                 size="lg"
-                className="group h-13 p-0 pl-5 pr-1 text-[16px] rounded-full text-sm font-medium text-brand-deep bg-white shadow-sm hover:bg-white/90 transition-colors active:bg-white/80"
+                className="group w-60 h-13 p-0 pl-5 pr-1 text-[16px] rounded-full text-sm font-medium text-brand-deep bg-white shadow-sm hover:bg-white/90 transition-colors active:bg-white/80"
               >
                 <Link
                   href="/login"
@@ -127,10 +127,8 @@ export default function LandingPage() {
               {isTinyScreen ? (
                 <h2 className="text-white font-['InterDoFigma'] font-extralight text-[22px]">
                   <span>Tecnologia de ponta</span>
-                  <p> desenvolvida para</p>
-                  <p>otimizar cada</p>
-                  <p>aspecto da</p>
-                  <p>sua clínica</p>
+                  <p> desenvolvida para otimizar</p>
+                  <p>cada aspecto da sua clínica</p>
                 </h2>
               ) : (
                 <h2 className="text-white font-['InterDoFigma'] font-extralight text-[25px] lg:text-[25px] md:text-[20px] sm:text-[18px]">
@@ -162,7 +160,7 @@ export default function LandingPage() {
         </div>
 
         {/* Bloco Inferior: Grid de Cards (Substitui o top-100 por gap natural da section) */}
-        <div className="relative z-10 w-[90%] sm:w-[85%]">
+        <div className="relative z-10 w-full sm:w-[85%] px-[20px]">
           <div className="flex flex-wrap items-center justify-center gap-6 md:gap-8">
             {FEATURES.map((feature, featureIndex) => {
               const transitionDelayClassName =
@@ -171,8 +169,9 @@ export default function LandingPage() {
                 <RevealOnScroll
                   key={feature.title}
                   delayClassName={transitionDelayClassName}
+                  className=""
                 >
-                  <Card className="group w-80 min-h-54 h-fit rounded-2xl shadow-sm transition-all duration-300 hover:border-primary/20 hover:shadow-md hover:-translate-y-1 lg:w-90 md:w-75 sm:w-75">
+                  <Card className="group w-full min-h-54 h-fit rounded-2xl shadow-sm transition-all duration-300 hover:border-primary/20 hover:shadow-md hover:-translate-y-1 lg:w-90 md:w-75 sm:w-75 min-[500px]:w-75">
                     <CardContent className="p-6 flex flex-col gap-4">
                       <h4 className="font-semibold text-[22px] text-brand-deep-dark mb-1">
                         {feature.title}
@@ -207,7 +206,7 @@ export default function LandingPage() {
       <section className="py-20 px-0 lg:px-6">
         <div className="relative flex flex-col items-center mx-auto max-w-5xl overflow-hiddenc px-2 py-12 text-center lg:p-12">
           <RevealOnScroll>
-            <h2 className="text-brand-deep mb-6 text-[32px] font-bold relative word-spacing-wide leading-tight lg:text-[68px] md:text-[42px] sm:text-[32px] ">
+            <h2 className="text-brand-deep mb-6 text-[32px] font-['InterDoFigma'] font-black relative word-spacing-wide leading-tight lg:text-[68px] md:text-[42px] sm:text-[32px] ">
               <span className="text-[#565656]">
                 Pronto para <span className="text-brand-deep">transformar</span>
               </span>
@@ -215,10 +214,18 @@ export default function LandingPage() {
             </h2>
           </RevealOnScroll>
           <RevealOnScroll delayClassName="motion-safe:[transition-delay:160ms]">
-            <p className="mb-10 max-w-2xl mx-auto relative z-10 text-[18px] text-[#565656] lg:text-[28px] md:text-[28px] sm:text-[18px]">
-              Junte-se a veterinários que já modernizaram seus atendimentos com
-              o NixVetApp.
-            </p>
+            {isMobile ? (
+              <p className="mb-10 max-w-2xl mx-auto relative z-10 text-[18px] text-[#565656] lg:text-[28px] md:text-[28px] sm:text-[18px]">
+                <span>Junte-se a veterinários que já</span>
+                <p>modernizaram seus atendimentos</p>
+                <p>com o NixVetApp.</p>
+              </p>
+            ) : (
+              <p className="mb-10 max-w-2xl mx-auto relative z-10 text-[18px] text-[#565656] lg:text-[28px] md:text-[28px] sm:text-[18px]">
+                Junte-se a veterinários que já modernizaram seus atendimentos
+                com o NixVetApp.
+              </p>
+            )}
           </RevealOnScroll>
           <RevealOnScroll delayClassName="motion-safe:[transition-delay:280ms]">
             <Button
