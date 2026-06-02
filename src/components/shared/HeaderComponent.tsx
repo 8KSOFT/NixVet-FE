@@ -76,8 +76,8 @@ export const HeaderComponent = ({ width, height }: HeaderComponentProps) => {
 
   const logoWrapperClassName = useMemo(() => {
     const baseClassName =
-      'flex shrink-0 ml-5 items-center origin-left transition-transform duration-300 ease-out w-[100px] lg:w-[300px] md:w-[300px] sm:w-[200px]';
-    return isHeaderCondensed ? `${baseClassName} scale-95` : `${baseClassName} scale-100`;
+      'flex shrink-0 ml-2 items-center origin-left transition-transform duration-300 ease-out w-[170px] lg:w-[300px] md:w-[240px] sm:w-[240px]';
+    return isHeaderCondensed ? `${baseClassName} scale-130` : `${baseClassName} scale-100`;
   }, [isHeaderCondensed]);
 
   const buttonClassName = useMemo(() => {
