@@ -93,7 +93,7 @@
     "cardTitle": "Acesse sua conta",
     "subtitle": "Sistema de Gestão Veterinária",
     "tenantCodeLabel": "Código da Clínica (Ex: NIXVET)",
-    "tenantCodePlaceholder": "Código da Clínica (Ex: NIXVET)",
+    "tenantCodePlaceholder": "Código da Clínica",
     "emailLabel": "Email",
     "emailPlaceholder": "Email",
     "emailRequired": "Por favor insira seu email!",

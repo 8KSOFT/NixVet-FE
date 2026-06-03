@@ -4,18 +4,9 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import {
-  Building2,
-  Mail,
-  Lock,
-  Loader2,
-  ShieldCheck,
-  Clock,
-} from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { getApiBaseUrl } from "@/lib/api-base";
@@ -24,9 +15,11 @@ import { setTenantCookie } from "@/lib/axios";
 import { detectSubdomainClient } from "@/lib/subdomain";
 import { LogoCompactoDynamic } from "@/components/shared/componentizedImages/LogoCompactoDynamic";
 import Image from "next/image";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export default function LoginPage() {
   const { t: translation } = useTranslation("common");
+  const isMobile = useIsMobile();
   const router = useRouter();
 
   const [email, setEmail] = useState("");
@@ -150,76 +143,88 @@ export default function LoginPage() {
       </div>
 
       {/* <div className="flex flex-col min-h-screen w-full sm:flex-row"> */}
-      <section className="relative flex w-full h-50 shrink-0 flex-row justify-center bg-brand-deep text-white sm:w-1/2 sm:h-screen sm:flex-col border border-blue-500">
+      <section className="relative flex w-full h-50 shrink-0 flex-row items-center bg-brand-deep text-white sm:w-1/2 sm:h-screen sm:flex-col sm:items-center sm:justify-center">
         <div className="p-0 m-0">
           <Image
             src="/images/logo/logo-bg.svg"
             alt="Logo"
             fill={true}
-            className="opacity-8 pb-28 invert"
+            className="opacity-8 sm:pb-28 invert"
           />
         </div>
-        <div className="relative z-10 mx-auto flex items-start justify-between max-w-lg flex-row gap-2 sm:flex-col">
-          <div className="mb-8">
-            <div className="flex items-end justify-center gap-2">
-              {brandingLoading ? (
-                <div className="flex items-center gap-2">
-                  <Skeleton className="h-10 w-10 rounded-full" />
-                  <div className="flex items-center">
-                    <Skeleton className="h-5 w-36 rounded" />
-                  </div>
+        <div className="w-fit relative h-fit z-10 mx-auto flex items-center justify-between max-w-lg flex-col gap-2 sm:items-start">
+          <div className="sm:mb-8">
+            {brandingLoading ? (
+              <div className="flex items-start gap-2">
+                <Skeleton className="h-10 w-10 rounded-full" />
+                <div className="flex items-center">
+                  <Skeleton className="h-5 w-36 rounded" />
                 </div>
-              ) : (
-                <div className="flex items-end gap-2">
-                  <LogoCompactoDynamic width="41" height="41" />
-                  <h1 className="font-heading leading-7 text-[32px] tracking-tight scale-y-85">
-                    <span className="text-white">
-                      {brandName.substring(0, 6)}
-                    </span>
-                    <span className="text-white/60">
-                      {brandName.substring(6, 9)}
-                    </span>
-                  </h1>
-                </div>
-              )}
-            </div>
-          </div>
-          <div>
-            <p className="max-w-md text-base tracking-wider leading-11 font-black subpixel-antialiased text-white sm:text-[42px] font-['InterDoFigma']">
-              {translation("auth.subtitle")
-                .split(/(?<!\bSistema) /)
-                .map((line: string, index: number) => (
-                  <span key={index} className="block">
-                    {line}
+              </div>
+            ) : (
+              <div className="flex items-end gap-2">
+                <LogoCompactoDynamic width="41" height="41" />
+                <h1 className="font-heading leading-7 text-[32px] tracking-tight scale-y-85">
+                  <span className="text-white">
+                    {brandName.substring(0, 6)}
                   </span>
-                ))}
-            </p>
+                  <span className="text-white/60">
+                    {brandName.substring(6, 9)}
+                  </span>
+                </h1>
+              </div>
+            )}
           </div>
-          <ul className="mt-4 max-w-md space-y-0 text-sm leading-relaxed text-white/80">
-            <li className="flex gap-3">
-              <span>Multi-clínica com dados isolados por unidade.</span>
-            </li>
-            <li className="flex gap-3">
-              <span>Interface pensada para fluxo rápido no consultório.</span>
-            </li>
-          </ul>
+          <div className="sm:block">
+            <div>
+              <p className="text-base tracking-wide leading-5 font-black subpixel-antialiased text-white sm:text-[42px] font-['InterDoFigma'] sm:leading-11 sm:tracking-wider sm:max-w-md">
+                {isMobile
+                  ? translation("auth.subtitle")
+                      .split(/ (?=Veterinária)/)
+                      .map((line: string, index: number) => (
+                        <span key={index} className="block text-center">
+                          {line}
+                        </span>
+                      ))
+                  : translation("auth.subtitle")
+                      .split(/(?<!\bSistema) /)
+                      .map((line: string, index: number) => (
+                        <span key={index} className="block">
+                          {line}
+                        </span>
+                      ))}
+              </p>
+            </div>
+            <ul className="hidden mt-0 max-w-md space-y-0 text-sm leading-relaxed text-white/80 sm:mt-4 sm:block">
+              <li className="flex gap-3">
+                <span>Multi-clínica com dados isolados por unidade.</span>
+              </li>
+              <li className="flex gap-3">
+                <span>Interface pensada para fluxo rápido no consultório.</span>
+              </li>
+            </ul>
+          </div>
         </div>
       </section>
 
       {/* Formulário */}
-      <section className="flex flex-col flex-1 items-center justify-center px-4 py-10 sm:px-8 lg:py-14 border border-red-500">
-        <div className="mt-12 flex w-full max-w-87.5 flex-col flex-1 items-center justify-center">
-          <div className="w-full flex flex-col items-start">
-            <h2 className="font-heading mb-6 text-center text-xl font-semibold text-foreground">
+      <section className="flex flex-col flex-1 items-center justify-start sm:px-8 lg:py-14">
+        <div className="flex w-full max-w-87.5 flex-col flex-1 items-center justify-start sm:justify-center sm:mt-12">
+          <div className="w-full flex flex-col items-center mt-[10%] sm:mt-10 sm:items-start">
+            <h2 className="font-heading mb-8 text-center text-xl font-semibold text-foreground sm:mb-6">
               {translation("auth.cardTitle")}
             </h2>
-            <form onSubmit={handleLogin} className="space-y-4 w-full">
+
+            <form
+              onSubmit={handleLogin}
+              className="space-y-3 w-full px-8 sm:px-0"
+            >
               <div className="space-y-1.5">
                 <div className="relative">
                   <Input
                     id="tenantCode"
                     name="tenantCode"
-                    className={`pl-5 shadow-none${tenantLocked ? " bg-muted text-muted-foreground cursor-not-allowed" : ""}`}
+                    className={`pl-5 shadow-none${tenantLocked ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`}
                     placeholder={translation("auth.tenantCodePlaceholder")}
                     value={tenantCode}
                     onChange={(e) =>
@@ -264,7 +269,7 @@ export default function LoginPage() {
                   />
                 </div>
               </div>
-              <div className="flex items-center justify-between mt-8">
+              <div className="w-full flex items-center justify-between mt-8 px-4 sm:px-0">
                 <div className="text-center">
                   <a
                     href="#"
@@ -276,7 +281,7 @@ export default function LoginPage() {
                 </div>
                 <Button
                   type="submit"
-                  className="w-37.5 text-base font-medium rounded-full"
+                  className="w-22 text-base font-medium rounded-full sm:w-35"
                   disabled={loading}
                 >
                   {loading && <Loader2 className="size-4 animate-spin" />}
@@ -285,7 +290,7 @@ export default function LoginPage() {
               </div>
             </form>
 
-            <p className="mt-8 text-center text-sm text-muted-foreground w-full">
+            <p className="mt-8 text-center text-xs text-muted-foreground w-full sm:text-sm">
               Não tem conta?{" "}
               <a
                 href="/register"
@@ -296,7 +301,7 @@ export default function LoginPage() {
             </p>
           </div>
         </div>
-        <p className="mt-8 text-center text-sm text-muted-foreground">
+        <p className="w-full mt-8 text-center text-xs text-muted-foreground">
           © {new Date().getFullYear()} {brandName}. {translation("auth.footer")}
         </p>
       </section>
