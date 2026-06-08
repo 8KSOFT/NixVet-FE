@@ -1,5 +1,5 @@
 app: nixvetapp-front
-type: frontend
+type: backend
 runtime: nodejs
 
 healthcheck: /
