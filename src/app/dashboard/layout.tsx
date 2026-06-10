@@ -5,25 +5,15 @@ import { useTranslation } from "react-i18next";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import {
-  LayoutDashboard,
-  Stethoscope,
-  CalendarDays,
   Settings,
   LogOut,
-  MessageSquare,
   Bell,
   AlertTriangle,
   ChevronLeft,
   ChevronRight,
   Menu,
   User,
-  ClipboardList,
   Syringe,
-  FileSearch,
-  BookOpen,
-  FlaskConical,
-  FileText,
-  Landmark,
   Wallet,
   Bot,
   BarChart2,
@@ -673,12 +663,12 @@ function SidebarNav({
                           <item.icon
                             className={cn(
                               "shrink-0 stroke-[1.5]",
-                              collapsed ? "size-5" : "size-4",
+                              collapsed ? "size-5" : "size-5",
                             )}
                           />
                           {!collapsed && (
                             <>
-                              <span className="flex-1 text-left">
+                              <span className="flex-1 text-left text-xs">
                                 {t(item.labelKey)}
                               </span>
                               <ChevronDown
@@ -872,7 +862,7 @@ export default function DashboardLayout({
             <Button
               variant="ghost"
               size="icon"
-              className="text-muted-foreground lg:hidden"
+              className="text-muted-foreground lg:hidden md:hidden"
               onClick={() => setMobileNavOpen(true)}
               aria-label="Abrir menu"
             >

@@ -42,12 +42,12 @@ export function ListPagination({
   return (
     <div
       className={cn(
-        'flex flex-wrap items-center justify-between gap-2 border-t px-2 py-3 text-sm text-muted-foreground',
+        'flex flex-wrap items-center justify-between gap-2 px-2 py-3 text-sm',
         className,
       )}
     >
       {showTotal ? (
-        <p className="tabular-nums">
+        <p className="tabular-nums text-gray-400">
           {fmt(from)}–{fmt(to)} de {fmt(safeTotal)}
         </p>
       ) : (

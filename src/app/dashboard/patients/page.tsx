@@ -1,24 +1,41 @@
-'use client';
+"use client";
 
-import React, { useEffect, useState } from 'react';
-import { useForm, Controller } from 'react-hook-form';
-import Link from 'next/link';
-import { Plus, Pencil, Trash2, Stethoscope, History, ChevronsUpDown, Check } from 'lucide-react';
-import { toast } from 'sonner';
-import api from '@/lib/axios';
-import { API_PAGE_SIZE, fetchAllListPages, listQueryParams, parseListResponse } from '@/lib/pagination';
-import { ListPagination } from '@/components/list-pagination';
+import { useForm, Controller } from "react-hook-form";
+import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import Link from "next/link";
 
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import {
+  Plus,
+  Pencil,
+  Trash2,
+  Stethoscope,
+  History,
+  ChevronsUpDown,
+  Check,
+} from "lucide-react";
+import { toast } from "sonner";
+
+import {
+  API_PAGE_SIZE,
+  fetchAllListPages,
+  listQueryParams,
+  parseListResponse,
+} from "@/lib/pagination";
+import api from "@/lib/axios";
+
+import { ListPagination } from "@/components/list-pagination";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,7 +46,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
+} from "@/components/ui/alert-dialog";
 import {
   Table,
   TableBody,
@@ -37,16 +54,20 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from "@/components/ui/table";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+} from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Command,
   CommandEmpty,
@@ -54,11 +75,11 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from '@/components/ui/command';
+} from "@/components/ui/command";
 
 const NO_TUTOR_REASON_LABELS: Record<string, string> = {
-  EMERGENCIA: 'Emergência',
-  ABANDONO: 'Abandono',
+  EMERGENCIA: "Emergência",
+  ABANDONO: "Abandono",
 };
 
 interface Tutor {
@@ -87,7 +108,7 @@ interface SupportOption {
 
 interface FormValues {
   name: string;
-  tutor_choice: 'yes' | 'no';
+  tutor_choice: "yes" | "no";
   tutor_id?: string;
   no_tutor_reason?: string;
   species: string;
@@ -103,17 +124,17 @@ export default function PatientsPage() {
   const [tutors, setTutors] = useState<Tutor[]>([]);
   const [speciesOptions, setSpeciesOptions] = useState<SupportOption[]>([]);
   const [breedOptions, setBreedOptions] = useState<SupportOption[]>([]);
-  const [breedSearchValue, setBreedSearchValue] = useState('');
+  const [breedSearchValue, setBreedSearchValue] = useState("");
   const [breedOpen, setBreedOpen] = useState(false);
   const [sexOptions, setSexOptions] = useState<SupportOption[]>([]);
   const [loading, setLoading] = useState(false);
   const [listPage, setListPage] = useState(1);
-  const [listTutorFilter, setListTutorFilter] = useState('');
+  const [listTutorFilter, setListTutorFilter] = useState("");
   const [listTotal, setListTotal] = useState(0);
   const [listTotalPages, setListTotalPages] = useState(1);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-
+  const { t } = useTranslation("common");
   const {
     control,
     handleSubmit,
@@ -124,22 +145,24 @@ export default function PatientsPage() {
     formState: { errors },
   } = useForm<FormValues>();
 
-  const watchedSpecies = watch('species');
-  const watchedTutorChoice = watch('tutor_choice');
+  const watchedSpecies = watch("species");
+  const watchedTutorChoice = watch("tutor_choice");
 
   const fetchPatients = async () => {
     setLoading(true);
     try {
-      const response = await api.get('/patients', {
-        params: listQueryParams(listPage, API_PAGE_SIZE, { tutor_id: listTutorFilter || undefined }),
+      const response = await api.get("/patients", {
+        params: listQueryParams(listPage, API_PAGE_SIZE, {
+          tutor_id: listTutorFilter || undefined,
+        }),
       });
       const p = parseListResponse<Patient>(response.data, listPage);
       setPatients(p.items);
       setListTotal(p.total);
       setListTotalPages(p.totalPages);
     } catch (error) {
-      console.error('Error fetching patients:', error);
-      toast.error('Erro ao carregar pacientes');
+      console.error("Error fetching patients:", error);
+      toast.error("Erro ao carregar pacientes");
     } finally {
       setLoading(false);
     }
@@ -147,72 +170,102 @@ export default function PatientsPage() {
 
   const fetchTutors = async () => {
     try {
-      const all = await fetchAllListPages<Tutor>('/tutors');
+      const all = await fetchAllListPages<Tutor>("/tutors");
       setTutors(all);
     } catch (error) {
-      console.error('Error fetching tutors:', error);
+      console.error("Error fetching tutors:", error);
     }
   };
 
   const BREED_DISCRIMINATOR: Record<string, string> = {
-    CANINO: 'ANIMAL_RACA_CAO',
-    FELINO: 'ANIMAL_RACA_GATO',
-    BOVINO: 'ANIMAL_RACA_BOVINO',
-    EQUINO: 'ANIMAL_RACA_EQUINO',
-    OUTRO: 'ANIMAL_RACA_OUTRO',
+    CANINO: "ANIMAL_RACA_CAO",
+    FELINO: "ANIMAL_RACA_GATO",
+    BOVINO: "ANIMAL_RACA_BOVINO",
+    EQUINO: "ANIMAL_RACA_EQUINO",
+    OUTRO: "ANIMAL_RACA_OUTRO",
   };
 
   /** Alinha valor salvo / legado ao código usado no catálogo support */
   const normalizeSpeciesCode = (species: string) => {
-    const s = (species || '').trim().toUpperCase();
-    if (s === 'CÃO' || s === 'CAO' || s === 'CACHORRO') return 'CANINO';
-    if (s === 'GATO') return 'FELINO';
+    const s = (species || "").trim().toUpperCase();
+    if (s === "CÃO" || s === "CAO" || s === "CACHORRO") return "CANINO";
+    if (s === "GATO") return "FELINO";
     return s;
   };
 
   const getBreedDiscriminator = (species: string) => {
     const code = normalizeSpeciesCode(species);
-    return BREED_DISCRIMINATOR[code] ?? 'ANIMAL_RACA_OUTRO';
+    return BREED_DISCRIMINATOR[code] ?? "ANIMAL_RACA_OUTRO";
   };
 
   const fetchSupportOptions = async () => {
+    const normalize = (res: any): SupportOption[] => {
+      if (!res) return [];
+      // axios response wrapper
+      if (Array.isArray(res)) return res;
+      if (Array.isArray(res.data)) return res.data;
+      // possible paginated envelopes
+      if (Array.isArray(res.data?.items)) return res.data.items;
+      if (Array.isArray(res.data?.content)) return res.data.content;
+      return [];
+    };
+
     try {
-      const [species, sex] = await Promise.all([
-        api.get<SupportOption[]>('/catalog/support', { params: { discriminator: 'ANIMAL_ESPECIE' } }),
-        api.get<SupportOption[]>('/catalog/support', { params: { discriminator: 'ANIMAL_GENERO' } }),
+      const [speciesRes, sexRes] = await Promise.all([
+        api.get("/catalog/support", {
+          params: { discriminator: "ANIMAL_ESPECIE" },
+        }),
+        api.get("/catalog/support", {
+          params: { discriminator: "ANIMAL_GENERO" },
+        }),
       ]);
-      setSpeciesOptions(species.data ?? []);
-      setSexOptions(sex.data ?? []);
+      setSpeciesOptions(normalize(speciesRes));
+      setSexOptions(normalize(sexRes));
     } catch (error) {
-      console.error('Error fetching support options:', error);
+      console.error("Error fetching support options:", error);
     }
   };
 
   const fetchBreedOptions = async (species: string) => {
     const disc = getBreedDiscriminator(species);
     try {
-      const res = await api.get<SupportOption[]>('/catalog/support', { params: { discriminator: disc } });
-      setBreedOptions(res.data ?? []);
+      const res = await api.get("/catalog/support", {
+        params: { discriminator: disc },
+      });
+      // reuse same normalization logic as support options
+      const normalize = (r: any): SupportOption[] => {
+        if (!r) return [];
+        if (Array.isArray(r)) return r;
+        if (Array.isArray(r.data)) return r.data;
+        if (Array.isArray(r.data?.items)) return r.data.items;
+        if (Array.isArray(r.data?.content)) return r.data.content;
+        return [];
+      };
+
+      setBreedOptions(normalize(res));
     } catch (error) {
-      console.error('Error fetching breed options:', error);
+      console.error("Error fetching breed options:", error);
       setBreedOptions([]);
     }
   };
 
   const handleAddBreed = async (breedName?: string) => {
-    const species = getValues('species');
+    const species = getValues("species");
     const disc = getBreedDiscriminator(species);
     const newBreed = (breedName ?? breedSearchValue)?.trim();
     if (!newBreed) return;
     try {
-      await api.post('/catalog/support', { discriminator: disc, description: newBreed });
+      await api.post("/catalog/support", {
+        discriminator: disc,
+        description: newBreed,
+      });
       toast.success(`Raça "${newBreed}" cadastrada`);
       await fetchBreedOptions(species);
-      setValue('breed', newBreed);
-      setBreedSearchValue('');
+      setValue("breed", newBreed);
+      setBreedSearchValue("");
       setBreedOpen(false);
     } catch (e: any) {
-      toast.error(e.response?.data?.message ?? 'Erro ao cadastrar raça');
+      toast.error(e.response?.data?.message ?? "Erro ao cadastrar raça");
     }
   };
 
@@ -247,7 +300,7 @@ export default function PatientsPage() {
       sex: record.sex,
       chip_number: record.chip_number,
       tutor_id: record.tutor_id ?? undefined,
-      tutor_choice: hasTutor ? 'yes' : 'no',
+      tutor_choice: hasTutor ? "yes" : "no",
       no_tutor_reason: record.no_tutor_reason ?? undefined,
     });
     fetchBreedOptions(record.species);
@@ -257,33 +310,37 @@ export default function PatientsPage() {
   const handleDelete = async (id: string) => {
     try {
       await api.delete(`/patients/${id}`);
-      toast.success('Paciente removido com sucesso');
+      toast.success("Paciente removido com sucesso");
       fetchPatients();
     } catch (error) {
-      console.error('Error deleting patient:', error);
-      toast.error('Erro ao remover paciente');
+      console.error("Error deleting patient:", error);
+      toast.error("Erro ao remover paciente");
     }
   };
 
   const onSubmit = async (values: FormValues) => {
     const { tutor_choice, ...rest } = values;
     const payload =
-      tutor_choice === 'yes'
+      tutor_choice === "yes"
         ? { ...rest, tutor_id: rest.tutor_id || null, no_tutor_reason: null }
-        : { ...rest, tutor_id: null, no_tutor_reason: rest.no_tutor_reason || null };
+        : {
+            ...rest,
+            tutor_id: null,
+            no_tutor_reason: rest.no_tutor_reason || null,
+          };
     try {
       if (editingId) {
         await api.put(`/patients/${editingId}`, payload);
-        toast.success('Paciente atualizado com sucesso');
+        toast.success("Paciente atualizado com sucesso");
       } else {
-        await api.post('/patients', payload);
-        toast.success('Paciente criado com sucesso');
+        await api.post("/patients", payload);
+        toast.success("Paciente criado com sucesso");
       }
       setModalVisible(false);
       fetchPatients();
     } catch (error) {
-      console.error('Error saving patient:', error);
-      toast.error('Erro ao salvar paciente');
+      console.error("Error saving patient:", error);
+      toast.error("Erro ao salvar paciente");
     }
   };
 
@@ -291,26 +348,36 @@ export default function PatientsPage() {
     o.description.toLowerCase().includes(breedSearchValue.toLowerCase()),
   );
   const showAddBreed =
-    breedSearchValue.trim() !== '' &&
+    breedSearchValue.trim() !== "" &&
     !breedOptions.some(
-      (o) => o.description.toLowerCase() === breedSearchValue.trim().toLowerCase(),
+      (o) =>
+        o.description.toLowerCase() === breedSearchValue.trim().toLowerCase(),
     );
 
   return (
     <div>
       <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center mb-4">
-        <h1 className="text-2xl font-heading font-bold text-primary flex items-center gap-2">
-          <Stethoscope className="w-6 h-6" /> Pacientes
+        <h1 className="text-2xl font-heading font-bold flex items-center gap-2">
+          {t("patients.title")}
         </h1>
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-2 min-w-[200px]">
-            <Label className="text-xs text-muted-foreground whitespace-nowrap shrink-0">Tutor</Label>
-            <Select value={listTutorFilter || '_all'} onValueChange={(v) => setListTutorFilter(v === '_all' ? '' : v)}>
-              <SelectTrigger className="h-9 w-[220px]">
-                <SelectValue placeholder="Todos" />
+          <div className="flex items-center gap-2 min-w-50">
+            <Label className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
+              {t("patients.dropdownLabel")}
+            </Label>
+            <Select
+              value={listTutorFilter || "_all"}
+              onValueChange={(v) => setListTutorFilter(v === "_all" ? "" : v)}
+            >
+              <SelectTrigger className="h-9 w-60">
+                <SelectValue
+                  placeholder={t("patients.dropdownStandardOption")}
+                />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="_all">Todos</SelectItem>
+                <SelectItem value="_all">
+                  {t("patients.dropdownStandardOption")}
+                </SelectItem>
                 {tutors.map((t) => (
                   <SelectItem key={t.id} value={t.id}>
                     {t.name}
@@ -319,97 +386,126 @@ export default function PatientsPage() {
               </SelectContent>
             </Select>
           </div>
-          <Button onClick={handleAdd} className="bg-primary hover:bg-blue-700">
-            <Plus className="w-4 h-4 mr-2" /> Novo Paciente
+          <Button onClick={handleAdd} className="bg-primary hover:bg-brand-deep/80">
+            <Plus className="w-4 h-4 mr-2" /> {t("patients.createButton")}
           </Button>
         </div>
       </div>
 
       {loading ? (
-        <div className="text-center py-8 text-muted-foreground">Carregando...</div>
+        <div className="text-center py-8 text-muted-foreground">
+          Carregando...
+        </div>
       ) : (
-        <div className="rounded-md border overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Nome</TableHead>
-              <TableHead>Espécie</TableHead>
-              <TableHead>Raça</TableHead>
-              <TableHead>Tutor</TableHead>
-              <TableHead>Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {patients.map((record) => (
-              <TableRow key={record.id}>
-                <TableCell>{record.name}</TableCell>
-                <TableCell>{record.species}</TableCell>
-                <TableCell>{record.breed}</TableCell>
-                <TableCell>
-                  {record.tutor?.name ??
-                    (record.no_tutor_reason
-                      ? `Sem tutor (${NO_TUTOR_REASON_LABELS[record.no_tutor_reason] ?? record.no_tutor_reason})`
-                      : '—')}
-                </TableCell>
-                <TableCell>
-                  <div className="flex gap-2">
-                    <Button asChild variant="outline" size="icon" title="Ver timeline">
-                      <Link href={`/dashboard/patients/${record.id}`}>
-                        <History className="w-4 h-4" />
-                      </Link>
-                    </Button>
-                    <Button variant="outline" size="icon" onClick={() => handleEdit(record)}>
-                      <Pencil className="w-4 h-4" />
-                    </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="destructive" size="icon">
-                          <Trash2 className="w-4 h-4" />
+        <div>
+          <div className="rounded-md border border-gray-300 overflow-hidden">
+            <Table>
+              <TableHeader className="h-15">
+                {/* Borda ou fundo customizado para o cabeçalho se desejar */}
+                <TableRow className="border-b border-gray-300">
+                  <TableHead>{t("patients.table.name")}</TableHead>
+                  <TableHead>{t("patients.table.species")}</TableHead>
+                  <TableHead>{t("patients.table.breed")}</TableHead>
+                  <TableHead>{t("patients.table.guardian")}</TableHead>
+                  <TableHead>{t("patients.table.actions")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {patients.map((record) => (
+                  /* Aplica a cor gray-300 na borda inferior da linha */
+                  <TableRow
+                    key={record.id}
+                    className="border-b border-gray-300"
+                  >
+                    <TableCell>{record.name}</TableCell>
+                    <TableCell className="w-60">{record.species}</TableCell>
+                    <TableCell className="w-60">{record.breed}</TableCell>
+                    <TableCell className="w-100">
+                      {record.tutor?.name ??
+                        (record.no_tutor_reason
+                          ? `Sem tutor (${NO_TUTOR_REASON_LABELS[record.no_tutor_reason] ?? record.no_tutor_reason})`
+                          : "—")}
+                    </TableCell>
+                    <TableCell className="w-50">
+                      <div className="flex items-center gap-1">
+                        <Button
+                          asChild
+                          variant="ghost"
+                          size="icon"
+                          className="p-0"
+                          title="Ver timeline"
+                        >
+                          <Link href={`/dashboard/patients/${record.id}`}>
+                            <History className="w-4 h-4" />
+                          </Link>
                         </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Esta ação não pode ser desfeita. O paciente será removido permanentemente.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => handleDelete(record.id)}>
-                            Confirmar
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-            {patients.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                  Nenhum paciente cadastrado.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-        <ListPagination
-          page={listPage}
-          totalPages={listTotalPages}
-          total={listTotal}
-          pageSize={API_PAGE_SIZE}
-          onPageChange={setListPage}
-          disabled={loading}
-        />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="p-0"
+                          onClick={() => handleEdit(record)}
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="p-0">
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Esta ação não pode ser desfeita. O paciente será
+                                removido permanentemente.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDelete(record.id)}
+                              >
+                                Confirmar
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {patients.length === 0 && (
+                  /* Mantém o padrão visual mesmo se a tabela estiver vazia */
+                  <TableRow className="border-b border-gray-300">
+                    <TableCell
+                      colSpan={5}
+                      className="text-center text-muted-foreground py-8"
+                    >
+                      Nenhum paciente cadastrado.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+          <ListPagination
+            page={listPage}
+            totalPages={listTotalPages}
+            total={listTotal}
+            pageSize={API_PAGE_SIZE}
+            onPageChange={setListPage}
+            disabled={loading}
+          />
         </div>
       )}
 
       <Dialog open={modalVisible} onOpenChange={setModalVisible}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editingId ? 'Editar Paciente' : 'Novo Paciente'}</DialogTitle>
+            <DialogTitle>
+              {editingId ? "Editar Paciente" : "Novo Paciente"}
+            </DialogTitle>
           </DialogHeader>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -419,13 +515,15 @@ export default function PatientsPage() {
               <Controller
                 name="name"
                 control={control}
-                rules={{ required: 'Obrigatório' }}
+                rules={{ required: "Obrigatório" }}
                 render={({ field }) => (
-                  <Input id="name" {...field} value={field.value ?? ''} />
+                  <Input id="name" {...field} value={field.value ?? ""} />
                 )}
               />
               {errors.name && (
-                <p className="text-sm text-destructive">{errors.name.message}</p>
+                <p className="text-sm text-destructive">
+                  {errors.name.message}
+                </p>
               )}
             </div>
 
@@ -440,7 +538,7 @@ export default function PatientsPage() {
               <Controller
                 name="tutor_choice"
                 control={control}
-                rules={{ required: 'Defina se informa o tutor agora ou não' }}
+                rules={{ required: "Defina se informa o tutor agora ou não" }}
                 render={({ field }) => (
                   <RadioGroup
                     value={field.value}
@@ -449,13 +547,19 @@ export default function PatientsPage() {
                   >
                     <div className="flex items-center gap-2">
                       <RadioGroupItem value="yes" id="tutor-yes" />
-                      <Label htmlFor="tutor-yes" className="font-normal cursor-pointer">
+                      <Label
+                        htmlFor="tutor-yes"
+                        className="font-normal cursor-pointer"
+                      >
                         Informar tutor agora
                       </Label>
                     </div>
                     <div className="flex items-center gap-2">
                       <RadioGroupItem value="no" id="tutor-no" />
-                      <Label htmlFor="tutor-no" className="font-normal cursor-pointer">
+                      <Label
+                        htmlFor="tutor-no"
+                        className="font-normal cursor-pointer"
+                      >
                         Não informar tutor (emergência ou abandono)
                       </Label>
                     </div>
@@ -463,20 +567,25 @@ export default function PatientsPage() {
                 )}
               />
               {errors.tutor_choice && (
-                <p className="text-sm text-destructive">{errors.tutor_choice.message}</p>
+                <p className="text-sm text-destructive">
+                  {errors.tutor_choice.message}
+                </p>
               )}
             </div>
 
             {/* Conditional: tutor_id */}
-            {watchedTutorChoice === 'yes' && (
+            {watchedTutorChoice === "yes" && (
               <div className="space-y-1">
                 <Label>Selecione o tutor *</Label>
                 <Controller
                   name="tutor_id"
                   control={control}
-                  rules={{ required: 'Selecione um tutor' }}
+                  rules={{ required: "Selecione um tutor" }}
                   render={({ field }) => (
-                    <Select value={field.value ?? ''} onValueChange={field.onChange}>
+                    <Select
+                      value={field.value ?? ""}
+                      onValueChange={field.onChange}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione um tutor" />
                       </SelectTrigger>
@@ -491,21 +600,26 @@ export default function PatientsPage() {
                   )}
                 />
                 {errors.tutor_id && (
-                  <p className="text-sm text-destructive">{errors.tutor_id.message}</p>
+                  <p className="text-sm text-destructive">
+                    {errors.tutor_id.message}
+                  </p>
                 )}
               </div>
             )}
 
             {/* Conditional: no_tutor_reason */}
-            {watchedTutorChoice === 'no' && (
+            {watchedTutorChoice === "no" && (
               <div className="space-y-1">
                 <Label>Motivo *</Label>
                 <Controller
                   name="no_tutor_reason"
                   control={control}
-                  rules={{ required: 'Informe o motivo' }}
+                  rules={{ required: "Informe o motivo" }}
                   render={({ field }) => (
-                    <Select value={field.value ?? ''} onValueChange={field.onChange}>
+                    <Select
+                      value={field.value ?? ""}
+                      onValueChange={field.onChange}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione o motivo" />
                       </SelectTrigger>
@@ -521,7 +635,9 @@ export default function PatientsPage() {
                   )}
                 />
                 {errors.no_tutor_reason && (
-                  <p className="text-sm text-destructive">{errors.no_tutor_reason.message}</p>
+                  <p className="text-sm text-destructive">
+                    {errors.no_tutor_reason.message}
+                  </p>
                 )}
               </div>
             )}
@@ -533,15 +649,15 @@ export default function PatientsPage() {
                 <Controller
                   name="species"
                   control={control}
-                  rules={{ required: 'Obrigatório' }}
+                  rules={{ required: "Obrigatório" }}
                   render={({ field }) => (
                     <Select
-                      value={field.value ?? ''}
+                      value={field.value ?? ""}
                       onValueChange={(value) => {
                         field.onChange(value);
-                        setValue('breed', '' as any);
+                        setValue("breed", "" as any);
                         setBreedOptions([]);
-                        setBreedSearchValue('');
+                        setBreedSearchValue("");
                         fetchBreedOptions(value);
                       }}
                     >
@@ -559,7 +675,9 @@ export default function PatientsPage() {
                   )}
                 />
                 {errors.species && (
-                  <p className="text-sm text-destructive">{errors.species.message}</p>
+                  <p className="text-sm text-destructive">
+                    {errors.species.message}
+                  </p>
                 )}
               </div>
 
@@ -569,7 +687,7 @@ export default function PatientsPage() {
                 <Controller
                   name="breed"
                   control={control}
-                  rules={{ required: 'Obrigatório' }}
+                  rules={{ required: "Obrigatório" }}
                   render={({ field }) => (
                     <Popover open={breedOpen} onOpenChange={setBreedOpen}>
                       <PopoverTrigger asChild>
@@ -584,8 +702,8 @@ export default function PatientsPage() {
                             {field.value
                               ? field.value
                               : breedOptions.length
-                              ? 'Selecione ou cadastre a raça'
-                              : 'Selecione primeiro a espécie'}
+                                ? "Selecione ou cadastre a raça"
+                                : "Selecione primeiro a espécie"}
                           </span>
                           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
@@ -598,7 +716,9 @@ export default function PatientsPage() {
                             onValueChange={setBreedSearchValue}
                           />
                           <CommandList>
-                            <CommandEmpty>Nenhuma raça encontrada.</CommandEmpty>
+                            <CommandEmpty>
+                              Nenhuma raça encontrada.
+                            </CommandEmpty>
                             <CommandGroup>
                               {filteredBreeds.map((o) => (
                                 <CommandItem
@@ -606,13 +726,15 @@ export default function PatientsPage() {
                                   value={o.description}
                                   onSelect={(val) => {
                                     field.onChange(val);
-                                    setBreedSearchValue('');
+                                    setBreedSearchValue("");
                                     setBreedOpen(false);
                                   }}
                                 >
                                   <Check
                                     className={`mr-2 h-4 w-4 ${
-                                      field.value === o.description ? 'opacity-100' : 'opacity-0'
+                                      field.value === o.description
+                                        ? "opacity-100"
+                                        : "opacity-0"
                                     }`}
                                   />
                                   {o.description}
@@ -621,10 +743,12 @@ export default function PatientsPage() {
                               {showAddBreed && (
                                 <CommandItem
                                   value={`__NEW__:${breedSearchValue.trim()}`}
-                                  onSelect={() => handleAddBreed(breedSearchValue.trim())}
+                                  onSelect={() =>
+                                    handleAddBreed(breedSearchValue.trim())
+                                  }
                                 >
-                                  <Plus className="mr-2 h-4 w-4" />
-                                  + Cadastrar &quot;{breedSearchValue.trim()}&quot;
+                                  <Plus className="mr-2 h-4 w-4" />+ Cadastrar
+                                  &quot;{breedSearchValue.trim()}&quot;
                                 </CommandItem>
                               )}
                             </CommandGroup>
@@ -635,7 +759,9 @@ export default function PatientsPage() {
                   )}
                 />
                 {errors.breed && (
-                  <p className="text-sm text-destructive">{errors.breed.message}</p>
+                  <p className="text-sm text-destructive">
+                    {errors.breed.message}
+                  </p>
                 )}
               </div>
             </div>
@@ -647,19 +773,21 @@ export default function PatientsPage() {
                 <Controller
                   name="age"
                   control={control}
-                  rules={{ required: 'Obrigatório' }}
+                  rules={{ required: "Obrigatório" }}
                   render={({ field }) => (
                     <Input
                       id="age"
                       type="number"
                       min={0}
-                      value={field.value ?? ''}
+                      value={field.value ?? ""}
                       onChange={(e) => field.onChange(Number(e.target.value))}
                     />
                   )}
                 />
                 {errors.age && (
-                  <p className="text-sm text-destructive">{errors.age.message}</p>
+                  <p className="text-sm text-destructive">
+                    {errors.age.message}
+                  </p>
                 )}
               </div>
               <div className="space-y-1">
@@ -667,20 +795,22 @@ export default function PatientsPage() {
                 <Controller
                   name="weight"
                   control={control}
-                  rules={{ required: 'Obrigatório' }}
+                  rules={{ required: "Obrigatório" }}
                   render={({ field }) => (
                     <Input
                       id="weight"
                       type="number"
                       min={0}
                       step={0.1}
-                      value={field.value ?? ''}
+                      value={field.value ?? ""}
                       onChange={(e) => field.onChange(Number(e.target.value))}
                     />
                   )}
                 />
                 {errors.weight && (
-                  <p className="text-sm text-destructive">{errors.weight.message}</p>
+                  <p className="text-sm text-destructive">
+                    {errors.weight.message}
+                  </p>
                 )}
               </div>
               <div className="space-y-1">
@@ -688,9 +818,12 @@ export default function PatientsPage() {
                 <Controller
                   name="sex"
                   control={control}
-                  rules={{ required: 'Obrigatório' }}
+                  rules={{ required: "Obrigatório" }}
                   render={({ field }) => (
-                    <Select value={field.value ?? ''} onValueChange={field.onChange}>
+                    <Select
+                      value={field.value ?? ""}
+                      onValueChange={field.onChange}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione" />
                       </SelectTrigger>
@@ -705,7 +838,9 @@ export default function PatientsPage() {
                   )}
                 />
                 {errors.sex && (
-                  <p className="text-sm text-destructive">{errors.sex.message}</p>
+                  <p className="text-sm text-destructive">
+                    {errors.sex.message}
+                  </p>
                 )}
               </div>
             </div>
@@ -717,7 +852,11 @@ export default function PatientsPage() {
                 name="chip_number"
                 control={control}
                 render={({ field }) => (
-                  <Input id="chip_number" {...field} value={field.value ?? ''} />
+                  <Input
+                    id="chip_number"
+                    {...field}
+                    value={field.value ?? ""}
+                  />
                 )}
               />
             </div>
@@ -730,9 +869,7 @@ export default function PatientsPage() {
               >
                 Cancelar
               </Button>
-              <Button type="submit">
-                {editingId ? 'Salvar' : 'Criar'}
-              </Button>
+              <Button type="submit">{editingId ? "Salvar" : "Criar"}</Button>
             </DialogFooter>
           </form>
         </DialogContent>

@@ -179,5 +179,34 @@
       "completed": "Completed",
       "cancelled": "Cancelled"
     }
+  },
+  "patients": {
+    "title": "Patients",
+    "createButton": "New Patient",
+    "dropdownLabel": "Guardian",
+    "dropdownStandardOption": "All",
+    "table": {
+      "name": "Name",
+      "species": "Species",
+      "breed": "Breed",
+      "guardian": "Guardian",
+      "actions": "Actions"
+    }
+  },
+  "owners": {
+    "title": "Pet owners",
+    "createButton": "New Owner",
+    "empty": "No owner found",
+    "table": {
+      "name": "Name",
+      "email": "Email",
+      "phone": "Phone",
+      "cpf": "CPF",
+      "actions": "Actions"
+    },
+    "confirmDeleteTitle": "Confirm deletion",
+    "confirmDeleteDescription": "Are you sure you want to remove owner {{name}}? This action cannot be undone.",
+    "remove": "Remove",
+    "cancel": "Cancel"
   }
 }

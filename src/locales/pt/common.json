@@ -179,5 +179,34 @@
       "completed": "Realizado",
       "cancelled": "Cancelado"
     }
+  },
+  "patients": {
+    "title": "Pacientes",
+    "createButton": "Novo Paciente",
+    "dropdownLabel": "Tutor",
+    "dropdownStandardOption": "Todos",
+    "table": {
+      "name": "Nome",
+      "species": "Especie",
+      "breed": "Raça",
+      "guardian": "Tutor",
+      "actions": "Ações"
+    }
+  },
+  "owners": {
+    "title": "Tutores",
+    "createButton": "Novo Tutor",
+    "empty": "Nenhum tutor encontrado",
+    "table": {
+      "name": "Nome",
+      "email": "Email",
+      "phone": "Telefone",
+      "cpf": "CPF",
+      "actions": "Ações"
+    },
+    "confirmDeleteTitle": "Confirmar exclusão",
+    "confirmDeleteDescription": "Tem certeza que deseja remover o tutor {{name}}? Esta ação não pode ser desfeita.",
+    "remove": "Remover",
+    "cancel": "Cancelar"
   }
 }
