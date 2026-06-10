@@ -1,0 +1,7 @@
+app: nixvetapp-front
+type: backend
+runtime: nodejs
+
+healthcheck: /
+
+plan: pro
