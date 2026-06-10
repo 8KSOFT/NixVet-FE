@@ -262,7 +262,7 @@ export default function TeamPage() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="p-0 text-destructive hover:text-destructive"
+                              className="p-0"
                             >
                               <Trash2 className="w-4 h-4" />
                             </Button>
