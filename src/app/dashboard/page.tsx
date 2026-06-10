@@ -1,10 +1,9 @@
-'use client';
+"use client";
 
-import React, { useEffect, useState, useMemo } from 'react';
-import Link from 'next/link';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
+import React, { useEffect, useState, useMemo } from "react";
+import Link from "next/link";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -12,29 +11,21 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import {
-  Stethoscope,
-  Users,
-  Calendar,
-  FlaskConical,
-  MessageSquare,
-  FileSearch,
-  TrendingUp,
-  XCircle,
-} from 'lucide-react';
-import { useTranslation } from 'react-i18next';
-import api from '@/lib/axios';
-import { fetchAllListPages } from '@/lib/pagination';
-import { cn } from '@/lib/utils';
+} from "@/components/ui/table";
+
+import { useTranslation } from "react-i18next";
+import api from "@/lib/axios";
+import { fetchAllListPages } from "@/lib/pagination";
+import { cn } from "@/lib/utils";
+import { MenuIconsColored } from "@/components/MenuIconsColored";
 
 export default function DashboardPage() {
-  const { t, i18n } = useTranslation('common');
+  const { t, i18n } = useTranslation("common");
   const locale = useMemo(() => {
-    const l = i18n.language?.split('-')[0];
-    if (l === 'en') return 'en-US';
-    if (l === 'es') return 'es-ES';
-    return 'pt-BR';
+    const l = i18n.language?.split("-")[0];
+    if (l === "en") return "en-US";
+    if (l === "es") return "es-ES";
+    return "pt-BR";
   }, [i18n.language]);
 
   const [loading, setLoading] = useState(true);
@@ -63,12 +54,12 @@ export default function DashboardPage() {
     try {
       setLoading(true);
       const [metricsRes, consultations, patients] = await Promise.all([
-        api.get('/metrics/dashboard'),
+        api.get("/metrics/dashboard"),
         fetchAllListPages<{
           consultation_date?: string;
           status?: string;
-        }>('/consultations'),
-        fetchAllListPages<{ createdAt?: string }>('/patients'),
+        }>("/consultations"),
+        fetchAllListPages<{ createdAt?: string }>("/patients"),
       ]);
 
       const metrics = metricsRes.data as {
@@ -80,7 +71,7 @@ export default function DashboardPage() {
       };
 
       const now = new Date();
-      const todayStr = now.toISOString().split('T')[0];
+      const todayStr = now.toISOString().split("T")[0];
       const currentMonth = now.getMonth();
       const currentYear = now.getFullYear();
 
@@ -98,7 +89,7 @@ export default function DashboardPage() {
             d.getFullYear() === currentYear &&
             d.getMonth() === currentMonth &&
             d <= now &&
-            c.status === 'cancelled'
+            c.status === "cancelled"
           );
         },
       ).length;
@@ -121,40 +112,43 @@ export default function DashboardPage() {
         status?: string;
       };
 
-      const todayConsultations = consultations.filter((c: { consultation_date?: string }) => {
-        const raw = c.consultation_date;
-        if (!raw) return false;
-        const dateStr = new Date(raw).toISOString().split('T')[0];
-        return dateStr === todayStr;
-      }) as ConsultTodayRow[];
+      const todayConsultations = consultations.filter(
+        (c: { consultation_date?: string }) => {
+          const raw = c.consultation_date;
+          if (!raw) return false;
+          const dateStr = new Date(raw).toISOString().split("T")[0];
+          return dateStr === todayStr;
+        },
+      ) as ConsultTodayRow[];
 
       const statusLabel = (status: string) => {
-        if (status === 'cancelled') return t('consultation.status.cancelled');
-        if (status === 'completed') return t('consultation.status.completed');
-        return t('consultation.status.scheduled');
+        if (status === "cancelled") return t("consultation.status.cancelled");
+        if (status === "completed") return t("consultation.status.completed");
+        return t("consultation.status.scheduled");
       };
 
       const recent = todayConsultations
         .sort(
           (a, b) =>
-            new Date(b.consultation_date).getTime() - new Date(a.consultation_date).getTime(),
+            new Date(b.consultation_date).getTime() -
+            new Date(a.consultation_date).getTime(),
         )
         .map((c) => ({
           key: c.id,
           time: new Date(c.consultation_date).toLocaleTimeString(locale, {
-            hour: '2-digit',
-            minute: '2-digit',
+            hour: "2-digit",
+            minute: "2-digit",
           }),
           date: new Date(c.consultation_date).toLocaleDateString(locale),
-          patient: c.patient?.name || t('dashboardHome.na'),
-          veterinarian: c.veterinarian?.name || t('dashboardHome.na'),
-          status: statusLabel(c.status || 'scheduled'),
-          statusKey: c.status || 'scheduled',
+          patient: c.patient?.name || t("dashboardHome.na"),
+          veterinarian: c.veterinarian?.name || t("dashboardHome.na"),
+          status: statusLabel(c.status || "scheduled"),
+          statusKey: c.status || "scheduled",
         }));
 
       setRecentAppointments(recent);
     } catch (error) {
-      console.error('Error loading dashboard:', error);
+      console.error("Error loading dashboard:", error);
     } finally {
       setLoading(false);
     }
@@ -162,120 +156,126 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchData();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locale, t]);
 
   const statCards = useMemo(
     () => [
       {
-        label: t('dashboardHome.statsToday'),
+        label: t("dashboardHome.statsToday"),
         value: stats.appointmentsToday,
-        icon: Stethoscope,
-        color: 'text-blue-600',
-        bg: 'bg-blue-50',
-        valueColor: 'text-blue-700',
+        icon: MenuIconsColored.atendimentos,
+        color: "text-blue-600",
+        bg: "bg-blue-50",
+        valueColor: "text-blue-700",
         href: undefined,
       },
       {
-        label: t('dashboardHome.statsNewPatients'),
+        label: t("dashboardHome.statsNewPatients"),
         value: stats.newPatientsMonth,
-        icon: Users,
-        color: 'text-sky-600',
-        bg: 'bg-sky-50',
-        valueColor: 'text-sky-700',
+        icon: MenuIconsColored.pacientes,
+        color: "text-sky-600",
+        bg: "bg-sky-50",
+        valueColor: "text-sky-700",
         href: undefined,
       },
       {
-        label: t('dashboardHome.statsRevenue'),
-        value: `${t('dashboardHome.currencyPrefix')}${stats.revenueMonth.toFixed(2)}`,
-        icon: TrendingUp,
-        color: 'text-emerald-600',
-        bg: 'bg-emerald-50',
-        valueColor: 'text-emerald-700',
+        label: t("dashboardHome.statsRevenue"),
+        value: `${t("dashboardHome.currencyPrefix")}${stats.revenueMonth.toFixed(2)}`,
+        icon: MenuIconsColored.receitaMes,
+        color: "text-emerald-600",
+        bg: "bg-emerald-50",
+        valueColor: "text-emerald-700",
         href: undefined,
       },
       {
-        label: t('dashboardHome.statsCancelled'),
+        label: t("dashboardHome.statsCancelled"),
         value: stats.cancelledThisMonth,
-        icon: XCircle,
-        color: 'text-slate-500',
-        bg: 'bg-slate-100',
-        valueColor: 'text-slate-600',
+        icon: MenuIconsColored.canceladas,
+        color: "text-slate-500",
+        bg: "bg-slate-100",
+        valueColor: "text-slate-600",
         href: undefined,
       },
       {
-        label: t('dashboardHome.statsVaccines'),
+        label: t("dashboardHome.statsVaccines"),
         value: stats.vaccinesDue,
-        icon: FlaskConical,
-        color: 'text-amber-600',
-        bg: 'bg-amber-50',
-        valueColor: 'text-amber-700',
-        href: '/dashboard/vaccines',
+        icon: MenuIconsColored.vacinas,
+        color: "text-amber-600",
+        bg: "bg-amber-50",
+        valueColor: "text-amber-700",
+        href: "/dashboard/vaccines",
       },
       {
-        label: t('dashboardHome.statsExams'),
+        label: t("dashboardHome.statsExams"),
         value: stats.examsAwaitingFollowup,
-        icon: FileSearch,
-        color: 'text-violet-600',
-        bg: 'bg-violet-50',
-        valueColor: 'text-violet-700',
-        href: '/dashboard/followups',
+        icon: MenuIconsColored.exames,
+        color: "text-violet-600",
+        bg: "bg-violet-50",
+        valueColor: "text-violet-700",
+        href: "/dashboard/followups",
       },
       {
-        label: t('dashboardHome.statsWhatsApp'),
+        label: t("dashboardHome.statsWhatsApp"),
         value: stats.unansweredConversations,
-        icon: MessageSquare,
-        color: 'text-green-600',
-        bg: 'bg-green-50',
-        valueColor: 'text-green-700',
-        href: '/dashboard/whatsapp',
+        icon: MenuIconsColored.naoRespondidas,
+        color: "text-green-600",
+        bg: "bg-green-50",
+        valueColor: "text-green-700",
+        href: "/dashboard/whatsapp",
+      },
+      {
+        label: t("dashboardHome.statsWhatsApp"),
+        value: stats.unansweredConversations,
+        icon: MenuIconsColored.naoRespondidas,
+        color: "text-green-600",
+        bg: "bg-green-50",
+        valueColor: "text-green-700",
+        href: "/dashboard/whatsapp",
       },
     ],
     [t, stats],
   );
 
-  const statusVariant = (
-    statusKey: string,
-  ): 'default' | 'secondary' | 'destructive' | 'outline' => {
-    if (statusKey === 'completed') return 'default';
-    if (statusKey === 'cancelled') return 'destructive';
-    return 'secondary';
-  };
-
-  const statusClass = (statusKey: string) => {
-    if (statusKey === 'completed') return 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100';
-    if (statusKey === 'cancelled') return 'bg-red-100 text-red-700 hover:bg-red-100';
-    return 'bg-primary/10 text-primary hover:bg-primary/10';
+  const statusTextClass = (statusKey: string) => {
+    if (statusKey === "completed") return "text-emerald-700";
+    if (statusKey === "cancelled") return "text-red-700";
+    return "text-slate-700";
   };
 
   return (
-    <div className="space-y-8">
-      <h2 className="text-2xl font-heading font-semibold text-foreground">{t('dashboardHome.title')}</h2>
+    <div className="mx-auto space-y-10 px-4 sm:px-6 lg:px-8">
+      <h2 className="text-[30px] font-['InterDoFigma'] font-extrabold text-foreground mb-18">
+        {t("dashboardHome.title")}
+      </h2>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 border border-red-500">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {statCards.map((card) => {
           const Icon = card.icon;
           const cardContent = (
             <Card
               className={cn(
-                'rounded-xl border border-black/20',
-                card.href && 'cursor-pointer hover:shadow-md',
+                "m-0 p-0 w-full h-33.75 rounded-xl border border-black/20",
+                card.href && "cursor-pointer hover:shadow-md",
               )}
             >
-              <CardContent className="p-1 h-full border border-green-500">
+              <CardContent className="relative flex items-center m-0 p-4 justify-between h-full rounded-xl">
+                <div className="absolute top-2 right-2 flex items-center justify-center w-11 h-11 rounded-[9px]">
+                  <Icon className={cn("h-11 w-11", card.color)} />
+                </div>
                 {loading ? (
                   <div className="space-y-3">
                     <Skeleton className="h-4 w-24" />
                     <Skeleton className="h-8 w-16" />
                   </div>
                 ) : (
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="space-y-1">
-                      <p className="text-sm text-black w-30">{card.label}</p>
-                      <p className={cn('text-3xl font-bold text-black')}>{card.value}</p>
-                    </div>
-                    <div className={cn('rounded-lg p-2.5', card.bg)}>
-                      <Icon className={cn('h-5 w-5', card.color)} />
+                  <div className="flex w-full h-full items-start justify-between rounded-xl">
+                    <div className="space-y-1 w-full h-full flex flex-col items-start justify-between">
+                      <p className="text-[18px] text-black font-medium">
+                        {card.label}
+                      </p>
+                      <p className="font-extrabold font-['InterDoFigma'] text-[40px] leading-none">
+                        {card.value}
+                      </p>
                     </div>
                   </div>
                 )}
@@ -284,22 +284,24 @@ export default function DashboardPage() {
           );
 
           return card.href ? (
-            <Link key={card.label} href={card.href}>
+            <Link key={card.label} href={card.href} className="w-full">
               {cardContent}
             </Link>
           ) : (
-            <div key={card.label}>{cardContent}</div>
+            <div key={card.label} className="w-full">
+              {cardContent}
+            </div>
           );
         })}
       </div>
 
-      <Card className="rounded-xl border border-border shadow-[var(--shadow-card)]">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-semibold text-foreground">
-            {t('dashboardHome.tableTitle')}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
+      <div className="overflow-x-auto">
+        <div className="px-2 mb-8 mt-4">
+          <h3 className="text-[20px] font-bold text-slate-900">
+            {t("dashboardHome.tableTitle")}
+          </h3>
+        </div>
+        <div className="p-0">
           {loading ? (
             <div className="space-y-3 p-6">
               {Array.from({ length: 4 }).map((_, i) => (
@@ -307,49 +309,69 @@ export default function DashboardPage() {
               ))}
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t('dashboardHome.colDate')}</TableHead>
-                  <TableHead>{t('dashboardHome.colTime')}</TableHead>
-                  <TableHead>{t('dashboardHome.colPatient')}</TableHead>
-                  <TableHead>{t('dashboardHome.colVet')}</TableHead>
-                  <TableHead>{t('dashboardHome.colStatus')}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {recentAppointments.length === 0 ? (
+            <div className="overflow-x-auto border border-slate-200 rounded-lg">
+              <Table className="min-w-full border-collapse bg-white text-sm">
+                <TableHeader>
                   <TableRow>
-                    <TableCell
-                      colSpan={5}
-                      className="py-8 text-center text-sm text-muted-foreground/60"
-                    >
-                      {t('dashboardHome.noAppointments', 'Nenhuma consulta hoje')}
-                    </TableCell>
+                    <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">
+                      {t("dashboardHome.colDate")}
+                    </TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">
+                      {t("dashboardHome.colTime")}
+                    </TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">
+                      {t("dashboardHome.colPatient")}
+                    </TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">
+                      {t("dashboardHome.colVet")}
+                    </TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">
+                      {t("dashboardHome.colStatus")}
+                    </TableHead>
                   </TableRow>
-                ) : (
-                  recentAppointments.map((row) => (
-                    <TableRow key={row.key}>
-                      <TableCell className="text-muted-foreground">{row.date}</TableCell>
-                      <TableCell className="text-muted-foreground">{row.time}</TableCell>
-                      <TableCell className="font-medium text-foreground">{row.patient}</TableCell>
-                      <TableCell className="text-muted-foreground">{row.veterinarian}</TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={statusVariant(row.statusKey)}
-                          className={cn('text-xs font-medium', statusClass(row.statusKey))}
-                        >
-                          {row.status}
-                        </Badge>
+                </TableHeader>
+                <TableBody>
+                  {recentAppointments.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={5}
+                        className="border-t border-slate-200 py-8 text-center text-sm text-slate-500"
+                      >
+                        {t(
+                          "dashboardHome.noAppointments",
+                          "Nenhuma consulta hoje",
+                        )}
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                  ) : (
+                    recentAppointments.map((row) => (
+                      <TableRow key={row.key}>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
+                          {row.date}
+                        </TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
+                          {row.time}
+                        </TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 font-medium text-slate-900">
+                          {row.patient}
+                        </TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
+                          {row.veterinarian}
+                        </TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3">
+                          <span className={statusTextClass(row.statusKey)}>
+                            {row.status}
+                          </span>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

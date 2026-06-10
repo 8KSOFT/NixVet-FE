@@ -4,9 +4,10 @@ interface LogoColoredProps {
   width?: string;
   height?: string;
   className?: string;
+  monochrome?: boolean;
 }
 
-export const LogoColored = ({ width, height, className }: LogoColoredProps) => {
+export const LogoColored = ({ width, height, className, monochrome = false }: LogoColoredProps) => {
   return (
     <svg
       id="Layer_2"
@@ -17,6 +18,7 @@ export const LogoColored = ({ width, height, className }: LogoColoredProps) => {
       width={width}
       height={height}
       className={className}
+      style={monochrome ? { filter: "grayscale(100%)" } : {}}
     >
       <defs>
         <style>{`

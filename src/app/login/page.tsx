@@ -152,6 +152,7 @@ export default function LoginPage() {
             className="opacity-8 sm:pb-28 invert"
           />
         </div>
+
         <div className="w-fit relative h-fit z-10 mx-auto flex items-center justify-between max-w-lg flex-col gap-2 sm:items-start">
           <div className="sm:mb-8">
             {brandingLoading ? (
@@ -175,6 +176,7 @@ export default function LoginPage() {
               </div>
             )}
           </div>
+
           <div className="sm:block">
             <div>
               <p className="text-base tracking-wide leading-5 font-black subpixel-antialiased text-white sm:text-[42px] font-['InterDoFigma'] sm:leading-11 sm:tracking-wider sm:max-w-md">

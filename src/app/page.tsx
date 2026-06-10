@@ -259,7 +259,7 @@ export default function LandingPage() {
         <div className="mb-4">
           <LogoColored
             width={isMobile ? "200px" : "400px"}
-            height=""
+            // height="auto"
             className="inline-block hover:opacity-80 transition-all"
           />
         </div>

@@ -63,7 +63,7 @@ export function LogoCompactoDynamic({
           gradientUnits="userSpaceOnUse"
         >
           <stop />
-          <stop offset="1" stop-color="white" />
+          <stop offset="1" stopColor="white" />
         </linearGradient>
       </defs>
     </svg>
