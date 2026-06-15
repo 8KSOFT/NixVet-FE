@@ -189,10 +189,19 @@ export default function TeamPage() {
 
   const roleBadgeVariant = (
     role: string,
-  ): "destructive" | "secondary" | "default" => {
-    if (role === "admin" || role === "superadmin") return "destructive";
-    if (role === "manager") return "secondary";
-    return "default";
+  ):
+    | "admin"
+    | "manager"
+    | "veterinarian"
+    | "reception"
+    | "intern"
+    | "secondary"
+    | "default" => {
+    if (role === "admin" || role === "superadmin") return "admin";
+    if (role === "manager") return "manager";
+    if (role === "reception") return "reception";
+    if (role === "intern") return "intern";
+    return "veterinarian";
   };
 
   if (forbidden) {
@@ -209,7 +218,7 @@ export default function TeamPage() {
   return (
     <div>
       <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-heading font-bold flex items-center gap-2">
+        <h1 className="text-2xl font-extrabold font-['InterDoFigma'] flex items-center gap-2">
           {t("team.title")}
         </h1>
         <Button onClick={handleAdd} className="bg-primary">
@@ -259,11 +268,7 @@ export default function TeamPage() {
                         </Button>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="p-0"
-                            >
+                            <Button variant="ghost" size="icon" className="p-0">
                               <Trash2 className="w-4 h-4" />
                             </Button>
                           </AlertDialogTrigger>

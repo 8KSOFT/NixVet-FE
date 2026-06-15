@@ -357,7 +357,7 @@ export default function PatientsPage() {
   return (
     <div>
       <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center mb-4">
-        <h1 className="text-2xl font-heading font-bold flex items-center gap-2">
+        <h1 className="text-2xl font-extrabold font-['InterDoFigma'] flex items-center gap-2">
           {t("patients.title")}
         </h1>
         <div className="flex flex-wrap items-center gap-2">
@@ -386,7 +386,10 @@ export default function PatientsPage() {
               </SelectContent>
             </Select>
           </div>
-          <Button onClick={handleAdd} className="bg-primary hover:bg-brand-deep/80">
+          <Button
+            onClick={handleAdd}
+            className="bg-primary hover:bg-brand-deep/80"
+          >
             <Plus className="w-4 h-4 mr-2" /> {t("patients.createButton")}
           </Button>
         </div>
@@ -501,377 +504,393 @@ export default function PatientsPage() {
       )}
 
       <Dialog open={modalVisible} onOpenChange={setModalVisible}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>
-              {editingId ? "Editar Paciente" : "Novo Paciente"}
+        <DialogContent className="max-h-[90vh] bg-white h-fit rounded-none border-none overflow-y-auto p-2 max-w-[calc(100%-4rem)] modal-responsive">
+          <DialogHeader className="flex flex-col items-start justify-between bg-[#F2F2F7] rounded-2xl border border-gray-300">
+            <DialogTitle className="h-18 flex items-center">
+              <span className="pl-5 text-[22px] font-semibold">
+                {editingId ? "Editar Paciente" : "Novo Paciente"}
+              </span>
             </DialogTitle>
-          </DialogHeader>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            {/* Nome */}
-            <div className="space-y-1">
-              <Label htmlFor="name">Nome *</Label>
-              <Controller
-                name="name"
-                control={control}
-                rules={{ required: "Obrigatório" }}
-                render={({ field }) => (
-                  <Input id="name" {...field} value={field.value ?? ""} />
-                )}
-              />
-              {errors.name && (
-                <p className="text-sm text-destructive">
-                  {errors.name.message}
-                </p>
-              )}
-            </div>
-
-            {/* Tutor choice */}
-            <div className="space-y-2">
-              <Label>Tutor *</Label>
-              {editingId && (
-                <p className="text-xs text-muted-foreground">
-                  Você pode vincular ou alterar o tutor ao editar o paciente.
-                </p>
-              )}
-              <Controller
-                name="tutor_choice"
-                control={control}
-                rules={{ required: "Defina se informa o tutor agora ou não" }}
-                render={({ field }) => (
-                  <RadioGroup
-                    value={field.value}
-                    onValueChange={field.onChange}
-                    className="flex flex-col gap-2"
-                  >
-                    <div className="flex items-center gap-2">
-                      <RadioGroupItem value="yes" id="tutor-yes" />
-                      <Label
-                        htmlFor="tutor-yes"
-                        className="font-normal cursor-pointer"
-                      >
-                        Informar tutor agora
-                      </Label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <RadioGroupItem value="no" id="tutor-no" />
-                      <Label
-                        htmlFor="tutor-no"
-                        className="font-normal cursor-pointer"
-                      >
-                        Não informar tutor (emergência ou abandono)
-                      </Label>
-                    </div>
-                  </RadioGroup>
-                )}
-              />
-              {errors.tutor_choice && (
-                <p className="text-sm text-destructive">
-                  {errors.tutor_choice.message}
-                </p>
-              )}
-            </div>
-
-            {/* Conditional: tutor_id */}
-            {watchedTutorChoice === "yes" && (
+            <form
+              onSubmit={handleSubmit(onSubmit)}
+              className="w-full h-full space-y-4 md:space-y-4 p-5 border-t border-gray-300 rounded-2xl bg-[#FFFFFF]"
+            >
+              {/* Nome */}
               <div className="space-y-1">
-                <Label>Selecione o tutor *</Label>
+                <Label htmlFor="name">Nome *</Label>
                 <Controller
-                  name="tutor_id"
-                  control={control}
-                  rules={{ required: "Selecione um tutor" }}
-                  render={({ field }) => (
-                    <Select
-                      value={field.value ?? ""}
-                      onValueChange={field.onChange}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione um tutor" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {tutors.map((tutor) => (
-                          <SelectItem key={tutor.id} value={tutor.id}>
-                            {tutor.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-                {errors.tutor_id && (
-                  <p className="text-sm text-destructive">
-                    {errors.tutor_id.message}
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* Conditional: no_tutor_reason */}
-            {watchedTutorChoice === "no" && (
-              <div className="space-y-1">
-                <Label>Motivo *</Label>
-                <Controller
-                  name="no_tutor_reason"
-                  control={control}
-                  rules={{ required: "Informe o motivo" }}
-                  render={({ field }) => (
-                    <Select
-                      value={field.value ?? ""}
-                      onValueChange={field.onChange}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione o motivo" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="EMERGENCIA">
-                          {NO_TUTOR_REASON_LABELS.EMERGENCIA}
-                        </SelectItem>
-                        <SelectItem value="ABANDONO">
-                          {NO_TUTOR_REASON_LABELS.ABANDONO}
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-                {errors.no_tutor_reason && (
-                  <p className="text-sm text-destructive">
-                    {errors.no_tutor_reason.message}
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* Espécie + Raça */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <Label>Espécie *</Label>
-                <Controller
-                  name="species"
+                  name="name"
                   control={control}
                   rules={{ required: "Obrigatório" }}
                   render={({ field }) => (
-                    <Select
+                    <Input
+                      className="ring-none border-gray-300 shadow-none"
+                      id="name"
+                      {...field}
                       value={field.value ?? ""}
-                      onValueChange={(value) => {
-                        field.onChange(value);
-                        setValue("breed", "" as any);
-                        setBreedOptions([]);
-                        setBreedSearchValue("");
-                        fetchBreedOptions(value);
-                      }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {speciesOptions.map((o) => (
-                          <SelectItem key={o.id} value={o.description}>
-                            {o.description}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    />
                   )}
                 />
-                {errors.species && (
+                {errors.name && (
                   <p className="text-sm text-destructive">
-                    {errors.species.message}
+                    {errors.name.message}
                   </p>
                 )}
               </div>
 
-              {/* Raça com Combobox */}
-              <div className="space-y-1">
-                <Label>Raça *</Label>
+              {/* Tutor choice */}
+              <div className="space-y-2">
+                <Label>Tutor *</Label>
+                {editingId && (
+                  <p className="text-xs text-muted-foreground">
+                    Você pode vincular ou alterar o tutor ao editar o paciente.
+                  </p>
+                )}
                 <Controller
-                  name="breed"
+                  name="tutor_choice"
                   control={control}
-                  rules={{ required: "Obrigatório" }}
+                  rules={{
+                    required: "Defina se informa o tutor agora ou não",
+                  }}
                   render={({ field }) => (
-                    <Popover open={breedOpen} onOpenChange={setBreedOpen}>
-                      <PopoverTrigger asChild>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          role="combobox"
-                          disabled={!watchedSpecies}
-                          className="w-full justify-between font-normal"
+                    <RadioGroup
+                      value={field.value}
+                      onValueChange={field.onChange}
+                      className="flex flex-col gap-2 md:gap-2"
+                    >
+                      <div className="h-12 md:h-12 flex items-center gap-2 rounded-lg border p-2 border-gray-300">
+                        <RadioGroupItem value="yes" id="tutor-yes" />
+                        <Label
+                          htmlFor="tutor-yes"
+                          className="font-normal cursor-pointer"
                         >
-                          <span className="truncate">
-                            {field.value
-                              ? field.value
-                              : breedOptions.length
-                                ? "Selecione ou cadastre a raça"
-                                : "Selecione primeiro a espécie"}
-                          </span>
-                          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-64 p-0" align="start">
-                        <Command shouldFilter={false}>
-                          <CommandInput
-                            placeholder="Buscar raça..."
-                            value={breedSearchValue}
-                            onValueChange={setBreedSearchValue}
-                          />
-                          <CommandList>
-                            <CommandEmpty>
-                              Nenhuma raça encontrada.
-                            </CommandEmpty>
-                            <CommandGroup>
-                              {filteredBreeds.map((o) => (
-                                <CommandItem
-                                  key={o.id}
-                                  value={o.description}
-                                  onSelect={(val) => {
-                                    field.onChange(val);
-                                    setBreedSearchValue("");
-                                    setBreedOpen(false);
-                                  }}
-                                >
-                                  <Check
-                                    className={`mr-2 h-4 w-4 ${
-                                      field.value === o.description
-                                        ? "opacity-100"
-                                        : "opacity-0"
-                                    }`}
-                                  />
-                                  {o.description}
-                                </CommandItem>
-                              ))}
-                              {showAddBreed && (
-                                <CommandItem
-                                  value={`__NEW__:${breedSearchValue.trim()}`}
-                                  onSelect={() =>
-                                    handleAddBreed(breedSearchValue.trim())
-                                  }
-                                >
-                                  <Plus className="mr-2 h-4 w-4" />+ Cadastrar
-                                  &quot;{breedSearchValue.trim()}&quot;
-                                </CommandItem>
-                              )}
-                            </CommandGroup>
-                          </CommandList>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
+                          Informar tutor agora
+                        </Label>
+                      </div>
+                      <div className="h-12 md:h-12 flex items-center gap-2 rounded-lg border p-4 border-gray-300">
+                        <RadioGroupItem value="no" id="tutor-no" />
+                        <Label
+                          htmlFor="tutor-no"
+                          className="font-normal cursor-pointer"
+                        >
+                          Não informar tutor (emergência ou abandono)
+                        </Label>
+                      </div>
+                    </RadioGroup>
                   )}
                 />
-                {errors.breed && (
+                {errors.tutor_choice && (
                   <p className="text-sm text-destructive">
-                    {errors.breed.message}
+                    {errors.tutor_choice.message}
                   </p>
                 )}
               </div>
-            </div>
 
-            {/* Idade, Peso, Sexo */}
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-1">
-                <Label htmlFor="age">Idade (anos) *</Label>
-                <Controller
-                  name="age"
-                  control={control}
-                  rules={{ required: "Obrigatório" }}
-                  render={({ field }) => (
-                    <Input
-                      id="age"
-                      type="number"
-                      min={0}
-                      value={field.value ?? ""}
-                      onChange={(e) => field.onChange(Number(e.target.value))}
-                    />
-                  )}
-                />
-                {errors.age && (
-                  <p className="text-sm text-destructive">
-                    {errors.age.message}
-                  </p>
-                )}
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="weight">Peso (kg) *</Label>
-                <Controller
-                  name="weight"
-                  control={control}
-                  rules={{ required: "Obrigatório" }}
-                  render={({ field }) => (
-                    <Input
-                      id="weight"
-                      type="number"
-                      min={0}
-                      step={0.1}
-                      value={field.value ?? ""}
-                      onChange={(e) => field.onChange(Number(e.target.value))}
-                    />
-                  )}
-                />
-                {errors.weight && (
-                  <p className="text-sm text-destructive">
-                    {errors.weight.message}
-                  </p>
-                )}
-              </div>
-              <div className="space-y-1">
-                <Label>Sexo *</Label>
-                <Controller
-                  name="sex"
-                  control={control}
-                  rules={{ required: "Obrigatório" }}
-                  render={({ field }) => (
-                    <Select
-                      value={field.value ?? ""}
-                      onValueChange={field.onChange}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {sexOptions.map((o) => (
-                          <SelectItem key={o.id} value={o.description}>
-                            {o.description}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-                {errors.sex && (
-                  <p className="text-sm text-destructive">
-                    {errors.sex.message}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Microchip */}
-            <div className="space-y-1">
-              <Label htmlFor="chip_number">Nº Microchip</Label>
-              <Controller
-                name="chip_number"
-                control={control}
-                render={({ field }) => (
-                  <Input
-                    id="chip_number"
-                    {...field}
-                    value={field.value ?? ""}
+              {/* Conditional: tutor_id */}
+              {watchedTutorChoice === "yes" && (
+                <div className="space-y-1">
+                  <Label>Selecione o tutor *</Label>
+                  <Controller
+                    name="tutor_id"
+                    control={control}
+                    rules={{ required: "Selecione um tutor" }}
+                    render={({ field }) => (
+                      <Select
+                        value={field.value ?? ""}
+                        onValueChange={field.onChange}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione um tutor" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {tutors.map((tutor) => (
+                            <SelectItem key={tutor.id} value={tutor.id}>
+                              {tutor.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
                   />
-                )}
-              />
-            </div>
+                  {errors.tutor_id && (
+                    <p className="text-sm text-destructive">
+                      {errors.tutor_id.message}
+                    </p>
+                  )}
+                </div>
+              )}
 
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setModalVisible(false)}
-              >
-                Cancelar
-              </Button>
-              <Button type="submit">{editingId ? "Salvar" : "Criar"}</Button>
-            </DialogFooter>
-          </form>
+              {/* Conditional: no_tutor_reason */}
+              {watchedTutorChoice === "no" && (
+                <div className="space-y-1">
+                  <Label>Motivo *</Label>
+                  <Controller
+                    name="no_tutor_reason"
+                    control={control}
+                    rules={{ required: "Informe o motivo" }}
+                    render={({ field }) => (
+                      <Select
+                        value={field.value ?? ""}
+                        onValueChange={field.onChange}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o motivo" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="EMERGENCIA">
+                            {NO_TUTOR_REASON_LABELS.EMERGENCIA}
+                          </SelectItem>
+                          <SelectItem value="ABANDONO">
+                            {NO_TUTOR_REASON_LABELS.ABANDONO}
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {errors.no_tutor_reason && (
+                    <p className="text-sm text-destructive">
+                      {errors.no_tutor_reason.message}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Espécie + Raça */}
+              <div className="grid grid-cols-2 md:grid-cols-2 gap-4 md:gap-4 max-md:grid-cols-2">
+                <div className="space-y-1">
+                  <Label>Espécie *</Label>
+                  <Controller
+                    name="species"
+                    control={control}
+                    rules={{ required: "Obrigatório" }}
+                    render={({ field }) => (
+                      <Select
+                        value={field.value ?? ""}
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          setValue("breed", "" as any);
+                          setBreedOptions([]);
+                          setBreedSearchValue("");
+                          fetchBreedOptions(value);
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {speciesOptions.map((o) => (
+                            <SelectItem key={o.id} value={o.description}>
+                              {o.description}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {errors.species && (
+                    <p className="text-sm text-destructive">
+                      {errors.species.message}
+                    </p>
+                  )}
+                </div>
+
+                {/* Raça com Combobox */}
+                <div className="space-y-1">
+                  <Label>Raça *</Label>
+                  <Controller
+                    name="breed"
+                    control={control}
+                    rules={{ required: "Obrigatório" }}
+                    render={({ field }) => (
+                      <Popover open={breedOpen} onOpenChange={setBreedOpen}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            role="combobox"
+                            disabled={!watchedSpecies}
+                            className="h-8 w-full justify-between font-normal sm:h-12"
+                          >
+                            <span className="truncate">
+                              {field.value
+                                ? field.value
+                                : breedOptions.length
+                                  ? "Selecione ou cadastre a raça"
+                                  : "Selecione primeiro a espécie"}
+                            </span>
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent
+                          className="w-64 p-0 popover-responsive"
+                          align="start"
+                        >
+                          <Command shouldFilter={false}>
+                            <CommandInput
+                              placeholder="Buscar raça..."
+                              value={breedSearchValue}
+                              onValueChange={setBreedSearchValue}
+                            />
+                            <CommandList>
+                              <CommandEmpty>
+                                Nenhuma raça encontrada.
+                              </CommandEmpty>
+                              <CommandGroup>
+                                {filteredBreeds.map((o) => (
+                                  <CommandItem
+                                    key={o.id}
+                                    value={o.description}
+                                    onSelect={(val) => {
+                                      field.onChange(val);
+                                      setBreedSearchValue("");
+                                      setBreedOpen(false);
+                                    }}
+                                  >
+                                    <Check
+                                      className={`mr-2 h-4 w-4 ${
+                                        field.value === o.description
+                                          ? "opacity-100"
+                                          : "opacity-0"
+                                      }`}
+                                    />
+                                    {o.description}
+                                  </CommandItem>
+                                ))}
+                                {showAddBreed && (
+                                  <CommandItem
+                                    value={`__NEW__:${breedSearchValue.trim()}`}
+                                    onSelect={() =>
+                                      handleAddBreed(breedSearchValue.trim())
+                                    }
+                                  >
+                                    <Plus className="mr-2 h-4 w-4" />+ Cadastrar
+                                    &quot;{breedSearchValue.trim()}
+                                    &quot;
+                                  </CommandItem>
+                                )}
+                              </CommandGroup>
+                            </CommandList>
+                          </Command>
+                        </PopoverContent>
+                      </Popover>
+                    )}
+                  />
+                  {errors.breed && (
+                    <p className="text-sm text-destructive">
+                      {errors.breed.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Idade, Peso, Sexo */}
+              <div className="grid grid-cols-3 md:grid-cols-3 gap-4 md:gap-4 max-md:grid-cols-3">
+                <div className="space-y-1">
+                  <Label htmlFor="age">Idade (anos) *</Label>
+                  <Controller
+                    name="age"
+                    control={control}
+                    rules={{ required: "Obrigatório" }}
+                    render={({ field }) => (
+                      <Input
+                        id="age"
+                        type="number"
+                        min={0}
+                        value={field.value ?? ""}
+                        onChange={(e) => field.onChange(Number(e.target.value))}
+                      />
+                    )}
+                  />
+                  {errors.age && (
+                    <p className="text-sm text-destructive">
+                      {errors.age.message}
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="weight">Peso (kg) *</Label>
+                  <Controller
+                    name="weight"
+                    control={control}
+                    rules={{ required: "Obrigatório" }}
+                    render={({ field }) => (
+                      <Input
+                        id="weight"
+                        type="number"
+                        min={0}
+                        step={0.1}
+                        value={field.value ?? ""}
+                        onChange={(e) => field.onChange(Number(e.target.value))}
+                      />
+                    )}
+                  />
+                  {errors.weight && (
+                    <p className="text-sm text-destructive">
+                      {errors.weight.message}
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-1">
+                  <Label>Sexo *</Label>
+                  <Controller
+                    name="sex"
+                    control={control}
+                    rules={{ required: "Obrigatório" }}
+                    render={({ field }) => (
+                      <Select
+                        value={field.value ?? ""}
+                        onValueChange={field.onChange}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {sexOptions.map((o) => (
+                            <SelectItem key={o.id} value={o.description}>
+                              {o.description}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {errors.sex && (
+                    <p className="text-sm text-destructive">
+                      {errors.sex.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Microchip */}
+              <div className="space-y-1">
+                <Label htmlFor="chip_number">Nº Microchip</Label>
+                <Controller
+                  name="chip_number"
+                  control={control}
+                  render={({ field }) => (
+                    <Input
+                      id="chip_number"
+                      {...field}
+                      value={field.value ?? ""}
+                    />
+                  )}
+                />
+              </div>
+
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setModalVisible(false)}
+                >
+                  Cancelar
+                </Button>
+                <Button type="submit">{editingId ? "Salvar" : "Criar"}</Button>
+              </DialogFooter>
+            </form>
+          </DialogHeader>
         </DialogContent>
       </Dialog>
     </div>

@@ -145,6 +145,42 @@ body {
   }
 }
 
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.scrollbar-overlay {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.75) transparent;
+}
+
+.scrollbar-overlay::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.scrollbar-overlay::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-overlay::-webkit-scrollbar-thumb {
+  background-color: rgba(148, 163, 184, 0.65);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+.scrollbar-overlay::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 @keyframes nix-fade-in {
   from {
     opacity: 0;
@@ -152,6 +188,22 @@ body {
   to {
     opacity: 1;
   }
+}
+
+/* Custom overlay thumb used in calendar week view */
+.custom-scrollbar-thumb {
+  background-color: rgba(59, 130, 246, 0.9); /* blue-500 */
+  border-radius: 9999px;
+  box-shadow: 0 2px 6px rgba(2, 6, 23, 0.25);
+  transition:
+    opacity 150ms ease,
+    transform 150ms ease;
+  opacity: 0.85;
+  pointer-events: auto;
+}
+.custom-scrollbar-thumb:hover {
+  opacity: 1;
+  transform: scaleX(1.05);
 }
 
 @keyframes nix-float-slow {
@@ -240,4 +292,166 @@ body {
 
 [data-slot="sheet-content"][data-side="right"][data-state="closed"] {
   animation: sheet-slide-out-to-right 220ms ease-in forwards;
+}
+
+/* Responsive modal adjustments (mobile/tablet only). Aggressive mobile-first approach
+   to prevent text/input overflow and ensure proper stacking. */
+@media (max-width: 1024px) {
+  .modal-responsive {
+    width: calc(100% - 0.5rem) !important;
+    max-width: calc(100% - 0.5rem) !important;
+    margin: 0.25rem !important;
+    border-radius: 0.75rem;
+    padding: 0 !important;
+    max-height: 95vh;
+    overflow: hidden;
+  }
+
+  .modal-responsive [role="dialog"] {
+    display: flex;
+    flex-direction: column;
+    max-height: 95vh;
+  }
+
+  /* Modal header section */
+  .modal-responsive [class*="DialogHeader"] {
+    flex-shrink: 0;
+    padding: 0.75rem 1rem !important;
+    background-color: #f2f2f7 !important;
+    border-radius: 0.75rem 0.75rem 0 0;
+  }
+
+  .modal-responsive [class*="DialogTitle"] {
+    font-size: 1rem !important;
+    font-weight: 600;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  .modal-responsive [class*="DialogTitle"] span {
+    padding: 0 !important;
+  }
+
+  /* Form scrollable area */
+  .modal-responsive form {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 0.75rem !important;
+    max-height: calc(95vh - 4.5rem);
+    gap: 0.75rem !important;
+  }
+
+  /* All input fields: reduce height and padding */
+  .modal-responsive input,
+  .modal-responsive [role="button"]:not(:has(svg:only-child)) {
+    height: 2rem !important;
+    font-size: 0.875rem !important;
+    padding: 0.375rem 0.5rem !important;
+  }
+
+  /* Labels: reduce font size */
+  .modal-responsive label {
+    font-size: 0.75rem !important;
+    font-weight: 500;
+    margin-bottom: 0.25rem !important;
+  }
+
+  /* Reduce space between form groups */
+  .modal-responsive > div {
+    margin-bottom: 0.5rem !important;
+  }
+
+  /* Grid layouts: stack vertically on mobile */
+  .modal-responsive .grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.5rem !important;
+  }
+
+  /* Radio group: compact layout */
+  .modal-responsive [role="radiogroup"] {
+    gap: 0.5rem !important;
+  }
+
+  .modal-responsive [role="radiogroup"] > div {
+    height: auto !important;
+    padding: 0.5rem !important;
+    min-height: 2rem;
+  }
+
+  /* Dialog footer: reduce button sizes */
+  .modal-responsive [class*="DialogFooter"] {
+    flex-shrink: 0;
+    padding: 0.75rem !important;
+    gap: 0.5rem !important;
+  }
+
+  .modal-responsive [class*="DialogFooter"] button {
+    font-size: 0.875rem !important;
+    padding: 0.375rem 0.75rem !important;
+    height: 2rem !important;
+  }
+
+  /* Popover: fit mobile screen width */
+  .popover-responsive {
+    width: calc(100vw - 2rem) !important;
+    max-width: 90vw !important;
+    margin: 0.5rem;
+  }
+
+  /* Error messages: smaller font */
+  .modal-responsive p.text-sm {
+    font-size: 0.7rem !important;
+    margin-top: 0.25rem !important;
+  }
+
+  /* Very small screens: even more aggressive spacing */
+  @media (max-width: 480px) {
+    .modal-responsive {
+      margin: 0 !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      border-radius: 0;
+      max-height: 100vh;
+    }
+
+    .modal-responsive [class*="DialogHeader"] {
+      padding: 0.5rem 0.75rem !important;
+      border-radius: 0;
+    }
+
+    .modal-responsive [class*="DialogTitle"] {
+      font-size: 0.875rem !important;
+    }
+
+    .modal-responsive form {
+      padding: 0.5rem !important;
+      gap: 0.5rem !important;
+    }
+
+    .modal-responsive input,
+    .modal-responsive [role="button"] {
+      font-size: 0.8125rem !important;
+      padding: 0.3rem 0.4rem !important;
+      height: 1.75rem !important;
+    }
+
+    .modal-responsive label {
+      font-size: 0.7rem !important;
+    }
+
+    .modal-responsive [class*="DialogFooter"] {
+      padding: 0.5rem !important;
+    }
+
+    .modal-responsive [class*="DialogFooter"] button {
+      font-size: 0.8125rem !important;
+      padding: 0.3rem 0.6rem !important;
+      height: 1.75rem !important;
+    }
+
+    .popover-responsive {
+      width: calc(100vw - 1rem) !important;
+    }
+  }
 }
