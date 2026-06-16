@@ -13,6 +13,7 @@ import {
   History,
   ChevronsUpDown,
   Check,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -504,20 +505,26 @@ export default function PatientsPage() {
       )}
 
       <Dialog open={modalVisible} onOpenChange={setModalVisible}>
-        <DialogContent className="max-h-[90vh] bg-white h-fit rounded-none border-none overflow-y-auto p-2 max-w-[calc(100%-4rem)] modal-responsive">
+        <DialogContent
+          showCloseButton={false}
+          className="max-h-[90vh] bg-white h-fit rounded-none border-none overflow-y-auto p-2.5 max-w-[calc(100%-4rem)] modal-responsive"
+        >
           <DialogHeader className="flex flex-col items-start justify-between bg-[#F2F2F7] rounded-2xl border border-gray-300">
-            <DialogTitle className="h-18 flex items-center">
-              <span className="pl-5 text-[22px] font-semibold">
+            <DialogTitle className="w-full h-20 px-4 flex items-center justify-between">
+              <span className="text-[26px] font-semibold">
                 {editingId ? "Editar Paciente" : "Novo Paciente"}
+              </span>
+              <span>
+                <X className="size-5 text-gray-800" />
               </span>
             </DialogTitle>
 
             <form
               onSubmit={handleSubmit(onSubmit)}
-              className="w-full h-full space-y-4 md:space-y-4 p-5 border-t border-gray-300 rounded-2xl bg-[#FFFFFF]"
+              className="w-full h-full space-y-4 md:space-y-6 p-5 border-t border-gray-300 rounded-2xl bg-[#FFFFFF] select-none"
             >
               {/* Nome */}
-              <div className="space-y-1">
+              <div className="space-y-2">
                 <Label htmlFor="name">Nome *</Label>
                 <Controller
                   name="name"
@@ -557,26 +564,40 @@ export default function PatientsPage() {
                     <RadioGroup
                       value={field.value}
                       onValueChange={field.onChange}
-                      className="flex flex-col gap-2 md:gap-2"
+                      className="flex h-11 items-center gap-0 border border-gray-300 rounded-lg overflow-hidden"
                     >
-                      <div className="h-12 md:h-12 flex items-center gap-2 rounded-lg border p-2 border-gray-300">
-                        <RadioGroupItem value="yes" id="tutor-yes" />
-                        <Label
-                          htmlFor="tutor-yes"
-                          className="font-normal cursor-pointer"
-                        >
+                      {/* LADO ESQUERDO: Transforma a div em Label clicável */}
+                      <label
+                        htmlFor="tutor-yes"
+                        className="w-1/2 h-full flex items-center gap-2 p-4 cursor-pointer hover:bg-gray-50 active:bg-gray-100 transition-colors"
+                      >
+                        <RadioGroupItem
+                          value="yes"
+                          id="tutor-yes"
+                          className="size-4 bg-gray-300 data-[state=checked]:bg-transparent flex items-center justify-center [&_span]:flex [&_span]:items-center [&_span]:justify-center [&_span]:size-full [&_svg]:!size-[85%] [&_svg]:fill-current"
+                        />
+                        <span className="text-sm font-normal text-foreground">
                           Informar tutor agora
-                        </Label>
-                      </div>
-                      <div className="h-12 md:h-12 flex items-center gap-2 rounded-lg border p-4 border-gray-300">
-                        <RadioGroupItem value="no" id="tutor-no" />
-                        <Label
-                          htmlFor="tutor-no"
-                          className="font-normal cursor-pointer"
-                        >
-                          Não informar tutor (emergência ou abandono)
-                        </Label>
-                      </div>
+                        </span>
+                      </label>
+
+                      {/* Linha Divisória Central */}
+                      <div className="w-px h-11 bg-gray-300 shrink-0"></div>
+
+                      {/* LADO DIREITO: Transforma a div em Label clicável */}
+                      <label
+                        htmlFor="tutor-no"
+                        className="w-1/2 h-full flex items-center gap-2 p-4 cursor-pointer hover:bg-gray-50 active:bg-gray-100 transition-colors"
+                      >
+                        <RadioGroupItem
+                          value="no"
+                          id="tutor-no"
+                          className="size-4 bg-gray-300 data-[state=checked]:bg-transparent flex items-center justify-center [&_span]:flex [&_span]:items-center [&_span]:justify-center [&_span]:size-full [&_svg]:!size-[85%] [&_svg]:fill-current"
+                        />
+                        <span className="text-sm font-normal text-foreground">
+                          Não informar tutor
+                        </span>
+                      </label>
                     </RadioGroup>
                   )}
                 />
@@ -587,74 +608,99 @@ export default function PatientsPage() {
                 )}
               </div>
 
-              {/* Conditional: tutor_id */}
-              {watchedTutorChoice === "yes" && (
-                <div className="space-y-1">
-                  <Label>Selecione o tutor *</Label>
-                  <Controller
-                    name="tutor_id"
-                    control={control}
-                    rules={{ required: "Selecione um tutor" }}
-                    render={({ field }) => (
-                      <Select
-                        value={field.value ?? ""}
-                        onValueChange={field.onChange}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione um tutor" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {tutors.map((tutor) => (
-                            <SelectItem key={tutor.id} value={tutor.id}>
-                              {tutor.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                  {errors.tutor_id && (
-                    <p className="text-sm text-destructive">
-                      {errors.tutor_id.message}
-                    </p>
+              {/* Container Unificado - A gaveta expande suave se houver qualquer escolha */}
+              <div
+                className={`transition-all duration-300 ease-in-out overflow-hidden ${
+                  watchedTutorChoice
+                    ? "max-h-32 opacity-100 mt-2"
+                    : "max-h-0 opacity-0 mt-0 pointer-events-none"
+                }`}
+              >
+                {/* Conteúdo Dinâmico com Fade-in Interno */}
+                <div
+                  key={watchedTutorChoice}
+                  className="animate-in fade-in duration-200 space-y-1"
+                >
+                  {/* CASO: Informar tutor agora */}
+                  {watchedTutorChoice === "yes" && (
+                    <>
+                      <Label>Selecione o tutor *</Label>
+                      <Controller
+                        name="tutor_id"
+                        control={control}
+                        rules={{
+                          required:
+                            watchedTutorChoice === "yes"
+                              ? "Selecione um tutor"
+                              : false,
+                        }}
+                        render={({ field }) => (
+                          <Select
+                            value={field.value ?? ""}
+                            onValueChange={field.onChange}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione um tutor" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {tutors.map((tutor) => (
+                                <SelectItem key={tutor.id} value={tutor.id}>
+                                  {tutor.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      />
+                      {errors.tutor_id && (
+                        <p className="text-sm text-destructive">
+                          {errors.tutor_id.message}
+                        </p>
+                      )}
+                    </>
                   )}
-                </div>
-              )}
 
-              {/* Conditional: no_tutor_reason */}
-              {watchedTutorChoice === "no" && (
-                <div className="space-y-1">
-                  <Label>Motivo *</Label>
-                  <Controller
-                    name="no_tutor_reason"
-                    control={control}
-                    rules={{ required: "Informe o motivo" }}
-                    render={({ field }) => (
-                      <Select
-                        value={field.value ?? ""}
-                        onValueChange={field.onChange}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione o motivo" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="EMERGENCIA">
-                            {NO_TUTOR_REASON_LABELS.EMERGENCIA}
-                          </SelectItem>
-                          <SelectItem value="ABANDONO">
-                            {NO_TUTOR_REASON_LABELS.ABANDONO}
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                  {errors.no_tutor_reason && (
-                    <p className="text-sm text-destructive">
-                      {errors.no_tutor_reason.message}
-                    </p>
+                  {/* CASO: Não informar tutor */}
+                  {watchedTutorChoice === "no" && (
+                    <>
+                      <Label>Motivo *</Label>
+                      <Controller
+                        name="no_tutor_reason"
+                        control={control}
+                        rules={{
+                          required:
+                            watchedTutorChoice === "no"
+                              ? "Informe o motivo"
+                              : false,
+                        }}
+                        render={({ field }) => (
+                          <Select
+                            value={field.value ?? ""}
+                            onValueChange={field.onChange}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione o motivo" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="EMERGENCIA">
+                                {NO_TUTOR_REASON_LABELS.EMERGENCIA}
+                              </SelectItem>
+                              <SelectItem value="ABANDONO">
+                                {NO_TUTOR_REASON_LABELS.ABANDONO}
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        )}
+                      />
+                      {errors.no_tutor_reason && (
+                        <p className="text-sm text-destructive">
+                          {errors.no_tutor_reason.message}
+                        </p>
+                      )}
+                    </>
                   )}
                 </div>
-              )}
+              </div>
 
               {/* Espécie + Raça */}
               <div className="grid grid-cols-2 md:grid-cols-2 gap-4 md:gap-4 max-md:grid-cols-2">
@@ -710,7 +756,7 @@ export default function PatientsPage() {
                             variant="outline"
                             role="combobox"
                             disabled={!watchedSpecies}
-                            className="h-8 w-full justify-between font-normal sm:h-12"
+                            className="h-8 w-full justify-between font-normal sm:h-11"
                           >
                             <span className="truncate">
                               {field.value
@@ -883,6 +929,7 @@ export default function PatientsPage() {
                 <Button
                   type="button"
                   variant="outline"
+                  className="border border-gray-300"
                   onClick={() => setModalVisible(false)}
                 >
                   Cancelar
