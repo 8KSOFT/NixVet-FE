@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Loader2, TrendingUp, DollarSign, TrendingDown, Percent } from 'lucide-react';
 import { toast } from 'sonner';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import api from '@/lib/axios';
 
 interface Summary {
@@ -83,8 +84,8 @@ export default function ReceitaLiquidaPage() {
       if (healthPlanId !== 'all') params.health_plan_id = healthPlanId;
       const res = await api.get('/financial-reports/revenue-analysis', { params });
       setData(res.data);
-    } catch (e: any) {
-      toast.error(e.response?.data?.message ?? 'Erro ao carregar análise');
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, 'Erro ao carregar análise'));
     } finally {
       setLoading(false);
     }

@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import type { ApiRequestError } from '@/app/types/api-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -50,6 +51,17 @@ interface TenantFormValues {
   initialUserName?: string;
   initialUserEmail?: string;
   initialUserPassword?: string;
+}
+
+function getApiErrorMessage(error: unknown, fallbackMessage: string): string {
+  const typedError = error as ApiRequestError;
+  const responseMessage = typedError.response?.data?.message;
+
+  if (Array.isArray(responseMessage)) {
+    return responseMessage[0] ?? fallbackMessage;
+  }
+
+  return responseMessage ?? typedError.message ?? fallbackMessage;
 }
 
 export default function SettingsPage() {
@@ -120,8 +132,8 @@ export default function SettingsPage() {
       }
       window.open(url, '_blank', 'noopener,noreferrer');
       toast.info('Após autorizar no Google, clique em "Atualizar Status".');
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Erro ao conectar Google');
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, 'Erro ao conectar Google'));
     } finally {
       setGoogleLoading(false);
     }
@@ -133,8 +145,8 @@ export default function SettingsPage() {
       await api.post('/integrations/google/disconnect');
       toast.success('Integração Google desconectada');
       await fetchGoogleStatus();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Erro ao desconectar Google');
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, 'Erro ao desconectar Google'));
     } finally {
       setGoogleLoading(false);
     }
@@ -152,8 +164,8 @@ export default function SettingsPage() {
       });
       toast.success('Configurações do Google atualizadas');
       await fetchGoogleStatus();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Erro ao salvar');
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, 'Erro ao salvar'));
     } finally {
       setGoogleLoading(false);
     }
@@ -165,8 +177,8 @@ export default function SettingsPage() {
       await api.post('/integrations/google/force-sync');
       toast.success('Sincronização executada');
       await fetchGoogleStatus();
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Erro ao sincronizar');
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, 'Erro ao sincronizar'));
     } finally {
       setForceSyncing(false);
     }
@@ -316,8 +328,8 @@ export default function SettingsPage() {
           : `Clínica "${values.name}" criada. Código para login: ${payload.code}`,
       );
       resetTenant();
-    } catch (e: any) {
-      toast.error(e.response?.data?.message || 'Erro ao criar clínica');
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, 'Erro ao criar clínica'));
     } finally {
       setCreatingTenant(false);
     }
@@ -329,8 +341,8 @@ export default function SettingsPage() {
       await api.put('/tenants/me', { whatsapp_ai_chatbot_enabled: enabled });
       setChatbotEnabled(enabled);
       toast.success(enabled ? 'Chatbot de IA ativado' : 'Chatbot de IA desativado');
-    } catch (e: any) {
-      toast.error(e.response?.data?.message ?? 'Erro ao salvar');
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, 'Erro ao salvar'));
     } finally {
       setChatbotSaving(false);
     }

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useRef, useCallback } from 'react';
+import type { ApiRequestError } from '@/app/types/api-error';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
@@ -183,6 +184,17 @@ interface WhatsappMessage {
   createdAt?: string;
 }
 
+function getApiErrorMessage(error: unknown, fallbackMessage: string): string {
+  const typedError = error as ApiRequestError;
+  const responseMessage = typedError.response?.data?.message;
+
+  if (Array.isArray(responseMessage)) {
+    return responseMessage[0] ?? fallbackMessage;
+  }
+
+  return responseMessage ?? typedError.message ?? fallbackMessage;
+}
+
 export default function WhatsAppPage() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -258,8 +270,8 @@ export default function WhatsAppPage() {
       const list = res.data?.suggested_replies ?? [];
       setSuggestions(Array.isArray(list) ? list : []);
       if (list.length === 0) toast.info('Nenhuma sugestão retornada');
-    } catch (e: any) {
-      toast.error(e.response?.data?.message ?? 'Erro ao obter sugestões');
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, 'Erro ao obter sugestões'));
     } finally {
       setSuggestLoading(false);
     }
@@ -295,8 +307,8 @@ export default function WhatsAppPage() {
       setSendText('');
       await Promise.all([loadMessages(selectedId, false), fetchConversations(true)]);
       toast.success('Mensagem enviada');
-    } catch (e: any) {
-      toast.error(e.response?.data?.message ?? 'Erro ao enviar');
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, 'Erro ao enviar'));
     } finally {
       setSending(false);
     }
@@ -311,8 +323,8 @@ export default function WhatsAppPage() {
       await api.post(`/whatsapp/conversations/${selectedId}/resume-ai`);
       await fetchConversations(true);
       toast.success('Bot retomado — IA voltará a responder automaticamente.');
-    } catch (e: any) {
-      toast.error(e.response?.data?.message ?? 'Erro ao retomar bot');
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, 'Erro ao retomar bot'));
     } finally {
       setAiActionLoading(false);
     }
@@ -325,8 +337,8 @@ export default function WhatsAppPage() {
       await api.post(`/whatsapp/conversations/${selectedId}/pause-ai`);
       await fetchConversations(true);
       toast.success('Bot pausado — você pode responder manualmente.');
-    } catch (e: any) {
-      toast.error(e.response?.data?.message ?? 'Erro ao pausar bot');
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, 'Erro ao pausar bot'));
     } finally {
       setAiActionLoading(false);
     }
@@ -342,8 +354,8 @@ export default function WhatsAppPage() {
       setSelectedId(null);
       setMessages([]);
       await fetchConversations(false);
-    } catch (e: any) {
-      toast.error(e.response?.data?.message ?? 'Erro ao arquivar conversa');
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, 'Erro ao arquivar conversa'));
     } finally {
       setArchiveLoading(false);
     }
@@ -358,8 +370,8 @@ export default function WhatsAppPage() {
       setSelectedId(null);
       setMessages([]);
       await fetchConversations(false);
-    } catch (e: any) {
-      toast.error(e.response?.data?.message ?? 'Erro ao desarquivar conversa');
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, 'Erro ao desarquivar conversa'));
     } finally {
       setArchiveLoading(false);
     }

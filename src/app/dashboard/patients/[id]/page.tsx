@@ -1,6 +1,14 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import type {
+  PatientDetail,
+  PatientTimelineEvent,
+  TimelineConsultationData,
+  TimelineExamRequestData,
+  TimelinePrescriptionData,
+  TimelineVaccineData,
+} from '@/app/types/patient';
 import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,28 +17,7 @@ import { Loader2, ChevronLeft, BookOpen, FlaskConical, ClipboardList, Clock, Fil
 import Link from 'next/link';
 import api from '@/lib/axios';
 
-interface TimelineEvent {
-  type: string;
-  date: string;
-  id: string;
-  data: Record<string, unknown>;
-}
-
-interface Patient {
-  id: string;
-  name: string;
-  species: string;
-  breed: string;
-  age: number;
-  weight: number;
-  sex: string;
-  tutor?: { name: string } | null;
-}
-
-const typeConfig: Record<
-  string,
-  { label: string; colorClass: string; dotClass: string; icon: React.ReactNode }
-> = {
+const typeConfig: Record<string, { label: string; colorClass: string; dotClass: string; icon: React.ReactNode }> = {
   consultation: {
     label: 'Consulta',
     colorClass: 'border-blue-400',
@@ -57,12 +44,28 @@ const typeConfig: Record<
   },
 };
 
+function getConsultationData(event: PatientTimelineEvent): TimelineConsultationData {
+  return event.data as TimelineConsultationData;
+}
+
+function getVaccineData(event: PatientTimelineEvent): TimelineVaccineData {
+  return event.data as TimelineVaccineData;
+}
+
+function getExamRequestData(event: PatientTimelineEvent): TimelineExamRequestData {
+  return event.data as TimelineExamRequestData;
+}
+
+function getPrescriptionData(event: PatientTimelineEvent): TimelinePrescriptionData {
+  return event.data as TimelinePrescriptionData;
+}
+
 export default function PatientDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const id = params.id as string;
-  const [patient, setPatient] = useState<Patient | null>(null);
-  const [events, setEvents] = useState<TimelineEvent[]>([]);
+  const id = typeof params?.id === 'string' ? params.id : '';
+  const [patient, setPatient] = useState<PatientDetail | null>(null);
+  const [events, setEvents] = useState<PatientTimelineEvent[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -71,8 +74,8 @@ export default function PatientDetailPage() {
       setLoading(true);
       try {
         const [patientRes, timelineRes] = await Promise.all([
-          api.get<Patient>(`/patients/${id}`),
-          api.get<TimelineEvent[]>(`/patients/${id}/timeline`),
+          api.get<PatientDetail>(`/patients/${id}`),
+          api.get<PatientTimelineEvent[]>(`/patients/${id}/timeline`),
         ]);
         setPatient(patientRes.data);
         setEvents(Array.isArray(timelineRes.data) ? timelineRes.data : []);
@@ -105,9 +108,7 @@ export default function PatientDetailPage() {
     );
   }
 
-  const sortedEvents = [...events].sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
-  );
+  const sortedEvents = [...events].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const descriptionFields = [
     { label: 'Espécie', value: patient.species },
@@ -174,41 +175,59 @@ export default function PatientDetailPage() {
                       >
                         {meta.icon}
                       </div>
-                      {idx < sortedEvents.length - 1 && (
-                        <div className="w-px flex-1 bg-gray-200 my-1" />
-                      )}
+                      {idx < sortedEvents.length - 1 && <div className="w-px flex-1 bg-gray-200 my-1" />}
                     </div>
                     <div className="pb-4 flex-1 pt-1">
                       <div className="font-medium text-foreground">
-                        {meta.label} —{' '}
-                        <span className="text-muted-foreground font-normal">{dateStr}</span>
+                        {meta.label} — <span className="text-muted-foreground font-normal">{dateStr}</span>
                       </div>
                       {ev.data && Object.keys(ev.data).length > 0 && (
                         <div className="text-sm text-muted-foreground mt-1">
                           {ev.type === 'consultation' && (
                             <>
-                              Status:{' '}
-                              <Badge variant="outline">
-                                {String((ev.data as any).status)}
-                              </Badge>
-                              {(ev.data as any).observations && (
-                                <div className="mt-1">{(ev.data as any).observations}</div>
-                              )}
+                              {(() => {
+                                const consultationData = getConsultationData(ev);
+                                return (
+                                  <>
+                                    Status: <Badge variant="outline">{String(consultationData.status ?? '—')}</Badge>
+                                    {consultationData.observations && (
+                                      <div className="mt-1">{consultationData.observations}</div>
+                                    )}
+                                  </>
+                                );
+                              })()}
                             </>
                           )}
                           {ev.type === 'vaccine' && (
                             <>
-                              {(ev.data as any).vaccine_name} — Próxima:{' '}
-                              {(ev.data as any).next_due_date}
+                              {(() => {
+                                const vaccineData = getVaccineData(ev);
+                                return (
+                                  <>
+                                    {vaccineData.vaccine_name} — Próxima: {vaccineData.next_due_date}
+                                  </>
+                                );
+                              })()}
                             </>
                           )}
                           {ev.type === 'exam_request' && (
-                            <>Solicitação em {(ev.data as any).request_date ?? '—'}</>
+                            <>
+                              {(() => {
+                                const examRequestData = getExamRequestData(ev);
+                                return <>Solicitação em {examRequestData.request_date ?? '—'}</>;
+                              })()}
+                            </>
                           )}
                           {ev.type === 'prescription' && (
                             <>
-                              Tipo: {(ev.data as any).prescription_type} —{' '}
-                              {(ev.data as any).prescription_date}
+                              {(() => {
+                                const prescriptionData = getPrescriptionData(ev);
+                                return (
+                                  <>
+                                    Tipo: {prescriptionData.prescription_type} — {prescriptionData.prescription_date}
+                                  </>
+                                );
+                              })()}
                             </>
                           )}
                         </div>

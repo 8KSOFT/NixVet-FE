@@ -58,7 +58,8 @@ const addDays = (d: number) => new Date(Date.now() + d * 86400000).toISOString()
 const addMonths = (m: number) => { const dt = new Date(); dt.setMonth(dt.getMonth() + m); return dt.toISOString(); };
 
 export default function ClinicDetailPage() {
-  const { id } = useParams<{ id: string }>();
+  const params = useParams<{ id: string }>();
+  const id = typeof params?.id === 'string' ? params.id : '';
   const router = useRouter();
 
   const [clinic, setClinic] = useState<ClinicDetail | null>(null);
@@ -75,6 +76,12 @@ export default function ClinicDetailPage() {
   const [whatsappOpen, setWhatsappOpen] = useState(false);
 
   const load = useCallback(async () => {
+    if (!id) {
+      setLoading(false);
+      toast.error('Clínica inválida');
+      return;
+    }
+
     setLoading(true);
     try {
       const { data } = await api.get<ClinicDetail>(`/superadmin/tenants/${id}`);

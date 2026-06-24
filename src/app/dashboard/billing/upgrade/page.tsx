@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { CheckCircle2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import api from '@/lib/axios';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -100,8 +101,8 @@ export default function BillingUpgradePage() {
       });
       toast.success('Assinatura ativada com sucesso!');
       router.push('/dashboard');
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message ?? 'Erro ao ativar plano. Tente novamente.');
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, 'Erro ao ativar plano. Tente novamente.'));
     } finally {
       setLoading(false);
     }

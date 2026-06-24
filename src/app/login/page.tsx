@@ -13,9 +13,19 @@ import { getApiBaseUrl } from "@/lib/api-base";
 import { fetchPublicBranding } from "@/lib/branding";
 import { setTenantCookie } from "@/lib/axios";
 import { detectSubdomainClient } from "@/lib/subdomain";
+import { getApiErrorMessage } from "@/app/utils/api-error-message";
 import { LogoCompactoDynamic } from "@/components/shared/componentizedImages/LogoCompactoDynamic";
 import Image from "next/image";
 import { useIsMobile } from "@/hooks/use-mobile";
+
+interface LoginResponseData {
+  access_token?: string;
+  user?: {
+    tenant_id: string;
+    name: string;
+  } & Record<string, unknown>;
+  message?: string | string[];
+}
 
 export default function LoginPage() {
   const { t: translation } = useTranslation("common");
@@ -96,9 +106,9 @@ export default function LoginPage() {
         }),
       });
       const raw = await res.text();
-      let data: any = {};
+      let data: LoginResponseData = {};
       try {
-        data = raw ? JSON.parse(raw) : {};
+        data = raw ? (JSON.parse(raw) as LoginResponseData) : {};
       } catch {
         data = { message: raw || "Resposta inválida do servidor." };
       }
@@ -118,6 +128,10 @@ export default function LoginPage() {
       }
 
       const { access_token, user } = data;
+      if (!access_token || !user) {
+        toast.error("Resposta de login inválida.");
+        return;
+      }
       localStorage.setItem("accessToken", access_token);
       localStorage.setItem("tenantId", user.tenant_id);
       localStorage.setItem("tenantCode", code);
@@ -126,10 +140,13 @@ export default function LoginPage() {
 
       toast.success(translation("auth.welcome", { name: user.name }));
       router.push("/dashboard");
-    } catch (err: any) {
-      console.error("[LOGIN] fetch error:", err);
+    } catch (error: unknown) {
+      console.error("[LOGIN] fetch error:", error);
       toast.error(
-        "Não foi possível conectar ao servidor. Verifique CORS/domínio da API.",
+        getApiErrorMessage(
+          error,
+          "Não foi possível conectar ao servidor. Verifique CORS/domínio da API.",
+        ),
       );
     } finally {
       setLoading(false);

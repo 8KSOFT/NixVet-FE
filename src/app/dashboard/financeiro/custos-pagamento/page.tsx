@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/table';
 import api from '@/lib/axios';
 import { toast } from 'sonner';
+import { getApiErrorMessage } from '@/app/utils/api-error-message';
 
 interface PaymentMethodData {
   volume: number;
@@ -43,6 +44,15 @@ const METHOD_LABELS: Record<string, string> = {
 
 const COLORS = ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316'];
 
+type PieLabelPayload = {
+  name?: string;
+  percent?: number;
+};
+
+function formatPieLabel(payload: PieLabelPayload): string {
+  return `${payload.name ?? ''} (${((payload.percent ?? 0) * 100).toFixed(0)}%)`;
+}
+
 export default function CustosPagamentoPage() {
   const now = new Date();
   const [period, setPeriod] = useState(
@@ -56,7 +66,7 @@ export default function CustosPagamentoPage() {
     api
       .get<Record<string, PaymentMethodData>>(`/financial-reports/custos-pagamento?period=${period}`)
       .then((r) => setData(r.data))
-      .catch(() => toast.error('Erro ao carregar dados'))
+      .catch((error: unknown) => toast.error(getApiErrorMessage(error, 'Erro ao carregar dados')))
       .finally(() => setLoading(false));
   }, [period]);
 
@@ -125,7 +135,7 @@ export default function CustosPagamentoPage() {
             ) : (
               <ResponsiveContainer width="100%" height={250}>
                 <PieChart>
-                  <Pie data={chartData} cx="50%" cy="50%" outerRadius={90} dataKey="value" label={((props: any) => `${props.name ?? ''} (${((props.percent ?? 0) * 100).toFixed(0)}%)`) as any}>
+                  <Pie data={chartData} cx="50%" cy="50%" outerRadius={90} dataKey="value" label={formatPieLabel}>
                     {chartData.map((_, i) => (
                       <Cell key={i} fill={COLORS[i % COLORS.length]} />
                     ))}

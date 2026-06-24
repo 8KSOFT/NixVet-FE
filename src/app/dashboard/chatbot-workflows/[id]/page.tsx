@@ -1,6 +1,14 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
+import type { ApiRequestError } from '@/app/types/api-error';
+import type {
+  BackendEdge,
+  BackendNode,
+  WorkflowData,
+  WorkflowNodeConfig,
+  WorkflowNodeData,
+} from '@/app/types/chatbot-workflow';
 import { useParams, useRouter } from 'next/navigation';
 import {
   ReactFlow,
@@ -28,20 +36,16 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '
 import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
-import {
-  Loader2, Save, ArrowLeft, Trash2,
-  Play, Square, GitBranch, Zap, Bot,
-  CheckCircle2,
-} from 'lucide-react';
+import { Loader2, Save, ArrowLeft, Trash2, Play, Square, GitBranch, Zap, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import api from '@/lib/axios';
 
 // Brand-aligned node colors (using CSS variables where possible)
 const NODE_COLORS: Record<string, string> = {
-  trigger: '#7fa48e',   // brand-green / primary
+  trigger: '#7fa48e', // brand-green / primary
   condition: '#d4af37', // brand-gold
-  action: '#0e1e2f',    // brand-deep
-  end: '#dc2626',       // destructive
+  action: '#0e1e2f', // brand-deep
+  end: '#dc2626', // destructive
 };
 
 const NODE_TEXT_COLORS: Record<string, string> = {
@@ -61,27 +65,26 @@ const ACTION_TYPES = [
   { value: 'WAIT_REPLY', label: 'Aguardar Resposta', description: 'Espera próxima mensagem' },
 ];
 
-interface BackendNode {
-  node_type: string;
-  node_key: string;
-  label?: string;
-  config?: Record<string, unknown>;
-  position_x?: number;
-  position_y?: number;
+type WorkflowFlowNode = Node<WorkflowNodeData>;
+type WorkflowNodeProps = NodeProps<WorkflowFlowNode>;
+
+function getApiErrorMessage(error: unknown, fallbackMessage: string): string {
+  const typedError = error as ApiRequestError;
+  const responseMessage = typedError.response?.data?.message;
+
+  if (Array.isArray(responseMessage)) {
+    return responseMessage[0] ?? fallbackMessage;
+  }
+
+  return responseMessage ?? typedError.message ?? fallbackMessage;
 }
 
-interface BackendEdge {
-  source_node: string;
-  target_node: string;
-  condition?: string;
+function getNodeData(nodeData: unknown): WorkflowNodeData {
+  return (nodeData as WorkflowNodeData | undefined) ?? {};
 }
 
-interface WorkflowData {
-  id: string;
-  name: string;
-  is_active: boolean;
-  nodes: BackendNode[];
-  edges: BackendEdge[];
+function getNodeConfig(nodeData: unknown): WorkflowNodeConfig {
+  return getNodeData(nodeData).config ?? {};
 }
 
 function NodeChip({ type, label }: { type: string; label: string }) {
@@ -97,35 +100,46 @@ function NodeChip({ type, label }: { type: string; label: string }) {
   );
 }
 
-function TriggerNode({ data }: NodeProps) {
+function TriggerNode({ data }: WorkflowNodeProps) {
   return (
-    <div className="rounded-xl border-2 shadow-md px-4 py-2.5 min-w-[160px] bg-white" style={{ borderColor: NODE_COLORS.trigger }}>
+    <div
+      className="rounded-xl border-2 shadow-md px-4 py-2.5 min-w-[160px] bg-white"
+      style={{ borderColor: NODE_COLORS.trigger }}
+    >
       <Handle type="source" position={Position.Bottom} style={{ background: NODE_COLORS.trigger }} />
       <div className="flex items-center gap-2">
         <Play className="w-3.5 h-3.5 shrink-0" style={{ color: NODE_COLORS.trigger }} />
         <span className="text-xs font-semibold" style={{ color: NODE_COLORS.trigger }}>
-          {(data as any).label || 'Trigger'}
+          {getNodeData(data).label || 'Trigger'}
         </span>
       </div>
     </div>
   );
 }
 
-function ConditionNode({ data }: NodeProps) {
-  const branches = ((data as any).config?.branches ?? []) as Array<{ value: string; target: string }>;
+function ConditionNode({ data }: WorkflowNodeProps) {
+  const branches = getNodeConfig(data).branches ?? [];
   return (
-    <div className="rounded-xl border-2 shadow-md px-4 py-2.5 min-w-[190px] bg-white" style={{ borderColor: NODE_COLORS.condition }}>
+    <div
+      className="rounded-xl border-2 shadow-md px-4 py-2.5 min-w-[190px] bg-white"
+      style={{ borderColor: NODE_COLORS.condition }}
+    >
       <Handle type="target" position={Position.Top} style={{ background: NODE_COLORS.condition }} />
       <div className="flex items-center gap-2 mb-1">
         <GitBranch className="w-3.5 h-3.5 shrink-0" style={{ color: NODE_COLORS.condition }} />
         <span className="text-xs font-semibold" style={{ color: '#8a6d00' }}>
-          {(data as any).label || 'Condição'}
+          {getNodeData(data).label || 'Condição'}
         </span>
       </div>
       {branches.length > 0 && (
-        <div className="text-[10px] text-muted-foreground space-y-0.5 border-t border-dashed pt-1" style={{ borderColor: `${NODE_COLORS.condition}40` }}>
+        <div
+          className="text-[10px] text-muted-foreground space-y-0.5 border-t border-dashed pt-1"
+          style={{ borderColor: `${NODE_COLORS.condition}40` }}
+        >
           {branches.map((b, i) => (
-            <div key={i} className="font-mono">{b.value} → {b.target}</div>
+            <div key={i} className="font-mono">
+              {b.value} → {b.target}
+            </div>
           ))}
         </div>
       )}
@@ -134,34 +148,38 @@ function ConditionNode({ data }: NodeProps) {
   );
 }
 
-function ActionNode({ data }: NodeProps) {
-  const actionType = ((data as any).config?.action_type as string) || '?';
+function ActionNode({ data }: WorkflowNodeProps) {
+  const actionType = getNodeConfig(data).action_type || '?';
   const actionDef = ACTION_TYPES.find((a) => a.value === actionType);
   return (
-    <div className="rounded-xl border-2 shadow-md px-4 py-2.5 min-w-[170px] bg-white" style={{ borderColor: NODE_COLORS.action }}>
+    <div
+      className="rounded-xl border-2 shadow-md px-4 py-2.5 min-w-[170px] bg-white"
+      style={{ borderColor: NODE_COLORS.action }}
+    >
       <Handle type="target" position={Position.Top} style={{ background: NODE_COLORS.action }} />
       <div className="flex items-center gap-2">
         <Zap className="w-3.5 h-3.5 shrink-0" style={{ color: NODE_COLORS.action }} />
         <span className="text-xs font-semibold" style={{ color: NODE_COLORS.action }}>
-          {(data as any).label || 'Ação'}
+          {getNodeData(data).label || 'Ação'}
         </span>
       </div>
-      {actionDef && (
-        <div className="text-[10px] text-muted-foreground mt-0.5">{actionDef.label}</div>
-      )}
+      {actionDef && <div className="text-[10px] text-muted-foreground mt-0.5">{actionDef.label}</div>}
       <Handle type="source" position={Position.Bottom} style={{ background: NODE_COLORS.action }} />
     </div>
   );
 }
 
-function EndNode({ data }: NodeProps) {
+function EndNode({ data }: WorkflowNodeProps) {
   return (
-    <div className="rounded-xl border-2 shadow-md px-4 py-2.5 min-w-[110px] bg-white" style={{ borderColor: NODE_COLORS.end }}>
+    <div
+      className="rounded-xl border-2 shadow-md px-4 py-2.5 min-w-[110px] bg-white"
+      style={{ borderColor: NODE_COLORS.end }}
+    >
       <Handle type="target" position={Position.Top} style={{ background: NODE_COLORS.end }} />
       <div className="flex items-center gap-2">
         <Square className="w-3.5 h-3.5 shrink-0" style={{ color: NODE_COLORS.end }} />
         <span className="text-xs font-semibold" style={{ color: NODE_COLORS.end }}>
-          {(data as any).label || 'Fim'}
+          {getNodeData(data).label || 'Fim'}
         </span>
       </div>
     </div>
@@ -175,7 +193,7 @@ const nodeTypes: NodeTypes = {
   end: EndNode,
 };
 
-function toReactFlowNodes(backendNodes: BackendNode[]): Node[] {
+function toReactFlowNodes(backendNodes: BackendNode[]): WorkflowFlowNode[] {
   return backendNodes.map((n) => ({
     id: n.node_key,
     type: n.node_type,
@@ -195,12 +213,12 @@ function toReactFlowEdges(backendEdges: BackendEdge[]): Edge[] {
   }));
 }
 
-function toBackendNodes(rfNodes: Node[]): BackendNode[] {
+function toBackendNodes(rfNodes: WorkflowFlowNode[]): BackendNode[] {
   return rfNodes.map((n) => ({
     node_type: n.type || 'action',
     node_key: n.id,
-    label: (n.data as any)?.label ?? null,
-    config: (n.data as any)?.config ?? {},
+    label: getNodeData(n.data).label ?? undefined,
+    config: getNodeConfig(n.data),
     position_x: Math.round(n.position.x),
     position_y: Math.round(n.position.y),
   }));
@@ -223,19 +241,25 @@ const NODE_PALETTE = [
 export default function WorkflowEditorPage() {
   const params = useParams();
   const router = useRouter();
-  const workflowId = params.id as string;
+  const workflowId = typeof params?.id === 'string' ? params.id : '';
 
   const [workflowName, setWorkflowName] = useState('');
   const [isActive, setIsActive] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [selectedNode, setSelectedNode] = useState<Node | null>(null);
+  const [selectedNode, setSelectedNode] = useState<WorkflowFlowNode | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
 
-  const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
+  const [nodes, setNodes, onNodesChange] = useNodesState<WorkflowFlowNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 
   useEffect(() => {
+    if (!workflowId) {
+      setLoading(false);
+      toast.error('Workflow inválido');
+      return;
+    }
+
     (async () => {
       try {
         const res = await api.get<WorkflowData>(`/chatbot-workflows/${workflowId}`);
@@ -249,20 +273,25 @@ export default function WorkflowEditorPage() {
         setLoading(false);
       }
     })();
-  }, [workflowId]);
+  }, [setEdges, setNodes, workflowId]);
 
   const onConnect = useCallback(
     (connection: Connection) => {
-      setEdges((eds) => addEdge({
-        ...connection,
-        animated: true,
-        style: { strokeWidth: 2, stroke: '#7fa48e' },
-      }, eds));
+      setEdges((eds) =>
+        addEdge(
+          {
+            ...connection,
+            animated: true,
+            style: { strokeWidth: 2, stroke: '#7fa48e' },
+          },
+          eds,
+        ),
+      );
     },
     [setEdges],
   );
 
-  const handleNodeClick = useCallback((_: React.MouseEvent, node: Node) => {
+  const handleNodeClick = useCallback((_: React.MouseEvent, node: WorkflowFlowNode) => {
     setSelectedNode(node);
     setSheetOpen(true);
   }, []);
@@ -277,8 +306,8 @@ export default function WorkflowEditorPage() {
         edges: toBackendEdges(edges),
       });
       toast.success('Workflow salvo');
-    } catch (e: any) {
-      toast.error(e.response?.data?.message ?? 'Erro ao salvar');
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, 'Erro ao salvar'));
     } finally {
       setSaving(false);
     }
@@ -286,17 +315,18 @@ export default function WorkflowEditorPage() {
 
   const addNode = (type: string) => {
     const key = `${type}_${Date.now()}`;
-    const newNode: Node = {
+    const newNode: WorkflowFlowNode = {
       id: key,
       type,
       position: { x: 250, y: 200 + nodes.length * 90 },
       data: {
         label: type === 'condition' ? 'Condição' : type === 'end' ? 'Fim' : 'Nova Ação',
-        config: type === 'action'
-          ? { action_type: 'GENERATE_AI_REPLY' }
-          : type === 'condition'
-          ? { variable: 'intent', branches: [] }
-          : {},
+        config:
+          type === 'action'
+            ? { action_type: 'GENERATE_AI_REPLY' }
+            : type === 'condition'
+              ? { variable: 'intent', branches: [] }
+              : {},
       },
     };
     setNodes((nds) => [...nds, newNode]);
@@ -318,12 +348,12 @@ export default function WorkflowEditorPage() {
         return { ...n, data: { ...n.data, [field]: value } };
       }),
     );
-    setSelectedNode((prev) => prev ? { ...prev, data: { ...prev.data, [field]: value } } : prev);
+    setSelectedNode((prev) => (prev ? { ...prev, data: { ...prev.data, [field]: value } } : prev));
   };
 
   const updateNodeConfig = (key: string, value: unknown) => {
     if (!selectedNode) return;
-    const currentConfig = ((selectedNode.data as any)?.config ?? {}) as Record<string, unknown>;
+    const currentConfig = getNodeConfig(selectedNode.data);
     updateNodeData('config', { ...currentConfig, [key]: value });
   };
 
@@ -335,13 +365,18 @@ export default function WorkflowEditorPage() {
     );
   }
 
-  const nodeConfig = ((selectedNode?.data as any)?.config ?? {}) as Record<string, unknown>;
+  const nodeConfig = getNodeConfig(selectedNode?.data);
 
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)]">
       {/* Toolbar */}
       <div className="flex items-center gap-2 mb-3 flex-wrap">
-        <Button variant="outline" size="sm" onClick={() => router.push('/dashboard/chatbot-workflows')} className="gap-1">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => router.push('/dashboard/chatbot-workflows')}
+          className="gap-1"
+        >
           <ArrowLeft className="w-4 h-4" /> Voltar
         </Button>
         <Input
@@ -355,7 +390,9 @@ export default function WorkflowEditorPage() {
             <CheckCircle2 className="w-3 h-3" /> Ativo
           </Badge>
         ) : (
-          <Badge variant="secondary" className="text-muted-foreground">Inativo</Badge>
+          <Badge variant="secondary" className="text-muted-foreground">
+            Inativo
+          </Badge>
         )}
         <div className="flex-1" />
         <Button onClick={handleSave} disabled={saving} className="bg-primary gap-1.5">
@@ -392,7 +429,9 @@ export default function WorkflowEditorPage() {
                       <span className="text-foreground text-xs">{item.label}</span>
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent side="right" className="text-xs">{item.description}</TooltipContent>
+                  <TooltipContent side="right" className="text-xs">
+                    {item.description}
+                  </TooltipContent>
                 </Tooltip>
               );
             })}
@@ -443,9 +482,7 @@ export default function WorkflowEditorPage() {
         <SheetContent side="right" className="w-[380px] overflow-y-auto">
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
-              {selectedNode && (
-                <NodeChip type={selectedNode.type || ''} label={selectedNode.type || ''} />
-              )}
+              {selectedNode && <NodeChip type={selectedNode.type || ''} label={selectedNode.type || ''} />}
               Configurar Nó
             </SheetTitle>
             <SheetDescription className="sr-only">Configuração do nó selecionado</SheetDescription>
@@ -457,7 +494,7 @@ export default function WorkflowEditorPage() {
                 <Label>Label</Label>
                 <Input
                   className="mt-1.5"
-                  value={(selectedNode.data as any)?.label || ''}
+                  value={getNodeData(selectedNode.data).label || ''}
                   onChange={(e) => updateNodeData('label', e.target.value)}
                 />
               </div>
@@ -503,8 +540,10 @@ export default function WorkflowEditorPage() {
                       <Label>Texto da mensagem</Label>
                       <textarea
                         className="w-full border border-border rounded-md p-2 text-sm min-h-[80px] mt-1.5 bg-background"
-                        value={((nodeConfig.params as any)?.text as string) || ''}
-                        onChange={(e) => updateNodeConfig('params', { ...((nodeConfig.params ?? {}) as any), text: e.target.value })}
+                        value={nodeConfig.params?.text || ''}
+                        onChange={(e) =>
+                          updateNodeConfig('params', { ...(nodeConfig.params ?? {}), text: e.target.value })
+                        }
                       />
                     </div>
                   )}
@@ -515,8 +554,13 @@ export default function WorkflowEditorPage() {
                       <Input
                         type="number"
                         className="mt-1.5"
-                        value={((nodeConfig.params as any)?.days_ahead as number) || 4}
-                        onChange={(e) => updateNodeConfig('params', { ...((nodeConfig.params ?? {}) as any), days_ahead: Number(e.target.value) })}
+                        value={nodeConfig.params?.days_ahead || 4}
+                        onChange={(e) =>
+                          updateNodeConfig('params', {
+                            ...(nodeConfig.params ?? {}),
+                            days_ahead: Number(e.target.value),
+                          })
+                        }
                       />
                     </div>
                   )}
@@ -526,14 +570,18 @@ export default function WorkflowEditorPage() {
                       <Label>Mensagem de notificação</Label>
                       <Input
                         className="mt-1.5"
-                        value={((nodeConfig.params as any)?.message as string) || ''}
-                        onChange={(e) => updateNodeConfig('params', { ...((nodeConfig.params ?? {}) as any), message: e.target.value })}
+                        value={nodeConfig.params?.message || ''}
+                        onChange={(e) =>
+                          updateNodeConfig('params', { ...(nodeConfig.params ?? {}), message: e.target.value })
+                        }
                       />
                     </div>
                   )}
 
                   <div>
-                    <Label>Variável de saída <span className="text-muted-foreground text-xs font-normal">(output_var)</span></Label>
+                    <Label>
+                      Variável de saída <span className="text-muted-foreground text-xs font-normal">(output_var)</span>
+                    </Label>
                     <Input
                       className="mt-1.5"
                       value={(nodeConfig.output_var as string) || ''}
@@ -557,7 +605,9 @@ export default function WorkflowEditorPage() {
                     <p className="text-xs text-muted-foreground mt-1">Valores comuns: intent, message</p>
                   </div>
                   <div>
-                    <Label>Branches <span className="text-muted-foreground text-xs font-normal">(JSON)</span></Label>
+                    <Label>
+                      Branches <span className="text-muted-foreground text-xs font-normal">(JSON)</span>
+                    </Label>
                     <textarea
                       className="w-full border border-border rounded-md p-2 text-xs font-mono min-h-[120px] mt-1.5 bg-background"
                       value={JSON.stringify(nodeConfig.branches ?? [], null, 2)}

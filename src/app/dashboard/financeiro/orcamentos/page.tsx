@@ -65,6 +65,28 @@ interface User {
   name: string;
 }
 
+type BudgetType = 'procedure' | 'hospitalization';
+type BudgetBadgeVariant = 'secondary' | 'default' | 'destructive';
+
+interface BudgetFormItem {
+  item_type: string;
+  description: string;
+  quantity: number;
+  unit_price: number;
+  discount_percentage: number;
+  covered_by_plan: boolean;
+  plan_coverage_amount: number;
+}
+
+interface BudgetFormValues {
+  patient_id: string;
+  veterinarian_id: string;
+  type: BudgetType;
+  valid_until: string;
+  notes: string;
+  items: BudgetFormItem[];
+}
+
 const STATUS_LABELS: Record<string, string> = {
   draft: 'Rascunho',
   sent: 'Enviado',
@@ -74,7 +96,7 @@ const STATUS_LABELS: Record<string, string> = {
   converted: 'Convertido',
 };
 
-const STATUS_COLORS: Record<string, string> = {
+const STATUS_COLORS: Record<string, BudgetBadgeVariant> = {
   draft: 'secondary',
   sent: 'default',
   approved: 'default',
@@ -85,6 +107,15 @@ const STATUS_COLORS: Record<string, string> = {
 
 function fmt(n: number) {
   return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+function getArrayResponseData<TItem>(responseData: unknown): TItem[] {
+  if (Array.isArray(responseData)) {
+    return responseData as TItem[];
+  }
+
+  const responseEnvelope = responseData as { data?: TItem[] };
+  return Array.isArray(responseEnvelope.data) ? responseEnvelope.data : [];
 }
 
 function computeTotals(items: BudgetItem[]) {
@@ -101,10 +132,10 @@ export default function OrcamentosPage() {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [users, setUsers] = useState<User[]>([]);
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<BudgetFormValues>({
     patient_id: '',
     veterinarian_id: '',
-    type: 'procedure' as 'procedure' | 'hospitalization',
+    type: 'procedure',
     valid_until: '',
     notes: '',
     items: [{ item_type: 'procedure', description: '', quantity: 1, unit_price: 0, discount_percentage: 0, covered_by_plan: false, plan_coverage_amount: 0 }],
@@ -124,8 +155,8 @@ export default function OrcamentosPage() {
 
   useEffect(() => {
     fetchBudgets();
-    api.get<Patient[]>('/patients').then((r) => setPatients(Array.isArray(r.data) ? r.data : (r.data as any)?.data ?? [])).catch(() => {});
-    api.get<User[]>('/users').then((r) => setUsers(Array.isArray(r.data) ? r.data : (r.data as any)?.data ?? [])).catch(() => {});
+    api.get<Patient[] | { data?: Patient[] }>('/patients').then((r) => setPatients(getArrayResponseData<Patient>(r.data))).catch(() => {});
+    api.get<User[] | { data?: User[] }>('/users').then((r) => setUsers(getArrayResponseData<User>(r.data))).catch(() => {});
   }, [fetchBudgets]);
 
   const handleCreate = async () => {
@@ -170,10 +201,14 @@ export default function OrcamentosPage() {
     }));
   };
 
-  const updateItem = (index: number, key: string, value: string | number | boolean) => {
+  const updateItem = <TKey extends keyof BudgetFormItem>(
+    index: number,
+    key: TKey,
+    value: BudgetFormItem[TKey],
+  ) => {
     setForm((f) => {
       const items = [...f.items];
-      (items[index] as any)[key] = value;
+      items[index] = { ...items[index], [key]: value };
       return { ...f, items };
     });
   };
@@ -231,7 +266,7 @@ export default function OrcamentosPage() {
                         <TableCell className="text-right tabular-nums text-green-600">{fmt(totals.plan)}</TableCell>
                         <TableCell className="text-right tabular-nums text-blue-600">{fmt(totals.tutor)}</TableCell>
                         <TableCell>
-                          <Badge variant={STATUS_COLORS[b.status] as any}>
+                          <Badge variant={STATUS_COLORS[b.status] ?? 'secondary'}>
                             {STATUS_LABELS[b.status] ?? b.status}
                           </Badge>
                         </TableCell>
@@ -291,7 +326,7 @@ export default function OrcamentosPage() {
               </div>
               <div className="space-y-1">
                 <Label>Tipo</Label>
-                <Select value={form.type} onValueChange={(v) => setForm((f) => ({ ...f, type: v as any }))}>
+                <Select value={form.type} onValueChange={(value: BudgetType) => setForm((f) => ({ ...f, type: value }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="procedure">Procedimento</SelectItem>

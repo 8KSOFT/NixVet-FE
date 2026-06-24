@@ -22,7 +22,6 @@ import {
   CreditCard,
   HeartHandshake,
   BadgeDollarSign,
-  Receipt,
   FileText,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -80,6 +79,7 @@ const navSections: NavSection[] = [
 
 export default function SettingsLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const currentPathname = pathname ?? '';
   const isSuperAdmin = getStoredUserRole() === 'superadmin';
 
   const platformItems = isSuperAdmin
@@ -100,7 +100,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
               </p>
               {platformItems.map((item) => {
                 const Icon = item.icon;
-                const isActive = pathname === item.key || pathname.startsWith(`${item.key}/`);
+                const isActive = currentPathname === item.key || currentPathname.startsWith(`${item.key}/`);
                 return (
                   <Link
                     key={item.key}
@@ -127,7 +127,9 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
               </p>
               {section.items.map((item) => {
                 const Icon = item.icon;
-                const isActive = pathname === item.key || (item.key !== '/dashboard/settings' && pathname.startsWith(`${item.key}/`));
+                const isActive =
+                  currentPathname === item.key ||
+                  (item.key !== '/dashboard/settings' && currentPathname.startsWith(`${item.key}/`));
                 return (
                   <Link
                     key={item.key}

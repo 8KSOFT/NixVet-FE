@@ -759,21 +759,22 @@ export default function DashboardLayout({
   );
   const router = useRouter();
   const pathname = usePathname();
+  const currentPathname = pathname ?? "";
   const { t } = useTranslation("common");
   const billing = useBillingStatus();
 
-  const activeKey = getActiveKey(pathname);
+  const activeKey = getActiveKey(currentPathname);
 
   useEffect(() => {
     if (headerRole === "superadmin") return;
     if (
       !billing.loading &&
       (billing.status === "trial_expired" || billing.status === "suspended") &&
-      !pathname.includes("/billing/upgrade")
+      !currentPathname.includes("/billing/upgrade")
     ) {
       router.replace("/dashboard/billing/upgrade");
     }
-  }, [billing.loading, billing.status, pathname, router, headerRole]);
+  }, [billing.loading, billing.status, currentPathname, router, headerRole]);
 
   useEffect(() => {
     fetchPublicBranding().then((branding) => {

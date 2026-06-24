@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
 import { Loader2, User } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import api from '@/lib/axios';
 
 interface ProfileData {
@@ -81,8 +82,8 @@ export default function ProfilePage() {
         }),
       );
       setValue('password', '');
-    } catch (e: any) {
-      toast.error(e.response?.data?.message || t('profile.saveError'));
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, t('profile.saveError')));
     } finally {
       setSaving(false);
     }

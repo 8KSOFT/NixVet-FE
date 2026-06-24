@@ -1,6 +1,17 @@
 'use client';
 
-import React, { Suspense, useEffect, useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useState } from 'react';
+import type {
+  ConsultationOption,
+  CreateExamRequestPayload,
+  ExamAreaOption,
+  ExamOption,
+  ExamPatientOption,
+  ExamRequest,
+  ExamRequestFormValues,
+  StoredUser,
+} from '@/app/types/exam-request';
+import { DashboardCreateFormDialog } from '@/components/dashboard-create-form-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -18,36 +29,9 @@ import { ListPagination } from '@/components/list-pagination';
 import dayjs from 'dayjs';
 import { useSearchParams } from 'next/navigation';
 
-interface ExamRequest {
-  id: string;
-  createdAt: string;
-  consultation?: { patient?: { name: string; id: string; tutor?: { name: string } } };
-  patient?: { name: string; id: string; tutor?: { name: string } };
-  veterinarian: { name: string };
-  requested_exams: string[];
-}
-
-interface ExamOption {
-  id: number;
-  name: string;
-  area?: { name: string };
-}
-
-interface ExamAreaOption {
-  id: number;
-  name: string;
-}
-
-type FormValues = {
-  patient_id: string;
-  consultation_id?: string;
-  request_date?: string;
-  clinical_notes?: string;
-};
-
 function ExamRequestsContent() {
   const searchParams = useSearchParams();
-  const preselectedPatientId = searchParams.get('patientId');
+  const preselectedPatientId = searchParams?.get('patientId') ?? null;
 
   const [examRequests, setExamRequests] = useState<ExamRequest[]>([]);
   const [loading, setLoading] = useState(false);
@@ -55,8 +39,8 @@ function ExamRequestsContent() {
   const [listTotal, setListTotal] = useState(0);
   const [listTotalPages, setListTotalPages] = useState(1);
   const [modalVisible, setModalVisible] = useState(false);
-  const [patients, setPatients] = useState<any[]>([]);
-  const [consultationsByPatient, setConsultationsByPatient] = useState<any[]>([]);
+  const [patients, setPatients] = useState<ExamPatientOption[]>([]);
+  const [consultationsByPatient, setConsultationsByPatient] = useState<ConsultationOption[]>([]);
   const [examsFromCatalog, setExamsFromCatalog] = useState<ExamOption[]>([]);
   const [examAreas, setExamAreas] = useState<ExamAreaOption[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
@@ -64,9 +48,9 @@ function ExamRequestsContent() {
   const [examInput, setExamInput] = useState('');
   const [showExamDropdown, setShowExamDropdown] = useState(false);
 
-  const { control, handleSubmit, reset, setValue } = useForm<FormValues>();
+  const { control, handleSubmit, reset, setValue } = useForm<ExamRequestFormValues>();
 
-  const fetchExamRequests = async () => {
+  const fetchExamRequests = useCallback(async () => {
     setLoading(true);
     try {
       const response = await api.get('/exam-requests', { params: listQueryParams(listPage) });
@@ -79,11 +63,11 @@ function ExamRequestsContent() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [listPage]);
 
   const fetchPatients = async () => {
     try {
-      setPatients(await fetchAllListPages('/patients'));
+      setPatients(await fetchAllListPages<ExamPatientOption>('/patients'));
     } catch (error) {
       console.error(error);
     }
@@ -104,9 +88,9 @@ function ExamRequestsContent() {
 
   const fetchConsultationsForPatient = async (patientId: string) => {
     try {
-      const raw = await fetchAllListPages<any>('/consultations');
+      const raw = await fetchAllListPages<ConsultationOption>('/consultations');
       const all = (raw ?? []).filter(
-        (c: { patient_id?: string; patient?: { id: string } }) => c.patient_id === patientId || c.patient?.id === patientId,
+        (consultation) => consultation.patient_id === patientId || consultation.patient?.id === patientId,
       );
       setConsultationsByPatient(all);
     } catch {
@@ -120,8 +104,8 @@ function ExamRequestsContent() {
   }, []);
 
   useEffect(() => {
-    fetchExamRequests();
-  }, [listPage]);
+    void fetchExamRequests();
+  }, [fetchExamRequests]);
 
   useEffect(() => {
     if (preselectedPatientId && modalVisible) {
@@ -129,7 +113,7 @@ function ExamRequestsContent() {
       setSelectedPatientId(preselectedPatientId);
       fetchConsultationsForPatient(preselectedPatientId);
     }
-  }, [preselectedPatientId, modalVisible]);
+  }, [modalVisible, preselectedPatientId, setValue]);
 
   const handleAdd = () => {
     reset();
@@ -167,14 +151,14 @@ function ExamRequestsContent() {
     }
   };
 
-  const onSubmit = async (values: FormValues) => {
+  const onSubmit = async (values: ExamRequestFormValues) => {
     try {
       const userStr = localStorage.getItem('user');
       if (!userStr) {
         toast.error('Usuário não autenticado');
         return;
       }
-      const user = JSON.parse(userStr);
+      const user = JSON.parse(userStr) as StoredUser;
 
       if (!values.consultation_id && !values.request_date) {
         toast.error('Selecione uma consulta ou informe a data da solicitação');
@@ -201,7 +185,7 @@ function ExamRequestsContent() {
         }
       }
 
-      const payload: any = {
+      const payload: CreateExamRequestPayload = {
         veterinarian_id: user.id,
         requested_exams: selectedExams.map((n) => n.trim()),
         clinical_notes: values.clinical_notes,
@@ -211,9 +195,7 @@ function ExamRequestsContent() {
         payload.consultation_id = values.consultation_id;
       } else {
         payload.patient_id = values.patient_id;
-        payload.request_date = values.request_date
-          ? dayjs(values.request_date).format('YYYY-MM-DD')
-          : null;
+        payload.request_date = values.request_date ? dayjs(values.request_date).format('YYYY-MM-DD') : null;
       }
 
       await api.post('/exam-requests', payload);
@@ -277,9 +259,7 @@ function ExamRequestsContent() {
   }));
 
   const filteredExamOptions = examOptions.filter(
-    (o) =>
-      o.label.toLowerCase().includes(examInput.toLowerCase()) &&
-      !selectedExams.includes(o.value),
+    (o) => o.label.toLowerCase().includes(examInput.toLowerCase()) && !selectedExams.includes(o.value),
   );
 
   const addExamTag = (name: string) => {
@@ -312,265 +292,299 @@ function ExamRequestsContent() {
         </div>
       ) : (
         <div className="rounded-md border overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Data</TableHead>
-              <TableHead>Paciente</TableHead>
-              <TableHead>Tutor</TableHead>
-              <TableHead>Veterinário</TableHead>
-              <TableHead>Exames</TableHead>
-              <TableHead>Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {examRequests.map((record) => (
-              <TableRow key={record.id}>
-                <TableCell>{new Date(record.createdAt).toLocaleDateString('pt-BR')}</TableCell>
-                <TableCell>{getPatient(record)?.name ?? '—'}</TableCell>
-                <TableCell>{getPatient(record)?.tutor?.name ?? '—'}</TableCell>
-                <TableCell>{record.veterinarian?.name ?? '—'}</TableCell>
-                <TableCell>
-                  {record.requested_exams?.length
-                    ? record.requested_exams
-                        .map((name) => {
-                          const catalog = examsFromCatalog.find((e) => e.name === name);
-                          return catalog?.area?.name ? `${catalog.area.name} - ${name}` : name;
-                        })
-                        .join(', ')
-                    : '—'}
-                </TableCell>
-                <TableCell>
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="text-red-500 border-red-500 hover:bg-red-50"
-                      onClick={() => handleDownloadPdf(record.id)}
-                    >
-                      PDF
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="text-primary border-blue-500 hover:bg-primary/10"
-                      onClick={() => handleOpenEmailModal(record)}
-                    >
-                      Email
-                    </Button>
-                  </div>
-                </TableCell>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Data</TableHead>
+                <TableHead>Paciente</TableHead>
+                <TableHead>Tutor</TableHead>
+                <TableHead>Veterinário</TableHead>
+                <TableHead>Exames</TableHead>
+                <TableHead>Ações</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-        <ListPagination
-          page={listPage}
-          totalPages={listTotalPages}
-          total={listTotal}
-          pageSize={API_PAGE_SIZE}
-          onPageChange={setListPage}
-          disabled={loading}
-        />
+            </TableHeader>
+            <TableBody>
+              {examRequests.map((record) => (
+                <TableRow key={record.id}>
+                  <TableCell>{new Date(record.createdAt).toLocaleDateString('pt-BR')}</TableCell>
+                  <TableCell>{getPatient(record)?.name ?? '—'}</TableCell>
+                  <TableCell>{getPatient(record)?.tutor?.name ?? '—'}</TableCell>
+                  <TableCell>{record.veterinarian?.name ?? '—'}</TableCell>
+                  <TableCell>
+                    {record.requested_exams?.length
+                      ? record.requested_exams
+                          .map((name) => {
+                            const catalog = examsFromCatalog.find((e) => e.name === name);
+                            return catalog?.area?.name ? `${catalog.area.name} - ${name}` : name;
+                          })
+                          .join(', ')
+                      : '—'}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-red-500 border-red-500 hover:bg-red-50"
+                        onClick={() => handleDownloadPdf(record.id)}
+                      >
+                        PDF
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-primary border-blue-500 hover:bg-primary/10"
+                        onClick={() => handleOpenEmailModal(record)}
+                      >
+                        Email
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          <ListPagination
+            page={listPage}
+            totalPages={listTotalPages}
+            total={listTotal}
+            pageSize={API_PAGE_SIZE}
+            onPageChange={setListPage}
+            disabled={loading}
+          />
         </div>
       )}
 
-      <Dialog open={modalVisible} onOpenChange={setModalVisible}>
-        <DialogContent
-          className="flex flex-col w-full max-w-2xl h-[96dvh] max-h-[96dvh] p-0 gap-0 sm:h-[90dvh]"
-          onInteractOutside={(e) => e.preventDefault()}
-          onEscapeKeyDown={(e) => e.preventDefault()}
-        >
-          {/* Header fixo */}
-          <DialogHeader className="px-6 pt-5 pb-4 border-b shrink-0">
-            <DialogTitle className="text-lg">Nova Solicitação de Exames</DialogTitle>
-          </DialogHeader>
-
-          {/* Corpo com scroll */}
-          <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
-            {/* Paciente */}
-            <div className="space-y-1.5">
-              <Label className="text-sm font-medium">Paciente *</Label>
-              <Controller
-                control={control}
-                name="patient_id"
-                rules={{ required: true }}
-                render={({ field }) => (
-                  <Select value={field.value} onValueChange={(v) => { field.onChange(v); handlePatientChange(v); }}>
-                    <SelectTrigger className="h-10">
-                      <SelectValue placeholder="Selecione o paciente" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {patients.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.name} ({p.species}){p.tutor?.name ? ` — ${p.tutor.name}` : ''}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </div>
-
-            {/* Consulta + Data */}
-            {selectedPatientId && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label className="text-sm font-medium">Consulta (opcional)</Label>
-                  <Controller
-                    control={control}
-                    name="consultation_id"
-                    render={({ field }) => (
-                      <Select value={field.value ?? ''} onValueChange={(v) => field.onChange(v || undefined)}>
-                        <SelectTrigger className="h-10">
-                          <SelectValue placeholder="Sem consulta vinculada" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {consultationsByPatient.map((c) => (
-                            <SelectItem key={c.id} value={c.id}>
-                              {new Date(c.consultation_date).toLocaleDateString('pt-BR')} — Dr. {c.veterinarian?.name ?? ''}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-sm font-medium">Data (sem consulta)</Label>
-                  <Controller
-                    control={control}
-                    name="request_date"
-                    render={({ field }) => <Input type="date" className="h-10" {...field} />}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Exames */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label className="text-sm font-medium">Exames *</Label>
-                <span className="text-xs text-muted-foreground">Selecione da lista, digite para filtrar ou adicione texto livre (Enter)</span>
-              </div>
-
-              {/* Tags selecionadas */}
-              {selectedExams.length > 0 && (
-                <div className="border rounded-lg p-3 flex flex-wrap gap-2 bg-muted/30">
-                  {selectedExams.map((exam) => (
-                    <Badge key={exam} variant="secondary" className="flex items-center gap-1.5 py-1 px-2 text-sm">
-                      {exam}
-                      <button type="button" onClick={() => removeExamTag(exam)} className="hover:text-destructive">
-                        <X className="w-3 h-3" />
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
-              )}
-
-              {/* Input de busca / texto livre */}
-              <div className="relative">
-                <Input
-                  placeholder="Buscar exame ou digitar nome livre (Enter para adicionar)"
-                  className="h-10"
-                  value={examInput}
-                  onChange={(e) => { setExamInput(e.target.value); setShowExamDropdown(true); }}
-                  onFocus={() => setShowExamDropdown(true)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') { e.preventDefault(); if (examInput.trim()) addExamTag(examInput); }
-                    if (e.key === 'Escape') setShowExamDropdown(false);
-                  }}
-                />
-                {showExamDropdown && (filteredExamOptions.length > 0 || examInput.trim()) && (
-                  <div className="absolute z-20 top-full left-0 right-0 bg-white border rounded-lg shadow-lg max-h-52 overflow-y-auto mt-1">
-                    {/* Lista do catálogo */}
-                    {filteredExamOptions.slice(0, 12).map((o) => (
-                      <button key={o.value} type="button" className="w-full text-left px-4 py-2.5 text-sm hover:bg-muted border-b last:border-0" onClick={() => addExamTag(o.value)}>
-                        {o.label}
-                      </button>
-                    ))}
-                    {/* Adicionar texto livre */}
-                    {examInput.trim() && !examsFromCatalog.find((e) => e.name === examInput.trim()) && (
-                      <button type="button" className="w-full text-left px-4 py-2.5 text-sm bg-primary/5 hover:bg-primary/10 text-primary font-medium border-t" onClick={() => addExamTag(examInput)}>
-                        + Usar &quot;{examInput.trim()}&quot; (texto livre)
-                      </button>
-                    )}
-                    {/* Cadastrar no catálogo */}
-                    <button type="button" className="w-full text-left px-4 py-2.5 text-xs text-muted-foreground hover:bg-muted border-t" onClick={() => { setShowExamDropdown(false); setAddExamModalVisible(true); }}>
-                      Cadastrar novo exame no catálogo da clínica...
-                    </button>
-                  </div>
-                )}
-              </div>
-              <p className="text-xs text-muted-foreground">Você pode adicionar exames não cadastrados digitando o nome e pressionando Enter.</p>
-            </div>
-
-            {/* Suspeita / Notas */}
-            <div className="space-y-1.5">
-              <Label className="text-sm font-medium">Suspeita clínica / Observações</Label>
-              <Controller
-                control={control}
-                name="clinical_notes"
-                render={({ field }) => <Textarea rows={4} placeholder="Descreva a suspeita clínica, informações relevantes ou outras orientações..." className="resize-none" {...field} />}
-              />
-            </div>
-          </div>
-
-          {/* Footer fixo */}
-          <DialogFooter className="px-6 py-4 border-t shrink-0 flex flex-row gap-3 justify-end">
+      <DashboardCreateFormDialog
+        open={modalVisible}
+        onOpenChange={setModalVisible}
+        title="Nova Solicitação de Exames"
+        containerClassName="mx-auto max-w-2xl h-[96dvh] sm:h-[90dvh]"
+        bodyClassName="px-6 py-5"
+        preventOutsideClose
+        preventEscapeClose
+        footer={
+          <div className="flex flex-row justify-end gap-3">
             <Button type="button" variant="outline" className="h-10" onClick={() => setModalVisible(false)}>
               Cancelar
             </Button>
             <Button className="h-10 bg-primary hover:bg-blue-700 text-white" onClick={handleSubmit(onSubmit)}>
               Gerar solicitação
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={addExamModalVisible} onOpenChange={setAddExamModalVisible}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Adicionar exame ao catálogo</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div>
-              <Label>Nome do exame *</Label>
-              <Input
-                placeholder="Ex: Hemograma completo"
-                value={newExamName}
-                onChange={(e) => setNewExamName(e.target.value)}
-              />
-            </div>
-            <div>
-              <Label>Área *</Label>
-              <Select value={newExamAreaId} onValueChange={setNewExamAreaId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione a área" />
-                </SelectTrigger>
-                <SelectContent>
-                  {examAreas.map((a) => (
-                    <SelectItem key={a.id} value={String(a.id)}>
-                      {a.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
           </div>
-          <DialogFooter>
+        }
+      >
+        <div className="space-y-5">
+          {/* Paciente */}
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium">Paciente *</Label>
+            <Controller
+              control={control}
+              name="patient_id"
+              rules={{ required: true }}
+              render={({ field }) => (
+                <Select
+                  value={field.value}
+                  onValueChange={(v) => {
+                    field.onChange(v);
+                    handlePatientChange(v);
+                  }}
+                >
+                  <SelectTrigger className="h-10">
+                    <SelectValue placeholder="Selecione o paciente" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {patients.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name} ({p.species}){p.tutor?.name ? ` — ${p.tutor.name}` : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+          </div>
+
+          {/* Consulta + Data */}
+          {selectedPatientId && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium">Consulta (opcional)</Label>
+                <Controller
+                  control={control}
+                  name="consultation_id"
+                  render={({ field }) => (
+                    <Select value={field.value ?? ''} onValueChange={(v) => field.onChange(v || undefined)}>
+                      <SelectTrigger className="h-10">
+                        <SelectValue placeholder="Sem consulta vinculada" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {consultationsByPatient.map((c) => (
+                          <SelectItem key={c.id} value={c.id}>
+                            {new Date(c.consultation_date).toLocaleDateString('pt-BR')} — Dr.{' '}
+                            {c.veterinarian?.name ?? ''}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium">Data (sem consulta)</Label>
+                <Controller
+                  control={control}
+                  name="request_date"
+                  render={({ field }) => <Input type="date" className="h-10" {...field} />}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Exames */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium">Exames *</Label>
+              <span className="text-xs text-muted-foreground">
+                Selecione da lista, digite para filtrar ou adicione texto livre (Enter)
+              </span>
+            </div>
+
+            {/* Tags selecionadas */}
+            {selectedExams.length > 0 && (
+              <div className="border rounded-lg p-3 flex flex-wrap gap-2 bg-muted/30">
+                {selectedExams.map((exam) => (
+                  <Badge key={exam} variant="secondary" className="flex items-center gap-1.5 py-1 px-2 text-sm">
+                    {exam}
+                    <button type="button" onClick={() => removeExamTag(exam)} className="hover:text-destructive">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+            )}
+
+            {/* Input de busca / texto livre */}
+            <div className="relative">
+              <Input
+                placeholder="Buscar exame ou digitar nome livre (Enter para adicionar)"
+                className="h-10"
+                value={examInput}
+                onChange={(e) => {
+                  setExamInput(e.target.value);
+                  setShowExamDropdown(true);
+                }}
+                onFocus={() => setShowExamDropdown(true)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (examInput.trim()) addExamTag(examInput);
+                  }
+                  if (e.key === 'Escape') setShowExamDropdown(false);
+                }}
+              />
+              {showExamDropdown && (filteredExamOptions.length > 0 || examInput.trim()) && (
+                <div className="absolute z-20 top-full left-0 right-0 bg-white border rounded-lg shadow-lg max-h-52 overflow-y-auto mt-1">
+                  {/* Lista do catálogo */}
+                  {filteredExamOptions.slice(0, 12).map((o) => (
+                    <button
+                      key={o.value}
+                      type="button"
+                      className="w-full text-left px-4 py-2.5 text-sm hover:bg-muted border-b last:border-0"
+                      onClick={() => addExamTag(o.value)}
+                    >
+                      {o.label}
+                    </button>
+                  ))}
+                  {/* Adicionar texto livre */}
+                  {examInput.trim() && !examsFromCatalog.find((e) => e.name === examInput.trim()) && (
+                    <button
+                      type="button"
+                      className="w-full text-left px-4 py-2.5 text-sm bg-primary/5 hover:bg-primary/10 text-primary font-medium border-t"
+                      onClick={() => addExamTag(examInput)}
+                    >
+                      + Usar &quot;{examInput.trim()}&quot; (texto livre)
+                    </button>
+                  )}
+                  {/* Cadastrar no catálogo */}
+                  <button
+                    type="button"
+                    className="w-full text-left px-4 py-2.5 text-xs text-muted-foreground hover:bg-muted border-t"
+                    onClick={() => {
+                      setShowExamDropdown(false);
+                      setAddExamModalVisible(true);
+                    }}
+                  >
+                    Cadastrar novo exame no catálogo da clínica...
+                  </button>
+                </div>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Você pode adicionar exames não cadastrados digitando o nome e pressionando Enter.
+            </p>
+          </div>
+
+          {/* Suspeita / Notas */}
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium">Suspeita clínica / Observações</Label>
+            <Controller
+              control={control}
+              name="clinical_notes"
+              render={({ field }) => (
+                <Textarea
+                  rows={4}
+                  placeholder="Descreva a suspeita clínica, informações relevantes ou outras orientações..."
+                  className="resize-none"
+                  {...field}
+                />
+              )}
+            />
+          </div>
+        </div>
+      </DashboardCreateFormDialog>
+
+      <DashboardCreateFormDialog
+        open={addExamModalVisible}
+        onOpenChange={setAddExamModalVisible}
+        title="Adicionar exame ao catálogo"
+        footer={
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button variant="outline" onClick={() => setAddExamModalVisible(false)}>
               Cancelar
             </Button>
-            <Button
-              className="bg-primary hover:bg-blue-700 text-white"
-              onClick={handleAddExamToCatalog}
-            >
+            <Button className="bg-primary hover:bg-blue-700 text-white" onClick={handleAddExamToCatalog}>
               Adicionar
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        }
+      >
+        <div className="space-y-3">
+          <div>
+            <Label>Nome do exame *</Label>
+            <Input
+              placeholder="Ex: Hemograma completo"
+              value={newExamName}
+              onChange={(e) => setNewExamName(e.target.value)}
+            />
+          </div>
+          <div>
+            <Label>Área *</Label>
+            <Select value={newExamAreaId} onValueChange={setNewExamAreaId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione a área" />
+              </SelectTrigger>
+              <SelectContent>
+                {examAreas.map((a) => (
+                  <SelectItem key={a.id} value={String(a.id)}>
+                    {a.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </DashboardCreateFormDialog>
 
       <Dialog open={emailModalVisible} onOpenChange={setEmailModalVisible}>
         <DialogContent>

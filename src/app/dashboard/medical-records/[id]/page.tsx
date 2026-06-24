@@ -41,7 +41,7 @@ interface VaccineRecord { id: string; vaccine_name: string; application_date: st
 export default function MedicalRecordDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const id = params.id as string;
+  const id = typeof params?.id === 'string' ? params.id : '';
 
   const [record, setRecord] = useState<MedicalRecord | null>(null);
   const [loading, setLoading] = useState(true);
@@ -62,6 +62,12 @@ export default function MedicalRecordDetailPage() {
   });
 
   const fetchRecord = useCallback(async () => {
+    if (!id) {
+      setLoading(false);
+      toast.error('Prontuário inválido');
+      return;
+    }
+
     setLoading(true);
     try {
       const r = await api.get<MedicalRecord>(`/medical-records/${id}`);

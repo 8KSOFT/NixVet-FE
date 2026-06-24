@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
 import { Plus, Loader2, ExternalLink, RefreshCw, Wifi, WifiOff, Trash2, QrCode } from 'lucide-react';
+import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import api from '@/lib/axios';
 import { API_PAGE_SIZE, listQueryParams, parseListResponse } from '@/lib/pagination';
 import { ListPagination } from '@/components/list-pagination';
@@ -163,8 +164,8 @@ export default function SettingsWhatsappNumbersPage() {
       await api.put('/tenants/me', { whatsapp_ai_chatbot_enabled: enabled });
       setChatbotEnabled(enabled);
       toast.success(enabled ? 'Chatbot de IA ativado' : 'Chatbot de IA desativado');
-    } catch (e: any) {
-      toast.error(e.response?.data?.message ?? 'Erro ao salvar');
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, 'Erro ao salvar'));
     } finally {
       setChatbotSaving(false);
     }
@@ -217,8 +218,8 @@ export default function SettingsWhatsappNumbersPage() {
       await api.post('/whatsapp/provision', {});
       toast.success('Instância Z-API provisionada! Escaneie o QR Code para conectar.');
       await fetchList();
-    } catch (e: any) {
-      toast.error(e.response?.data?.message ?? 'Erro ao provisionar instância');
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, 'Erro ao provisionar instância'));
     } finally {
       setProvisioning(false);
     }
@@ -232,8 +233,8 @@ export default function SettingsWhatsappNumbersPage() {
       setRegisterOpen(false);
       form.reset();
       await fetchList();
-    } catch (e: any) {
-      toast.error(e.response?.data?.message ?? 'Erro ao cadastrar');
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, 'Erro ao cadastrar'));
     }
   };
 
@@ -244,8 +245,8 @@ export default function SettingsWhatsappNumbersPage() {
       await api.delete(`/whatsapp/numbers/${numberId}`);
       toast.success('Número desconectado');
       await fetchList();
-    } catch (e: any) {
-      toast.error(e.response?.data?.message ?? 'Erro ao desconectar');
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, 'Erro ao desconectar'));
     }
   };
 

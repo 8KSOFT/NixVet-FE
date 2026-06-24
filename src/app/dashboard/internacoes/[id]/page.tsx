@@ -1,35 +1,17 @@
 'use client';
 
+import { ArrowLeft, LogOut, Download, Plus, Check, X } from 'lucide-react';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
-import { ArrowLeft, LogOut, FileText, Download, Plus, Check, X } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -126,7 +108,7 @@ function ResumoTab({ h }: { h: Hospitalization }) {
       {[
         ['Paciente', h.patient?.name],
         ['Espécie', `${h.patient?.species ?? ''}${h.patient?.breed ? ` — ${h.patient.breed}` : ''}`],
-        ['Tutor', (h.patient as any)?.tutor?.name ?? '—'],
+        ['Tutor', h.patient?.tutor?.name ?? '—'],
         ['Veterinário', h.veterinarian?.name],
         ['Admissão', new Date(h.admission_date).toLocaleString('pt-BR')],
         ['Box', h.box_number ?? '—'],
@@ -155,7 +137,15 @@ function CustosTab({ hospitalizationId, status }: { hospitalizationId: string; s
   const [summary, setSummary] = useState<CostSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [openAdd, setOpenAdd] = useState(false);
-  const [form, setForm] = useState({ type: 'procedure', date: new Date().toISOString().slice(0, 10), description: '', quantity: 1, unit_price: 0, covered_by_plan: false, plan_coverage_amount: 0 });
+  const [form, setForm] = useState({
+    type: 'procedure',
+    date: new Date().toISOString().slice(0, 10),
+    description: '',
+    quantity: 1,
+    unit_price: 0,
+    covered_by_plan: false,
+    plan_coverage_amount: 0,
+  });
 
   const fetch = useCallback(async () => {
     setLoading(true);
@@ -173,7 +163,9 @@ function CustosTab({ hospitalizationId, status }: { hospitalizationId: string; s
     }
   }, [hospitalizationId]);
 
-  useEffect(() => { fetch(); }, [fetch]);
+  useEffect(() => {
+    fetch();
+  }, [fetch]);
 
   const addCost = async () => {
     try {
@@ -260,13 +252,19 @@ function CustosTab({ hospitalizationId, status }: { hospitalizationId: string; s
         <TableBody>
           {costs.map((c) => (
             <TableRow key={c.id}>
-              <TableCell><Badge variant="outline">{COST_TYPE_LABELS[c.type] ?? c.type}</Badge></TableCell>
-              <TableCell className="text-sm text-muted-foreground">{new Date(c.date).toLocaleDateString('pt-BR')}</TableCell>
+              <TableCell>
+                <Badge variant="outline">{COST_TYPE_LABELS[c.type] ?? c.type}</Badge>
+              </TableCell>
+              <TableCell className="text-sm text-muted-foreground">
+                {new Date(c.date).toLocaleDateString('pt-BR')}
+              </TableCell>
               <TableCell>{c.description}</TableCell>
               <TableCell className="text-right">{c.quantity}</TableCell>
               <TableCell className="text-right tabular-nums">{fmt(Number(c.unit_price))}</TableCell>
               <TableCell className="text-right tabular-nums font-medium">{fmt(Number(c.total_price))}</TableCell>
-              <TableCell className="text-right tabular-nums text-green-600">{c.covered_by_plan ? fmt(Number(c.plan_coverage_amount)) : '—'}</TableCell>
+              <TableCell className="text-right tabular-nums text-green-600">
+                {c.covered_by_plan ? fmt(Number(c.plan_coverage_amount)) : '—'}
+              </TableCell>
               <TableCell>
                 <Button variant="ghost" size="icon" onClick={() => deleteCost(c.id)}>
                   <X className="size-4 text-muted-foreground" />
@@ -279,37 +277,64 @@ function CustosTab({ hospitalizationId, status }: { hospitalizationId: string; s
 
       <Dialog open={openAdd} onOpenChange={setOpenAdd}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Adicionar Item de Custo</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Adicionar Item de Custo</DialogTitle>
+          </DialogHeader>
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label>Tipo</Label>
                 <Select value={form.type} onValueChange={(v) => setForm((f) => ({ ...f, type: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
-                    {Object.entries(COST_TYPE_LABELS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+                    {Object.entries(COST_TYPE_LABELS).map(([k, v]) => (
+                      <SelectItem key={k} value={k}>
+                        {v}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1">
                 <Label>Data</Label>
-                <Input type="date" value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} />
+                <Input
+                  type="date"
+                  value={form.date}
+                  onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
+                />
               </div>
               <div className="col-span-2 space-y-1">
                 <Label>Descrição</Label>
-                <Input value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} />
+                <Input
+                  value={form.description}
+                  onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+                />
               </div>
               <div className="space-y-1">
                 <Label>Quantidade</Label>
-                <Input type="number" step="0.001" value={form.quantity} onChange={(e) => setForm((f) => ({ ...f, quantity: Number(e.target.value) }))} />
+                <Input
+                  type="number"
+                  step="0.001"
+                  value={form.quantity}
+                  onChange={(e) => setForm((f) => ({ ...f, quantity: Number(e.target.value) }))}
+                />
               </div>
               <div className="space-y-1">
                 <Label>Valor Unitário</Label>
-                <Input type="number" step="0.01" value={form.unit_price} onChange={(e) => setForm((f) => ({ ...f, unit_price: Number(e.target.value) }))} />
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={form.unit_price}
+                  onChange={(e) => setForm((f) => ({ ...f, unit_price: Number(e.target.value) }))}
+                />
               </div>
             </div>
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setOpenAdd(false)}>Cancelar</Button>
+              <Button variant="outline" onClick={() => setOpenAdd(false)}>
+                Cancelar
+              </Button>
               <Button onClick={addCost}>Adicionar</Button>
             </div>
           </div>
@@ -323,7 +348,16 @@ function EvolucaoTab({ hospitalizationId }: { hospitalizationId: string }) {
   const [evolutions, setEvolutions] = useState<Evolution[]>([]);
   const [loading, setLoading] = useState(true);
   const [openNew, setOpenNew] = useState(false);
-  const [form, setForm] = useState({ evolution_type: 'clinical', subjective: '', objective: '', assessment: '', plan: '', heart_rate: '', temperature_c: '', spo2_percent: '' });
+  const [form, setForm] = useState({
+    evolution_type: 'clinical',
+    subjective: '',
+    objective: '',
+    assessment: '',
+    plan: '',
+    heart_rate: '',
+    temperature_c: '',
+    spo2_percent: '',
+  });
 
   const fetch = useCallback(async () => {
     setLoading(true);
@@ -337,7 +371,9 @@ function EvolucaoTab({ hospitalizationId }: { hospitalizationId: string }) {
     }
   }, [hospitalizationId]);
 
-  useEffect(() => { fetch(); }, [fetch]);
+  useEffect(() => {
+    fetch();
+  }, [fetch]);
 
   const createEvolution = async () => {
     try {
@@ -357,7 +393,9 @@ function EvolucaoTab({ hospitalizationId }: { hospitalizationId: string }) {
 
   const downloadPdf = async () => {
     try {
-      const res = await api.get(`/hospitalizations/${hospitalizationId}/evolutions/prontuario/pdf`, { responseType: 'blob' });
+      const res = await api.get(`/hospitalizations/${hospitalizationId}/evolutions/prontuario/pdf`, {
+        responseType: 'blob',
+      });
       const url = URL.createObjectURL(res.data as Blob);
       const a = document.createElement('a');
       a.href = url;
@@ -401,17 +439,45 @@ function EvolucaoTab({ hospitalizationId }: { hospitalizationId: string }) {
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-2 pt-1">
-                  {e.heart_rate && <Badge variant="secondary" className="text-xs">FC: {e.heart_rate}bpm</Badge>}
-                  {e.temperature_c && <Badge variant="secondary" className="text-xs">Temp: {e.temperature_c}°C</Badge>}
-                  {e.spo2_percent && <Badge variant="secondary" className="text-xs">SpO2: {e.spo2_percent}%</Badge>}
-                  {e.respiratory_rate && <Badge variant="secondary" className="text-xs">FR: {e.respiratory_rate}mpm</Badge>}
+                  {e.heart_rate && (
+                    <Badge variant="secondary" className="text-xs">
+                      FC: {e.heart_rate}bpm
+                    </Badge>
+                  )}
+                  {e.temperature_c && (
+                    <Badge variant="secondary" className="text-xs">
+                      Temp: {e.temperature_c}°C
+                    </Badge>
+                  )}
+                  {e.spo2_percent && (
+                    <Badge variant="secondary" className="text-xs">
+                      SpO2: {e.spo2_percent}%
+                    </Badge>
+                  )}
+                  {e.respiratory_rate && (
+                    <Badge variant="secondary" className="text-xs">
+                      FR: {e.respiratory_rate}mpm
+                    </Badge>
+                  )}
                 </div>
               </CardHeader>
               {(e.subjective || e.assessment || e.plan) && (
                 <CardContent className="pt-0 space-y-1">
-                  {e.subjective && <p className="text-sm"><span className="font-medium">S:</span> {e.subjective}</p>}
-                  {e.assessment && <p className="text-sm"><span className="font-medium">A:</span> {e.assessment}</p>}
-                  {e.plan && <p className="text-sm"><span className="font-medium">P:</span> {e.plan}</p>}
+                  {e.subjective && (
+                    <p className="text-sm">
+                      <span className="font-medium">S:</span> {e.subjective}
+                    </p>
+                  )}
+                  {e.assessment && (
+                    <p className="text-sm">
+                      <span className="font-medium">A:</span> {e.assessment}
+                    </p>
+                  )}
+                  {e.plan && (
+                    <p className="text-sm">
+                      <span className="font-medium">P:</span> {e.plan}
+                    </p>
+                  )}
                 </CardContent>
               )}
             </Card>
@@ -421,12 +487,16 @@ function EvolucaoTab({ hospitalizationId }: { hospitalizationId: string }) {
 
       <Dialog open={openNew} onOpenChange={setOpenNew}>
         <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>Nova Evolução</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Nova Evolução</DialogTitle>
+          </DialogHeader>
           <div className="space-y-3">
             <div className="space-y-1">
               <Label>Tipo</Label>
               <Select value={form.evolution_type} onValueChange={(v) => setForm((f) => ({ ...f, evolution_type: v }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="clinical">Clínica</SelectItem>
                   <SelectItem value="procedure">Procedimento</SelectItem>
@@ -438,25 +508,52 @@ function EvolucaoTab({ hospitalizationId }: { hospitalizationId: string }) {
             <div className="grid grid-cols-3 gap-2">
               <div className="space-y-1">
                 <Label>FC (bpm)</Label>
-                <Input type="number" value={form.heart_rate} onChange={(e) => setForm((f) => ({ ...f, heart_rate: e.target.value }))} />
+                <Input
+                  type="number"
+                  value={form.heart_rate}
+                  onChange={(e) => setForm((f) => ({ ...f, heart_rate: e.target.value }))}
+                />
               </div>
               <div className="space-y-1">
                 <Label>Temp. (°C)</Label>
-                <Input type="number" step="0.1" value={form.temperature_c} onChange={(e) => setForm((f) => ({ ...f, temperature_c: e.target.value }))} />
+                <Input
+                  type="number"
+                  step="0.1"
+                  value={form.temperature_c}
+                  onChange={(e) => setForm((f) => ({ ...f, temperature_c: e.target.value }))}
+                />
               </div>
               <div className="space-y-1">
                 <Label>SpO2 (%)</Label>
-                <Input type="number" value={form.spo2_percent} onChange={(e) => setForm((f) => ({ ...f, spo2_percent: e.target.value }))} />
+                <Input
+                  type="number"
+                  value={form.spo2_percent}
+                  onChange={(e) => setForm((f) => ({ ...f, spo2_percent: e.target.value }))}
+                />
               </div>
             </div>
             {(['subjective', 'objective', 'assessment', 'plan'] as const).map((field) => (
               <div key={field} className="space-y-1">
-                <Label>{field === 'subjective' ? 'Subjetivo' : field === 'objective' ? 'Objetivo' : field === 'assessment' ? 'Avaliação' : 'Plano'}</Label>
-                <Textarea rows={2} value={form[field]} onChange={(e) => setForm((f) => ({ ...f, [field]: e.target.value }))} />
+                <Label>
+                  {field === 'subjective'
+                    ? 'Subjetivo'
+                    : field === 'objective'
+                      ? 'Objetivo'
+                      : field === 'assessment'
+                        ? 'Avaliação'
+                        : 'Plano'}
+                </Label>
+                <Textarea
+                  rows={2}
+                  value={form[field]}
+                  onChange={(e) => setForm((f) => ({ ...f, [field]: e.target.value }))}
+                />
               </div>
             ))}
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setOpenNew(false)}>Cancelar</Button>
+              <Button variant="outline" onClick={() => setOpenNew(false)}>
+                Cancelar
+              </Button>
               <Button onClick={createEvolution}>Registrar</Button>
             </div>
           </div>
@@ -470,7 +567,14 @@ function MedicacoesTab({ hospitalizationId }: { hospitalizationId: string }) {
   const [schedules, setSchedules] = useState<MedSchedule[]>([]);
   const [loading, setLoading] = useState(true);
   const [openNew, setOpenNew] = useState(false);
-  const [form, setForm] = useState({ medication_name: '', route: 'oral', dose: '', frequency_hours: 8, start_datetime: new Date().toISOString().slice(0, 16), instructions: '' });
+  const [form, setForm] = useState({
+    medication_name: '',
+    route: 'oral',
+    dose: '',
+    frequency_hours: 8,
+    start_datetime: new Date().toISOString().slice(0, 16),
+    instructions: '',
+  });
 
   const fetch = useCallback(async () => {
     setLoading(true);
@@ -484,7 +588,9 @@ function MedicacoesTab({ hospitalizationId }: { hospitalizationId: string }) {
     }
   }, [hospitalizationId]);
 
-  useEffect(() => { fetch(); }, [fetch]);
+  useEffect(() => {
+    fetch();
+  }, [fetch]);
 
   const prescribe = async () => {
     try {
@@ -509,7 +615,9 @@ function MedicacoesTab({ hospitalizationId }: { hospitalizationId: string }) {
 
   const downloadKardex = async () => {
     try {
-      const res = await api.get(`/hospitalizations/${hospitalizationId}/medications/kardex/pdf`, { responseType: 'blob' });
+      const res = await api.get(`/hospitalizations/${hospitalizationId}/medications/kardex/pdf`, {
+        responseType: 'blob',
+      });
       const url = URL.createObjectURL(res.data as Blob);
       const a = document.createElement('a');
       a.href = url;
@@ -548,15 +656,24 @@ function MedicacoesTab({ hospitalizationId }: { hospitalizationId: string }) {
                 <CardHeader className="py-3 pb-1">
                   <div className="flex items-center justify-between">
                     <p className="font-medium">{s.medication_name}</p>
-                    {overdue.length > 0 && <Badge variant="destructive">{overdue.length} atrasada{overdue.length > 1 ? 's' : ''}</Badge>}
+                    {overdue.length > 0 && (
+                      <Badge variant="destructive">
+                        {overdue.length} atrasada{overdue.length > 1 ? 's' : ''}
+                      </Badge>
+                    )}
                   </div>
-                  <p className="text-sm text-muted-foreground">{s.dose} — {s.route} — cada {s.frequency_hours}h</p>
+                  <p className="text-sm text-muted-foreground">
+                    {s.dose} — {s.route} — cada {s.frequency_hours}h
+                  </p>
                 </CardHeader>
                 {overdue.length > 0 && (
                   <CardContent className="pt-0">
                     <div className="space-y-1">
                       {overdue.slice(0, 3).map((a) => (
-                        <div key={a.id} className="flex items-center justify-between rounded bg-red-50 px-3 py-1.5 text-sm">
+                        <div
+                          key={a.id}
+                          className="flex items-center justify-between rounded bg-red-50 px-3 py-1.5 text-sm"
+                        >
                           <span className="text-red-700">{new Date(a.scheduled_datetime).toLocaleString('pt-BR')}</span>
                           <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => confirm(a.id)}>
                             <Check className="mr-1 size-3" />
@@ -575,37 +692,62 @@ function MedicacoesTab({ hospitalizationId }: { hospitalizationId: string }) {
 
       <Dialog open={openNew} onOpenChange={setOpenNew}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Prescrever Medicação</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Prescrever Medicação</DialogTitle>
+          </DialogHeader>
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2 space-y-1">
                 <Label>Medicamento *</Label>
-                <Input value={form.medication_name} onChange={(e) => setForm((f) => ({ ...f, medication_name: e.target.value }))} />
+                <Input
+                  value={form.medication_name}
+                  onChange={(e) => setForm((f) => ({ ...f, medication_name: e.target.value }))}
+                />
               </div>
               <div className="space-y-1">
                 <Label>Dose *</Label>
-                <Input value={form.dose} onChange={(e) => setForm((f) => ({ ...f, dose: e.target.value }))} placeholder="Ex: 10mg/kg" />
+                <Input
+                  value={form.dose}
+                  onChange={(e) => setForm((f) => ({ ...f, dose: e.target.value }))}
+                  placeholder="Ex: 10mg/kg"
+                />
               </div>
               <div className="space-y-1">
                 <Label>Via</Label>
                 <Select value={form.route} onValueChange={(v) => setForm((f) => ({ ...f, route: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
-                    {['oral','iv','im','sc','topical','inhalation','other'].map((r) => <SelectItem key={r} value={r}>{r.toUpperCase()}</SelectItem>)}
+                    {['oral', 'iv', 'im', 'sc', 'topical', 'inhalation', 'other'].map((r) => (
+                      <SelectItem key={r} value={r}>
+                        {r.toUpperCase()}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1">
                 <Label>Frequência (a cada X horas)</Label>
-                <Input type="number" value={form.frequency_hours} onChange={(e) => setForm((f) => ({ ...f, frequency_hours: Number(e.target.value) }))} />
+                <Input
+                  type="number"
+                  value={form.frequency_hours}
+                  onChange={(e) => setForm((f) => ({ ...f, frequency_hours: Number(e.target.value) }))}
+                />
               </div>
               <div className="space-y-1">
                 <Label>Início</Label>
-                <Input type="datetime-local" value={form.start_datetime} onChange={(e) => setForm((f) => ({ ...f, start_datetime: e.target.value }))} />
+                <Input
+                  type="datetime-local"
+                  value={form.start_datetime}
+                  onChange={(e) => setForm((f) => ({ ...f, start_datetime: e.target.value }))}
+                />
               </div>
             </div>
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setOpenNew(false)}>Cancelar</Button>
+              <Button variant="outline" onClick={() => setOpenNew(false)}>
+                Cancelar
+              </Button>
               <Button onClick={prescribe}>Prescrever</Button>
             </div>
           </div>
@@ -617,7 +759,8 @@ function MedicacoesTab({ hospitalizationId }: { hospitalizationId: string }) {
 
 /* ---- Main Page ---- */
 export default function HospitalizationDetailPage() {
-  const { id } = useParams<{ id: string }>();
+  const params = useParams<{ id: string }>();
+  const hospitalizationId = typeof params?.id === 'string' ? params.id : '';
   const [h, setH] = useState<Hospitalization | null>(null);
   const [loading, setLoading] = useState(true);
   const [openDischarge, setOpenDischarge] = useState(false);
@@ -628,22 +771,32 @@ export default function HospitalizationDetailPage() {
   });
 
   const fetch = useCallback(async () => {
+    if (!hospitalizationId) {
+      setLoading(false);
+      toast.error('Internação inválida');
+      return;
+    }
+
     setLoading(true);
     try {
-      const res = await api.get<Hospitalization>(`/hospitalizations/${id}`);
+      const res = await api.get<Hospitalization>(`/hospitalizations/${hospitalizationId}`);
       setH(res.data);
     } catch {
       toast.error('Erro ao carregar internação');
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [hospitalizationId]);
 
-  useEffect(() => { fetch(); }, [fetch]);
+  useEffect(() => {
+    fetch();
+  }, [fetch]);
 
   const handleDischarge = async () => {
+    if (!hospitalizationId) return;
+
     try {
-      await api.patch(`/hospitalizations/${id}/discharge`, dischargeForm);
+      await api.patch(`/hospitalizations/${hospitalizationId}/discharge`, dischargeForm);
       toast.success('Alta registrada');
       setOpenDischarge(false);
       fetch();
@@ -668,15 +821,17 @@ export default function HospitalizationDetailPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Button variant="ghost" size="icon" asChild>
-            <Link href="/dashboard/internacoes"><ArrowLeft className="size-4" /></Link>
+            <Link href="/dashboard/internacoes">
+              <ArrowLeft className="size-4" />
+            </Link>
           </Button>
           <div>
             <h1 className="text-xl font-bold">{h.patient?.name}</h1>
-            <p className="text-sm text-muted-foreground">{h.patient?.species} · Admissão: {new Date(h.admission_date).toLocaleDateString('pt-BR')}</p>
+            <p className="text-sm text-muted-foreground">
+              {h.patient?.species} · Admissão: {new Date(h.admission_date).toLocaleDateString('pt-BR')}
+            </p>
           </div>
-          <Badge variant={h.status === 'active' ? 'default' : 'secondary'}>
-            {h.status}
-          </Badge>
+          <Badge variant={h.status === 'active' ? 'default' : 'secondary'}>{h.status}</Badge>
         </div>
         {h.status === 'active' && (
           <Button variant="destructive" onClick={() => setOpenDischarge(true)}>
@@ -695,34 +850,49 @@ export default function HospitalizationDetailPage() {
         </TabsList>
 
         <TabsContent value="resumo" className="mt-4">
-          <Card><CardContent className="p-6"><ResumoTab h={h} /></CardContent></Card>
+          <Card>
+            <CardContent className="p-6">
+              <ResumoTab h={h} />
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="prontuario" className="mt-4">
-          <EvolucaoTab hospitalizationId={id} />
+          <EvolucaoTab hospitalizationId={hospitalizationId} />
         </TabsContent>
 
         <TabsContent value="medicacoes" className="mt-4">
-          <MedicacoesTab hospitalizationId={id} />
+          <MedicacoesTab hospitalizationId={hospitalizationId} />
         </TabsContent>
 
         <TabsContent value="custos" className="mt-4">
-          <CustosTab hospitalizationId={id} status={h.status} />
+          <CustosTab hospitalizationId={hospitalizationId} status={h.status} />
         </TabsContent>
       </Tabs>
 
       <Dialog open={openDischarge} onOpenChange={setOpenDischarge}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Registrar Alta</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Registrar Alta</DialogTitle>
+          </DialogHeader>
           <div className="space-y-3">
             <div className="space-y-1">
               <Label>Data/Hora de Alta</Label>
-              <Input type="datetime-local" value={dischargeForm.actual_discharge_date} onChange={(e) => setDischargeForm((f) => ({ ...f, actual_discharge_date: e.target.value }))} />
+              <Input
+                type="datetime-local"
+                value={dischargeForm.actual_discharge_date}
+                onChange={(e) => setDischargeForm((f) => ({ ...f, actual_discharge_date: e.target.value }))}
+              />
             </div>
             <div className="space-y-1">
               <Label>Condição de Alta</Label>
-              <Select value={dischargeForm.discharge_condition} onValueChange={(v) => setDischargeForm((f) => ({ ...f, discharge_condition: v }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <Select
+                value={dischargeForm.discharge_condition}
+                onValueChange={(v) => setDischargeForm((f) => ({ ...f, discharge_condition: v }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="improved">Melhorado</SelectItem>
                   <SelectItem value="cured">Curado</SelectItem>
@@ -733,11 +903,19 @@ export default function HospitalizationDetailPage() {
             </div>
             <div className="space-y-1">
               <Label>Instruções de Alta</Label>
-              <Textarea rows={3} value={dischargeForm.discharge_instructions} onChange={(e) => setDischargeForm((f) => ({ ...f, discharge_instructions: e.target.value }))} />
+              <Textarea
+                rows={3}
+                value={dischargeForm.discharge_instructions}
+                onChange={(e) => setDischargeForm((f) => ({ ...f, discharge_instructions: e.target.value }))}
+              />
             </div>
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setOpenDischarge(false)}>Cancelar</Button>
-              <Button variant="destructive" onClick={handleDischarge}>Confirmar Alta</Button>
+              <Button variant="outline" onClick={() => setOpenDischarge(false)}>
+                Cancelar
+              </Button>
+              <Button variant="destructive" onClick={handleDischarge}>
+                Confirmar Alta
+              </Button>
             </div>
           </div>
         </DialogContent>

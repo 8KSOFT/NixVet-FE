@@ -18,6 +18,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import api from '@/lib/axios';
 
 interface ChatbotSettings {
@@ -91,8 +92,8 @@ export default function ChatbotSettingsPage() {
     try {
       await api.put('/chatbot-settings', values);
       toast.success('Configurações do chatbot salvas');
-    } catch (e: any) {
-      toast.error(e.response?.data?.message ?? 'Erro ao salvar');
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, 'Erro ao salvar'));
     } finally {
       setSaving(false);
     }

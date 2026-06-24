@@ -1,33 +1,24 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
+import type { ApiRequestError } from '@/app/types/api-error';
+import type {
+  HealthPlanOption,
+  Hospitalization,
+  HospitalizationFormValues,
+  HospitalizationPatientOption,
+  HospitalizationUserOption,
+  PaginatedListEnvelope,
+} from '@/app/types/hospitalization';
 import { Plus, Clock } from 'lucide-react';
+import { DashboardCreateFormDialog } from '@/components/dashboard-create-form-dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -35,28 +26,6 @@ import { cn } from '@/lib/utils';
 import api from '@/lib/axios';
 import { toast } from 'sonner';
 import Link from 'next/link';
-
-interface Hospitalization {
-  id: string;
-  reason: string;
-  admission_date: string;
-  status: string;
-  box_number: string | null;
-  payment_source: string;
-  daily_rate: number;
-  patient: { id: string; name: string; species: string };
-  veterinarian: { id: string; name: string };
-}
-
-interface Patient {
-  id: string;
-  name: string;
-}
-
-interface User {
-  id: string;
-  name: string;
-}
 
 function daysInternado(admissionDate: string): number {
   const ms = Date.now() - new Date(admissionDate).getTime();
@@ -78,16 +47,45 @@ function speciesEmoji(species: string) {
   return '🐾';
 }
 
+function getApiErrorMessage(error: unknown, fallbackMessage: string): string {
+  const typedError = error as ApiRequestError;
+  const responseMessage = typedError.response?.data?.message;
+
+  if (Array.isArray(responseMessage)) {
+    return responseMessage[0] ?? fallbackMessage;
+  }
+
+  return responseMessage ?? typedError.message ?? fallbackMessage;
+}
+
+function parsePaginatedItems<TItem>(responseData: unknown): {
+  items: TItem[];
+  total: number;
+} {
+  if (Array.isArray(responseData)) {
+    return {
+      items: responseData as TItem[],
+      total: responseData.length,
+    };
+  }
+
+  const parsedResponse = responseData as PaginatedListEnvelope<TItem>;
+  const items = parsedResponse.data ?? parsedResponse.items ?? [];
+  const total = parsedResponse.total ?? items.length;
+
+  return { items, total };
+}
+
 export default function InternacoesPage() {
   const [active, setActive] = useState<Hospitalization[]>([]);
   const [all, setAll] = useState<Hospitalization[]>([]);
   const [loading, setLoading] = useState(true);
   const [openNew, setOpenNew] = useState(false);
-  const [patients, setPatients] = useState<Patient[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
-  const [healthPlans, setHealthPlans] = useState<{ id: string; name: string }[]>([]);
+  const [patients, setPatients] = useState<HospitalizationPatientOption[]>([]);
+  const [users, setUsers] = useState<HospitalizationUserOption[]>([]);
+  const [healthPlans, setHealthPlans] = useState<HealthPlanOption[]>([]);
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<HospitalizationFormValues>({
     patient_id: '',
     veterinarian_id: '',
     reason: '',
@@ -121,51 +119,69 @@ export default function InternacoesPage() {
 
     const PAGE_LIMIT = 50;
 
-    const fetchAllPages = async (url: string): Promise<unknown[]> => {
-      const result: unknown[] = [];
+    const fetchAllPages = async <TItem,>(url: string): Promise<TItem[]> => {
+      const result: TItem[] = [];
       let page = 1;
+
       while (true) {
-        const r = await api.get(url, { params: { limit: PAGE_LIMIT, page } });
-        const d = (r.data as any)?.data ?? (r.data as any)?.items ?? r.data;
-        const items = Array.isArray(d) ? d : [];
+        const response = await api.get(url, { params: { limit: PAGE_LIMIT, page } });
+        const { items, total } = parsePaginatedItems<TItem>(response.data);
         result.push(...items);
-        const total = (r.data as any)?.total ?? items.length;
+
         if (result.length >= total || items.length < PAGE_LIMIT) break;
+
         page++;
       }
+
       return result;
     };
 
     // Pacientes
-    fetchAllPages('/patients')
-      .then((list) => setPatients(list as Patient[]))
-      .catch((e) => toast.error(`Erro ao carregar pacientes: ${e?.response?.data?.message ?? e?.message ?? 'desconhecido'}`));
+    fetchAllPages<HospitalizationPatientOption>('/patients')
+      .then((list) => setPatients(list))
+      .catch((error: unknown) =>
+        toast.error(`Erro ao carregar pacientes: ${getApiErrorMessage(error, 'desconhecido')}`),
+      );
 
     // Veterinários — tenta rota específica, fallback para staff
     const loadUsers = async () => {
       try {
-        const list = await fetchAllPages('/users/veterinarians') as User[];
-        if (list.length > 0) { setUsers(list); return; }
-      } catch { /* segue para fallback */ }
+        const list = await fetchAllPages<HospitalizationUserOption>('/users/veterinarians');
+        if (list.length > 0) {
+          setUsers(list);
+          return;
+        }
+      } catch {
+        /* segue para fallback */
+      }
       try {
-        const list = await fetchAllPages('/users/staff') as User[];
+        const list = await fetchAllPages<HospitalizationUserOption>('/users/staff');
         setUsers(list);
-      } catch (e: any) {
-        toast.error(`Erro ao carregar veterinários: ${e?.response?.data?.message ?? e?.message ?? 'desconhecido'}`);
+      } catch (error: unknown) {
+        toast.error(`Erro ao carregar veterinários: ${getApiErrorMessage(error, 'desconhecido')}`);
       }
     };
     loadUsers();
 
     // Planos
-    fetchAllPages('/health-plans')
-      .then((list) => setHealthPlans(list as { id: string; name: string }[]))
+    fetchAllPages<HealthPlanOption>('/health-plans')
+      .then((list) => setHealthPlans(list))
       .catch(() => {});
   }, [fetchData]);
 
   const handleCreate = async () => {
-    if (!form.patient_id) { toast.error('Selecione o paciente'); return; }
-    if (!form.veterinarian_id) { toast.error('Selecione o veterinário'); return; }
-    if (!form.reason.trim()) { toast.error('Informe o motivo'); return; }
+    if (!form.patient_id) {
+      toast.error('Selecione o paciente');
+      return;
+    }
+    if (!form.veterinarian_id) {
+      toast.error('Selecione o veterinário');
+      return;
+    }
+    if (!form.reason.trim()) {
+      toast.error('Informe o motivo');
+      return;
+    }
     try {
       await api.post('/hospitalizations', {
         ...form,
@@ -174,9 +190,9 @@ export default function InternacoesPage() {
       });
       toast.success('Internação aberta');
       setOpenNew(false);
-      fetchData();
-    } catch (e: any) {
-      toast.error(e.response?.data?.message?.[0] ?? e.response?.data?.message ?? 'Erro ao abrir internação');
+      void fetchData();
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, 'Erro ao abrir internação'));
     }
   };
 
@@ -204,12 +220,12 @@ export default function InternacoesPage() {
         <TabsContent value="active" className="mt-4">
           {loading ? (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-40" />)}
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Skeleton key={i} className="h-40" />
+              ))}
             </div>
           ) : active.length === 0 ? (
-            <div className="py-16 text-center text-muted-foreground">
-              Nenhum paciente internado no momento
-            </div>
+            <div className="py-16 text-center text-muted-foreground">Nenhum paciente internado no momento</div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {active.map((h) => {
@@ -225,18 +241,16 @@ export default function InternacoesPage() {
                             <p className="font-semibold">{h.patient?.name}</p>
                             <p className="text-xs text-muted-foreground">{h.patient?.species}</p>
                           </div>
-                          <span className={cn('rounded-full px-2 py-0.5 text-xs font-medium', color)}>
-                            {label}
-                          </span>
+                          <span className={cn('rounded-full px-2 py-0.5 text-xs font-medium', color)}>{label}</span>
                         </div>
                         <div className="space-y-1 text-sm">
-                          {h.box_number && (
-                            <p className="text-muted-foreground">Box {h.box_number}</p>
-                          )}
+                          {h.box_number && <p className="text-muted-foreground">Box {h.box_number}</p>}
                           <p className="text-muted-foreground">{h.veterinarian?.name}</p>
                           <div className="flex items-center gap-1 text-muted-foreground">
                             <Clock className="size-3" />
-                            <span>{days} dia{days !== 1 ? 's' : ''}</span>
+                            <span>
+                              {days} dia{days !== 1 ? 's' : ''}
+                            </span>
                           </div>
                         </div>
                       </CardContent>
@@ -279,13 +293,9 @@ export default function InternacoesPage() {
                         </TableCell>
                         <TableCell className="max-w-xs truncate text-muted-foreground">{h.reason}</TableCell>
                         <TableCell>{new Date(h.admission_date).toLocaleDateString('pt-BR')}</TableCell>
-                        <TableCell className="text-muted-foreground">
-                          {h.status === 'discharged' ? '—' : ''}
-                        </TableCell>
+                        <TableCell className="text-muted-foreground">{h.status === 'discharged' ? '—' : ''}</TableCell>
                         <TableCell>
-                          <Badge variant={h.status === 'discharged' ? 'secondary' : 'default'}>
-                            {h.status}
-                          </Badge>
+                          <Badge variant={h.status === 'discharged' ? 'secondary' : 'default'}>{h.status}</Badge>
                         </TableCell>
                         <TableCell className="text-muted-foreground">{h.veterinarian?.name}</TableCell>
                       </TableRow>
@@ -299,76 +309,122 @@ export default function InternacoesPage() {
       </Tabs>
 
       {/* Modal Nova Internação */}
-      <Dialog open={openNew} onOpenChange={setOpenNew}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Nova Internação</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <Label>Paciente *</Label>
-                <Select value={form.patient_id} onValueChange={(v) => setForm((f) => ({ ...f, patient_id: v }))}>
-                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>
-                    {patients.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <Label>Veterinário *</Label>
-                <Select value={form.veterinarian_id} onValueChange={(v) => setForm((f) => ({ ...f, veterinarian_id: v }))}>
-                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                  <SelectContent>
-                    {users.map((u) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="col-span-2 space-y-1">
-                <Label>Motivo *</Label>
-                <Textarea value={form.reason} onChange={(e) => setForm((f) => ({ ...f, reason: e.target.value }))} rows={2} />
-              </div>
-              <div className="space-y-1">
-                <Label>Data/Hora de Admissão *</Label>
-                <Input type="datetime-local" value={form.admission_date} onChange={(e) => setForm((f) => ({ ...f, admission_date: e.target.value }))} />
-              </div>
-              <div className="space-y-1">
-                <Label>Box / Baia</Label>
-                <Input value={form.box_number} onChange={(e) => setForm((f) => ({ ...f, box_number: e.target.value }))} placeholder="Ex: B-03" />
-              </div>
-              <div className="space-y-1">
-                <Label>Forma de Pagamento</Label>
-                <Select value={form.payment_source} onValueChange={(v) => setForm((f) => ({ ...f, payment_source: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="particular">Particular</SelectItem>
-                    <SelectItem value="health_plan">Plano de Saúde</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              {form.payment_source === 'health_plan' && (
-                <div className="space-y-1">
-                  <Label>Plano de Saúde</Label>
-                  <Select value={form.health_plan_id} onValueChange={(v) => setForm((f) => ({ ...f, health_plan_id: v }))}>
-                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                    <SelectContent>
-                      {healthPlans.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-              <div className="space-y-1">
-                <Label>Diária (R$)</Label>
-                <Input type="number" value={form.daily_rate} onChange={(e) => setForm((f) => ({ ...f, daily_rate: Number(e.target.value) }))} />
-              </div>
+      <DashboardCreateFormDialog
+        open={openNew}
+        onOpenChange={setOpenNew}
+        title="Nova Internação"
+        containerClassName="max-w-2xl mx-auto"
+        footer={
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button variant="outline" onClick={() => setOpenNew(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleCreate}>Abrir Internação</Button>
+          </div>
+        }
+      >
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <Label>Paciente *</Label>
+              <Select value={form.patient_id} onValueChange={(v) => setForm((f) => ({ ...f, patient_id: v }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
+                  {patients.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setOpenNew(false)}>Cancelar</Button>
-              <Button onClick={handleCreate}>Abrir Internação</Button>
+            <div className="space-y-1">
+              <Label>Veterinário *</Label>
+              <Select
+                value={form.veterinarian_id}
+                onValueChange={(v) => setForm((f) => ({ ...f, veterinarian_id: v }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
+                  {users.map((u) => (
+                    <SelectItem key={u.id} value={u.id}>
+                      {u.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="col-span-2 space-y-1">
+              <Label>Motivo *</Label>
+              <Textarea
+                value={form.reason}
+                onChange={(e) => setForm((f) => ({ ...f, reason: e.target.value }))}
+                rows={2}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Data/Hora de Admissão *</Label>
+              <Input
+                type="datetime-local"
+                value={form.admission_date}
+                onChange={(e) => setForm((f) => ({ ...f, admission_date: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Box / Baia</Label>
+              <Input
+                value={form.box_number}
+                onChange={(e) => setForm((f) => ({ ...f, box_number: e.target.value }))}
+                placeholder="Ex: B-03"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Forma de Pagamento</Label>
+              <Select value={form.payment_source} onValueChange={(v) => setForm((f) => ({ ...f, payment_source: v }))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="particular">Particular</SelectItem>
+                  <SelectItem value="health_plan">Plano de Saúde</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {form.payment_source === 'health_plan' && (
+              <div className="space-y-1">
+                <Label>Plano de Saúde</Label>
+                <Select
+                  value={form.health_plan_id}
+                  onValueChange={(v) => setForm((f) => ({ ...f, health_plan_id: v }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {healthPlans.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            <div className="space-y-1">
+              <Label>Diária (R$)</Label>
+              <Input
+                type="number"
+                value={form.daily_rate}
+                onChange={(e) => setForm((f) => ({ ...f, daily_rate: Number(e.target.value) }))}
+              />
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      </DashboardCreateFormDialog>
     </div>
   );
 }

@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import api from '@/lib/axios';
 import { toast } from 'sonner';
+import { getApiErrorMessage } from '@/app/utils/api-error-message';
 
 interface RevenueBySource {
   particular: number;
@@ -25,6 +26,15 @@ function fmt(n: number) {
 }
 
 const COLORS = ['#3b82f6', '#22c55e'];
+
+type PieLabelPayload = {
+  name?: string;
+  percent?: number;
+};
+
+function formatPieLabel(payload: PieLabelPayload): string {
+  return `${payload.name ?? ''} (${((payload.percent ?? 0) * 100).toFixed(0)}%)`;
+}
 
 export default function ReceitasPage() {
   const now = new Date();
@@ -39,7 +49,7 @@ export default function ReceitasPage() {
     api
       .get<RevenueBySource>(`/financial-reports/receitas?period=${period}`)
       .then((r) => setData(r.data))
-      .catch(() => toast.error('Erro ao carregar receitas'))
+      .catch((error: unknown) => toast.error(getApiErrorMessage(error, 'Erro ao carregar receitas')))
       .finally(() => setLoading(false));
   }, [period]);
 
@@ -104,7 +114,7 @@ export default function ReceitasPage() {
           ) : (
             <ResponsiveContainer width="100%" height={280}>
               <PieChart>
-                <Pie data={chartData} cx="50%" cy="50%" outerRadius={100} dataKey="value" label={((props: any) => `${props.name ?? ''} (${((props.percent ?? 0) * 100).toFixed(0)}%)`) as any}>
+                <Pie data={chartData} cx="50%" cy="50%" outerRadius={100} dataKey="value" label={formatPieLabel}>
                   {chartData.map((_, index) => (
                     <Cell key={index} fill={COLORS[index % COLORS.length]} />
                   ))}

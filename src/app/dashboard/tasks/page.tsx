@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import type { ApiRequestError } from '@/app/types/api-error';
 import { Button } from '@/components/ui/button';
+import { DashboardCreateFormDialog } from '@/components/dashboard-create-form-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { useForm, Controller } from 'react-hook-form';
@@ -30,6 +31,17 @@ interface TaskFormValues {
   patient_id: string;
   task_type: string;
   due_date?: string;
+}
+
+function getApiErrorMessage(error: unknown, fallbackMessage: string): string {
+  const typedError = error as ApiRequestError;
+  const responseMessage = typedError.response?.data?.message;
+
+  if (Array.isArray(responseMessage)) {
+    return responseMessage[0] ?? fallbackMessage;
+  }
+
+  return responseMessage ?? typedError.message ?? fallbackMessage;
 }
 
 export default function TasksPage() {
@@ -72,8 +84,8 @@ export default function TasksPage() {
       setModalOpen(false);
       reset();
       fetchData();
-    } catch (e: any) {
-      toast.error(e.response?.data?.message ?? 'Erro ao criar');
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, 'Erro ao criar'));
     }
   };
 
@@ -82,16 +94,14 @@ export default function TasksPage() {
       await api.put(`/clinical-tasks/${id}/status`, { status: 'completed' });
       toast.success('Tarefa concluída');
       fetchData();
-    } catch (e: any) {
-      toast.error(e.response?.data?.message ?? 'Erro');
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, 'Erro'));
     }
   };
 
   return (
     <div>
-      <h1 className="text-2xl font-heading font-bold text-primary mb-6 flex items-center gap-2">
-        Tarefas clínicas
-      </h1>
+      <h1 className="text-2xl font-heading font-bold text-primary mb-6 flex items-center gap-2">Tarefas clínicas</h1>
       <Card>
         <CardContent className="pt-6">
           <Button onClick={() => setModalOpen(true)} className="mb-4 bg-primary">
@@ -104,93 +114,99 @@ export default function TasksPage() {
             </div>
           ) : (
             <div className="rounded-md border overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Paciente</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Vencimento</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-[120px]">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {list.map((task) => (
-                  <TableRow key={task.id}>
-                    <TableCell>{task.Patient?.name}</TableCell>
-                    <TableCell>{task.task_type}</TableCell>
-                    <TableCell>{task.due_date}</TableCell>
-                    <TableCell>
-                      <Badge variant={task.status === 'completed' ? 'default' : 'secondary'}>
-                        {task.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {task.status !== 'completed' ? (
-                        <Button size="sm" onClick={() => markDone(task.id)}>
-                          <CheckCircle2 className="w-4 h-4 mr-1" /> Concluir
-                        </Button>
-                      ) : (
-                        '—'
-                      )}
-                    </TableCell>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Paciente</TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Vencimento</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="w-[120px]">Ações</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-            <ListPagination
-              page={listPage}
-              totalPages={listTotalPages}
-              total={listTotal}
-              pageSize={API_PAGE_SIZE}
-              onPageChange={setListPage}
-              disabled={loading}
-            />
+                </TableHeader>
+                <TableBody>
+                  {list.map((task) => (
+                    <TableRow key={task.id}>
+                      <TableCell>{task.Patient?.name}</TableCell>
+                      <TableCell>{task.task_type}</TableCell>
+                      <TableCell>{task.due_date}</TableCell>
+                      <TableCell>
+                        <Badge variant={task.status === 'completed' ? 'default' : 'secondary'}>{task.status}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        {task.status !== 'completed' ? (
+                          <Button size="sm" onClick={() => markDone(task.id)}>
+                            <CheckCircle2 className="w-4 h-4 mr-1" /> Concluir
+                          </Button>
+                        ) : (
+                          '—'
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <ListPagination
+                page={listPage}
+                totalPages={listTotalPages}
+                total={listTotal}
+                pageSize={API_PAGE_SIZE}
+                onPageChange={setListPage}
+                disabled={loading}
+              />
             </div>
           )}
         </CardContent>
       </Card>
 
-      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Nova tarefa</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div>
-              <Label>Paciente</Label>
-              <Controller
-                name="patient_id"
-                control={control}
-                rules={{ required: true }}
-                render={({ field }) => (
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {patients.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </div>
-            <div>
-              <Label>Tipo</Label>
-              <Input {...register('task_type', { required: true })} placeholder="Ex.: Retorno, Ligar para tutor" />
-            </div>
-            <div>
-              <Label>Vencimento</Label>
-              <Input type="date" {...register('due_date')} />
-            </div>
-            <DialogFooter>
-              <Button type="submit" className="bg-primary">Criar</Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <DashboardCreateFormDialog
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        title="Nova tarefa"
+        footer={
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>
+              Cancelar
+            </Button>
+            <Button type="submit" form="task-create-form" className="bg-primary">
+              Criar
+            </Button>
+          </div>
+        }
+      >
+        <form id="task-create-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <div>
+            <Label>Paciente</Label>
+            <Controller
+              name="patient_id"
+              control={control}
+              rules={{ required: true }}
+              render={({ field }) => (
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {patients.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+          </div>
+          <div>
+            <Label>Tipo</Label>
+            <Input {...register('task_type', { required: true })} placeholder="Ex.: Retorno, Ligar para tutor" />
+          </div>
+          <div>
+            <Label>Vencimento</Label>
+            <Input type="date" {...register('due_date')} />
+          </div>
+        </form>
+      </DashboardCreateFormDialog>
     </div>
   );
 }

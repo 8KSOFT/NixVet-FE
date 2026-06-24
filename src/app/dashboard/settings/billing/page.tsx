@@ -15,6 +15,7 @@ import {
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import api from '@/lib/axios';
 
 interface BillingStatus {
@@ -76,8 +77,8 @@ export default function BillingSettingsPage() {
       toast.success(data.message ?? 'Plano cancelado com sucesso.');
       setBilling((prev) => prev ? { ...prev, cancelAt: data.cancelAt } : prev);
       setConfirmCancel(false);
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message ?? 'Erro ao cancelar plano.');
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, 'Erro ao cancelar plano.'));
     } finally {
       setCancelling(false);
     }

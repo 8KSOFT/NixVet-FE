@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { useForm, Controller } from 'react-hook-form';
 import { Plus, Pencil, Trash2, Loader2, DollarSign, X } from 'lucide-react';
+import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import api from '@/lib/axios';
 import { API_PAGE_SIZE, fetchAllListPages, listQueryParams, parseListResponse } from '@/lib/pagination';
 import { ListPagination } from '@/components/list-pagination';
@@ -112,8 +113,8 @@ function PlanPricesDialog({
       setNewPlanPrice('');
       setNewReimbursement('');
       void load();
-    } catch (e: any) {
-      toast.error(e.response?.data?.message ?? 'Erro ao salvar');
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, 'Erro ao salvar'));
     } finally {
       setSaving(false);
     }
@@ -297,8 +298,8 @@ export default function SettingsSurgicalProceduresPage() {
       await api.delete(`/catalog/surgical-procedures/${id}`);
       toast.success('Removido');
       void fetchProcedures();
-    } catch (e: any) {
-      toast.error(e.response?.data?.message ?? 'Erro ao remover');
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, 'Erro ao remover'));
     }
   };
 
@@ -319,8 +320,8 @@ export default function SettingsSurgicalProceduresPage() {
       }
       setModalOpen(false);
       void fetchProcedures();
-    } catch (e: any) {
-      toast.error(e.response?.data?.message ?? 'Erro ao salvar');
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, 'Erro ao salvar'));
     }
   };
 

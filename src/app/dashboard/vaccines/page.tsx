@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import type { ApiRequestError } from '@/app/types/api-error';
 import { Button } from '@/components/ui/button';
+import { DashboardCreateFormDialog } from '@/components/dashboard-create-form-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
@@ -29,6 +30,17 @@ interface VaccineFormValues {
   patient_id: string;
   vaccine_name: string;
   next_due_date: string;
+}
+
+function getApiErrorMessage(error: unknown, fallbackMessage: string): string {
+  const typedError = error as ApiRequestError;
+  const responseMessage = typedError.response?.data?.message;
+
+  if (Array.isArray(responseMessage)) {
+    return responseMessage[0] ?? fallbackMessage;
+  }
+
+  return responseMessage ?? typedError.message ?? fallbackMessage;
 }
 
 function ReminderTable({ data, loading }: { data: VaccineReminder[]; loading: boolean }) {
@@ -112,8 +124,8 @@ export default function VaccinesPage() {
       setModalOpen(false);
       reset();
       fetchAll();
-    } catch (e: any) {
-      toast.error(e.response?.data?.message ?? 'Erro ao criar');
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, 'Erro ao criar'));
     }
   };
 
@@ -160,46 +172,54 @@ export default function VaccinesPage() {
         </CardContent>
       </Card>
 
-      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Novo lembrete de vacina</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div>
-              <Label>Paciente</Label>
-              <Controller
-                name="patient_id"
-                control={control}
-                rules={{ required: true }}
-                render={({ field }) => (
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {patients.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </div>
-            <div>
-              <Label>Vacina</Label>
-              <Input {...register('vaccine_name', { required: true })} placeholder="Ex.: Antirrábica" />
-            </div>
-            <div>
-              <Label>Próxima dose</Label>
-              <Input type="date" {...register('next_due_date', { required: true })} />
-            </div>
-            <DialogFooter>
-              <Button type="submit" className="bg-primary">Criar</Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <DashboardCreateFormDialog
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        title="Novo lembrete de vacina"
+        footer={
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>
+              Cancelar
+            </Button>
+            <Button type="submit" form="vaccine-reminder-form" className="bg-primary">
+              Criar
+            </Button>
+          </div>
+        }
+      >
+        <form id="vaccine-reminder-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <div>
+            <Label>Paciente</Label>
+            <Controller
+              name="patient_id"
+              control={control}
+              rules={{ required: true }}
+              render={({ field }) => (
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {patients.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+          </div>
+          <div>
+            <Label>Vacina</Label>
+            <Input {...register('vaccine_name', { required: true })} placeholder="Ex.: Antirrábica" />
+          </div>
+          <div>
+            <Label>Próxima dose</Label>
+            <Input type="date" {...register('next_due_date', { required: true })} />
+          </div>
+        </form>
+      </DashboardCreateFormDialog>
     </div>
   );
 }

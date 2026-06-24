@@ -12,6 +12,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
 import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
+import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import api from '@/lib/axios';
 import { API_PAGE_SIZE, listQueryParams, parseListResponse } from '@/lib/pagination';
 import { ListPagination } from '@/components/list-pagination';
@@ -87,8 +88,8 @@ export default function AppointmentTypesPage() {
       reset();
       setEditing(null);
       fetchList();
-    } catch (e: any) {
-      toast.error(e.response?.data?.message ?? 'Erro ao salvar');
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, 'Erro ao salvar'));
     }
   };
 
@@ -97,8 +98,8 @@ export default function AppointmentTypesPage() {
       await api.delete(`/appointment-types/${id}`);
       toast.success('Removido');
       fetchList();
-    } catch (e: any) {
-      toast.error(e.response?.data?.message ?? 'Erro ao remover');
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, 'Erro ao remover'));
     }
   };
 

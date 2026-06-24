@@ -24,6 +24,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { Plus, Trash2, Loader2, Sparkles, CalendarOff } from 'lucide-react';
+import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import api from '@/lib/axios';
 
 interface Holiday {
@@ -102,8 +103,8 @@ export default function HolidaysPage() {
       setAddOpen(false);
       resetAddForm();
       fetchHolidays();
-    } catch (e: any) {
-      toast.error(e.response?.data?.message ?? 'Erro ao salvar');
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, 'Erro ao salvar'));
     } finally {
       setSaving(false);
     }
@@ -114,8 +115,8 @@ export default function HolidaysPage() {
       await api.delete(`/availability/config/holidays/${id}`);
       toast.success('Feriado removido');
       fetchHolidays();
-    } catch (e: any) {
-      toast.error(e.response?.data?.message ?? 'Erro ao remover');
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, 'Erro ao remover'));
     }
   };
 
@@ -147,8 +148,8 @@ export default function HolidaysPage() {
       setSuggestions(list);
       setSelectedSuggestions(new Set(list.map((_, i) => i)));
       if (list.length === 0) toast.info('Nenhum feriado sugerido pela IA');
-    } catch (e: any) {
-      toast.error(e.response?.data?.message ?? 'Erro na consulta à IA');
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, 'Erro na consulta à IA'));
     } finally {
       setAiLoading(false);
     }
@@ -185,8 +186,8 @@ export default function HolidaysPage() {
       setAiOpen(false);
       setSuggestions([]);
       fetchHolidays();
-    } catch (e: any) {
-      toast.error(e.response?.data?.message ?? 'Erro ao salvar feriados');
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, 'Erro ao salvar feriados'));
     } finally {
       setAiSaving(false);
     }

@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -150,9 +151,7 @@ export default function SettingsHoursPage() {
 
   useEffect(() => {
     setLoading(true);
-    Promise.all([fetchBusiness(), fetchEmergency(), fetchVetSchedules(), fetchVets()]).finally(() =>
-      setLoading(false),
-    );
+    Promise.all([fetchBusiness(), fetchEmergency(), fetchVetSchedules(), fetchVets()]).finally(() => setLoading(false));
   }, []);
 
   // ── Business hours handlers ──
@@ -199,8 +198,8 @@ export default function SettingsHoursPage() {
       toast.success(bhSelectedDays.length > 1 ? `${bhSelectedDays.length} dias atualizados` : 'Salvo');
       setBusinessModalOpen(false);
       fetchBusiness();
-    } catch (e: any) {
-      toast.error(e.response?.data?.message ?? 'Erro ao salvar');
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, 'Erro ao salvar'));
     } finally {
       setBhSaving(false);
     }
@@ -242,8 +241,8 @@ export default function SettingsHoursPage() {
           end_time: ehEndTime,
           is_active: ehIsActive,
         });
-      } catch (e: any) {
-        errors.push(`${DAYS.find((d) => d.value === day)?.label}: ${e.response?.data?.message ?? 'Erro'}`);
+      } catch (error: unknown) {
+        errors.push(`${DAYS.find((weekday) => weekday.value === day)?.label}: ${getApiErrorMessage(error, 'Erro')}`);
       }
     }
     if (errors.length) {
@@ -274,8 +273,8 @@ export default function SettingsHoursPage() {
           slot_duration_minutes: Number(values.slot_duration_minutes) || 30,
           schedule_type: values.schedule_type || 'regular',
         });
-      } catch (e: any) {
-        errors.push(`${DAYS.find((d) => d.value === day)?.label}: ${e.response?.data?.message ?? 'Erro'}`);
+      } catch (error: unknown) {
+        errors.push(`${DAYS.find((weekday) => weekday.value === day)?.label}: ${getApiErrorMessage(error, 'Erro')}`);
       }
     }
     if (errors.length) {
@@ -294,18 +293,12 @@ export default function SettingsHoursPage() {
       await api.delete(`/availability/config/veterinarian-schedules/${id}`);
       toast.success('Removido');
       fetchVetSchedules();
-    } catch (e: any) {
-      toast.error(e.response?.data?.message ?? 'Erro ao remover');
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, 'Erro ao remover'));
     }
   };
 
-  const DayCheckboxGrid = ({
-    selected,
-    onToggle,
-  }: {
-    selected: number[];
-    onToggle: (day: number) => void;
-  }) => (
+  const DayCheckboxGrid = ({ selected, onToggle }: { selected: number[]; onToggle: (day: number) => void }) => (
     <div className="grid grid-cols-2 gap-y-2 gap-x-4 mt-1">
       {DAYS.map((d) => (
         <div key={d.value} className="flex items-center gap-2">
@@ -341,7 +334,8 @@ export default function SettingsHoursPage() {
               {/* ── Business Hours ── */}
               <TabsContent value="business">
                 <p className="text-muted-foreground mb-4">
-                  Define o horário de abertura/fechamento da clínica por dia da semana. Selecione vários dias para aplicar o mesmo horário de uma vez.
+                  Define o horário de abertura/fechamento da clínica por dia da semana. Selecione vários dias para
+                  aplicar o mesmo horário de uma vez.
                 </p>
                 <Button onClick={() => openBusinessModal()} className="mb-4 bg-primary">
                   <Plus className="w-4 h-4 mr-2" /> Configurar dias
@@ -360,12 +354,8 @@ export default function SettingsHoursPage() {
                     {businessHours.map((r) => (
                       <TableRow key={r.id ?? r.day_of_week}>
                         <TableCell>{DAYS.find((x) => x.value === r.day_of_week)?.label ?? r.day_of_week}</TableCell>
-                        <TableCell>
-                          {r.is_closed ? '—' : r.is_24h ? '00:00' : (r.open_time ?? '—')}
-                        </TableCell>
-                        <TableCell>
-                          {r.is_closed ? '—' : r.is_24h ? '23:59' : (r.close_time ?? '—')}
-                        </TableCell>
+                        <TableCell>{r.is_closed ? '—' : r.is_24h ? '00:00' : (r.open_time ?? '—')}</TableCell>
+                        <TableCell>{r.is_closed ? '—' : r.is_24h ? '23:59' : (r.close_time ?? '—')}</TableCell>
                         <TableCell>
                           {r.is_closed ? (
                             <Badge variant="destructive">Fechado</Badge>
@@ -431,7 +421,8 @@ export default function SettingsHoursPage() {
               {/* ── Vet Schedules ── */}
               <TabsContent value="vet">
                 <p className="text-muted-foreground mb-4">
-                  Dias e horários de cada veterinário. Horários convencionais são &quot;Regular&quot; — Plantão é separado.
+                  Dias e horários de cada veterinário. Horários convencionais são &quot;Regular&quot; — Plantão é
+                  separado.
                 </p>
                 <Button
                   onClick={() => {
@@ -526,15 +517,20 @@ export default function SettingsHoursPage() {
               <DayCheckboxGrid
                 selected={bhSelectedDays}
                 onToggle={(day) =>
-                  setBhSelectedDays((prev) =>
-                    prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day],
-                  )
+                  setBhSelectedDays((prev) => (prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]))
                 }
               />
             </div>
 
             <div className="flex items-center gap-2">
-              <Switch checked={bhIsClosed} onCheckedChange={(v) => { setBhIsClosed(v); if (v) setBhIs24h(false); }} id="bh_closed" />
+              <Switch
+                checked={bhIsClosed}
+                onCheckedChange={(v) => {
+                  setBhIsClosed(v);
+                  if (v) setBhIs24h(false);
+                }}
+                id="bh_closed"
+              />
               <Label htmlFor="bh_closed">Fechado nestes dias</Label>
             </div>
 
@@ -581,7 +577,12 @@ export default function SettingsHoursPage() {
                 <Button type="button" variant="outline" size="sm" onClick={() => setEhSelectedDays([0, 6])}>
                   Fim de semana
                 </Button>
-                <Button type="button" variant="outline" size="sm" onClick={() => setEhSelectedDays([0, 1, 2, 3, 4, 5, 6])}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setEhSelectedDays([0, 1, 2, 3, 4, 5, 6])}
+                >
                   Todos
                 </Button>
                 <Button type="button" variant="ghost" size="sm" onClick={() => setEhSelectedDays([])}>
@@ -591,9 +592,7 @@ export default function SettingsHoursPage() {
               <DayCheckboxGrid
                 selected={ehSelectedDays}
                 onToggle={(day) =>
-                  setEhSelectedDays((prev) =>
-                    prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day],
-                  )
+                  setEhSelectedDays((prev) => (prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]))
                 }
               />
             </div>
@@ -656,9 +655,7 @@ export default function SettingsHoursPage() {
               <DayCheckboxGrid
                 selected={vetSelectedDays}
                 onToggle={(day) =>
-                  setVetSelectedDays((prev) =>
-                    prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day],
-                  )
+                  setVetSelectedDays((prev) => (prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]))
                 }
               />
             </div>

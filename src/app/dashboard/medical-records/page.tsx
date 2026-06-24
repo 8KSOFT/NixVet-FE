@@ -2,12 +2,12 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { DashboardCreateFormDialog } from '@/components/dashboard-create-form-dialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -18,14 +18,34 @@ import { API_PAGE_SIZE, fetchAllListPages, listQueryParams, parseListResponse } 
 import { ListPagination } from '@/components/list-pagination';
 import dayjs from 'dayjs';
 
-interface Patient { id: string; name: string; species?: string; breed?: string; tutor_id?: string | null; }
-interface Tutor { id: string; name: string; email?: string; phone?: string; }
-interface Vet { id: string; name: string; }
+interface Patient {
+  id: string;
+  name: string;
+  species?: string;
+  breed?: string;
+  tutor_id?: string | null;
+}
+interface Tutor {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+}
+interface Vet {
+  id: string;
+  name: string;
+}
 interface MedicalRecord {
-  id: string; patient_id: string; veterinarian_id: string | null;
-  record_type: string; record_date: string;
-  chief_complaint: string | null; diagnosis: string | null;
-  status: string; patient?: Patient; veterinarian?: Vet;
+  id: string;
+  patient_id: string;
+  veterinarian_id: string | null;
+  record_type: string;
+  record_date: string;
+  chief_complaint: string | null;
+  diagnosis: string | null;
+  status: string;
+  patient?: Patient;
+  veterinarian?: Vet;
   created_at: string;
 }
 
@@ -38,7 +58,15 @@ const emptyForm = () => ({
 });
 
 const emptyTutor = () => ({ name: '', cpf: '', phone: '', email: '', cep: '', street: '', number: '' });
-const emptyPatient = () => ({ name: '', species: 'Canino', breed: '', sex: 'M', age: '0', weight: '0', tutor_id: '' as string | '_none' });
+const emptyPatient = () => ({
+  name: '',
+  species: 'Canino',
+  breed: '',
+  sex: 'M',
+  age: '0',
+  weight: '0',
+  tutor_id: '' as string | '_none',
+});
 
 export default function MedicalRecordsListPage() {
   const router = useRouter();
@@ -74,25 +102,63 @@ export default function MedicalRecordsListPage() {
       setRecords(p.items);
       setListTotal(p.total);
       setListTotalPages(p.totalPages);
-    } catch { setRecords([]); } finally { setLoading(false); }
+    } catch {
+      setRecords([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const fetchPatients = async () => { try { const all = await fetchAllListPages<Patient>('/patients'); setPatients(all); } catch { setPatients([]); } };
-  const fetchTutors = async () => { try { const all = await fetchAllListPages<Tutor>('/tutors'); setTutors(all); } catch { setTutors([]); } };
-  const fetchVets = async () => { try { const all = await fetchAllListPages<Vet>('/users/veterinarians'); setVets(all); } catch { setVets([]); } };
+  const fetchPatients = async () => {
+    try {
+      const all = await fetchAllListPages<Patient>('/patients');
+      setPatients(all);
+    } catch {
+      setPatients([]);
+    }
+  };
+  const fetchTutors = async () => {
+    try {
+      const all = await fetchAllListPages<Tutor>('/tutors');
+      setTutors(all);
+    } catch {
+      setTutors([]);
+    }
+  };
+  const fetchVets = async () => {
+    try {
+      const all = await fetchAllListPages<Vet>('/users/veterinarians');
+      setVets(all);
+    } catch {
+      setVets([]);
+    }
+  };
 
-  useEffect(() => { fetchPatients(); fetchTutors(); fetchVets(); }, []);
-  useEffect(() => { setListPage(1); }, [filterPatient]);
-  useEffect(() => { fetchRecords(); }, [filterPatient, listPage]);
+  useEffect(() => {
+    fetchPatients();
+    fetchTutors();
+    fetchVets();
+  }, []);
+  useEffect(() => {
+    setListPage(1);
+  }, [filterPatient]);
+  useEffect(() => {
+    fetchRecords();
+  }, [filterPatient, listPage]);
 
   const handleCreate = async () => {
-    if (!form.patient_id) { toast.error('Selecione ou cadastre um paciente'); return; }
+    if (!form.patient_id) {
+      toast.error('Selecione ou cadastre um paciente');
+      return;
+    }
     try {
       const res = await api.post<MedicalRecord>('/medical-records', form);
       toast.success('Prontuário criado');
       setModalVisible(false);
       router.push(`/dashboard/medical-records/${res.data.id}`);
-    } catch { toast.error('Erro ao criar prontuário'); }
+    } catch {
+      toast.error('Erro ao criar prontuário');
+    }
   };
 
   const handleCreateTutor = async () => {
@@ -149,7 +215,7 @@ export default function MedicalRecordsListPage() {
     }
   };
 
-  const filtered = records.filter(r => {
+  const filtered = records.filter((r) => {
     if (!search) return true;
     const q = search.toLowerCase();
     return (
@@ -161,7 +227,13 @@ export default function MedicalRecordsListPage() {
   });
 
   const typeLabel = (t: string) => {
-    const map: Record<string, string> = { atendimento: 'Atendimento', retorno: 'Retorno', emergencia: 'Emergência', cirurgia: 'Cirurgia', internacao: 'Internação' };
+    const map: Record<string, string> = {
+      atendimento: 'Atendimento',
+      retorno: 'Retorno',
+      emergencia: 'Emergência',
+      cirurgia: 'Cirurgia',
+      internacao: 'Internação',
+    };
     return map[t] || t;
   };
 
@@ -176,7 +248,13 @@ export default function MedicalRecordsListPage() {
         <h1 className="text-2xl font-heading font-bold text-primary flex items-center gap-2">
           <FileText className="h-6 w-6" /> Prontuários
         </h1>
-        <Button onClick={() => { setForm(emptyForm()); setModalVisible(true); }} className="bg-primary hover:bg-blue-700">
+        <Button
+          onClick={() => {
+            setForm(emptyForm());
+            setModalVisible(true);
+          }}
+          className="bg-primary hover:bg-primary/70"
+        >
           <Plus className="h-4 w-4 mr-1" /> Novo Prontuário
         </Button>
       </div>
@@ -187,15 +265,26 @@ export default function MedicalRecordsListPage() {
             <div className="flex-1 min-w-[200px]">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60" />
-                <Input placeholder="Buscar por paciente, veterinário, queixa..." className="pl-9" value={search} onChange={e => setSearch(e.target.value)} />
+                <Input
+                  placeholder="Buscar por paciente, veterinário, queixa..."
+                  className="pl-9"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
               </div>
             </div>
             <div className="w-[220px]">
-              <Select value={filterPatient || '_all'} onValueChange={v => setFilterPatient(v === '_all' ? '' : v)}>
-                <SelectTrigger><SelectValue placeholder="Filtrar por paciente" /></SelectTrigger>
+              <Select value={filterPatient || '_all'} onValueChange={(v) => setFilterPatient(v === '_all' ? '' : v)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Filtrar por paciente" />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="_all">Todos os pacientes</SelectItem>
-                  {patients.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                  {patients.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -206,241 +295,351 @@ export default function MedicalRecordsListPage() {
       <Card>
         <CardContent className="p-0">
           {loading ? (
-            <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground/60" /></div>
+            <div className="flex justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-muted-foreground/60" />
+            </div>
           ) : filtered.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">Nenhum prontuário encontrado.</div>
           ) : (
             <>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Data</TableHead>
-                  <TableHead>Paciente</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Queixa</TableHead>
-                  <TableHead>Veterinário</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-[80px]" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.map(r => (
-                  <TableRow key={r.id} className="cursor-pointer hover:bg-muted/50" onClick={() => router.push(`/dashboard/medical-records/${r.id}`)}>
-                    <TableCell className="whitespace-nowrap">{dayjs(r.record_date).format('DD/MM/YYYY')}</TableCell>
-                    <TableCell className="font-medium">{r.patient?.name || '—'}</TableCell>
-                    <TableCell><Badge variant="outline">{typeLabel(r.record_type)}</Badge></TableCell>
-                    <TableCell className="max-w-[200px] truncate">{r.chief_complaint || '—'}</TableCell>
-                    <TableCell>{r.veterinarian?.name || '—'}</TableCell>
-                    <TableCell>{statusBadge(r.status)}</TableCell>
-                    <TableCell><Button variant="ghost" size="sm"><Eye className="h-4 w-4" /></Button></TableCell>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Data</TableHead>
+                    <TableHead>Paciente</TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Queixa</TableHead>
+                    <TableHead>Veterinário</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="w-[80px]" />
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-            <ListPagination
-              page={listPage}
-              totalPages={listTotalPages}
-              total={listTotal}
-              pageSize={API_PAGE_SIZE}
-              onPageChange={setListPage}
-              disabled={loading}
-            />
+                </TableHeader>
+                <TableBody>
+                  {filtered.map((r) => (
+                    <TableRow
+                      key={r.id}
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => router.push(`/dashboard/medical-records/${r.id}`)}
+                    >
+                      <TableCell className="whitespace-nowrap">{dayjs(r.record_date).format('DD/MM/YYYY')}</TableCell>
+                      <TableCell className="font-medium">{r.patient?.name || '—'}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{typeLabel(r.record_type)}</Badge>
+                      </TableCell>
+                      <TableCell className="max-w-[200px] truncate">{r.chief_complaint || '—'}</TableCell>
+                      <TableCell>{r.veterinarian?.name || '—'}</TableCell>
+                      <TableCell>{statusBadge(r.status)}</TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="sm">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <ListPagination
+                page={listPage}
+                totalPages={listTotalPages}
+                total={listTotal}
+                pageSize={API_PAGE_SIZE}
+                onPageChange={setListPage}
+                disabled={loading}
+              />
             </>
           )}
         </CardContent>
       </Card>
 
       {/* Novo Prontuário */}
-      <Dialog open={modalVisible} onOpenChange={setModalVisible}>
-        <DialogContent className="max-w-lg" onInteractOutside={e => e.preventDefault()}>
-          <DialogHeader><DialogTitle>Novo Prontuário</DialogTitle></DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-1">
-              <Label>Paciente *</Label>
-              <div className="flex gap-2">
-                <div className="flex-1">
-                  <Select value={form.patient_id} onValueChange={v => setForm(p => ({ ...p, patient_id: v }))}>
-                    <SelectTrigger><SelectValue placeholder={patients.length ? 'Selecione' : 'Nenhum animal cadastrado'} /></SelectTrigger>
-                    <SelectContent>{patients.map(p => <SelectItem key={p.id} value={p.id}>{p.name} {p.species ? `(${p.species})` : ''}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => { setPatientForm(emptyPatient()); setPatientModal(true); }}
-                  title="Cadastrar novo animal"
-                >
-                  <PawPrint className="h-4 w-4 mr-1" /> Novo animal
-                </Button>
+      <DashboardCreateFormDialog
+        open={modalVisible}
+        onOpenChange={setModalVisible}
+        title="Novo Prontuário"
+        containerClassName="max-w-lg mx-auto"
+        preventOutsideClose
+        footer={
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button variant="outline" onClick={() => setModalVisible(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleCreate} className="bg-primary">
+              Criar e Abrir
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-4 py-2">
+          <div className="space-y-1">
+            <Label>Paciente *</Label>
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <Select value={form.patient_id} onValueChange={(v) => setForm((p) => ({ ...p, patient_id: v }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={patients.length ? 'Selecione' : 'Nenhum animal cadastrado'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {patients.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name} {p.species ? `(${p.species})` : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Sem tutor cadastrado? Use o botão <strong>Novo animal</strong> e clique em <strong>+ Novo tutor</strong> dentro dele — ou deixe sem tutor (emergência).
-              </p>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setPatientForm(emptyPatient());
+                  setPatientModal(true);
+                }}
+                title="Cadastrar novo animal"
+              >
+                <PawPrint className="h-4 w-4 mr-1" /> Novo animal
+              </Button>
             </div>
+            <p className="text-xs text-muted-foreground">
+              Sem tutor cadastrado? Use o botão <strong>Novo animal</strong> e clique em <strong>+ Novo tutor</strong>{' '}
+              dentro dele — ou deixe sem tutor (emergência).
+            </p>
+          </div>
 
+          <div className="space-y-1">
+            <Label>Veterinário</Label>
+            <Select
+              value={form.veterinarian_id || '_none'}
+              onValueChange={(v) => setForm((p) => ({ ...p, veterinarian_id: v === '_none' ? '' : v }))}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="_none">Nenhum</SelectItem>
+                {vets.map((v) => (
+                  <SelectItem key={v.id} value={v.id}>
+                    {v.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <Label>Veterinário</Label>
-              <Select value={form.veterinarian_id || '_none'} onValueChange={v => setForm(p => ({ ...p, veterinarian_id: v === '_none' ? '' : v }))}>
-                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                <SelectContent><SelectItem value="_none">Nenhum</SelectItem>{vets.map(v => <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>)}</SelectContent>
+              <Label>Tipo</Label>
+              <Select value={form.record_type} onValueChange={(v) => setForm((p) => ({ ...p, record_type: v }))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="atendimento">Atendimento</SelectItem>
+                  <SelectItem value="retorno">Retorno</SelectItem>
+                  <SelectItem value="emergencia">Emergência</SelectItem>
+                  <SelectItem value="cirurgia">Cirurgia</SelectItem>
+                  <SelectItem value="internacao">Internação</SelectItem>
+                </SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label>Tipo</Label>
-                <Select value={form.record_type} onValueChange={v => setForm(p => ({ ...p, record_type: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="atendimento">Atendimento</SelectItem>
-                    <SelectItem value="retorno">Retorno</SelectItem>
-                    <SelectItem value="emergencia">Emergência</SelectItem>
-                    <SelectItem value="cirurgia">Cirurgia</SelectItem>
-                    <SelectItem value="internacao">Internação</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <Label>Data</Label>
-                <Input type="date" value={form.record_date} onChange={e => setForm(p => ({ ...p, record_date: e.target.value }))} />
-              </div>
-            </div>
             <div className="space-y-1">
-              <Label>Queixa principal</Label>
-              <Textarea rows={2} value={form.chief_complaint} onChange={e => setForm(p => ({ ...p, chief_complaint: e.target.value }))} placeholder="Descreva a queixa do tutor..." />
+              <Label>Data</Label>
+              <Input
+                type="date"
+                value={form.record_date}
+                onChange={(e) => setForm((p) => ({ ...p, record_date: e.target.value }))}
+              />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setModalVisible(false)}>Cancelar</Button>
-            <Button onClick={handleCreate} className="bg-primary">Criar e Abrir</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          <div className="space-y-1">
+            <Label>Queixa principal</Label>
+            <Textarea
+              rows={2}
+              value={form.chief_complaint}
+              onChange={(e) => setForm((p) => ({ ...p, chief_complaint: e.target.value }))}
+              placeholder="Descreva a queixa do tutor..."
+            />
+          </div>
+        </div>
+      </DashboardCreateFormDialog>
 
       {/* Novo Animal inline */}
-      <Dialog open={patientModal} onOpenChange={setPatientModal}>
-        <DialogContent className="max-w-lg" onInteractOutside={e => e.preventDefault()}>
-          <DialogHeader><DialogTitle>Cadastrar novo animal</DialogTitle></DialogHeader>
-          <div className="space-y-3 py-2">
-            <div className="space-y-1">
-              <Label>Tutor</Label>
-              <div className="flex gap-2">
-                <div className="flex-1">
-                  <Select
-                    value={patientForm.tutor_id || '_none'}
-                    onValueChange={v => setPatientForm(p => ({ ...p, tutor_id: v === '_none' ? '' : v }))}
-                  >
-                    <SelectTrigger><SelectValue placeholder={tutors.length ? 'Selecione' : 'Nenhum tutor cadastrado'} /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="_none">Sem tutor (emergência)</SelectItem>
-                      {tutors.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => { setTutorForm(emptyTutor()); setTutorModal(true); }}
-                  title="Cadastrar novo tutor"
-                >
-                  <UserPlus className="h-4 w-4 mr-1" /> Novo tutor
-                </Button>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label>Nome *</Label>
-                <Input value={patientForm.name} onChange={e => setPatientForm(p => ({ ...p, name: e.target.value }))} />
-              </div>
-              <div className="space-y-1">
-                <Label>Sexo</Label>
-                <Select value={patientForm.sex} onValueChange={v => setPatientForm(p => ({ ...p, sex: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="M">Macho</SelectItem>
-                    <SelectItem value="F">Fêmea</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label>Espécie *</Label>
-                <Input value={patientForm.species} onChange={e => setPatientForm(p => ({ ...p, species: e.target.value }))} placeholder="Canino, Felino..." />
-              </div>
-              <div className="space-y-1">
-                <Label>Raça *</Label>
-                <Input value={patientForm.breed} onChange={e => setPatientForm(p => ({ ...p, breed: e.target.value }))} />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label>Idade (anos)</Label>
-                <Input type="number" step="0.1" value={patientForm.age} onChange={e => setPatientForm(p => ({ ...p, age: e.target.value }))} />
-              </div>
-              <div className="space-y-1">
-                <Label>Peso (kg)</Label>
-                <Input type="number" step="0.1" value={patientForm.weight} onChange={e => setPatientForm(p => ({ ...p, weight: e.target.value }))} />
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setPatientModal(false)}>Cancelar</Button>
+      <DashboardCreateFormDialog
+        open={patientModal}
+        onOpenChange={setPatientModal}
+        title="Cadastrar novo animal"
+        containerClassName="max-w-lg mx-auto"
+        preventOutsideClose
+        footer={
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button variant="outline" onClick={() => setPatientModal(false)}>
+              Cancelar
+            </Button>
             <Button onClick={handleCreatePatient} disabled={patientSaving} className="bg-primary">
               {patientSaving && <Loader2 className="h-4 w-4 mr-1 animate-spin" />} Salvar animal
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Novo Tutor inline */}
-      <Dialog open={tutorModal} onOpenChange={setTutorModal}>
-        <DialogContent className="max-w-lg" onInteractOutside={e => e.preventDefault()}>
-          <DialogHeader><DialogTitle>Cadastrar novo tutor</DialogTitle></DialogHeader>
-          <div className="space-y-3 py-2">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label>Nome *</Label>
-                <Input value={tutorForm.name} onChange={e => setTutorForm(p => ({ ...p, name: e.target.value }))} />
+          </div>
+        }
+      >
+        <div className="space-y-3 py-2">
+          <div className="space-y-1">
+            <Label>Tutor</Label>
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <Select
+                  value={patientForm.tutor_id || '_none'}
+                  onValueChange={(v) => setPatientForm((p) => ({ ...p, tutor_id: v === '_none' ? '' : v }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={tutors.length ? 'Selecione' : 'Nenhum tutor cadastrado'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_none">Sem tutor (emergência)</SelectItem>
+                    {tutors.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>
+                        {t.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              <div className="space-y-1">
-                <Label>CPF *</Label>
-                <Input value={tutorForm.cpf} onChange={e => setTutorForm(p => ({ ...p, cpf: e.target.value }))} />
-              </div>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setTutorForm(emptyTutor());
+                  setTutorModal(true);
+                }}
+                title="Cadastrar novo tutor"
+              >
+                <UserPlus className="h-4 w-4 mr-1" /> Novo tutor
+              </Button>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label>Telefone *</Label>
-                <Input value={tutorForm.phone} onChange={e => setTutorForm(p => ({ ...p, phone: e.target.value }))} />
-              </div>
-              <div className="space-y-1">
-                <Label>Email *</Label>
-                <Input type="email" value={tutorForm.email} onChange={e => setTutorForm(p => ({ ...p, email: e.target.value }))} />
-              </div>
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              <div className="space-y-1">
-                <Label>CEP *</Label>
-                <Input value={tutorForm.cep} onChange={e => setTutorForm(p => ({ ...p, cep: e.target.value }))} />
-              </div>
-              <div className="space-y-1 col-span-2">
-                <Label>Rua</Label>
-                <Input value={tutorForm.street} onChange={e => setTutorForm(p => ({ ...p, street: e.target.value }))} />
-              </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label>Nome *</Label>
+              <Input
+                value={patientForm.name}
+                onChange={(e) => setPatientForm((p) => ({ ...p, name: e.target.value }))}
+              />
             </div>
             <div className="space-y-1">
-              <Label>Número</Label>
-              <Input value={tutorForm.number} onChange={e => setTutorForm(p => ({ ...p, number: e.target.value }))} />
+              <Label>Sexo</Label>
+              <Select value={patientForm.sex} onValueChange={(v) => setPatientForm((p) => ({ ...p, sex: v }))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="M">Macho</SelectItem>
+                  <SelectItem value="F">Fêmea</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <p className="text-xs text-muted-foreground">Cadastro rápido — campos de endereço completos podem ser preenchidos depois em <strong>Tutores</strong>.</p>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setTutorModal(false)}>Cancelar</Button>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label>Espécie *</Label>
+              <Input
+                value={patientForm.species}
+                onChange={(e) => setPatientForm((p) => ({ ...p, species: e.target.value }))}
+                placeholder="Canino, Felino..."
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Raça *</Label>
+              <Input
+                value={patientForm.breed}
+                onChange={(e) => setPatientForm((p) => ({ ...p, breed: e.target.value }))}
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label>Idade (anos)</Label>
+              <Input
+                type="number"
+                step="0.1"
+                value={patientForm.age}
+                onChange={(e) => setPatientForm((p) => ({ ...p, age: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label>Peso (kg)</Label>
+              <Input
+                type="number"
+                step="0.1"
+                value={patientForm.weight}
+                onChange={(e) => setPatientForm((p) => ({ ...p, weight: e.target.value }))}
+              />
+            </div>
+          </div>
+        </div>
+      </DashboardCreateFormDialog>
+
+      {/* Novo Tutor inline */}
+      <DashboardCreateFormDialog
+        open={tutorModal}
+        onOpenChange={setTutorModal}
+        title="Cadastrar novo tutor"
+        containerClassName="max-w-lg mx-auto"
+        preventOutsideClose
+        footer={
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button variant="outline" onClick={() => setTutorModal(false)}>
+              Cancelar
+            </Button>
             <Button onClick={handleCreateTutor} disabled={tutorSaving} className="bg-primary">
               {tutorSaving && <Loader2 className="h-4 w-4 mr-1 animate-spin" />} Salvar tutor
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        }
+      >
+        <div className="space-y-3 py-2">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label>Nome *</Label>
+              <Input value={tutorForm.name} onChange={(e) => setTutorForm((p) => ({ ...p, name: e.target.value }))} />
+            </div>
+            <div className="space-y-1">
+              <Label>CPF *</Label>
+              <Input value={tutorForm.cpf} onChange={(e) => setTutorForm((p) => ({ ...p, cpf: e.target.value }))} />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label>Telefone *</Label>
+              <Input value={tutorForm.phone} onChange={(e) => setTutorForm((p) => ({ ...p, phone: e.target.value }))} />
+            </div>
+            <div className="space-y-1">
+              <Label>Email *</Label>
+              <Input
+                type="email"
+                value={tutorForm.email}
+                onChange={(e) => setTutorForm((p) => ({ ...p, email: e.target.value }))}
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="space-y-1">
+              <Label>CEP *</Label>
+              <Input value={tutorForm.cep} onChange={(e) => setTutorForm((p) => ({ ...p, cep: e.target.value }))} />
+            </div>
+            <div className="space-y-1 col-span-2">
+              <Label>Rua</Label>
+              <Input
+                value={tutorForm.street}
+                onChange={(e) => setTutorForm((p) => ({ ...p, street: e.target.value }))}
+              />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <Label>Número</Label>
+            <Input value={tutorForm.number} onChange={(e) => setTutorForm((p) => ({ ...p, number: e.target.value }))} />
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Cadastro rápido — campos de endereço completos podem ser preenchidos depois em <strong>Tutores</strong>.
+          </p>
+        </div>
+      </DashboardCreateFormDialog>
     </div>
   );
 }

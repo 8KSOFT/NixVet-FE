@@ -1,32 +1,47 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import type { ApiRequestError } from '@/app/types/api-error';
+import type { WorkflowItem } from '@/app/types/chatbot-workflow';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { DashboardCreateFormDialog } from '@/components/dashboard-create-form-dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import {
-  Loader2, Plus, Workflow, Pencil, Trash2, Zap,
-  Bot, CheckCircle2, XCircle, Settings, ArrowRight,
+  Loader2,
+  Plus,
+  Workflow,
+  Pencil,
+  Trash2,
+  Zap,
+  Bot,
+  CheckCircle2,
+  XCircle,
+  Settings,
+  ArrowRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import api from '@/lib/axios';
 import { API_PAGE_SIZE, listQueryParams, parseListResponse } from '@/lib/pagination';
 import { ListPagination } from '@/components/list-pagination';
 
-interface WorkflowItem {
-  id: string;
-  name: string;
-  is_active: boolean;
-  createdAt?: string;
+function getApiErrorMessage(error: unknown, fallbackMessage: string): string {
+  const typedError = error as ApiRequestError;
+  const responseMessage = typedError.response?.data?.message;
+
+  if (Array.isArray(responseMessage)) {
+    return responseMessage[0] ?? fallbackMessage;
+  }
+
+  return responseMessage ?? typedError.message ?? fallbackMessage;
 }
 
 export default function ChatbotWorkflowsPage() {
@@ -60,7 +75,9 @@ export default function ChatbotWorkflowsPage() {
     }
   };
 
-  useEffect(() => { fetchWorkflows(); }, [listPage]);
+  useEffect(() => {
+    fetchWorkflows();
+  }, [listPage]);
 
   const toggleBot = async (enabled: boolean) => {
     setBotSaving(true);
@@ -68,8 +85,8 @@ export default function ChatbotWorkflowsPage() {
       await api.put('/tenants/me', { whatsapp_ai_chatbot_enabled: enabled });
       setBotEnabled(enabled);
       toast.success(enabled ? 'Chatbot ativado' : 'Chatbot desativado');
-    } catch (e: any) {
-      toast.error(e.response?.data?.message ?? 'Erro ao salvar');
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, 'Erro ao salvar'));
     } finally {
       setBotSaving(false);
     }
@@ -81,7 +98,14 @@ export default function ChatbotWorkflowsPage() {
       const res = await api.post<WorkflowItem>('/chatbot-workflows', {
         name: newName.trim(),
         nodes: [
-          { node_type: 'trigger', node_key: 'message_received', label: 'Mensagem Recebida', config: {}, position_x: 250, position_y: 50 },
+          {
+            node_type: 'trigger',
+            node_key: 'message_received',
+            label: 'Mensagem Recebida',
+            config: {},
+            position_x: 250,
+            position_y: 50,
+          },
           { node_type: 'end', node_key: 'end', label: 'Fim', config: {}, position_x: 250, position_y: 300 },
         ],
         edges: [{ source_node: 'message_received', target_node: 'end' }],
@@ -90,8 +114,8 @@ export default function ChatbotWorkflowsPage() {
       setCreateOpen(false);
       setNewName('');
       router.push(`/dashboard/chatbot-workflows/${res.data.id}`);
-    } catch (e: any) {
-      toast.error(e.response?.data?.message ?? 'Erro ao criar');
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, 'Erro ao criar'));
     }
   };
 
@@ -100,8 +124,8 @@ export default function ChatbotWorkflowsPage() {
       await api.post('/chatbot-workflows/seed-default');
       toast.success('Workflow padrão criado');
       fetchWorkflows();
-    } catch (e: any) {
-      toast.error(e.response?.data?.message ?? 'Erro');
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, 'Erro'));
     }
   };
 
@@ -110,8 +134,8 @@ export default function ChatbotWorkflowsPage() {
       await api.put(`/chatbot-workflows/${id}/activate`);
       toast.success('Workflow ativado');
       fetchWorkflows();
-    } catch (e: any) {
-      toast.error(e.response?.data?.message ?? 'Erro');
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, 'Erro'));
     }
   };
 
@@ -121,8 +145,8 @@ export default function ChatbotWorkflowsPage() {
       await api.delete(`/chatbot-workflows/${id}`);
       toast.success('Workflow excluído');
       fetchWorkflows();
-    } catch (e: any) {
-      toast.error(e.response?.data?.message ?? 'Erro');
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, 'Erro'));
     }
   };
 
@@ -148,10 +172,12 @@ export default function ChatbotWorkflowsPage() {
       </div>
 
       {/* Status banner */}
-      <Card className={cn(
-        'border transition-colors',
-        botEnabled ? 'border-primary/30 bg-primary/5' : 'border-border bg-muted/30',
-      )}>
+      <Card
+        className={cn(
+          'border transition-colors',
+          botEnabled ? 'border-primary/30 bg-primary/5' : 'border-border bg-muted/30',
+        )}
+      >
         <CardContent className="p-5">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
@@ -162,7 +188,10 @@ export default function ChatbotWorkflowsPage() {
               )}
               <div>
                 <p className="font-semibold text-foreground text-sm">
-                  Bot está <span className={botEnabled ? 'text-primary' : 'text-muted-foreground'}>{botEnabled ? 'ATIVO' : 'INATIVO'}</span>
+                  Bot está{' '}
+                  <span className={botEnabled ? 'text-primary' : 'text-muted-foreground'}>
+                    {botEnabled ? 'ATIVO' : 'INATIVO'}
+                  </span>
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   {botEnabled
@@ -173,11 +202,7 @@ export default function ChatbotWorkflowsPage() {
             </div>
             <div className="flex items-center gap-2.5">
               {botSaving && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
-              <Switch
-                checked={botEnabled}
-                disabled={botSaving}
-                onCheckedChange={(v) => void toggleBot(v)}
-              />
+              <Switch checked={botEnabled} disabled={botSaving} onCheckedChange={(v) => void toggleBot(v)} />
             </div>
           </div>
         </CardContent>
@@ -193,7 +218,9 @@ export default function ChatbotWorkflowsPage() {
                   <Workflow className="w-5 h-5 text-primary" />
                 </div>
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-0.5">Workflow ativo</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-0.5">
+                    Workflow ativo
+                  </p>
                   <p className="font-semibold text-foreground">{activeWorkflow.name}</p>
                 </div>
               </div>
@@ -243,75 +270,77 @@ export default function ChatbotWorkflowsPage() {
             </div>
           ) : (
             <div className="rounded-md border overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Criado em</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {workflows.map((wf) => (
-                  <TableRow key={wf.id}>
-                    <TableCell>
-                      <span className="font-medium text-foreground">{wf.name}</span>
-                    </TableCell>
-                    <TableCell>
-                      {wf.is_active ? (
-                        <Badge className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/10">
-                          <CheckCircle2 className="w-3 h-3 mr-1" /> Ativo
-                        </Badge>
-                      ) : (
-                        <Badge variant="secondary" className="text-muted-foreground">Inativo</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {wf.createdAt ? new Date(wf.createdAt).toLocaleDateString('pt-BR') : '—'}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => router.push(`/dashboard/chatbot-workflows/${wf.id}`)}
-                          className="gap-1"
-                        >
-                          <Pencil className="w-3 h-3" /> Editar
-                        </Button>
-                        {!wf.is_active && (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Criado em</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {workflows.map((wf) => (
+                    <TableRow key={wf.id}>
+                      <TableCell>
+                        <span className="font-medium text-foreground">{wf.name}</span>
+                      </TableCell>
+                      <TableCell>
+                        {wf.is_active ? (
+                          <Badge className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/10">
+                            <CheckCircle2 className="w-3 h-3 mr-1" /> Ativo
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary" className="text-muted-foreground">
+                            Inativo
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {wf.createdAt ? new Date(wf.createdAt).toLocaleDateString('pt-BR') : '—'}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-1.5">
                           <Button
                             variant="outline"
                             size="sm"
-                            className="text-primary border-primary/30 hover:bg-primary/5 gap-1"
-                            onClick={() => handleActivate(wf.id)}
+                            onClick={() => router.push(`/dashboard/chatbot-workflows/${wf.id}`)}
+                            className="gap-1"
                           >
-                            <Zap className="w-3 h-3" /> Ativar
+                            <Pencil className="w-3 h-3" /> Editar
                           </Button>
-                        )}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-destructive border-destructive/30 hover:bg-destructive/5"
-                          onClick={() => handleDelete(wf.id)}
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-            <ListPagination
-              page={listPage}
-              totalPages={listTotalPages}
-              total={listTotal}
-              pageSize={API_PAGE_SIZE}
-              onPageChange={setListPage}
-              disabled={loading}
-            />
+                          {!wf.is_active && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-primary border-primary/30 hover:bg-primary/5 gap-1"
+                              onClick={() => handleActivate(wf.id)}
+                            >
+                              <Zap className="w-3 h-3" /> Ativar
+                            </Button>
+                          )}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-destructive border-destructive/30 hover:bg-destructive/5"
+                            onClick={() => handleDelete(wf.id)}
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <ListPagination
+                page={listPage}
+                totalPages={listTotalPages}
+                total={listTotal}
+                pageSize={API_PAGE_SIZE}
+                onPageChange={setListPage}
+                disabled={loading}
+              />
             </div>
           )}
         </CardContent>
@@ -335,29 +364,34 @@ export default function ChatbotWorkflowsPage() {
       </div>
 
       {/* Create dialog */}
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Novo Workflow</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div>
-              <Label>Nome do workflow</Label>
-              <Input
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                placeholder="Ex: Workflow Principal"
-                onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
-                className="mt-1.5"
-              />
-            </div>
+      <DashboardCreateFormDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        title="Novo Workflow"
+        footer={
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button variant="outline" onClick={() => setCreateOpen(false)}>
+              Cancelar
+            </Button>
+            <Button className="bg-primary" onClick={handleCreate} disabled={!newName.trim()}>
+              Criar
+            </Button>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancelar</Button>
-            <Button className="bg-primary" onClick={handleCreate} disabled={!newName.trim()}>Criar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        }
+      >
+        <div className="space-y-4 py-2">
+          <div>
+            <Label>Nome do workflow</Label>
+            <Input
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="Ex: Workflow Principal"
+              onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
+              className="mt-1.5"
+            />
+          </div>
+        </div>
+      </DashboardCreateFormDialog>
     </div>
   );
 }
