@@ -18,9 +18,22 @@ import { ListPagination } from '@/components/list-pagination';
 interface Material {
   id: number;
   name: string;
+  private_price?: number | null;
+  cost_price?: number | null;
+  tax_percentage?: number | null;
 }
 
-type FormValues = { name: string };
+type FormValues = {
+  name: string;
+  private_price?: string;
+  cost_price?: string;
+  tax_percentage?: string;
+};
+
+function fmtBRL(v?: number | null) {
+  if (v == null) return '—';
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+}
 
 export default function SettingsMaterialsPage() {
   const [list, setList] = useState<Material[]>([]);
@@ -53,13 +66,18 @@ export default function SettingsMaterialsPage() {
 
   const openCreate = () => {
     setEditingId(null);
-    reset({ name: '' });
+    reset({ name: '', private_price: '', cost_price: '', tax_percentage: '' });
     setModalOpen(true);
   };
 
   const openEdit = (row: Material) => {
     setEditingId(row.id);
-    reset({ name: row.name });
+    reset({
+      name: row.name,
+      private_price: row.private_price != null ? String(row.private_price) : '',
+      cost_price: row.cost_price != null ? String(row.cost_price) : '',
+      tax_percentage: row.tax_percentage != null ? String(row.tax_percentage) : '',
+    });
     setModalOpen(true);
   };
 
@@ -74,12 +92,18 @@ export default function SettingsMaterialsPage() {
   };
 
   const onSubmit = async (values: FormValues) => {
+    const payload = {
+      name: values.name,
+      private_price: values.private_price ? parseFloat(values.private_price) : undefined,
+      cost_price: values.cost_price ? parseFloat(values.cost_price) : undefined,
+      tax_percentage: values.tax_percentage ? parseFloat(values.tax_percentage) : 0,
+    };
     try {
       if (editingId) {
-        await api.put(`/catalog/materials/${editingId}`, values);
+        await api.put(`/catalog/materials/${editingId}`, payload);
         toast.success('Atualizado');
       } else {
-        await api.post('/catalog/materials', values);
+        await api.post('/catalog/materials', payload);
         toast.success('Criado');
       }
       setModalOpen(false);
@@ -107,6 +131,9 @@ export default function SettingsMaterialsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Nome</TableHead>
+                  <TableHead className="text-right">Custo</TableHead>
+                  <TableHead className="text-right">Venda</TableHead>
+                  <TableHead className="text-right">Imposto</TableHead>
                   <TableHead className="w-[120px]">Ações</TableHead>
                 </TableRow>
               </TableHeader>
@@ -114,6 +141,9 @@ export default function SettingsMaterialsPage() {
                 {list.map((r) => (
                   <TableRow key={r.id}>
                     <TableCell>{r.name}</TableCell>
+                    <TableCell className="text-right tabular-nums">{fmtBRL(r.cost_price)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{fmtBRL(r.private_price)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{r.tax_percentage != null ? `${Number(r.tax_percentage)}%` : '—'}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Button variant="ghost" size="sm" onClick={() => openEdit(r)}>
@@ -152,6 +182,23 @@ export default function SettingsMaterialsPage() {
               <Input id="name" placeholder="Nome do material" {...register('name', { required: true })} />
               {errors.name && <p className="text-red-500 text-xs mt-1">Campo obrigatório</p>}
             </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <Label htmlFor="cost_price">Custo (R$)</Label>
+                <Input id="cost_price" type="number" step="0.01" min="0" placeholder="0,00" {...register('cost_price')} />
+              </div>
+              <div>
+                <Label htmlFor="private_price">Venda (R$)</Label>
+                <Input id="private_price" type="number" step="0.01" min="0" placeholder="0,00" {...register('private_price')} />
+              </div>
+              <div>
+                <Label htmlFor="tax_percentage">Imposto (%)</Label>
+                <Input id="tax_percentage" type="number" step="0.01" min="0" max="100" placeholder="0" {...register('tax_percentage')} />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Imposto é adicionado por cima do preço de venda. Margem = venda − custo.
+            </p>
             <DialogFooter>
               <Button type="submit" className="bg-primary">Salvar</Button>
             </DialogFooter>

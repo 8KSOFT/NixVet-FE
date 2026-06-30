@@ -29,6 +29,7 @@ interface SurgicalProcedure {
   surgical_procedure_category?: Category;
   private_price?: number | null;
   cost_price?: number | null;
+  tax_percentage?: number | null;
 }
 
 interface HealthPlan {
@@ -49,6 +50,7 @@ type FormValues = {
   category_id?: string;
   private_price?: string;
   cost_price?: string;
+  tax_percentage?: string;
 };
 
 function fmtBRL(v?: number | null) {
@@ -277,7 +279,7 @@ export default function SettingsSurgicalProceduresPage() {
 
   const openCreate = () => {
     setEditingId(null);
-    reset({ name: '', category_id: undefined, private_price: '', cost_price: '' });
+    reset({ name: '', category_id: undefined, private_price: '', cost_price: '', tax_percentage: '' });
     setModalOpen(true);
   };
 
@@ -289,6 +291,7 @@ export default function SettingsSurgicalProceduresPage() {
       category_id: catId ? String(catId) : undefined,
       private_price: row.private_price != null ? String(row.private_price) : '',
       cost_price: row.cost_price != null ? String(row.cost_price) : '',
+      tax_percentage: row.tax_percentage != null ? String(row.tax_percentage) : '',
     });
     setModalOpen(true);
   };
@@ -309,6 +312,7 @@ export default function SettingsSurgicalProceduresPage() {
       category_id: values.category_id ? Number(values.category_id) : undefined,
       private_price: values.private_price ? parseFloat(values.private_price) : undefined,
       cost_price: values.cost_price ? parseFloat(values.cost_price) : undefined,
+      tax_percentage: values.tax_percentage ? parseFloat(values.tax_percentage) : 0,
     };
     try {
       if (editingId) {
@@ -453,7 +457,22 @@ export default function SettingsSurgicalProceduresPage() {
                     {...register('cost_price')}
                   />
                 </div>
+                <div>
+                  <Label htmlFor="tax_percentage">Imposto (%)</Label>
+                  <Input
+                    id="tax_percentage"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    placeholder="0"
+                    {...register('tax_percentage')}
+                  />
+                </div>
               </div>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Imposto é adicionado por cima do preço (cliente paga preço + imposto). Margem = preço − custo.
+              </p>
             </div>
             <DialogFooter>
               <Button type="submit" className="bg-primary">Salvar</Button>
