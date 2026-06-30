@@ -22,6 +22,7 @@ import {
   TrendingUp,
   CreditCard,
   ChevronDown,
+  Package,
 } from "lucide-react";
 import { MenuIconsWhite } from "@/components/MenuIconsWhite";
 import { Button } from "@/components/ui/button";
@@ -388,6 +389,12 @@ const NAV_SECTIONS: NavSection[] = [
         href: "/dashboard/internacoes",
         labelKey: "nav.hospitalizations",
       },
+      {
+        key: "clinical-terms",
+        icon: FileCheck,
+        href: "/dashboard/termos",
+        labelKey: "nav.clinicalTerms",
+      },
     ],
   },
   {
@@ -401,6 +408,12 @@ const NAV_SECTIONS: NavSection[] = [
         href: "/dashboard/financeiro",
         labelKey: "nav.financeiro",
         children: [
+          {
+            key: "financeiro-lancamentos",
+            icon: Wallet,
+            href: "/dashboard/financeiro/lancamentos",
+            labelKey: "nav.financeiroLancamentos",
+          },
           {
             key: "financeiro-receitas",
             icon: TrendingUp,
@@ -418,6 +431,12 @@ const NAV_SECTIONS: NavSection[] = [
             icon: FileCheck,
             href: "/dashboard/financeiro/orcamentos",
             labelKey: "nav.budgets",
+          },
+          {
+            key: "financeiro-produtos",
+            icon: Package,
+            href: "/dashboard/financeiro/produtos",
+            labelKey: "nav.financeiroProdutos",
           },
           {
             key: "financeiro-receita",

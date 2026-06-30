@@ -29,6 +29,8 @@ interface Exam {
   exam_area?: Area;
   private_price?: number | null;
   lab_cost?: number | null;
+  tax_percentage?: number | null;
+  is_third_party?: boolean;
 }
 
 interface HealthPlan {
@@ -49,6 +51,8 @@ type FormValues = {
   area_id?: string;
   private_price?: string;
   lab_cost?: string;
+  tax_percentage?: string;
+  is_third_party?: boolean;
 };
 
 function fmtBRL(v?: number | null) {
@@ -277,7 +281,7 @@ export default function SettingsExamsPage() {
 
   const openCreate = () => {
     setEditingId(null);
-    reset({ name: '', area_id: undefined, private_price: '', lab_cost: '' });
+    reset({ name: '', area_id: undefined, private_price: '', lab_cost: '', tax_percentage: '', is_third_party: false });
     setModalOpen(true);
   };
 
@@ -289,6 +293,8 @@ export default function SettingsExamsPage() {
       area_id: areaId ? String(areaId) : undefined,
       private_price: row.private_price != null ? String(row.private_price) : '',
       lab_cost: row.lab_cost != null ? String(row.lab_cost) : '',
+      tax_percentage: row.tax_percentage != null ? String(row.tax_percentage) : '',
+      is_third_party: !!row.is_third_party,
     });
     setModalOpen(true);
   };
@@ -309,6 +315,8 @@ export default function SettingsExamsPage() {
       area_id: values.area_id ? Number(values.area_id) : undefined,
       private_price: values.private_price ? parseFloat(values.private_price) : undefined,
       lab_cost: values.lab_cost ? parseFloat(values.lab_cost) : undefined,
+      tax_percentage: values.tax_percentage ? parseFloat(values.tax_percentage) : 0,
+      is_third_party: !!values.is_third_party,
     };
     try {
       if (editingId) {
@@ -453,7 +461,26 @@ export default function SettingsExamsPage() {
                     {...register('lab_cost')}
                   />
                 </div>
+                <div>
+                  <Label htmlFor="tax_percentage">Imposto (%)</Label>
+                  <Input
+                    id="tax_percentage"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    placeholder="0"
+                    {...register('tax_percentage')}
+                  />
+                </div>
+                <label className="flex items-center gap-2 self-end pb-2 text-sm">
+                  <input type="checkbox" {...register('is_third_party')} className="size-4" />
+                  Exame de laboratório terceiro
+                </label>
               </div>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Imposto é adicionado por cima do preço (cliente paga preço + imposto). Margem = preço − custo.
+              </p>
             </div>
             <DialogFooter>
               <Button type="submit" className="bg-primary">Salvar</Button>
