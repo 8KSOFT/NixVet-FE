@@ -22,6 +22,7 @@ import {
   TrendingUp,
   CreditCard,
   ChevronDown,
+  Package,
 } from "lucide-react";
 import { MenuIconsWhite } from "@/components/MenuIconsWhite";
 import { Button } from "@/components/ui/button";
@@ -424,6 +425,12 @@ const NAV_SECTIONS: NavSection[] = [
             icon: FileCheck,
             href: "/dashboard/financeiro/orcamentos",
             labelKey: "nav.budgets",
+          },
+          {
+            key: "financeiro-produtos",
+            icon: Package,
+            href: "/dashboard/financeiro/produtos",
+            labelKey: "nav.financeiroProdutos",
           },
           {
             key: "financeiro-receita",
