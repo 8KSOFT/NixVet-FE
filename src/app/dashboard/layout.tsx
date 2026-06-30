@@ -24,7 +24,6 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { MenuIconsWhite } from "@/components/MenuIconsWhite";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -514,7 +513,6 @@ function SidebarNav({
   menuAllow,
   activeKey,
   brandName,
-  brandLogo,
   variant = "medical",
   onNavigate,
 }: SidebarNavProps) {
@@ -806,7 +804,7 @@ export default function DashboardLayout({
     : t("header.roleUnknown");
 
   return (
-    <div className="flex min-h-screen bg-[var(--background)]">
+    <div className="flex min-h-screen bg-background">
       {/* Desktop sidebar — painel sólido (menos camadas que card + sombra) */}
       <aside
         className={cn(

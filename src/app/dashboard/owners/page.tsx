@@ -299,7 +299,7 @@ export default function OwnersPage() {
 
   return (
     <div>
-      <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center mb-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center mb-8">
         <h1 className="text-2xl font-extrabold font-['InterDoFigma'] flex items-center gap-2">{t('owners.title')}</h1>
         <div className="flex flex-wrap items-center gap-2">
           <Button onClick={handleAdd} className="bg-primary hover:bg-brand-deep/80">

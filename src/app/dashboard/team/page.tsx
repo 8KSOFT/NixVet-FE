@@ -175,7 +175,7 @@ export default function TeamPage() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex justify-between items-center mb-8">
         <h1 className="text-2xl font-extrabold font-['InterDoFigma'] flex items-center gap-2">{t('team.title')}</h1>
         <Button onClick={handleAdd} className="bg-primary">
           <Plus className="w-4 h-4 mr-2" /> {t('team.newMember')}

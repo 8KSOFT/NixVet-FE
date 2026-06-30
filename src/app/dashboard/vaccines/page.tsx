@@ -1,21 +1,39 @@
-'use client';
+"use client";
 
-import React, { useEffect, useState } from 'react';
-import type { ApiRequestError } from '@/app/types/api-error';
-import { Button } from '@/components/ui/button';
-import { DashboardCreateFormDialog } from '@/components/dashboard-create-form-dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { toast } from 'sonner';
-import { useForm, Controller } from 'react-hook-form';
-import { Plus, Loader2 } from 'lucide-react';
-import api from '@/lib/axios';
-import { API_PAGE_SIZE, fetchAllListPages, listQueryParams, parseListResponse } from '@/lib/pagination';
-import { ListPagination } from '@/components/list-pagination';
+import React, { useEffect, useState } from "react";
+import type { ApiRequestError } from "@/app/types/api-error";
+import { Button } from "@/components/ui/button";
+import { DashboardCreateFormDialog } from "@/components/dashboard-create-form-dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "sonner";
+import { useForm, Controller } from "react-hook-form";
+import { Plus, Loader2 } from "lucide-react";
+import api from "@/lib/axios";
+import {
+  API_PAGE_SIZE,
+  fetchAllListPages,
+  listQueryParams,
+  parseListResponse,
+} from "@/lib/pagination";
+import { ListPagination } from "@/components/list-pagination";
 
 interface VaccineReminder {
   id: string;
@@ -43,7 +61,13 @@ function getApiErrorMessage(error: unknown, fallbackMessage: string): string {
   return responseMessage ?? typedError.message ?? fallbackMessage;
 }
 
-function ReminderTable({ data, loading }: { data: VaccineReminder[]; loading: boolean }) {
+function ReminderTable({
+  data,
+  loading,
+}: {
+  data: VaccineReminder[];
+  loading: boolean;
+}) {
   if (loading) {
     return (
       <div className="flex justify-center py-8">
@@ -52,26 +76,28 @@ function ReminderTable({ data, loading }: { data: VaccineReminder[]; loading: bo
     );
   }
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Paciente</TableHead>
-          <TableHead>Vacina</TableHead>
-          <TableHead>Próxima dose</TableHead>
-          <TableHead>Status</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {data.map((r) => (
-          <TableRow key={r.id}>
-            <TableCell>{r.patient?.name}</TableCell>
-            <TableCell>{r.vaccine_name}</TableCell>
-            <TableCell>{r.next_due_date}</TableCell>
-            <TableCell>{r.reminder_status}</TableCell>
+    <div className="border border-gray-300 rounded-md">
+      <Table>
+        <TableHeader className="h-15">
+          <TableRow className="border-b border-gray-300">
+            <TableHead>Paciente</TableHead>
+            <TableHead>Vacina</TableHead>
+            <TableHead>Próxima dose</TableHead>
+            <TableHead>Status</TableHead>
           </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+        </TableHeader>
+        <TableBody>
+          {data.map((r) => (
+            <TableRow className="border-b border-gray-300 h-15" key={r.id}>
+              <TableCell>{r.patient?.name}</TableCell>
+              <TableCell>{r.vaccine_name}</TableCell>
+              <TableCell>{r.next_due_date}</TableCell>
+              <TableCell>{r.reminder_status}</TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
   );
 }
 
@@ -87,15 +113,18 @@ export default function VaccinesPage() {
   const [patients, setPatients] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
-  const { register, handleSubmit, reset, control } = useForm<VaccineFormValues>();
+  const { register, handleSubmit, reset, control } =
+    useForm<VaccineFormValues>();
 
   const fetchAll = async () => {
     setLoading(true);
     try {
       const [allRes, dueRes, patientsList] = await Promise.all([
-        api.get('/vaccine/reminders', { params: listQueryParams(allPage) }),
-        api.get('/vaccine/reminders/due', { params: { days: 30, ...listQueryParams(duePage) } }),
-        fetchAllListPages<{ id: string; name: string }>('/patients'),
+        api.get("/vaccine/reminders", { params: listQueryParams(allPage) }),
+        api.get("/vaccine/reminders/due", {
+          params: { days: 30, ...listQueryParams(duePage) },
+        }),
+        fetchAllListPages<{ id: string; name: string }>("/patients"),
       ]);
       const a = parseListResponse<VaccineReminder>(allRes.data, allPage);
       setAllReminders(a.items);
@@ -107,7 +136,7 @@ export default function VaccinesPage() {
       setDueTotalPages(d.totalPages);
       setPatients(patientsList);
     } catch {
-      toast.error('Erro ao carregar lembretes');
+      toast.error("Erro ao carregar lembretes");
     } finally {
       setLoading(false);
     }
@@ -119,58 +148,61 @@ export default function VaccinesPage() {
 
   const onSubmit = async (values: VaccineFormValues) => {
     try {
-      await api.post('/vaccine/reminders', values);
-      toast.success('Lembrete criado');
+      await api.post("/vaccine/reminders", values);
+      toast.success("Lembrete criado");
       setModalOpen(false);
       reset();
       fetchAll();
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, 'Erro ao criar'));
+      toast.error(getApiErrorMessage(error, "Erro ao criar"));
     }
   };
 
   return (
     <div>
-      <h1 className="text-2xl font-heading font-bold text-primary mb-6">Vacinas</h1>
-      <Card>
-        <CardContent className="pt-6">
-          <Button onClick={() => setModalOpen(true)} className="mb-4 bg-primary">
-            <Plus className="w-4 h-4 mr-2" /> Novo lembrete
-          </Button>
-          <Tabs defaultValue="due">
-            <TabsList>
-              <TabsTrigger value="due">Próximos 30 dias</TabsTrigger>
-              <TabsTrigger value="all">Todos os lembretes</TabsTrigger>
-            </TabsList>
-            <TabsContent value="due">
-              <div className="rounded-md border overflow-hidden">
-                <ReminderTable data={dueSoon} loading={loading} />
-                <ListPagination
-                  page={duePage}
-                  totalPages={dueTotalPages}
-                  total={dueTotal}
-                  pageSize={API_PAGE_SIZE}
-                  onPageChange={setDuePage}
-                  disabled={loading}
-                />
-              </div>
-            </TabsContent>
-            <TabsContent value="all">
-              <div className="rounded-md border overflow-hidden">
-                <ReminderTable data={allReminders} loading={loading} />
-                <ListPagination
-                  page={allPage}
-                  totalPages={allTotalPages}
-                  total={allTotal}
-                  pageSize={API_PAGE_SIZE}
-                  onPageChange={setAllPage}
-                  disabled={loading}
-                />
-              </div>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+      <div className="flex flex-wrap justify-between items-center mb-8">
+        <h1 className="text-2xl font-extrabold font-['InterDoFigma']">
+          Vacinas
+        </h1>
+        <Button onClick={() => setModalOpen(true)} className="bg-primary">
+          <Plus className="w-4 h-4 mr-2" /> Novo lembrete
+        </Button>
+      </div>
+
+      <div className="bg-transparent border-none shadow-none">
+        <Tabs defaultValue="due">
+          <TabsList>
+            <TabsTrigger value="due">Próximos 30 dias</TabsTrigger>
+            <TabsTrigger value="all">Todos os lembretes</TabsTrigger>
+          </TabsList>
+          <TabsContent value="due">
+            <div className="rounded-md overflow-hidden border-none">
+              <ReminderTable data={dueSoon} loading={loading} />
+              <ListPagination
+                page={duePage}
+                totalPages={dueTotalPages}
+                total={dueTotal}
+                pageSize={API_PAGE_SIZE}
+                onPageChange={setDuePage}
+                disabled={loading}
+              />
+            </div>
+          </TabsContent>
+          <TabsContent value="all">
+            <div className="rounded-md overflow-hidden border-none">
+              <ReminderTable data={allReminders} loading={loading} />
+              <ListPagination
+                page={allPage}
+                totalPages={allTotalPages}
+                total={allTotal}
+                pageSize={API_PAGE_SIZE}
+                onPageChange={setAllPage}
+                disabled={loading}
+              />
+            </div>
+          </TabsContent>
+        </Tabs>
+      </div>
 
       <DashboardCreateFormDialog
         open={modalOpen}
@@ -178,16 +210,28 @@ export default function VaccinesPage() {
         title="Novo lembrete de vacina"
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setModalOpen(false)}
+            >
               Cancelar
             </Button>
-            <Button type="submit" form="vaccine-reminder-form" className="bg-primary">
+            <Button
+              type="submit"
+              form="vaccine-reminder-form"
+              className="bg-primary"
+            >
               Criar
             </Button>
           </div>
         }
       >
-        <form id="vaccine-reminder-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form
+          id="vaccine-reminder-form"
+          onSubmit={handleSubmit(onSubmit)}
+          className="space-y-4"
+        >
           <div>
             <Label>Paciente</Label>
             <Controller
@@ -212,11 +256,17 @@ export default function VaccinesPage() {
           </div>
           <div>
             <Label>Vacina</Label>
-            <Input {...register('vaccine_name', { required: true })} placeholder="Ex.: Antirrábica" />
+            <Input
+              {...register("vaccine_name", { required: true })}
+              placeholder="Ex.: Antirrábica"
+            />
           </div>
           <div>
             <Label>Próxima dose</Label>
-            <Input type="date" {...register('next_due_date', { required: true })} />
+            <Input
+              type="date"
+              {...register("next_due_date", { required: true })}
+            />
           </div>
         </form>
       </DashboardCreateFormDialog>

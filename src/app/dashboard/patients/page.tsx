@@ -14,7 +14,7 @@ import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Link from 'next/link';
 
-import { Plus, Pencil, Trash2, Stethoscope, History, ChevronsUpDown, Check } from 'lucide-react';
+import { Plus, Pencil, Trash2, History, ChevronsUpDown, Check } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { API_PAGE_SIZE, fetchAllListPages, listQueryParams, parseListResponse } from '@/lib/pagination';
@@ -297,7 +297,7 @@ export default function PatientsPage() {
 
   return (
     <div>
-      <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center mb-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center mb-8">
         <h1 className="text-2xl font-extrabold font-['InterDoFigma'] flex items-center gap-2">{t('patients.title')}</h1>
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-2 min-w-50">
