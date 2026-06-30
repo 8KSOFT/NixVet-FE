@@ -402,6 +402,12 @@ const NAV_SECTIONS: NavSection[] = [
         labelKey: "nav.financeiro",
         children: [
           {
+            key: "financeiro-lancamentos",
+            icon: Wallet,
+            href: "/dashboard/financeiro/lancamentos",
+            labelKey: "nav.financeiroLancamentos",
+          },
+          {
             key: "financeiro-receitas",
             icon: TrendingUp,
             href: "/dashboard/financeiro/receitas",
