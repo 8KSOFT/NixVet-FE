@@ -71,7 +71,11 @@ export default function DashboardPage() {
       };
 
       const now = new Date();
-      const todayStr = now.toISOString().split("T")[0];
+      // Compara em data LOCAL (BRT), não UTC: toISOString() desloca o dia
+      // perto da virada e fazia a tabela "Atendimentos de hoje" ficar vazia.
+      const localYMD = (d: Date) =>
+        `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+      const todayStr = localYMD(now);
       const currentMonth = now.getMonth();
       const currentYear = now.getFullYear();
 
@@ -116,7 +120,7 @@ export default function DashboardPage() {
         (c: { consultation_date?: string }) => {
           const raw = c.consultation_date;
           if (!raw) return false;
-          const dateStr = new Date(raw).toISOString().split("T")[0];
+          const dateStr = localYMD(new Date(raw));
           return dateStr === todayStr;
         },
       ) as ConsultTodayRow[];
