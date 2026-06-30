@@ -389,6 +389,12 @@ const NAV_SECTIONS: NavSection[] = [
         href: "/dashboard/internacoes",
         labelKey: "nav.hospitalizations",
       },
+      {
+        key: "clinical-terms",
+        icon: FileCheck,
+        href: "/dashboard/termos",
+        labelKey: "nav.clinicalTerms",
+      },
     ],
   },
   {
