@@ -489,11 +489,11 @@ export default function PrescriptionsPage() {
     <div>
       <div className="flex flex-wrap justify-between items-center mb-8">
         <h1 className="text-2xl font-extrabold font-['InterDoFigma'] flex items-center gap-2">
-          <BookOpen className="w-6 h-6" /> Prescrição
+          Prescrição
         </h1>
         <Button
           onClick={handleAdd}
-          className="bg-primary hover:bg-blue-700 text-white"
+          className="bg-primary hover:bg-primary/70 text-white"
         >
           <Plus className="w-4 h-4 mr-1" /> Nova Prescrição
         </Button>
@@ -504,64 +504,69 @@ export default function PrescriptionsPage() {
           <Loader2 className="animate-spin w-6 h-6" />
         </div>
       ) : (
-        <div className="rounded-md border overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Data</TableHead>
-                <TableHead>Paciente</TableHead>
-                <TableHead>Tutor</TableHead>
-                <TableHead>Veterinário</TableHead>
-                <TableHead>Tipo</TableHead>
-                <TableHead>Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {prescriptions.map((record) => (
-                <TableRow key={record.id}>
-                  <TableCell>
-                    {new Date(record.createdAt).toLocaleDateString("pt-BR")}
-                  </TableCell>
-                  <TableCell>{getPatient(record)?.name ?? "—"}</TableCell>
-                  <TableCell>{getTutorName(record)}</TableCell>
-                  <TableCell>{record.veterinarian?.name ?? "—"}</TableCell>
-                  <TableCell>
-                    {record.prescription_type === "solicitacao_cirurgia"
-                      ? "Cirurgia"
-                      : "Receita"}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-red-500 border-red-500 hover:bg-red-50"
-                        onClick={() => handleDownloadPdf(record.id)}
-                      >
-                        <FileText className="w-3 h-3 mr-1" /> PDF
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-primary border-blue-500 hover:bg-primary/10"
-                        onClick={() => handleOpenEmailModal(record)}
-                      >
-                        <Mail className="w-3 h-3 mr-1" /> Email
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="text-green-600 border-green-600 hover:bg-green-50"
-                        onClick={() => handleSolicitarExame(record)}
-                      >
-                        <FlaskConical className="w-3 h-3 mr-1" /> Exame
-                      </Button>
-                    </div>
-                  </TableCell>
+        <div>
+          <div className="border border-gray-300 rounded-md">
+            <Table>
+              <TableHeader className="h-15">
+                <TableRow className="border-b border-gray-300">
+                  <TableHead>Data</TableHead>
+                  <TableHead>Paciente</TableHead>
+                  <TableHead>Tutor</TableHead>
+                  <TableHead>Veterinário</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Ações</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {prescriptions.map((record) => (
+                  <TableRow
+                    className="cursor-pointer hover:bg-muted/50 h-15 border-b border-gray-300"
+                    key={record.id}
+                  >
+                    <TableCell>
+                      {new Date(record.createdAt).toLocaleDateString("pt-BR")}
+                    </TableCell>
+                    <TableCell>{getPatient(record)?.name ?? "—"}</TableCell>
+                    <TableCell>{getTutorName(record)}</TableCell>
+                    <TableCell>{record.veterinarian?.name ?? "—"}</TableCell>
+                    <TableCell>
+                      {record.prescription_type === "solicitacao_cirurgia"
+                        ? "Cirurgia"
+                        : "Receita"}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-red-500 border-red-500 hover:bg-red-50"
+                          onClick={() => handleDownloadPdf(record.id)}
+                        >
+                          <FileText className="w-3 h-3 mr-1" /> PDF
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-primary border-blue-500 hover:bg-primary/10"
+                          onClick={() => handleOpenEmailModal(record)}
+                        >
+                          <Mail className="w-3 h-3 mr-1" /> Email
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="text-green-600 border-green-600 hover:bg-green-50"
+                          onClick={() => handleSolicitarExame(record)}
+                        >
+                          <FlaskConical className="w-3 h-3 mr-1" /> Exame
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
           <ListPagination
             page={listPage}
             totalPages={listTotalPages}
