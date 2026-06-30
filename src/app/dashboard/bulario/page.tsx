@@ -18,7 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { BookOpen, Search, Info, Loader2 } from "lucide-react";
+import { Search, Info, Loader2 } from "lucide-react";
 import api from "@/lib/axios";
 import {
   API_PAGE_SIZE,
@@ -102,13 +102,13 @@ export default function BularioPage() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-4 flex-wrap gap-2 mb-8">
+      <div className="flex justify-between items-center flex-wrap gap-2 mb-8">
         <h1 className="text-2xl font-extrabold font-['interDoFigma'] flex items-center gap-2">
           Bulário – Consulta de Medicamentos
         </h1>
       </div>
 
-      <div className="mb-4 ">
+      <div className="mb-4">
         <div className="flex gap-2 flex-wrap">
           <div className="relative flex-1 max-w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-7 h-7" />
