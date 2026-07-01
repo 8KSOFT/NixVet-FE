@@ -227,18 +227,6 @@ export default function BularioPage() {
                   {detailItem.subtitle}
                 </p>
               )}
-              {detailItem.link_details && (
-                <p className="text-sm mb-3">
-                  <a
-                    href={detailItem.link_details}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary"
-                  >
-                    Link externo
-                  </a>
-                </p>
-              )}
               {(detailItem.dose_min_mg_kg != null ||
                 detailItem.dose_max_mg_kg != null ||
                 detailItem.dose_unit ||
@@ -302,25 +290,60 @@ export default function BularioPage() {
                 </div>
               )}
               {detailItem.details && detailItem.details.length > 0 ? (
-                detailItem.details.map((section, idx) => (
-                  <div key={idx} className="mb-4">
-                    <h4 className="font-semibold text-primary mb-2">
-                      {section.title}
-                    </h4>
-                    <div className="border rounded divide-y text-sm">
-                      {section.data?.map((entry, i) => (
-                        <div key={i} className="grid grid-cols-3 px-3 py-2">
-                          <span className="font-medium text-muted-foreground col-span-1">
-                            {entry.title ?? "—"}
-                          </span>
-                          <span className="col-span-2">
-                            {entry.data || "—"}
-                          </span>
+                [...detailItem.details]
+                  .sort((a, b) => {
+                    const order = [
+                      "Administração e doses",
+                      "Indicações e contraindicações",
+                      "Apresentações e concentrações",
+                      "Interações medicamentosas",
+                      "Farmacologia",
+                      "Composição",
+                      "Níveis de garantia",
+                      "Quantidade recomendada",
+                      "Sobre",
+                    ];
+                    const wa = order.indexOf(a.title ?? "");
+                    const wb = order.indexOf(b.title ?? "");
+                    return (wa === -1 ? 999 : wa) - (wb === -1 ? 999 : wb);
+                  })
+                  .map((section, idx) => {
+                    const isDose = /administra|posolog|dose/i.test(
+                      section.title ?? "",
+                    );
+                    return (
+                      <div key={idx} className="mb-4">
+                        <h4
+                          className={`mb-2 flex items-center gap-2 font-semibold ${
+                            isDose ? "text-emerald-700" : "text-primary"
+                          }`}
+                        >
+                          {section.title}
+                          {isDose && (
+                            <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
+                              Doses
+                            </span>
+                          )}
+                        </h4>
+                        <div
+                          className={`border rounded divide-y text-sm ${
+                            isDose ? "border-emerald-300 bg-emerald-50/40" : ""
+                          }`}
+                        >
+                          {section.data?.map((entry, i) => (
+                            <div key={i} className="grid grid-cols-3 px-3 py-2">
+                              <span className="font-medium text-muted-foreground col-span-1">
+                                {entry.title ?? "—"}
+                              </span>
+                              <span className="col-span-2 whitespace-pre-wrap">
+                                {entry.data || "—"}
+                              </span>
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                ))
+                      </div>
+                    );
+                  })
               ) : (
                 <p className="text-muted-foreground">
                   Sem detalhes cadastrados.
