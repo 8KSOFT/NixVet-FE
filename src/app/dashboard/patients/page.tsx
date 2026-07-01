@@ -14,7 +14,7 @@ import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Link from 'next/link';
 
-import { Plus, Pencil, Trash2, History, ChevronsUpDown, Check } from 'lucide-react';
+import { Plus, Pencil, Trash2, History } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { API_PAGE_SIZE, fetchAllListPages, listQueryParams, parseListResponse } from '@/lib/pagination';
@@ -40,8 +40,6 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 
 const NO_TUTOR_REASON_LABELS: Record<string, string> = {
   EMERGENCIA: 'Emergência',
@@ -206,7 +204,7 @@ export default function PatientsPage() {
       toast.success(`Raça "${newBreed}" cadastrada`);
       await fetchBreedOptions(species);
       setValue('breed', newBreed);
-      setBreedSearchValue('');
+      setBreedSearchValue(newBreed);
       setBreedOpen(false);
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao cadastrar raça'));
@@ -229,6 +227,8 @@ export default function PatientsPage() {
   const handleAdd = () => {
     setEditingId(null);
     reset();
+    setBreedSearchValue('');
+    setBreedOptions([]);
     setModalVisible(true);
   };
 
@@ -247,6 +247,7 @@ export default function PatientsPage() {
       tutor_choice: hasTutor ? 'yes' : 'no',
       no_tutor_reason: record.no_tutor_reason ?? undefined,
     });
+    setBreedSearchValue(record.breed ?? '');
     fetchBreedOptions(record.species);
     setModalVisible(true);
   };
@@ -610,7 +611,7 @@ export default function PatientsPage() {
               {errors.species && <p className="text-sm text-destructive">{errors.species.message}</p>}
             </div>
 
-            {/* Raça com Combobox */}
+            {/* Raça — autocomplete (Input + sugestões), 3+ letras */}
             <div className="space-y-1">
               <Label>Raça *</Label>
               <Controller
@@ -618,75 +619,63 @@ export default function PatientsPage() {
                 control={control}
                 rules={{ required: 'Obrigatório' }}
                 render={({ field }) => (
-                  <Popover open={breedOpen} onOpenChange={setBreedOpen}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        role="combobox"
-                        disabled={!watchedSpecies}
-                        className="h-8 w-full justify-between font-normal sm:h-11"
-                      >
-                        <span className="truncate">
-                          {field.value
-                            ? field.value
-                            : breedOptions.length
-                              ? 'Selecione ou cadastre a raça'
-                              : 'Selecione primeiro a espécie'}
-                        </span>
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-64 p-0 popover-responsive" align="start">
-                      <Command shouldFilter={false}>
-                        <CommandInput
-                          placeholder="Buscar raça..."
-                          value={breedSearchValue}
-                          onValueChange={setBreedSearchValue}
-                        />
-                        <CommandList>
-                          {!canSearchBreed ? (
-                            <div className="py-6 text-center text-sm text-muted-foreground">
-                              Digite ao menos 3 letras para buscar a raça
-                            </div>
-                          ) : (
+                  <div className="relative">
+                    <Input
+                      value={breedSearchValue}
+                      disabled={!watchedSpecies}
+                      autoComplete="off"
+                      placeholder={watchedSpecies ? 'Digite a raça (mín. 3 letras)' : 'Selecione primeiro a espécie'}
+                      onFocus={() => setBreedOpen(true)}
+                      onBlur={() => window.setTimeout(() => setBreedOpen(false), 150)}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setBreedSearchValue(v);
+                        field.onChange(v);
+                        setBreedOpen(true);
+                      }}
+                    />
+                    {breedOpen && watchedSpecies && (
+                      <div className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border bg-popover p-1 shadow-md">
+                        {!canSearchBreed ? (
+                          <div className="px-2 py-3 text-center text-sm text-muted-foreground">
+                            Digite ao menos 3 letras para buscar a raça
+                          </div>
+                        ) : filteredBreeds.length === 0 && !showAddBreed ? (
+                          <div className="px-2 py-3 text-center text-sm text-muted-foreground">
+                            Nenhuma raça encontrada.
+                          </div>
+                        ) : (
                           <>
-                          <CommandEmpty>Nenhuma raça encontrada.</CommandEmpty>
-                          <CommandGroup>
                             {filteredBreeds.map((o) => (
-                              <CommandItem
+                              <button
+                                type="button"
                                 key={o.id}
-                                value={o.description}
-                                onSelect={(val) => {
-                                  field.onChange(val);
-                                  setBreedSearchValue('');
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={() => {
+                                  field.onChange(o.description);
+                                  setBreedSearchValue(o.description);
                                   setBreedOpen(false);
                                 }}
+                                className="flex w-full items-center rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent"
                               >
-                                <Check
-                                  className={`mr-2 h-4 w-4 ${
-                                    field.value === o.description ? 'opacity-100' : 'opacity-0'
-                                  }`}
-                                />
                                 {o.description}
-                              </CommandItem>
+                              </button>
                             ))}
                             {showAddBreed && (
-                              <CommandItem
-                                value={`__NEW__:${breedSearchValue.trim()}`}
-                                onSelect={() => handleAddBreed(breedSearchValue.trim())}
+                              <button
+                                type="button"
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={() => handleAddBreed(breedSearchValue.trim())}
+                                className="flex w-full items-center rounded-sm px-2 py-1.5 text-left text-sm text-primary hover:bg-accent"
                               >
-                                <Plus className="mr-2 h-4 w-4" />+ Cadastrar &quot;{breedSearchValue.trim()}
-                                &quot;
-                              </CommandItem>
+                                <Plus className="mr-2 h-4 w-4" /> Cadastrar &quot;{breedSearchValue.trim()}&quot;
+                              </button>
                             )}
-                          </CommandGroup>
                           </>
-                          )}
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 )}
               />
               {errors.breed && <p className="text-sm text-destructive">{errors.breed.message}</p>}
