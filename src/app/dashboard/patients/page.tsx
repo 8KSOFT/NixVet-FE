@@ -181,10 +181,11 @@ export default function PatientsPage() {
   const fetchBreedOptions = async (species: string) => {
     const disc = getBreedDiscriminator(species);
     try {
-      const res = await api.get('/catalog/support', {
-        params: { discriminator: disc },
-      });
-      setBreedOptions(normalizeSupportOptions(res.data));
+      // Busca TODAS as páginas — o catálogo de raças passou de ~500 itens e o
+      // endpoint pagina de 50 em 50; sem isso, raças no fim do alfabeto
+      // (ex.: Pastor de Shetland) não apareciam no autocomplete.
+      const all = await fetchAllListPages<SupportOption>('/catalog/support', { discriminator: disc });
+      setBreedOptions(all);
     } catch (error) {
       console.error('Error fetching breed options:', error);
       setBreedOptions([]);
