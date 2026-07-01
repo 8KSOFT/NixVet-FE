@@ -130,7 +130,7 @@ export default function OwnersPage() {
       setListTotalPages(p.totalPages);
     } catch (error) {
       console.error('Error fetching tutors:', error);
-      toast.error('Erro ao carregar tutores');
+      toast.error('Erro ao carregar responsáveis');
     } finally {
       setLoading(false);
     }
@@ -213,11 +213,11 @@ export default function OwnersPage() {
   const handleDelete = async (id: string) => {
     try {
       await api.delete(`/tutors/${id}`);
-      toast.success('Tutor removido com sucesso');
+      toast.success('Responsável removido com sucesso');
       fetchTutors();
     } catch (error) {
       console.error('Error deleting tutor:', error);
-      toast.error('Erro ao remover tutor');
+      toast.error('Erro ao remover responsável');
     }
   };
 
@@ -270,10 +270,10 @@ export default function OwnersPage() {
 
       if (editingId) {
         await api.put(`/tutors/${editingId}`, payload);
-        toast.success('Tutor atualizado com sucesso');
+        toast.success('Responsável atualizado com sucesso');
       } else {
         await api.post('/tutors', payload);
-        toast.success('Tutor criado com sucesso');
+        toast.success('Responsável criado com sucesso');
       }
       setModalVisible(false);
       setEditingId(null);
@@ -281,7 +281,7 @@ export default function OwnersPage() {
       fetchTutors();
     } catch (error) {
       console.error('Error saving tutor:', error);
-      toast.error('Erro ao salvar tutor');
+      toast.error('Erro ao salvar responsável');
     }
   };
 
@@ -396,7 +396,7 @@ export default function OwnersPage() {
           }
           setModalVisible(open);
         }}
-        title={editingId ? 'Editar Tutor' : 'Novo Tutor'}
+        title={editingId ? 'Editar Responsável' : 'Novo Responsável'}
         containerClassName="max-w-2xl mx-auto"
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">

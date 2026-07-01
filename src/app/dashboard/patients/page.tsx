@@ -288,12 +288,16 @@ export default function PatientsPage() {
     }
   };
 
-  const filteredBreeds = breedOptions.filter((o) =>
-    o.description.toLowerCase().includes(breedSearchValue.toLowerCase()),
-  );
+  const MIN_BREED_SEARCH = 3;
+  const breedQuery = breedSearchValue.trim();
+  const canSearchBreed = breedQuery.length >= MIN_BREED_SEARCH;
+  // Autocomplete: só filtra/sugere a partir de 3 caracteres digitados.
+  const filteredBreeds = canSearchBreed
+    ? breedOptions.filter((o) => o.description.toLowerCase().includes(breedQuery.toLowerCase()))
+    : [];
   const showAddBreed =
-    breedSearchValue.trim() !== '' &&
-    !breedOptions.some((o) => o.description.toLowerCase() === breedSearchValue.trim().toLowerCase());
+    canSearchBreed &&
+    !breedOptions.some((o) => o.description.toLowerCase() === breedQuery.toLowerCase());
 
   return (
     <div>
@@ -350,7 +354,7 @@ export default function PatientsPage() {
                     <TableCell className="w-100">
                       {record.tutor?.name ??
                         (record.no_tutor_reason
-                          ? `Sem tutor (${NO_TUTOR_REASON_LABELS[record.no_tutor_reason] ?? record.no_tutor_reason})`
+                          ? `Sem responsável (${NO_TUTOR_REASON_LABELS[record.no_tutor_reason] ?? record.no_tutor_reason})`
                           : '—')}
                     </TableCell>
                     <TableCell className="w-50">
@@ -452,17 +456,17 @@ export default function PatientsPage() {
 
           {/* Tutor choice */}
           <div className="space-y-2">
-            <Label>Tutor *</Label>
+            <Label>Responsável *</Label>
             {editingId && (
               <p className="text-xs text-muted-foreground">
-                Você pode vincular ou alterar o tutor ao editar o paciente.
+                Você pode vincular ou alterar o responsável ao editar o paciente.
               </p>
             )}
             <Controller
               name="tutor_choice"
               control={control}
               rules={{
-                required: 'Defina se informa o tutor agora ou não',
+                required: 'Defina se informa o responsável agora ou não',
               }}
               render={({ field }) => (
                 <RadioGroup
@@ -480,7 +484,7 @@ export default function PatientsPage() {
                       id="tutor-yes"
                       className="size-4 bg-gray-300 data-[state=checked]:bg-transparent flex items-center justify-center [&_span]:flex [&_span]:items-center [&_span]:justify-center [&_span]:size-full [&_svg]:!size-[85%] [&_svg]:fill-current"
                     />
-                    <span className="text-sm font-normal text-foreground">Informar tutor agora</span>
+                    <span className="text-sm font-normal text-foreground">Informar responsável agora</span>
                   </label>
 
                   {/* Linha Divisória Central */}
@@ -496,7 +500,7 @@ export default function PatientsPage() {
                       id="tutor-no"
                       className="size-4 bg-gray-300 data-[state=checked]:bg-transparent flex items-center justify-center [&_span]:flex [&_span]:items-center [&_span]:justify-center [&_span]:size-full [&_svg]:!size-[85%] [&_svg]:fill-current"
                     />
-                    <span className="text-sm font-normal text-foreground">Não informar tutor</span>
+                    <span className="text-sm font-normal text-foreground">Não informar responsável</span>
                   </label>
                 </RadioGroup>
               )}
@@ -512,20 +516,20 @@ export default function PatientsPage() {
           >
             {/* Conteúdo Dinâmico com Fade-in Interno */}
             <div key={watchedTutorChoice} className="animate-in fade-in duration-200 space-y-1">
-              {/* CASO: Informar tutor agora */}
+              {/* CASO: Informar responsável agora */}
               {watchedTutorChoice === 'yes' && (
                 <>
-                  <Label>Selecione o tutor *</Label>
+                  <Label>Selecione o responsável *</Label>
                   <Controller
                     name="tutor_id"
                     control={control}
                     rules={{
-                      required: watchedTutorChoice === 'yes' ? 'Selecione um tutor' : false,
+                      required: watchedTutorChoice === 'yes' ? 'Selecione um responsável' : false,
                     }}
                     render={({ field }) => (
                       <Select value={field.value ?? ''} onValueChange={field.onChange}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Selecione um tutor" />
+                          <SelectValue placeholder="Selecione um responsável" />
                         </SelectTrigger>
                         <SelectContent>
                           {tutors.map((tutor) => (
@@ -541,7 +545,7 @@ export default function PatientsPage() {
                 </>
               )}
 
-              {/* CASO: Não informar tutor */}
+              {/* CASO: Não informar responsável */}
               {watchedTutorChoice === 'no' && (
                 <>
                   <Label>Motivo *</Label>
@@ -641,6 +645,12 @@ export default function PatientsPage() {
                           onValueChange={setBreedSearchValue}
                         />
                         <CommandList>
+                          {!canSearchBreed ? (
+                            <div className="py-6 text-center text-sm text-muted-foreground">
+                              Digite ao menos 3 letras para buscar a raça
+                            </div>
+                          ) : (
+                          <>
                           <CommandEmpty>Nenhuma raça encontrada.</CommandEmpty>
                           <CommandGroup>
                             {filteredBreeds.map((o) => (
@@ -671,6 +681,8 @@ export default function PatientsPage() {
                               </CommandItem>
                             )}
                           </CommandGroup>
+                          </>
+                          )}
                         </CommandList>
                       </Command>
                     </PopoverContent>

@@ -241,7 +241,7 @@ export default function OrcamentosPage() {
                   <TableHead>Tipo</TableHead>
                   <TableHead className="text-right">Total</TableHead>
                   <TableHead className="text-right">Plano Cobre</TableHead>
-                  <TableHead className="text-right">Tutor Paga</TableHead>
+                  <TableHead className="text-right">Responsável Paga</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Validade</TableHead>
                   <TableHead>Ações</TableHead>
@@ -404,7 +404,7 @@ export default function OrcamentosPage() {
                   <div className="rounded-lg bg-muted/50 p-3 space-y-1 text-sm">
                     <div className="flex justify-between"><span>Total Geral</span><span className="font-semibold">{fmt(t.total)}</span></div>
                     <div className="flex justify-between text-green-600"><span>Coberto pelo Plano</span><span>{fmt(t.plan)}</span></div>
-                    <div className="flex justify-between text-blue-600"><span>Responsabilidade do Tutor</span><span>{fmt(t.tutor)}</span></div>
+                    <div className="flex justify-between text-blue-600"><span>Responsabilidade do Responsável</span><span>{fmt(t.tutor)}</span></div>
                   </div>
                 );
               })()}

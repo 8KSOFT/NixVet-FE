@@ -127,7 +127,7 @@ export default function FollowupsPage() {
   const markResultAvailable = async (id: string) => {
     try {
       await api.put(`/exam-followups/${id}/result-available`);
-      toast.success("Tutor notificado sobre resultado disponível");
+      toast.success("Responsável notificado sobre resultado disponível");
       void fetchData();
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, "Erro ao notificar"));

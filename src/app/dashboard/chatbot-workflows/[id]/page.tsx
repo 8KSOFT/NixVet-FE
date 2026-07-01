@@ -58,7 +58,7 @@ const NODE_TEXT_COLORS: Record<string, string> = {
 const ACTION_TYPES = [
   { value: 'GET_AVAILABILITY', label: 'Buscar Disponibilidade', description: 'Consulta horários livres na agenda' },
   { value: 'GENERATE_AI_REPLY', label: 'Resposta com IA', description: 'Gera resposta usando GPT' },
-  { value: 'SEND_MESSAGE', label: 'Enviar Mensagem Fixa', description: 'Envia texto fixo ao tutor' },
+  { value: 'SEND_MESSAGE', label: 'Enviar Mensagem Fixa', description: 'Envia texto fixo ao responsável' },
   { value: 'CREATE_CONSULTATION', label: 'Criar Consulta', description: 'Agenda consulta automaticamente' },
   { value: 'NOTIFY_TEAM', label: 'Notificar Equipe', description: 'Cria notificação interna' },
   { value: 'PAUSE_BOT', label: 'Pausar Bot', description: 'Pausa respostas automáticas' },

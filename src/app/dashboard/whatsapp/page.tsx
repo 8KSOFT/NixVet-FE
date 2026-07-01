@@ -130,7 +130,7 @@ function CloseConversationDialog({
             <Textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              placeholder="Ex: Tutor agendou por telefone..."
+              placeholder="Ex: Responsável agendou por telefone..."
               maxLength={500}
               rows={3}
             />
@@ -169,7 +169,7 @@ function ThreadStatusTag({ status }: { status: ThreadStatus | undefined }) {
   if (status === 'waiting_tutor') {
     return (
       <Badge className="bg-blue-100 text-primary hover:bg-blue-100 m-0">
-        Aguardando resposta do tutor
+        Aguardando resposta do responsável
       </Badge>
     );
   }
@@ -476,7 +476,7 @@ export default function WhatsAppPage() {
           <div className="text-2xl font-heading font-bold">{metrics?.conversations_waiting_clinic ?? 0}</div>
         </div>
         <div className="rounded-lg border bg-card p-4 shadow-sm">
-          <div className="text-xs text-muted-foreground mb-1">Aguardando tutor</div>
+          <div className="text-xs text-muted-foreground mb-1">Aguardando responsável</div>
           <div className="text-2xl font-heading font-bold">{metrics?.conversations_waiting_tutor ?? 0}</div>
         </div>
         <div className="rounded-lg border bg-card p-4 shadow-sm">

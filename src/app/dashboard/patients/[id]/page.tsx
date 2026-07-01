@@ -116,7 +116,7 @@ export default function PatientDetailPage() {
     { label: 'Idade', value: `${patient.age} ano(s)` },
     { label: 'Peso', value: `${patient.weight} kg` },
     { label: 'Sexo', value: patient.sex },
-    { label: 'Tutor', value: patient.tutor?.name ?? '—' },
+    { label: 'Responsável', value: patient.tutor?.name ?? '—' },
   ];
 
   return (

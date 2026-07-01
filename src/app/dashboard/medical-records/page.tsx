@@ -209,14 +209,14 @@ export default function MedicalRecordsListPage() {
     setTutorSaving(true);
     try {
       const res = await api.post<Tutor>("/tutors", tutorForm);
-      toast.success("Tutor cadastrado");
+      toast.success("Responsável cadastrado");
       await fetchTutors();
       setTutorModal(false);
       setTutorForm(emptyTutor());
       setPatientForm((p) => ({ ...p, tutor_id: res.data.id }));
       if (!patientModal) setPatientModal(true);
     } catch {
-      toast.error("Erro ao cadastrar tutor");
+      toast.error("Erro ao cadastrar responsável");
     } finally {
       setTutorSaving(false);
     }
@@ -464,9 +464,9 @@ export default function MedicalRecordsListPage() {
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              Sem tutor cadastrado? Use o botão <strong>Novo animal</strong> e
-              clique em <strong>+ Novo tutor</strong> dentro dele — ou deixe sem
-              tutor (emergência).
+              Sem responsável cadastrado? Use o botão <strong>Novo animal</strong> e
+              clique em <strong>+ Novo responsável</strong> dentro dele — ou deixe sem
+              responsável (emergência).
             </p>
           </div>
 
@@ -534,7 +534,7 @@ export default function MedicalRecordsListPage() {
               onChange={(e) =>
                 setForm((p) => ({ ...p, chief_complaint: e.target.value }))
               }
-              placeholder="Descreva a queixa do tutor..."
+              placeholder="Descreva a queixa do responsável..."
             />
           </div>
         </div>
@@ -567,7 +567,7 @@ export default function MedicalRecordsListPage() {
       >
         <div className="space-y-3 py-2">
           <div className="space-y-1">
-            <Label>Tutor</Label>
+            <Label>Responsável</Label>
             <div className="flex gap-2">
               <div className="flex-1">
                 <Select
@@ -582,13 +582,13 @@ export default function MedicalRecordsListPage() {
                   <SelectTrigger>
                     <SelectValue
                       placeholder={
-                        tutors.length ? "Selecione" : "Nenhum tutor cadastrado"
+                        tutors.length ? "Selecione" : "Nenhum responsável cadastrado"
                       }
                     />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="_none">
-                      Sem tutor (emergência)
+                      Sem responsável (emergência)
                     </SelectItem>
                     {tutors.map((t) => (
                       <SelectItem key={t.id} value={t.id}>
@@ -605,9 +605,9 @@ export default function MedicalRecordsListPage() {
                   setTutorForm(emptyTutor());
                   setTutorModal(true);
                 }}
-                title="Cadastrar novo tutor"
+                title="Cadastrar novo responsável"
               >
-                <UserPlus className="h-4 w-4 mr-1" /> Novo tutor
+                <UserPlus className="h-4 w-4 mr-1" /> Novo responsável
               </Button>
             </div>
           </div>
@@ -689,7 +689,7 @@ export default function MedicalRecordsListPage() {
       <DashboardCreateFormDialog
         open={tutorModal}
         onOpenChange={setTutorModal}
-        title="Cadastrar novo tutor"
+        title="Cadastrar novo responsável"
         containerClassName="max-w-lg mx-auto"
         preventOutsideClose
         footer={
@@ -703,7 +703,7 @@ export default function MedicalRecordsListPage() {
               className="bg-primary"
             >
               {tutorSaving && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}{" "}
-              Salvar tutor
+              Salvar responsável
             </Button>
           </div>
         }
@@ -781,7 +781,7 @@ export default function MedicalRecordsListPage() {
           </div>
           <p className="text-xs text-muted-foreground">
             Cadastro rápido — campos de endereço completos podem ser preenchidos
-            depois em <strong>Tutores</strong>.
+            depois em <strong>Responsáveis</strong>.
           </p>
         </div>
       </DashboardCreateFormDialog>

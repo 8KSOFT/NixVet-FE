@@ -348,7 +348,7 @@ function ExamRequestsContent() {
                 <TableRow className="border-b border-gray-300">
                   <TableHead>Data</TableHead>
                   <TableHead>Paciente</TableHead>
-                  <TableHead>Tutor</TableHead>
+                  <TableHead>Responsável</TableHead>
                   <TableHead>Veterinário</TableHead>
                   <TableHead>Exames</TableHead>
                   <TableHead>Ações</TableHead>
@@ -697,7 +697,7 @@ function ExamRequestsContent() {
             <DialogTitle>Confirmar Envio de Email</DialogTitle>
           </DialogHeader>
           <p>
-            Enviar solicitação de exames por email para o tutor de{" "}
+            Enviar solicitação de exames por email para o responsável de{" "}
             <strong>
               {selectedExamRequest && getPatient(selectedExamRequest)?.name}
             </strong>

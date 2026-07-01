@@ -246,7 +246,7 @@ export default function TasksPage() {
             <Label>Tipo</Label>
             <Input
               {...register("task_type", { required: true })}
-              placeholder="Ex.: Retorno, Ligar para tutor"
+              placeholder="Ex.: Retorno, Ligar para responsável"
             />
           </div>
           <div>

@@ -633,7 +633,7 @@ export default function CalendarPage() {
           !newTutor.cpf ||
           !newTutor.cep
         ) {
-          toast.error("Preencha nome, telefone, e-mail, CPF e CEP do tutor");
+          toast.error("Preencha nome, telefone, e-mail, CPF e CEP do responsável");
           setCreatingPatient(false);
           return;
         }
@@ -646,7 +646,7 @@ export default function CalendarPage() {
           address: "-",
         });
         tutorId = tRes.data.id;
-        toast.success(`Tutor ${newTutor.name} cadastrado`);
+        toast.success(`Responsável ${newTutor.name} cadastrado`);
       } else if (newTutorId) {
         tutorId = newTutorId;
       }
@@ -666,7 +666,7 @@ export default function CalendarPage() {
       setNewPatientMode(false);
       setFormData((prev) => ({ ...prev, patient_id: patientId }));
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, "Erro ao cadastrar pet/tutor"));
+      toast.error(getApiErrorMessage(error, "Erro ao cadastrar pet/responsável"));
     } finally {
       setCreatingPatient(false);
     }
@@ -1314,7 +1314,7 @@ export default function CalendarPage() {
         <div className="space-y-4 py-2">
           {/* ── Paciente ── */}
           <div className="space-y-1">
-            <Label>Tutor (filtrar pets)</Label>
+            <Label>Responsável (filtrar pets)</Label>
             <Select
               value={patientFilterTutorId || "_all"}
               onValueChange={(v) => {
@@ -1324,7 +1324,7 @@ export default function CalendarPage() {
               }}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Todos os tutores" />
+                <SelectValue placeholder="Todos os responsáveis" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="_all">Todos</SelectItem>
@@ -1495,14 +1495,14 @@ export default function CalendarPage() {
                         onChange={() => setNewTutorMode(true)}
                         className="accent-primary"
                       />
-                      Cadastrar novo tutor
+                      Cadastrar novo responsável
                     </label>
                   </div>
 
                   {!newTutorMode ? (
                     <Select value={newTutorId} onValueChange={setNewTutorId}>
                       <SelectTrigger className="h-8 text-sm">
-                        <SelectValue placeholder="Selecione o tutor (opcional)" />
+                        <SelectValue placeholder="Selecione o responsável (opcional)" />
                       </SelectTrigger>
                       <SelectContent>
                         {tutors.map((t) => (

@@ -211,7 +211,7 @@ function CustosTab({ hospitalizationId, status }: { hospitalizationId: string; s
           {[
             { label: 'Total Geral', value: summary.total_gross, color: 'text-foreground' },
             { label: 'Coberto pelo Plano', value: summary.plan_coverage, color: 'text-green-600' },
-            { label: 'Resp. do Tutor', value: summary.patient_responsibility, color: 'text-blue-600' },
+            { label: 'Devido pelo Responsável', value: summary.patient_responsibility, color: 'text-blue-600' },
           ].map(({ label, value, color }) => (
             <Card key={label}>
               <CardContent className="p-4">

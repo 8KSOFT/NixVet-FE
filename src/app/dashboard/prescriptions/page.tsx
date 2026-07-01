@@ -511,7 +511,7 @@ export default function PrescriptionsPage() {
                 <TableRow className="border-b border-gray-300">
                   <TableHead>Data</TableHead>
                   <TableHead>Paciente</TableHead>
-                  <TableHead>Tutor</TableHead>
+                  <TableHead>Responsável</TableHead>
                   <TableHead>Veterinário</TableHead>
                   <TableHead>Tipo</TableHead>
                   <TableHead>Ações</TableHead>
@@ -1240,7 +1240,7 @@ export default function PrescriptionsPage() {
               render={({ field }) => (
                 <Textarea
                   rows={3}
-                  placeholder="Orientações adicionais ao tutor..."
+                  placeholder="Orientações adicionais ao responsável..."
                   className="resize-none"
                   {...field}
                 />
@@ -1256,7 +1256,7 @@ export default function PrescriptionsPage() {
             <DialogTitle>Confirmar Envio de Email</DialogTitle>
           </DialogHeader>
           <p>
-            Enviar prescrição por email para o tutor de{" "}
+            Enviar prescrição por email para o responsável de{" "}
             <strong>
               {selectedPrescription && getPatient(selectedPrescription)?.name}
             </strong>

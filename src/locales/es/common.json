@@ -10,7 +10,7 @@
     "clinicsAdmin": "Clínicas (global)",
     "financeAdmin": "Finanzas (global)",
     "patients": "Pacientes",
-    "owners": "Tutores",
+    "owners": "Responsables",
     "team": "Equipo",
     "medicalRecords": "Expedientes Clínicos",
     "prescriptions": "Recetas",
@@ -186,20 +186,20 @@
   "patients": {
     "title": "Pacientes",
     "createButton": "Nuevo Paciente",
-    "dropdownLabel": "Tutor",
+    "dropdownLabel": "Responsable",
     "dropdownStandardOption": "Todos",
     "table": {
       "name": "Nombre",
       "species": "Especie",
       "breed": "Raza",
-      "guardian": "Tutor",
+      "guardian": "Responsable",
       "actions": "Acciones"
     }
   },
   "owners": {
-    "title": "Tutores",
-    "createButton": "Nuevo Tutor",
-    "empty": "Ningún tutor encontrado",
+    "title": "Responsables",
+    "createButton": "Nuevo Responsable",
+    "empty": "Ningún responsable encontrado",
     "table": {
       "name": "Nombre",
       "email": "Correo",
@@ -208,7 +208,7 @@
       "actions": "Acciones"
     },
     "confirmDeleteTitle": "Confirmar eliminación",
-    "confirmDeleteDescription": "¿Está seguro que desea eliminar al tutor {{name}}? Esta acción no puede deshacerse.",
+    "confirmDeleteDescription": "¿Está seguro que desea eliminar al responsable {{name}}? Esta acción no puede deshacerse.",
     "remove": "Eliminar",
     "cancel": "Cancelar"
   }
