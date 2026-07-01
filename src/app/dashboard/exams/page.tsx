@@ -342,33 +342,32 @@ function ExamRequestsContent() {
         </div>
       ) : (
         <div>
-          <div className="border border-gray-300 rounded-md">
-            <Table>
-              <TableHeader className="h-15">
-                <TableRow className="border-b border-gray-300">
-                  <TableHead>Data</TableHead>
-                  <TableHead>Paciente</TableHead>
-                  <TableHead>Responsável</TableHead>
-                  <TableHead>Veterinário</TableHead>
-                  <TableHead>Exames</TableHead>
-                  <TableHead>Ações</TableHead>
+          <div className="overflow-x-auto border border-slate-200 rounded-lg">
+            <Table className="min-w-full border-collapse bg-white text-sm">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Data</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Paciente</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Responsável</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Veterinário</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Exames</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {examRequests.map((record) => (
                   <TableRow
-                    className="cursor-pointer hover:bg-muted/50 h-15 border-b border-gray-300"
                     key={record.id}
                   >
-                    <TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                       {new Date(record.createdAt).toLocaleDateString("pt-BR")}
                     </TableCell>
-                    <TableCell>{getPatient(record)?.name ?? "—"}</TableCell>
-                    <TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{getPatient(record)?.name ?? "—"}</TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                       {getPatient(record)?.tutor?.name ?? "—"}
                     </TableCell>
-                    <TableCell>{record.veterinarian?.name ?? "—"}</TableCell>
-                    <TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{record.veterinarian?.name ?? "—"}</TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                       {record.requested_exams?.length
                         ? record.requested_exams
                             .map((name) => {
@@ -382,7 +381,7 @@ function ExamRequestsContent() {
                             .join(", ")
                         : "—"}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                       <div className="flex gap-2">
                         <Button
                           size="sm"

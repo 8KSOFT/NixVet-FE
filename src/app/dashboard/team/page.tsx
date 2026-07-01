@@ -188,31 +188,31 @@ export default function TeamPage() {
         </div>
       ) : (
         <div>
-          <div className="rounded-md border border-gray-300 overflow-hidden">
-            <Table>
-              <TableHeader className="h-15">
-                <TableRow className="border-b border-gray-300">
-                  <TableHead>{t('team.colName')}</TableHead>
-                  <TableHead>{t('team.colEmail')}</TableHead>
-                  <TableHead>{t('team.colCrmv')}</TableHead>
-                  <TableHead>{t('team.colSpecialty')}</TableHead>
-                  <TableHead>{t('team.colRole')}</TableHead>
-                  <TableHead>{t('team.colActions')}</TableHead>
+          <div className="overflow-x-auto border border-slate-200 rounded-lg">
+            <Table className="min-w-full border-collapse bg-white text-sm">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('team.colName')}</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('team.colEmail')}</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('team.colCrmv')}</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('team.colSpecialty')}</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('team.colRole')}</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('team.colActions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {users.map((user) => (
-                  <TableRow key={user.id} className="border-b border-gray-300">
-                    <TableCell>{user.name}</TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>{user.crmv}</TableCell>
-                    <TableCell>{user.specialty}</TableCell>
-                    <TableCell>
+                  <TableRow key={user.id}>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{user.name}</TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{user.email}</TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{user.crmv}</TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{user.specialty}</TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                       <Badge variant={roleBadgeVariant(user.role)}>
                         {t(`roles.${user.role}`, { defaultValue: user.role })}
                       </Badge>
                     </TableCell>
-                    <TableCell className="w-40">
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                       <div className="flex items-center gap-1">
                         <Button variant="ghost" size="icon" className="p-0" onClick={() => handleEdit(user)}>
                           <Pencil className="w-4 h-4" />

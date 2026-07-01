@@ -107,14 +107,15 @@ export default function PagamentosSettingsPage() {
               {Array.from({ length: 7 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
             </div>
           ) : (
-            <Table>
+            <div className="overflow-x-auto border border-slate-200 rounded-lg">
+            <Table className="min-w-full border-collapse bg-white text-sm">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Forma de Pagamento</TableHead>
-                  <TableHead>Taxa (%)</TableHead>
-                  <TableHead>Liquidação (dias)</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Ações</TableHead>
+                  <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Forma de Pagamento</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Taxa (%)</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Liquidação (dias)</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Status</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -123,8 +124,8 @@ export default function PagamentosSettingsPage() {
                   const row = editing[s.method];
                   return (
                     <TableRow key={s.id}>
-                      <TableCell className="font-medium">{METHOD_LABELS[s.method] ?? s.method}</TableCell>
-                      <TableCell>
+                      <TableCell className="border border-slate-200 px-3 py-3 font-medium text-slate-900">{METHOD_LABELS[s.method] ?? s.method}</TableCell>
+                      <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                         {row ? (
                           <Input
                             type="number"
@@ -137,7 +138,7 @@ export default function PagamentosSettingsPage() {
                           <span className="tabular-nums">{Number(s.fee_percentage).toFixed(2)}%</span>
                         )}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                         {row ? (
                           <Input
                             type="number"
@@ -149,12 +150,12 @@ export default function PagamentosSettingsPage() {
                           <span>D+{s.settlement_days}</span>
                         )}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                         <Badge variant={s.active ? 'default' : 'secondary'}>
                           {s.active ? 'Ativo' : 'Inativo'}
                         </Badge>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                         <div className="flex items-center gap-1">
                           {row ? (
                             <>
@@ -184,6 +185,7 @@ export default function PagamentosSettingsPage() {
                 })}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>

@@ -76,23 +76,23 @@ function ReminderTable({
     );
   }
   return (
-    <div className="border border-gray-300 rounded-md">
-      <Table>
-        <TableHeader className="h-15">
-          <TableRow className="border-b border-gray-300">
-            <TableHead>Paciente</TableHead>
-            <TableHead>Vacina</TableHead>
-            <TableHead>Próxima dose</TableHead>
-            <TableHead>Status</TableHead>
+    <div className="overflow-x-auto border border-slate-200 rounded-lg">
+      <Table className="min-w-full border-collapse bg-white text-sm">
+        <TableHeader>
+          <TableRow>
+            <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Paciente</TableHead>
+            <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Vacina</TableHead>
+            <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Próxima dose</TableHead>
+            <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Status</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {data.map((r) => (
-            <TableRow className="border-b border-gray-300 h-15" key={r.id}>
-              <TableCell>{r.patient?.name}</TableCell>
-              <TableCell>{r.vaccine_name}</TableCell>
-              <TableCell>{r.next_due_date}</TableCell>
-              <TableCell>{r.reminder_status}</TableCell>
+            <TableRow key={r.id}>
+              <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{r.patient?.name}</TableCell>
+              <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{r.vaccine_name}</TableCell>
+              <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{r.next_due_date}</TableCell>
+              <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{r.reminder_status}</TableCell>
             </TableRow>
           ))}
         </TableBody>

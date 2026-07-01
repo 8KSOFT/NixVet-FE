@@ -134,27 +134,26 @@ export default function TasksPage() {
             </div>
           ) : (
             <div>
-              <div className="rounded-md border border-gray-300 overflow-hidden">
-                <Table>
-                  <TableHeader className="h-15">
-                    <TableRow className="border-b border-gray-300">
-                      <TableHead>Paciente</TableHead>
-                      <TableHead>Tipo</TableHead>
-                      <TableHead>Vencimento</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="w-30">Ações</TableHead>
+              <div className="overflow-x-auto border border-slate-200 rounded-lg">
+                <Table className="min-w-full border-collapse bg-white text-sm">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Paciente</TableHead>
+                      <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Tipo</TableHead>
+                      <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Vencimento</TableHead>
+                      <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Status</TableHead>
+                      <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600 w-30">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {list.map((task) => (
                       <TableRow
-                        className="border-b border-gray-300 h-15"
                         key={task.id}
                       >
-                        <TableCell>{task.Patient?.name}</TableCell>
-                        <TableCell>{task.task_type}</TableCell>
-                        <TableCell>{task.due_date}</TableCell>
-                        <TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{task.Patient?.name}</TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{task.task_type}</TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{task.due_date}</TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                           <Badge
                             variant={
                               task.status === "completed"
@@ -165,7 +164,7 @@ export default function TasksPage() {
                             {task.status}
                           </Badge>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                           {task.status !== "completed" ? (
                             <Button size="sm" onClick={() => markDone(task.id)}>
                               <CheckCircle2 className="w-4 h-4 mr-1" /> Concluir

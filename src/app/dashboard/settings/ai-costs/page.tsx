@@ -168,28 +168,30 @@ export default function AiCostsPage() {
               <TrendingUp className="size-4" />
               Consumo por operação
             </h2>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Operação</TableHead>
-                  <TableHead className="text-right">Chamadas</TableHead>
-                  <TableHead className="text-right">Tokens</TableHead>
-                  <TableHead className="text-right">Custo (USD)</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data!.by_operation.map((op) => (
-                  <TableRow key={op.operation}>
-                    <TableCell className="font-medium">
-                      {OP_LABELS[op.operation] || op.operation}
-                    </TableCell>
-                    <TableCell className="text-right">{Number(op.calls)}</TableCell>
-                    <TableCell className="text-right">{formatTokens(Number(op.tokens))}</TableCell>
-                    <TableCell className="text-right">{formatCost(Number(op.cost_usd))}</TableCell>
+            <div className="overflow-x-auto border border-slate-200 rounded-lg">
+              <Table className="min-w-full border-collapse bg-white text-sm">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Operação</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">Chamadas</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">Tokens</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">Custo (USD)</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {data!.by_operation.map((op) => (
+                    <TableRow key={op.operation}>
+                      <TableCell className="border border-slate-200 px-3 py-3 font-medium text-slate-600">
+                        {OP_LABELS[op.operation] || op.operation}
+                      </TableCell>
+                      <TableCell className="border border-slate-200 px-3 py-3 text-right text-slate-600">{Number(op.calls)}</TableCell>
+                      <TableCell className="border border-slate-200 px-3 py-3 text-right text-slate-600">{formatTokens(Number(op.tokens))}</TableCell>
+                      <TableCell className="border border-slate-200 px-3 py-3 text-right text-slate-600">{formatCost(Number(op.cost_usd))}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       )}
@@ -198,26 +200,28 @@ export default function AiCostsPage() {
         <Card>
           <CardContent className="p-5">
             <h2 className="text-sm font-semibold text-foreground mb-3">Consumo diário</h2>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Data</TableHead>
-                  <TableHead className="text-right">Chamadas</TableHead>
-                  <TableHead className="text-right">Tokens</TableHead>
-                  <TableHead className="text-right">Custo (USD)</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data!.daily.map((d) => (
-                  <TableRow key={d.date}>
-                    <TableCell>{dayjs(d.date).format('DD/MM/YYYY')}</TableCell>
-                    <TableCell className="text-right">{Number(d.calls)}</TableCell>
-                    <TableCell className="text-right">{formatTokens(Number(d.tokens))}</TableCell>
-                    <TableCell className="text-right">{formatCost(Number(d.cost_usd))}</TableCell>
+            <div className="overflow-x-auto border border-slate-200 rounded-lg">
+              <Table className="min-w-full border-collapse bg-white text-sm">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Data</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">Chamadas</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">Tokens</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">Custo (USD)</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {data!.daily.map((d) => (
+                    <TableRow key={d.date}>
+                      <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{dayjs(d.date).format('DD/MM/YYYY')}</TableCell>
+                      <TableCell className="border border-slate-200 px-3 py-3 text-right text-slate-600">{Number(d.calls)}</TableCell>
+                      <TableCell className="border border-slate-200 px-3 py-3 text-right text-slate-600">{formatTokens(Number(d.tokens))}</TableCell>
+                      <TableCell className="border border-slate-200 px-3 py-3 text-right text-slate-600">{formatCost(Number(d.cost_usd))}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       )}
@@ -226,33 +230,33 @@ export default function AiCostsPage() {
         <Card>
           <CardContent className="p-5">
             <h2 className="text-sm font-semibold text-foreground mb-3">Últimas chamadas</h2>
-            <div className="overflow-x-auto">
-              <Table>
+            <div className="overflow-x-auto border border-slate-200 rounded-lg">
+              <Table className="min-w-full border-collapse bg-white text-sm">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Data/Hora</TableHead>
-                    <TableHead>Operação</TableHead>
-                    <TableHead>Modelo</TableHead>
-                    <TableHead className="text-right">Prompt</TableHead>
-                    <TableHead className="text-right">Resposta</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
-                    <TableHead className="text-right">Custo</TableHead>
+                    <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Data/Hora</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Operação</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Modelo</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">Prompt</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">Resposta</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">Total</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">Custo</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {data!.recent.map((log) => (
                     <TableRow key={log.id}>
-                      <TableCell className="text-xs whitespace-nowrap">
+                      <TableCell className="border border-slate-200 px-3 py-3 text-xs whitespace-nowrap text-slate-600">
                         {dayjs(log.created_at).format('DD/MM HH:mm')}
                       </TableCell>
-                      <TableCell className="text-xs">
+                      <TableCell className="border border-slate-200 px-3 py-3 text-xs text-slate-600">
                         {OP_LABELS[log.operation] || log.operation}
                       </TableCell>
-                      <TableCell className="text-xs font-mono">{log.model}</TableCell>
-                      <TableCell className="text-right text-xs">{log.prompt_tokens}</TableCell>
-                      <TableCell className="text-right text-xs">{log.completion_tokens}</TableCell>
-                      <TableCell className="text-right text-xs font-medium">{log.total_tokens}</TableCell>
-                      <TableCell className="text-right text-xs">{formatCost(Number(log.estimated_cost_usd))}</TableCell>
+                      <TableCell className="border border-slate-200 px-3 py-3 text-xs font-mono text-slate-600">{log.model}</TableCell>
+                      <TableCell className="border border-slate-200 px-3 py-3 text-right text-xs text-slate-600">{log.prompt_tokens}</TableCell>
+                      <TableCell className="border border-slate-200 px-3 py-3 text-right text-xs text-slate-600">{log.completion_tokens}</TableCell>
+                      <TableCell className="border border-slate-200 px-3 py-3 text-right text-xs font-medium text-slate-600">{log.total_tokens}</TableCell>
+                      <TableCell className="border border-slate-200 px-3 py-3 text-right text-xs text-slate-600">{formatCost(Number(log.estimated_cost_usd))}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

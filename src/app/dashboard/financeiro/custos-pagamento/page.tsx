@@ -156,24 +156,26 @@ export default function CustosPagamentoPage() {
             {loading ? (
               <Skeleton className="h-60 w-full" />
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Forma</TableHead>
-                    <TableHead className="text-right">Volume</TableHead>
-                    <TableHead className="text-right">Custo Total</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {methods.map(([method, v]) => (
-                    <TableRow key={method}>
-                      <TableCell>{METHOD_LABELS[method] ?? method}</TableCell>
-                      <TableCell className="text-right tabular-nums">{fmt(v.volume)}</TableCell>
-                      <TableCell className="text-right tabular-nums text-orange-500">{fmt(v.fee_total)}</TableCell>
+              <div className="overflow-x-auto border border-slate-200 rounded-lg">
+                <Table className="min-w-full border-collapse bg-white text-sm">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Forma</TableHead>
+                      <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">Volume</TableHead>
+                      <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">Custo Total</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {methods.map(([method, v]) => (
+                      <TableRow key={method}>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{METHOD_LABELS[method] ?? method}</TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-right tabular-nums text-slate-600">{fmt(v.volume)}</TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-right tabular-nums text-orange-500">{fmt(v.fee_total)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>

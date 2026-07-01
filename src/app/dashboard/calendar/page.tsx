@@ -794,7 +794,7 @@ export default function CalendarPage() {
       }>("/ai/structure-observations", { text: formData.observations });
       const s = [
         ...(r.data?.symptoms ?? []).map((x) => `Sintoma: ${x}`),
-        ...(r.data?.possible_diagnosis ?? []).map((x) => `Diagnóstico: ${x}`),
+        ...(r.data?.possible_diagnosis ?? []).map((x) => `Diagnóstico Presuntivo: ${x}`),
       ].join("\n");
       if (s)
         setFormData((p) => ({
@@ -1940,7 +1940,7 @@ export default function CalendarPage() {
                         )
                       }
                     >
-                      <FileText className="w-3.5 h-3.5" /> Prontuário
+                      <FileText className="w-3.5 h-3.5" /> Ficha
                     </Button>
                   )}
                   <Button

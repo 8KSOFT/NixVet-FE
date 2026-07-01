@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { DashboardCreateFormDialog } from "@/components/dashboard-create-form-dialog";
 import { Badge } from "@/components/ui/badge";
@@ -15,22 +15,15 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { toast } from "sonner";
 import {
   Loader2,
   Plus,
-  Eye,
   Search,
   UserPlus,
   PawPrint,
+  ChevronDown,
+  Stethoscope,
 } from "lucide-react";
 import api from "@/lib/axios";
 import {
@@ -113,6 +106,7 @@ export default function MedicalRecordsListPage() {
   const [listPage, setListPage] = useState(1);
   const [listTotal, setListTotal] = useState(0);
   const [listTotalPages, setListTotalPages] = useState(1);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   const [form, setForm] = useState(emptyForm());
 
@@ -187,11 +181,11 @@ export default function MedicalRecordsListPage() {
     }
     try {
       const res = await api.post<MedicalRecord>("/medical-records", form);
-      toast.success("Prontuário criado");
+      toast.success("Ficha criada");
       setModalVisible(false);
       router.push(`/dashboard/medical-records/${res.data.id}`);
     } catch {
-      toast.error("Erro ao criar prontuário");
+      toast.error("Erro ao criar ficha");
     }
   };
 
@@ -266,6 +260,39 @@ export default function MedicalRecordsListPage() {
     );
   });
 
+  // 2.1 — agrupa fichas por paciente, ordenadas por data (mais recente primeiro)
+  const groups = useMemo(() => {
+    const map = new Map<string, { patientId: string; patientName: string; records: MedicalRecord[] }>();
+    for (const r of filtered) {
+      if (!map.has(r.patient_id)) {
+        map.set(r.patient_id, { patientId: r.patient_id, patientName: r.patient?.name || "—", records: [] });
+      }
+      map.get(r.patient_id)!.records.push(r);
+    }
+    for (const g of map.values()) {
+      g.records.sort((a, b) => (a.record_date < b.record_date ? 1 : a.record_date > b.record_date ? -1 : 0));
+    }
+    return Array.from(map.values());
+  }, [filtered]);
+
+  useEffect(() => {
+    // Expande a ficha mais recente de cada paciente por padrão
+    const next = new Set<string>();
+    const seen = new Set<string>();
+    for (const r of records) {
+      if (!seen.has(r.patient_id)) { seen.add(r.patient_id); next.add(r.id); }
+    }
+    setExpanded(next);
+  }, [records]);
+
+  const toggleExpanded = (recordId: string) =>
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(recordId)) next.delete(recordId);
+      else next.add(recordId);
+      return next;
+    });
+
   const typeLabel = (t: string) => {
     const map: Record<string, string> = {
       atendimento: "Atendimento",
@@ -287,7 +314,7 @@ export default function MedicalRecordsListPage() {
     <div>
       <div className="flex flex-wrap justify-between items-center gap-3 mb-8">
         <h1 className="text-2xl font-extrabold font-['InterDoFigma'] flex items-center gap-2">
-          Prontuários
+          Fichas
         </h1>
         <Button
           onClick={() => {
@@ -296,7 +323,7 @@ export default function MedicalRecordsListPage() {
           }}
           className="bg-primary hover:bg-primary/70"
         >
-          <Plus className="h-4 w-4 mr-1" /> Novo Prontuário
+          <Plus className="h-4 w-4 mr-1" /> Nova ficha
         </Button>
       </div>
 
@@ -338,77 +365,98 @@ export default function MedicalRecordsListPage() {
           </div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
-            Nenhum prontuário encontrado.
+            Nenhuma ficha encontrada.
           </div>
         ) : (
-          <div>
-            <div className="border border-gray-300 rounded-md">
-              <Table>
-                <TableHeader className="h-15">
-                  <TableRow className="border-b border-gray-300">
-                    <TableHead>Data</TableHead>
-                    <TableHead>Paciente</TableHead>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead>Queixa</TableHead>
-                    <TableHead>Veterinário</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="w-20" />
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filtered.map((r) => (
-                    <TableRow
-                      key={r.id}
-                      className="cursor-pointer hover:bg-muted/50 h-15 border-b border-gray-300"
-                      onClick={() =>
-                        router.push(`/dashboard/medical-records/${r.id}`)
-                      }
-                    >
-                      <TableCell className="whitespace-nowrap">
-                        {dayjs(r.record_date).format("DD/MM/YYYY")}
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {r.patient?.name || "—"}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">
-                          {typeLabel(r.record_type)}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="max-w-50 truncate">
-                        {r.chief_complaint || "—"}
-                      </TableCell>
-                      <TableCell>{r.veterinarian?.name || "—"}</TableCell>
-                      <TableCell>{statusBadge(r.status)}</TableCell>
-                      <TableCell>
-                        <Button variant="ghost" size="sm">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-            <div>
-              <ListPagination
-                page={listPage}
-                totalPages={listTotalPages}
-                total={listTotal}
-                pageSize={API_PAGE_SIZE}
-                onPageChange={setListPage}
-                disabled={loading}
-              />
-            </div>
+          <div className="space-y-6">
+            {groups.map((g) => (
+              <div key={g.patientId} className="space-y-2">
+                <div className="flex items-center gap-2 px-1">
+                  <Stethoscope className="h-4 w-4 text-primary" />
+                  <h2 className="text-sm font-bold text-slate-900">
+                    {g.patientName}
+                  </h2>
+                  <span className="text-xs text-muted-foreground">
+                    {g.records.length} ficha{g.records.length > 1 ? "s" : ""}
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  {g.records.map((r) => {
+                    const isOpen = expanded.has(r.id);
+                    return (
+                      <div
+                        key={r.id}
+                        className="overflow-hidden rounded-lg border border-slate-200 bg-white"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => toggleExpanded(r.id)}
+                          className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-slate-50"
+                        >
+                          <span className="text-sm font-medium text-slate-900 whitespace-nowrap">
+                            {dayjs(r.record_date).format("DD/MM/YYYY")}
+                          </span>
+                          <Badge variant="outline">
+                            {typeLabel(r.record_type)}
+                          </Badge>
+                          <span className="text-sm text-muted-foreground truncate">
+                            {r.veterinarian?.name || "Sem veterinário"}
+                          </span>
+                          <span className="ml-auto flex items-center gap-2 shrink-0">
+                            {statusBadge(r.status)}
+                            <ChevronDown
+                              className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180" : ""}`}
+                            />
+                          </span>
+                        </button>
+                        {isOpen && (
+                          <div className="space-y-2 border-t border-slate-200 px-4 py-3 text-sm">
+                            <div>
+                              <span className="text-muted-foreground">Queixa: </span>
+                              {r.chief_complaint || "—"}
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">
+                                Diagnóstico Presuntivo:{" "}
+                              </span>
+                              {r.diagnosis || "—"}
+                            </div>
+                            <div className="pt-1">
+                              <Button
+                                size="sm"
+                                className="bg-primary"
+                                onClick={() =>
+                                  router.push(`/dashboard/medical-records/${r.id}`)
+                                }
+                              >
+                                Abrir ficha
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+            <ListPagination
+              page={listPage}
+              totalPages={listTotalPages}
+              total={listTotal}
+              pageSize={API_PAGE_SIZE}
+              onPageChange={setListPage}
+              disabled={loading}
+            />
           </div>
         )}
       </div>
 
-      {/* Novo Prontuário */}
+      {/* Nova ficha */}
       <DashboardCreateFormDialog
         open={modalVisible}
         onOpenChange={setModalVisible}
-        title="Novo Prontuário"
+        title="Nova ficha"
         containerClassName="max-w-lg mx-auto"
         preventOutsideClose
         footer={

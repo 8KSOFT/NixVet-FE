@@ -269,23 +269,23 @@ export default function ChatbotWorkflowsPage() {
               </Button>
             </div>
           ) : (
-            <div className="rounded-md border overflow-hidden">
-              <Table>
+            <div className="overflow-x-auto border border-slate-200 rounded-lg">
+              <Table className="min-w-full border-collapse bg-white text-sm">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Criado em</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
+                    <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Nome</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Status</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Criado em</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {workflows.map((wf) => (
                     <TableRow key={wf.id}>
-                      <TableCell>
+                      <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                         <span className="font-medium text-foreground">{wf.name}</span>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                         {wf.is_active ? (
                           <Badge className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/10">
                             <CheckCircle2 className="w-3 h-3 mr-1" /> Ativo
@@ -296,10 +296,10 @@ export default function ChatbotWorkflowsPage() {
                           </Badge>
                         )}
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
+                      <TableCell className="border border-slate-200 px-3 py-3 text-sm text-muted-foreground">
                         {wf.createdAt ? new Date(wf.createdAt).toLocaleDateString('pt-BR') : '—'}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="border border-slate-200 px-3 py-3 text-right text-slate-600">
                         <div className="flex items-center justify-end gap-1.5">
                           <Button
                             variant="outline"

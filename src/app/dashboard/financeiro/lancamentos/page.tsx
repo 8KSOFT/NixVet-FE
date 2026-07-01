@@ -228,32 +228,33 @@ export default function LancamentosPage() {
               Nenhum lançamento {status === 'suggested' ? 'sugerido' : status === 'confirmed' ? 'confirmado' : 'cancelado'}.
             </p>
           ) : (
-            <Table className="text-sm">
+            <div className="overflow-x-auto border border-slate-200 rounded-lg">
+            <Table className="min-w-full border-collapse bg-white text-sm">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Data</TableHead>
-                  <TableHead>Categoria</TableHead>
-                  <TableHead>Descrição</TableHead>
-                  <TableHead className="text-right">
+                  <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Data</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Categoria</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Descrição</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">
                     {status === 'confirmed' ? 'Recebido' : 'Valor à vista'}
                   </TableHead>
-                  {status === 'confirmed' && <TableHead>Forma</TableHead>}
-                  <TableHead className="text-right">Ações</TableHead>
+                  {status === 'confirmed' && <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Forma</TableHead>}
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {entries.map((e) => (
                   <TableRow key={e.id}>
-                    <TableCell>{new Date(e.entry_date).toLocaleDateString('pt-BR')}</TableCell>
-                    <TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{new Date(e.entry_date).toLocaleDateString('pt-BR')}</TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                       <Badge variant="secondary">{CATEGORY_LABELS[e.category] ?? e.category}</Badge>
                     </TableCell>
-                    <TableCell className="max-w-[280px] truncate">{e.description ?? '—'}</TableCell>
-                    <TableCell className="text-right tabular-nums">
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600 max-w-[280px] truncate">{e.description ?? '—'}</TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-right tabular-nums text-slate-600">
                       {status === 'confirmed' ? fmt(e.net_amount) : fmt(e.base_amount ?? e.gross_amount)}
                     </TableCell>
-                    {status === 'confirmed' && <TableCell>{methodLabel(e.payment_method)}</TableCell>}
-                    <TableCell className="text-right">
+                    {status === 'confirmed' && <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{methodLabel(e.payment_method)}</TableCell>}
+                    <TableCell className="border border-slate-200 px-3 py-3 text-right text-slate-600">
                       {status === 'suggested' ? (
                         <div className="flex justify-end gap-2">
                           <Button size="sm" onClick={() => openConfirm(e)}>
@@ -271,6 +272,7 @@ export default function LancamentosPage() {
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>

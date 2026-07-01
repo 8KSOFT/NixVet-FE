@@ -1,6 +1,6 @@
 'use client';
 
-import { ArrowLeft, LogOut, Download, Plus, Check, X } from 'lucide-react';
+import { ArrowLeft, LogOut, Download, Plus, Check, X, Sparkles, Loader2, Users, ClipboardList, ChevronDown, FileText } from 'lucide-react';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
@@ -17,7 +17,12 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import api from '@/lib/axios';
+import { getStoredUserRole } from '@/lib/role-permissions';
 import { toast } from 'sonner';
+
+// 3.3 — Visibilidade de valores financeiros por papel do usuário
+const canSeeFinancials = (role: string | null | undefined) =>
+  ['admin', 'manager', 'financial'].includes((role || '').toLowerCase());
 
 /* ---- Types ---- */
 interface Hospitalization {
@@ -31,6 +36,8 @@ interface Hospitalization {
   payment_source: string;
   daily_rate: number;
   notes: string | null;
+  belongings: string | null;
+  medical_record_id: string | null;
   patient: { id: string; name: string; species: string; breed: string | null; tutor?: { name: string } };
   veterinarian: { id: string; name: string };
 }
@@ -102,26 +109,34 @@ const COST_TYPE_LABELS: Record<string, string> = {
 
 /* ---- Sub-components ---- */
 
-function ResumoTab({ h }: { h: Hospitalization }) {
+function ResumoTab({ h, canSee }: { h: Hospitalization; canSee: boolean }) {
+  const rows: Array<[string, string | null | undefined]> = [
+    ['Paciente', h.patient?.name],
+    ['Espécie', `${h.patient?.species ?? ''}${h.patient?.breed ? ` — ${h.patient.breed}` : ''}`],
+    ['Tutor', h.patient?.tutor?.name ?? '—'],
+    ['Veterinário', h.veterinarian?.name],
+    ['Admissão', new Date(h.admission_date).toLocaleString('pt-BR')],
+    ['Box', h.box_number ?? '—'],
+    ['Motivo', h.reason],
+    ['Diagnóstico Presuntivo', h.diagnosis ?? '—'],
+    ['Pagamento', h.payment_source === 'health_plan' ? 'Plano de Saúde' : 'Particular'],
+    // 3.3 — diária só para papéis com acesso financeiro
+    ...(canSee ? ([['Diária', fmt(Number(h.daily_rate))]] as Array<[string, string]>) : []),
+  ];
   return (
     <div className="grid gap-4 sm:grid-cols-2">
-      {[
-        ['Paciente', h.patient?.name],
-        ['Espécie', `${h.patient?.species ?? ''}${h.patient?.breed ? ` — ${h.patient.breed}` : ''}`],
-        ['Tutor', h.patient?.tutor?.name ?? '—'],
-        ['Veterinário', h.veterinarian?.name],
-        ['Admissão', new Date(h.admission_date).toLocaleString('pt-BR')],
-        ['Box', h.box_number ?? '—'],
-        ['Motivo', h.reason],
-        ['Diagnóstico', h.diagnosis ?? '—'],
-        ['Pagamento', h.payment_source === 'health_plan' ? 'Plano de Saúde' : 'Particular'],
-        ['Diária', fmt(Number(h.daily_rate))],
-      ].map(([label, value]) => (
+      {rows.map(([label, value]) => (
         <div key={label} className="space-y-0.5">
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{label}</p>
           <p className="text-sm">{value ?? '—'}</p>
         </div>
       ))}
+      {h.belongings && (
+        <div className="col-span-2 space-y-0.5">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Pertences</p>
+          <p className="text-sm whitespace-pre-wrap">{h.belongings}</p>
+        </div>
+      )}
       {h.notes && (
         <div className="col-span-2 space-y-0.5">
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Observações</p>
@@ -418,7 +433,7 @@ function EvolucaoTab({ hospitalizationId }: { hospitalizationId: string }) {
         </Button>
         <Button size="sm" variant="ghost" onClick={downloadPdf}>
           <Download className="mr-2 size-4" />
-          Exportar Prontuário PDF
+          Exportar Ficha PDF
         </Button>
       </div>
 
@@ -758,6 +773,360 @@ function MedicacoesTab({ hospitalizationId }: { hospitalizationId: string }) {
 }
 
 /* ---- Main Page ---- */
+/* ---- SBAR (3.1) ---- */
+interface SbarReport {
+  id: string;
+  report_date: string;
+  suspicion: string | null;
+  brief_history: string | null;
+  assessment: string | null;
+  recommendations: string | null;
+  ai_reviewed: boolean;
+  ai_reviewed_at: string | null;
+  author?: { id: string; name: string };
+}
+
+function SbarTab({ hospitalizationId, status }: { hospitalizationId: string; status: string }) {
+  const [reports, setReports] = useState<SbarReport[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [reviewingId, setReviewingId] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const emptyForm = () => ({ report_date: new Date().toISOString().slice(0, 10), suspicion: '', brief_history: '', assessment: '', recommendations: '' });
+  const [form, setForm] = useState(emptyForm());
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const r = await api.get<SbarReport[]>(`/hospitalizations/${hospitalizationId}/reports`);
+      setReports(Array.isArray(r.data) ? r.data : []);
+    } catch { setReports([]); } finally { setLoading(false); }
+  }, [hospitalizationId]);
+  useEffect(() => { load(); }, [load]);
+
+  const handleCreate = async () => {
+    if (!form.suspicion && !form.brief_history && !form.assessment && !form.recommendations) {
+      toast.error('Preencha ao menos um campo do SBAR');
+      return;
+    }
+    setSaving(true);
+    try {
+      await api.post(`/hospitalizations/${hospitalizationId}/reports`, form);
+      toast.success('Relatório SBAR salvo');
+      setForm(emptyForm());
+      load();
+    } catch { toast.error('Erro ao salvar relatório'); } finally { setSaving(false); }
+  };
+
+  const handleAiReview = async (id: string) => {
+    setReviewingId(id);
+    try {
+      await api.post(`/hospitalizations/${hospitalizationId}/reports/${id}/ai-review`);
+      toast.success('Relatório revisado com IA');
+      load();
+    } catch { toast.error('Erro ao revisar com IA'); } finally { setReviewingId(null); }
+  };
+
+  const toggle = (id: string) => setExpanded((prev) => {
+    const n = new Set(prev);
+    if (n.has(id)) n.delete(id); else n.add(id);
+    return n;
+  });
+
+  const isActive = status === 'active';
+
+  return (
+    <div className="space-y-4">
+      {isActive && (
+        <Card>
+          <CardHeader className="pb-2">
+            <h3 className="text-sm font-semibold">Relatório SBAR do dia</h3>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="space-y-1">
+              <Label>Data</Label>
+              <Input type="date" value={form.report_date} onChange={(e) => setForm((f) => ({ ...f, report_date: e.target.value }))} />
+            </div>
+            <div className="space-y-1">
+              <Label>S — Suspeita / hipótese diagnóstica</Label>
+              <Textarea rows={2} value={form.suspicion} onChange={(e) => setForm((f) => ({ ...f, suspicion: e.target.value }))} />
+            </div>
+            <div className="space-y-1">
+              <Label>B — Breve histórico</Label>
+              <Textarea rows={2} value={form.brief_history} onChange={(e) => setForm((f) => ({ ...f, brief_history: e.target.value }))} />
+            </div>
+            <div className="space-y-1">
+              <Label>A — Atualização / evolução do dia</Label>
+              <Textarea rows={2} value={form.assessment} onChange={(e) => setForm((f) => ({ ...f, assessment: e.target.value }))} />
+            </div>
+            <div className="space-y-1">
+              <Label>R — Recomendações / próximos passos</Label>
+              <Textarea rows={2} value={form.recommendations} onChange={(e) => setForm((f) => ({ ...f, recommendations: e.target.value }))} />
+            </div>
+            <div className="flex justify-end">
+              <Button onClick={handleCreate} disabled={saving}>
+                {saving && <Loader2 className="mr-1 size-4 animate-spin" />} Salvar relatório
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="space-y-2">
+        <h3 className="text-sm font-semibold">Relatórios anteriores</h3>
+        {loading ? (
+          <Skeleton className="h-24 w-full" />
+        ) : reports.length === 0 ? (
+          <p className="py-6 text-center text-sm text-muted-foreground">Nenhum relatório registrado.</p>
+        ) : (
+          reports.map((r) => {
+            const open = expanded.has(r.id);
+            return (
+              <div key={r.id} className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+                <button type="button" onClick={() => toggle(r.id)} className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-slate-50">
+                  <span className="text-sm font-medium">{new Date(r.report_date).toLocaleDateString('pt-BR')}</span>
+                  {r.author?.name && <span className="text-sm text-muted-foreground">{r.author.name}</span>}
+                  {r.ai_reviewed && <Badge variant="secondary" className="gap-1"><Sparkles className="size-3" /> IA</Badge>}
+                  <ChevronDown className={`ml-auto size-4 transition-transform ${open ? 'rotate-180' : ''}`} />
+                </button>
+                {open && (
+                  <div className="space-y-2 border-t border-slate-200 px-4 py-3 text-sm">
+                    <div><span className="font-semibold">S:</span> {r.suspicion || '—'}</div>
+                    <div><span className="font-semibold">B:</span> {r.brief_history || '—'}</div>
+                    <div><span className="font-semibold">A:</span> {r.assessment || '—'}</div>
+                    <div><span className="font-semibold">R:</span> {r.recommendations || '—'}</div>
+                    <div className="pt-1">
+                      <Button size="sm" variant="outline" onClick={() => handleAiReview(r.id)} disabled={reviewingId === r.id}>
+                        {reviewingId === r.id ? <Loader2 className="mr-1 size-3 animate-spin" /> : <Sparkles className="mr-1 size-3" />}
+                        Revisar com IA
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ---- Visitas (3.2) ---- */
+interface Visit {
+  id: string;
+  visited_at: string;
+  visitor_name: string | null;
+  notes: string | null;
+  registrar?: { id: string; name: string };
+}
+
+function VisitasTab({ hospitalizationId, status }: { hospitalizationId: string; status: string }) {
+  const [visits, setVisits] = useState<Visit[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const emptyForm = () => ({ visited_at: new Date().toISOString().slice(0, 16), visitor_name: '', notes: '' });
+  const [form, setForm] = useState(emptyForm());
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const r = await api.get<Visit[]>(`/hospitalizations/${hospitalizationId}/visits`);
+      setVisits(Array.isArray(r.data) ? r.data : []);
+    } catch { setVisits([]); } finally { setLoading(false); }
+  }, [hospitalizationId]);
+  useEffect(() => { load(); }, [load]);
+
+  const handleCreate = async () => {
+    if (!form.visitor_name && !form.notes) { toast.error('Informe o visitante ou uma observação'); return; }
+    setSaving(true);
+    try {
+      await api.post(`/hospitalizations/${hospitalizationId}/visits`, form);
+      toast.success('Visita registrada');
+      setForm(emptyForm());
+      load();
+    } catch { toast.error('Erro ao registrar visita'); } finally { setSaving(false); }
+  };
+
+  return (
+    <div className="space-y-4">
+      {status === 'active' && (
+        <Card>
+          <CardHeader className="pb-2">
+            <h3 className="text-sm font-semibold">Registrar visita</h3>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1">
+                <Label>Data/Hora</Label>
+                <Input type="datetime-local" value={form.visited_at} onChange={(e) => setForm((f) => ({ ...f, visited_at: e.target.value }))} />
+              </div>
+              <div className="space-y-1">
+                <Label>Visitante</Label>
+                <Input value={form.visitor_name} onChange={(e) => setForm((f) => ({ ...f, visitor_name: e.target.value }))} placeholder="Nome do tutor/visitante" />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label>O que foi conversado</Label>
+              <Textarea rows={2} value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
+            </div>
+            <div className="flex justify-end">
+              <Button onClick={handleCreate} disabled={saving}>
+                {saving && <Loader2 className="mr-1 size-4 animate-spin" />} Registrar visita
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="space-y-2">
+        <h3 className="text-sm font-semibold">Histórico de visitas</h3>
+        {loading ? (
+          <Skeleton className="h-24 w-full" />
+        ) : visits.length === 0 ? (
+          <p className="py-6 text-center text-sm text-muted-foreground">Nenhuma visita registrada.</p>
+        ) : (
+          <div className="space-y-2">
+            {visits.map((v) => (
+              <div key={v.id} className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">{new Date(v.visited_at).toLocaleString('pt-BR')}</span>
+                  {v.visitor_name && <span className="text-muted-foreground">· {v.visitor_name}</span>}
+                  {v.registrar?.name && <span className="ml-auto text-xs text-muted-foreground">registrado por {v.registrar.name}</span>}
+                </div>
+                {v.notes && <p className="mt-1 whitespace-pre-wrap text-muted-foreground">{v.notes}</p>}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ---- Relatório Médico / Ficha vinculada (Grupo 6) ---- */
+interface LinkedRecord {
+  id: string;
+  chief_complaint: string | null;
+  anamnesis: string | null;
+  diagnosis: string | null;
+  observations: string | null;
+  status: string;
+}
+
+function RelatorioMedicoTab({
+  hospitalizationId,
+  medicalRecordId,
+  patientId,
+  veterinarianId,
+  onLinked,
+}: {
+  hospitalizationId: string;
+  medicalRecordId: string | null;
+  patientId: string;
+  veterinarianId: string;
+  onLinked: () => void;
+}) {
+  const [record, setRecord] = useState<LinkedRecord | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [form, setForm] = useState({ chief_complaint: '', anamnesis: '', diagnosis: '', observations: '' });
+
+  const load = useCallback(async () => {
+    if (!medicalRecordId) { setRecord(null); return; }
+    setLoading(true);
+    try {
+      const r = await api.get<LinkedRecord>(`/medical-records/${medicalRecordId}`);
+      setRecord(r.data);
+      setForm({
+        chief_complaint: r.data.chief_complaint || '',
+        anamnesis: r.data.anamnesis || '',
+        diagnosis: r.data.diagnosis || '',
+        observations: r.data.observations || '',
+      });
+    } catch { setRecord(null); } finally { setLoading(false); }
+  }, [medicalRecordId]);
+  useEffect(() => { load(); }, [load]);
+
+  const handleCreate = async () => {
+    setCreating(true);
+    try {
+      const created = await api.post<{ id: string }>('/medical-records', {
+        patient_id: patientId,
+        veterinarian_id: veterinarianId,
+        record_type: 'internacao',
+      });
+      await api.patch(`/hospitalizations/${hospitalizationId}`, { medical_record_id: created.data.id });
+      toast.success('Ficha de internação criada');
+      onLinked();
+    } catch { toast.error('Erro ao criar ficha de internação'); } finally { setCreating(false); }
+  };
+
+  const handleSave = async () => {
+    if (!medicalRecordId) return;
+    setSaving(true);
+    try {
+      await api.put(`/medical-records/${medicalRecordId}`, form);
+      toast.success('Ficha salva');
+      load();
+    } catch { toast.error('Erro ao salvar ficha'); } finally { setSaving(false); }
+  };
+
+  if (!medicalRecordId) {
+    return (
+      <Card>
+        <CardContent className="flex flex-col items-center gap-3 p-8 text-center">
+          <p className="text-sm text-muted-foreground">Nenhuma ficha vinculada a esta internação.</p>
+          <Button onClick={handleCreate} disabled={creating}>
+            {creating && <Loader2 className="mr-1 size-4 animate-spin" />} Criar ficha de internação
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (loading) return <Skeleton className="h-48 w-full" />;
+
+  const isClosed = record?.status === 'closed';
+
+  return (
+    <Card>
+      <CardHeader className="flex-row items-center justify-between pb-2">
+        <h3 className="text-sm font-semibold">Ficha vinculada</h3>
+        <Button asChild size="sm" variant="outline">
+          <Link href={`/dashboard/medical-records/${medicalRecordId}`}>Abrir ficha completa</Link>
+        </Button>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="space-y-1">
+          <Label>Queixa principal</Label>
+          <Textarea rows={2} value={form.chief_complaint} onChange={(e) => setForm((f) => ({ ...f, chief_complaint: e.target.value }))} disabled={isClosed} />
+        </div>
+        <div className="space-y-1">
+          <Label>Anamnese</Label>
+          <Textarea rows={3} value={form.anamnesis} onChange={(e) => setForm((f) => ({ ...f, anamnesis: e.target.value }))} disabled={isClosed} />
+        </div>
+        <div className="space-y-1">
+          <Label>Diagnóstico Presuntivo</Label>
+          <Textarea rows={2} value={form.diagnosis} onChange={(e) => setForm((f) => ({ ...f, diagnosis: e.target.value }))} disabled={isClosed} />
+        </div>
+        <div className="space-y-1">
+          <Label>Observações</Label>
+          <Textarea rows={2} value={form.observations} onChange={(e) => setForm((f) => ({ ...f, observations: e.target.value }))} disabled={isClosed} />
+        </div>
+        {!isClosed && (
+          <div className="flex justify-end">
+            <Button onClick={handleSave} disabled={saving}>
+              {saving && <Loader2 className="mr-1 size-4 animate-spin" />} Salvar
+            </Button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function HospitalizationDetailPage() {
   const params = useParams<{ id: string }>();
   const hospitalizationId = typeof params?.id === 'string' ? params.id : '';
@@ -816,6 +1185,8 @@ export default function HospitalizationDetailPage() {
 
   if (!h) return <p className="py-16 text-center text-muted-foreground">Internação não encontrada</p>;
 
+  const canSee = canSeeFinancials(getStoredUserRole());
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -844,15 +1215,18 @@ export default function HospitalizationDetailPage() {
       <Tabs defaultValue="resumo">
         <TabsList>
           <TabsTrigger value="resumo">Resumo</TabsTrigger>
-          <TabsTrigger value="prontuario">Prontuário</TabsTrigger>
+          <TabsTrigger value="prontuario">Ficha</TabsTrigger>
+          <TabsTrigger value="relatorio-medico"><FileText className="mr-1 size-4" /> Relatório Médico</TabsTrigger>
+          <TabsTrigger value="sbar"><ClipboardList className="mr-1 size-4" /> Relatório SBAR</TabsTrigger>
+          <TabsTrigger value="visitas"><Users className="mr-1 size-4" /> Visitas</TabsTrigger>
           <TabsTrigger value="medicacoes">Medicações</TabsTrigger>
-          <TabsTrigger value="custos">Custos</TabsTrigger>
+          {canSee && <TabsTrigger value="custos">Custos</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="resumo" className="mt-4">
           <Card>
             <CardContent className="p-6">
-              <ResumoTab h={h} />
+              <ResumoTab h={h} canSee={canSee} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -861,13 +1235,33 @@ export default function HospitalizationDetailPage() {
           <EvolucaoTab hospitalizationId={hospitalizationId} />
         </TabsContent>
 
+        <TabsContent value="relatorio-medico" className="mt-4">
+          <RelatorioMedicoTab
+            hospitalizationId={hospitalizationId}
+            medicalRecordId={h.medical_record_id}
+            patientId={h.patient?.id}
+            veterinarianId={h.veterinarian?.id}
+            onLinked={fetch}
+          />
+        </TabsContent>
+
+        <TabsContent value="sbar" className="mt-4">
+          <SbarTab hospitalizationId={hospitalizationId} status={h.status} />
+        </TabsContent>
+
+        <TabsContent value="visitas" className="mt-4">
+          <VisitasTab hospitalizationId={hospitalizationId} status={h.status} />
+        </TabsContent>
+
         <TabsContent value="medicacoes" className="mt-4">
           <MedicacoesTab hospitalizationId={hospitalizationId} />
         </TabsContent>
 
-        <TabsContent value="custos" className="mt-4">
-          <CustosTab hospitalizationId={hospitalizationId} status={h.status} />
-        </TabsContent>
+        {canSee && (
+          <TabsContent value="custos" className="mt-4">
+            <CustosTab hospitalizationId={hospitalizationId} status={h.status} />
+          </TabsContent>
+        )}
       </Tabs>
 
       <Dialog open={openDischarge} onOpenChange={setOpenDischarge}>

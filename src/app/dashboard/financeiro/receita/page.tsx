@@ -230,37 +230,38 @@ export default function ReceitaLiquidaPage() {
               </Button>
             </CardHeader>
             <CardContent className="p-0">
-              <Table>
+              <div className="overflow-x-auto border border-slate-200 rounded-lg">
+              <Table className="min-w-full border-collapse bg-white text-sm">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Item</TableHead>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead className="text-right">Cobrado</TableHead>
-                    <TableHead className="text-right">Custo</TableHead>
-                    <TableHead className="text-right">Líquido</TableHead>
-                    <TableHead>Fonte</TableHead>
+                    <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Item</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Tipo</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">Cobrado</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">Custo</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">Líquido</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Fonte</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {sortedItems.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                      <TableCell colSpan={6} className="border-t border-slate-200 py-8 text-center text-sm text-slate-500">
                         Nenhuma receita no período
                       </TableCell>
                     </TableRow>
                   )}
                   {sortedItems.map((item, i) => (
                     <TableRow key={i}>
-                      <TableCell className="font-medium">{item.description ?? '—'}</TableCell>
-                      <TableCell>
+                      <TableCell className="border border-slate-200 px-3 py-3 font-medium text-slate-900">{item.description ?? '—'}</TableCell>
+                      <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                         <Badge variant="outline">{item.item_type}</Badge>
                       </TableCell>
-                      <TableCell className="text-right">{fmtBRL(item.charged_amount)}</TableCell>
-                      <TableCell className="text-right text-muted-foreground">{fmtBRL(item.cost_amount)}</TableCell>
-                      <TableCell className={`text-right font-semibold ${item.net_amount >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+                      <TableCell className="border border-slate-200 px-3 py-3 text-right text-slate-600">{fmtBRL(item.charged_amount)}</TableCell>
+                      <TableCell className="border border-slate-200 px-3 py-3 text-right text-muted-foreground">{fmtBRL(item.cost_amount)}</TableCell>
+                      <TableCell className={`border border-slate-200 px-3 py-3 text-right font-semibold ${item.net_amount >= 0 ? 'text-green-600' : 'text-red-500'}`}>
                         {fmtBRL(item.net_amount)}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                         {item.payment_source === 'particular' ? (
                           <Badge className="bg-green-100 text-green-800 border-green-300">Particular</Badge>
                         ) : (
@@ -271,6 +272,7 @@ export default function ReceitaLiquidaPage() {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             </CardContent>
           </Card>
         </>

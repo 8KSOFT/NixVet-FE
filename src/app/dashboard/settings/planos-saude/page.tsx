@@ -138,37 +138,38 @@ export default function PlanosSaudePage() {
               {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
             </div>
           ) : (
-            <Table>
+            <div className="overflow-x-auto border border-slate-200 rounded-lg">
+            <Table className="min-w-full border-collapse bg-white text-sm">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>CNPJ</TableHead>
-                  <TableHead>Contato</TableHead>
-                  <TableHead className="text-right">Prazo Repasse</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Ações</TableHead>
+                  <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Nome</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">CNPJ</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Contato</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">Prazo Repasse</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Status</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {plans.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="py-12 text-center text-muted-foreground">
+                    <TableCell colSpan={6} className="border-t border-slate-200 py-8 text-center text-sm text-slate-500">
                       Nenhum plano cadastrado
                     </TableCell>
                   </TableRow>
                 ) : (
                   plans.map((p) => (
                     <TableRow key={p.id}>
-                      <TableCell className="font-medium">{p.name}</TableCell>
-                      <TableCell className="text-muted-foreground">{p.document ?? '—'}</TableCell>
-                      <TableCell className="text-muted-foreground">{p.contact_phone ?? p.contact_email ?? '—'}</TableCell>
-                      <TableCell className="text-right">{p.reimbursement_days}d</TableCell>
-                      <TableCell>
+                      <TableCell className="border border-slate-200 px-3 py-3 font-medium text-slate-900">{p.name}</TableCell>
+                      <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{p.document ?? '—'}</TableCell>
+                      <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{p.contact_phone ?? p.contact_email ?? '—'}</TableCell>
+                      <TableCell className="border border-slate-200 px-3 py-3 text-right text-slate-600">{p.reimbursement_days}d</TableCell>
+                      <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                         <Badge variant={p.active ? 'default' : 'secondary'}>
                           {p.active ? 'Ativo' : 'Inativo'}
                         </Badge>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                         <div className="flex items-center gap-1">
                           <Button variant="ghost" size="icon" onClick={() => openEdit(p)}>
                             <Pencil className="size-4" />
@@ -185,6 +186,7 @@ export default function PlanosSaudePage() {
                 )}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>

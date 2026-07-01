@@ -157,28 +157,27 @@ export default function FollowupsPage() {
             </div>
           ) : (
             <div>
-              <div className="border border-gray-300 rounded-md">
-                <Table>
-                  <TableHeader className="h-15">
-                    <TableRow className="border-b border-gray-300">
-                      <TableHead>Paciente</TableHead>
-                      <TableHead>Solicitação</TableHead>
-                      <TableHead>Previsão resultado</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Ações</TableHead>
+              <div className="overflow-x-auto border border-slate-200 rounded-lg">
+                <Table className="min-w-full border-collapse bg-white text-sm">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Paciente</TableHead>
+                      <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Solicitação</TableHead>
+                      <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Previsão resultado</TableHead>
+                      <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Status</TableHead>
+                      <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {awaiting.map((item) => (
                       <TableRow
-                        className="cursor-pointer hover:bg-muted/50 h-15 border-b border-gray-300"
                         key={item.id}
                       >
-                        <TableCell>{item.Patient?.name}</TableCell>
-                        <TableCell>{item.exam_request_id}</TableCell>
-                        <TableCell>{item.expected_result_date}</TableCell>
-                        <TableCell>{item.followup_status}</TableCell>
-                        <TableCell className="space-x-1">
+                        <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{item.Patient?.name}</TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{item.exam_request_id}</TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{item.expected_result_date}</TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{item.followup_status}</TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-slate-600 space-x-1">
                           {item.followup_status === "pending_result" && (
                             <Button
                               variant="outline"
@@ -214,28 +213,27 @@ export default function FollowupsPage() {
           )}
 
           <h3 className="font-medium text-foreground mt-6 mb-2">Todos</h3>
-          <div className="border border-gray-300 rounded-md">
-            <Table>
-              <TableHeader className="h-15">
-                <TableRow className="border-b border-gray-300">
-                  <TableHead>Paciente</TableHead>
-                  <TableHead>Previsão</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Ações</TableHead>
+          <div className="overflow-x-auto border border-slate-200 rounded-lg">
+            <Table className="min-w-full border-collapse bg-white text-sm">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Paciente</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Previsão</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Status</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {all.map((item) => (
                   <TableRow
-                    className="cursor-pointer hover:bg-muted/50 h-15 border-b border-gray-300"
                     key={item.id}
                   >
-                    <TableCell>{item.Patient?.name}</TableCell>
-                    <TableCell>{item.expected_result_date}</TableCell>
-                    <TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{item.Patient?.name}</TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{item.expected_result_date}</TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                       <Badge variant="secondary">{item.followup_status}</Badge>
                     </TableCell>
-                    <TableCell className="space-x-1">
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600 space-x-1">
                       {item.followup_status === "pending_result" && (
                         <Button
                           variant="outline"

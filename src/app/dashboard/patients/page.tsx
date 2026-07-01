@@ -334,32 +334,32 @@ export default function PatientsPage() {
         <div className="text-center py-8 text-muted-foreground">Carregando...</div>
       ) : (
         <div>
-          <div className="rounded-md border border-gray-300 overflow-hidden">
-            <Table>
-              <TableHeader className="h-15">
+          <div className="overflow-x-auto border border-slate-200 rounded-lg">
+            <Table className="min-w-full border-collapse bg-white text-sm">
+              <TableHeader>
                 {/* Borda ou fundo customizado para o cabeçalho se desejar */}
-                <TableRow className="border-b border-gray-300">
-                  <TableHead>{t('patients.table.name')}</TableHead>
-                  <TableHead>{t('patients.table.species')}</TableHead>
-                  <TableHead>{t('patients.table.breed')}</TableHead>
-                  <TableHead>{t('patients.table.guardian')}</TableHead>
-                  <TableHead>{t('patients.table.actions')}</TableHead>
+                <TableRow>
+                  <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('patients.table.name')}</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('patients.table.species')}</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('patients.table.breed')}</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('patients.table.guardian')}</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('patients.table.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {patients.map((record) => (
                   /* Aplica a cor gray-300 na borda inferior da linha */
-                  <TableRow key={record.id} className="border-b border-gray-300">
-                    <TableCell>{record.name}</TableCell>
-                    <TableCell className="w-60">{record.species}</TableCell>
-                    <TableCell className="w-60">{record.breed}</TableCell>
-                    <TableCell className="w-100">
+                  <TableRow key={record.id}>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{record.name}</TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{record.species}</TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{record.breed}</TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                       {record.tutor?.name ??
                         (record.no_tutor_reason
                           ? `Sem responsável (${NO_TUTOR_REASON_LABELS[record.no_tutor_reason] ?? record.no_tutor_reason})`
                           : '—')}
                     </TableCell>
-                    <TableCell className="w-50">
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                       <div className="flex items-center gap-1">
                         <Button asChild variant="ghost" size="icon" className="p-0" title="Ver timeline">
                           <Link href={`/dashboard/patients/${record.id}`}>
@@ -394,8 +394,8 @@ export default function PatientsPage() {
                 ))}
                 {patients.length === 0 && (
                   /* Mantém o padrão visual mesmo se a tabela estiver vazia */
-                  <TableRow className="border-b border-gray-300">
-                    <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                  <TableRow>
+                    <TableCell colSpan={5} className="border-t border-slate-200 py-8 text-center text-sm text-slate-500">
                       Nenhum paciente cadastrado.
                     </TableCell>
                   </TableRow>

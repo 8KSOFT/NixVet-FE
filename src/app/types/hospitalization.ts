@@ -36,6 +36,7 @@ export interface HospitalizationFormValues {
   health_plan_id: string;
   daily_rate: number;
   notes: string;
+  belongings: string;
 }
 
 export interface PaginatedListEnvelope<TItem> {

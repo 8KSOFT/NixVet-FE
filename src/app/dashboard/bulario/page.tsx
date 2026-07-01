@@ -37,6 +37,17 @@ interface BularioItem {
     title: string;
     data: Array<{ title: string | null; data: string }>;
   }> | null;
+  // GRUPO 5 — dose estruturada (VetAlpha)
+  dose_min_mg_kg?: number | null;
+  dose_max_mg_kg?: number | null;
+  dose_unit?: string | null;
+  administration_routes?: string[] | null;
+  frequency?: string | null;
+  species?: string[] | null;
+  toxicity_notes?: string | null;
+  contraindications?: string | null;
+  vetalpha_validated?: boolean;
+  vetalpha_updated_at?: string | null;
 }
 
 export default function BularioPage() {
@@ -157,24 +168,21 @@ export default function BularioPage() {
             </p>
           </div>
         ) : (
-          <div className="border-t border-b border-gray-300">
-            <Table>
+          <div className="overflow-x-auto border border-slate-200 rounded-lg">
+            <Table className="min-w-full border-collapse bg-white text-sm">
               <TableHeader className="h-15">
-                <TableRow className="border-b border-gray-300">
-                  <TableHead>Medicamento</TableHead>
-                  <TableHead>Subtítulo</TableHead>
-                  <TableHead className="w-30">Ações</TableHead>
+                <TableRow>
+                  <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Medicamento</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Subtítulo</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600 w-30">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {dataSource.map((item) => (
-                  <TableRow
-                    className="cursor-pointer hover:bg-muted/50 h-15 border-b border-gray-300"
-                    key={item.id}
-                  >
-                    <TableCell className="font-medium">{item.title}</TableCell>
-                    <TableCell>{item.subtitle ?? "—"}</TableCell>
-                    <TableCell>
+                  <TableRow key={item.id}>
+                    <TableCell className="border border-slate-200 px-3 py-3 font-medium text-slate-900">{item.title}</TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{item.subtitle ?? "—"}</TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                       <button
                         onClick={() => openDetail(item.id)}
                         className="flex items-center gap-1 text-primary hover:underline text-sm"
@@ -230,6 +238,68 @@ export default function BularioPage() {
                     Link externo
                   </a>
                 </p>
+              )}
+              {(detailItem.dose_min_mg_kg != null ||
+                detailItem.dose_max_mg_kg != null ||
+                detailItem.dose_unit ||
+                (detailItem.administration_routes?.length ?? 0) > 0 ||
+                detailItem.frequency ||
+                (detailItem.species?.length ?? 0) > 0 ||
+                detailItem.toxicity_notes ||
+                detailItem.contraindications) && (
+                <div className="mb-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <h4 className="font-semibold text-primary">Posologia</h4>
+                    {detailItem.vetalpha_validated && (
+                      <span className="rounded-full bg-green-100 px-2 py-0.5 text-[11px] text-green-700">
+                        Validado VetAlpha
+                      </span>
+                    )}
+                  </div>
+                  <div className="border rounded divide-y text-sm">
+                    {(detailItem.dose_min_mg_kg != null || detailItem.dose_max_mg_kg != null) && (
+                      <div className="grid grid-cols-3 px-3 py-2">
+                        <span className="col-span-1 font-medium text-muted-foreground">Dose</span>
+                        <span className="col-span-2">
+                          {[detailItem.dose_min_mg_kg, detailItem.dose_max_mg_kg]
+                            .filter((v) => v != null)
+                            .join(" – ")}{" "}
+                          {detailItem.dose_unit ?? "mg/kg"}
+                        </span>
+                      </div>
+                    )}
+                    {detailItem.frequency && (
+                      <div className="grid grid-cols-3 px-3 py-2">
+                        <span className="col-span-1 font-medium text-muted-foreground">Frequência</span>
+                        <span className="col-span-2">{detailItem.frequency}</span>
+                      </div>
+                    )}
+                    {(detailItem.administration_routes?.length ?? 0) > 0 && (
+                      <div className="grid grid-cols-3 px-3 py-2">
+                        <span className="col-span-1 font-medium text-muted-foreground">Vias</span>
+                        <span className="col-span-2">{detailItem.administration_routes?.join(", ")}</span>
+                      </div>
+                    )}
+                    {(detailItem.species?.length ?? 0) > 0 && (
+                      <div className="grid grid-cols-3 px-3 py-2">
+                        <span className="col-span-1 font-medium text-muted-foreground">Espécies</span>
+                        <span className="col-span-2">{detailItem.species?.join(", ")}</span>
+                      </div>
+                    )}
+                    {detailItem.toxicity_notes && (
+                      <div className="grid grid-cols-3 px-3 py-2">
+                        <span className="col-span-1 font-medium text-muted-foreground">Toxicidade</span>
+                        <span className="col-span-2 whitespace-pre-wrap">{detailItem.toxicity_notes}</span>
+                      </div>
+                    )}
+                    {detailItem.contraindications && (
+                      <div className="grid grid-cols-3 px-3 py-2">
+                        <span className="col-span-1 font-medium text-muted-foreground">Contraindicações</span>
+                        <span className="col-span-2 whitespace-pre-wrap">{detailItem.contraindications}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
               )}
               {detailItem.details && detailItem.details.length > 0 ? (
                 detailItem.details.map((section, idx) => (

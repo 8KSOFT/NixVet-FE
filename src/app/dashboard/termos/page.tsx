@@ -161,26 +161,27 @@ export default function TermosPage() {
           ) : terms.length === 0 ? (
             <p className="py-8 text-center text-sm text-muted-foreground">Nenhum termo emitido.</p>
           ) : (
-            <Table className="text-sm">
+            <div className="overflow-x-auto border border-slate-200 rounded-lg">
+            <Table className="min-w-full border-collapse bg-white text-sm">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Data</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Responsável</TableHead>
-                  <TableHead>Paciente</TableHead>
-                  <TableHead className="text-right">PDF</TableHead>
+                  <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Data</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Tipo</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Responsável</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Paciente</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">PDF</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {terms.map((t) => (
                   <TableRow key={t.id}>
-                    <TableCell>{new Date(t.created_at).toLocaleDateString('pt-BR')}</TableCell>
-                    <TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{new Date(t.created_at).toLocaleDateString('pt-BR')}</TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                       <Badge variant="secondary">{TYPE_LABELS[t.type] ?? t.type}</Badge>
                     </TableCell>
-                    <TableCell>{t.responsible_name}</TableCell>
-                    <TableCell>{patientName(t.patient_id)}</TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{t.responsible_name}</TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{patientName(t.patient_id)}</TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-right text-slate-600">
                       <Button size="sm" variant="ghost" onClick={() => downloadPdf(t.id)}>
                         <Download className="mr-2 size-4" /> Baixar
                       </Button>
@@ -189,6 +190,7 @@ export default function TermosPage() {
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>

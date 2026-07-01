@@ -340,23 +340,24 @@ export default function SettingsHoursPage() {
                 <Button onClick={() => openBusinessModal()} className="mb-4 bg-primary">
                   <Plus className="w-4 h-4 mr-2" /> Configurar dias
                 </Button>
-                <Table>
+                <div className="overflow-x-auto border border-slate-200 rounded-lg">
+                <Table className="min-w-full border-collapse bg-white text-sm">
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Dia</TableHead>
-                      <TableHead>Abre</TableHead>
-                      <TableHead>Fecha</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Ações</TableHead>
+                      <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Dia</TableHead>
+                      <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Abre</TableHead>
+                      <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Fecha</TableHead>
+                      <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Status</TableHead>
+                      <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {businessHours.map((r) => (
                       <TableRow key={r.id ?? r.day_of_week}>
-                        <TableCell>{DAYS.find((x) => x.value === r.day_of_week)?.label ?? r.day_of_week}</TableCell>
-                        <TableCell>{r.is_closed ? '—' : r.is_24h ? '00:00' : (r.open_time ?? '—')}</TableCell>
-                        <TableCell>{r.is_closed ? '—' : r.is_24h ? '23:59' : (r.close_time ?? '—')}</TableCell>
-                        <TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{DAYS.find((x) => x.value === r.day_of_week)?.label ?? r.day_of_week}</TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{r.is_closed ? '—' : r.is_24h ? '00:00' : (r.open_time ?? '—')}</TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{r.is_closed ? '—' : r.is_24h ? '23:59' : (r.close_time ?? '—')}</TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                           {r.is_closed ? (
                             <Badge variant="destructive">Fechado</Badge>
                           ) : r.is_24h ? (
@@ -365,7 +366,7 @@ export default function SettingsHoursPage() {
                             <Badge className="bg-green-500">Aberto</Badge>
                           )}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                           <Button variant="link" size="sm" onClick={() => openBusinessModal(r)}>
                             Editar
                           </Button>
@@ -374,6 +375,7 @@ export default function SettingsHoursPage() {
                     ))}
                   </TableBody>
                 </Table>
+                </div>
               </TabsContent>
 
               {/* ── Emergency Hours ── */}
@@ -384,30 +386,31 @@ export default function SettingsHoursPage() {
                 <Button onClick={() => openEmergencyModal()} className="mb-4 bg-primary">
                   <Plus className="w-4 h-4 mr-2" /> Configurar plantão
                 </Button>
-                <Table>
+                <div className="overflow-x-auto border border-slate-200 rounded-lg">
+                <Table className="min-w-full border-collapse bg-white text-sm">
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Dia</TableHead>
-                      <TableHead>Início</TableHead>
-                      <TableHead>Fim</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Ações</TableHead>
+                      <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Dia</TableHead>
+                      <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Início</TableHead>
+                      <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Fim</TableHead>
+                      <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Status</TableHead>
+                      <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {emergencyHours.map((r) => (
                       <TableRow key={r.id ?? r.day_of_week}>
-                        <TableCell>{DAYS.find((x) => x.value === r.day_of_week)?.label ?? r.day_of_week}</TableCell>
-                        <TableCell>{r.start_time}</TableCell>
-                        <TableCell>{r.end_time}</TableCell>
-                        <TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{DAYS.find((x) => x.value === r.day_of_week)?.label ?? r.day_of_week}</TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{r.start_time}</TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{r.end_time}</TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                           {r.is_active ? (
                             <Badge className="bg-green-500">Ativo</Badge>
                           ) : (
                             <Badge variant="secondary">Inativo</Badge>
                           )}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                           <Button variant="link" size="sm" onClick={() => openEmergencyModal(r)}>
                             Editar
                           </Button>
@@ -416,6 +419,7 @@ export default function SettingsHoursPage() {
                     ))}
                   </TableBody>
                 </Table>
+                </div>
               </TabsContent>
 
               {/* ── Vet Schedules ── */}
@@ -434,36 +438,37 @@ export default function SettingsHoursPage() {
                 >
                   <Plus className="w-4 h-4 mr-2" /> Adicionar horário
                 </Button>
-                <Table>
+                <div className="overflow-x-auto border border-slate-200 rounded-lg">
+                <Table className="min-w-full border-collapse bg-white text-sm">
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Veterinário</TableHead>
-                      <TableHead>Dia</TableHead>
-                      <TableHead>Início</TableHead>
-                      <TableHead>Fim</TableHead>
-                      <TableHead>Slot (min)</TableHead>
-                      <TableHead>Tipo</TableHead>
-                      <TableHead>Ações</TableHead>
+                      <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Veterinário</TableHead>
+                      <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Dia</TableHead>
+                      <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Início</TableHead>
+                      <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Fim</TableHead>
+                      <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Slot (min)</TableHead>
+                      <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Tipo</TableHead>
+                      <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {vetSchedules.map((r) => (
                       <TableRow key={r.id}>
-                        <TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                           {r.user?.name ?? veterinarians.find((v) => v.id === r.user_id)?.name ?? r.user_id}
                         </TableCell>
-                        <TableCell>{DAYS.find((x) => x.value === r.day_of_week)?.label ?? r.day_of_week}</TableCell>
-                        <TableCell>{r.start_time}</TableCell>
-                        <TableCell>{r.end_time}</TableCell>
-                        <TableCell>{r.slot_duration_minutes}</TableCell>
-                        <TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{DAYS.find((x) => x.value === r.day_of_week)?.label ?? r.day_of_week}</TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{r.start_time}</TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{r.end_time}</TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{r.slot_duration_minutes}</TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                           {r.schedule_type === 'on_call' ? (
                             <Badge className="bg-orange-500">Plantão</Badge>
                           ) : (
                             <Badge className="bg-primary/100">Regular</Badge>
                           )}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button variant="destructive" size="icon" className="h-7 w-7">
@@ -488,6 +493,7 @@ export default function SettingsHoursPage() {
                     ))}
                   </TableBody>
                 </Table>
+                </div>
               </TabsContent>
             </Tabs>
           </CardContent>

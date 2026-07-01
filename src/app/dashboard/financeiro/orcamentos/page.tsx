@@ -233,24 +233,25 @@ export default function OrcamentosPage() {
               {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
             </div>
           ) : (
-            <Table>
+            <div className="overflow-x-auto border border-slate-200 rounded-lg">
+            <Table className="min-w-full border-collapse bg-white text-sm">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nº</TableHead>
-                  <TableHead>Paciente</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
-                  <TableHead className="text-right">Plano Cobre</TableHead>
-                  <TableHead className="text-right">Responsável Paga</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Validade</TableHead>
-                  <TableHead>Ações</TableHead>
+                  <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Nº</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Paciente</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Tipo</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">Total</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">Plano Cobre</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">Responsável Paga</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Status</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Validade</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {budgets.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="py-12 text-center text-muted-foreground">
+                    <TableCell colSpan={9} className="border-t border-slate-200 py-8 text-center text-sm text-slate-500">
                       Nenhum orçamento encontrado
                     </TableCell>
                   </TableRow>
@@ -259,21 +260,21 @@ export default function OrcamentosPage() {
                     const totals = computeTotals(b.items ?? []);
                     return (
                       <TableRow key={b.id}>
-                        <TableCell className="font-mono text-xs">{b.id.substring(0, 8).toUpperCase()}</TableCell>
-                        <TableCell>{b.patient?.name}</TableCell>
-                        <TableCell>{b.type === 'procedure' ? 'Procedimento' : 'Internação'}</TableCell>
-                        <TableCell className="text-right tabular-nums">{fmt(totals.total)}</TableCell>
-                        <TableCell className="text-right tabular-nums text-green-600">{fmt(totals.plan)}</TableCell>
-                        <TableCell className="text-right tabular-nums text-blue-600">{fmt(totals.tutor)}</TableCell>
-                        <TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-slate-600 font-mono text-xs">{b.id.substring(0, 8).toUpperCase()}</TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{b.patient?.name}</TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{b.type === 'procedure' ? 'Procedimento' : 'Internação'}</TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-right tabular-nums text-slate-600">{fmt(totals.total)}</TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-right tabular-nums text-green-600">{fmt(totals.plan)}</TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-right tabular-nums text-blue-600">{fmt(totals.tutor)}</TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                           <Badge variant={STATUS_COLORS[b.status] ?? 'secondary'}>
                             {STATUS_LABELS[b.status] ?? b.status}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
+                        <TableCell className="border border-slate-200 px-3 py-3 text-sm text-muted-foreground">
                           {b.valid_until ? new Date(b.valid_until).toLocaleDateString('pt-BR') : '—'}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                           <div className="flex items-center gap-1">
                             <Button variant="ghost" size="icon" onClick={() => setSelected(b)} title="Visualizar">
                               <Eye className="size-4" />
@@ -294,6 +295,7 @@ export default function OrcamentosPage() {
                 )}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -378,26 +380,28 @@ export default function OrcamentosPage() {
                 <div><span className="font-medium">Tipo:</span> {selected.type}</div>
                 <div><span className="font-medium">Status:</span> {STATUS_LABELS[selected.status]}</div>
               </div>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Descrição</TableHead>
-                    <TableHead className="text-right">Qtd</TableHead>
-                    <TableHead className="text-right">Unit.</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {(selected.items ?? []).map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell>{item.description}</TableCell>
-                      <TableCell className="text-right">{item.quantity}</TableCell>
-                      <TableCell className="text-right">{fmt(Number(item.unit_price))}</TableCell>
-                      <TableCell className="text-right">{fmt(Number(item.total_price))}</TableCell>
+              <div className="overflow-x-auto border border-slate-200 rounded-lg">
+                <Table className="min-w-full border-collapse bg-white text-sm">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Descrição</TableHead>
+                      <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">Qtd</TableHead>
+                      <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">Unit.</TableHead>
+                      <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">Total</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {(selected.items ?? []).map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{item.description}</TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-right text-slate-600">{item.quantity}</TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-right text-slate-600">{fmt(Number(item.unit_price))}</TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-right text-slate-600">{fmt(Number(item.total_price))}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
               {(() => {
                 const t = computeTotals(selected.items ?? []);
                 return (

@@ -149,29 +149,30 @@ function PlanPricesDialog({
           </div>
         ) : (
           <div className="space-y-4">
-            <Table>
+            <div className="overflow-x-auto border border-slate-200 rounded-lg">
+            <Table className="min-w-full border-collapse bg-white text-sm">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Convênio</TableHead>
-                  <TableHead>Valor cobrado</TableHead>
-                  <TableHead>Reembolso recebido</TableHead>
-                  <TableHead className="w-[60px]" />
+                  <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Convênio</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Valor cobrado</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Reembolso recebido</TableHead>
+                  <TableHead className="w-[60px] border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600" />
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {prices.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center text-muted-foreground py-6">
+                    <TableCell colSpan={4} className="border-t border-slate-200 py-8 text-center text-sm text-slate-500">
                       Nenhum convênio configurado
                     </TableCell>
                   </TableRow>
                 )}
                 {prices.map((p) => (
                   <TableRow key={p.id}>
-                    <TableCell>{p.health_plan_name ?? p.health_plan_id}</TableCell>
-                    <TableCell>{fmtBRL(p.plan_price)}</TableCell>
-                    <TableCell>{fmtBRL(p.reimbursement)}</TableCell>
-                    <TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{p.health_plan_name ?? p.health_plan_id}</TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{fmtBRL(p.plan_price)}</TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{fmtBRL(p.reimbursement)}</TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                       <Button variant="ghost" size="sm" className="text-red-500" onClick={() => handleDelete(p.health_plan_id)}>
                         <X className="w-4 h-4" />
                       </Button>
@@ -180,7 +181,7 @@ function PlanPricesDialog({
                 ))}
                 {addMode && (
                   <TableRow>
-                    <TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                       <Select value={newPlanId} onValueChange={setNewPlanId}>
                         <SelectTrigger className="h-8">
                           <SelectValue placeholder="Selecionar convênio" />
@@ -192,7 +193,7 @@ function PlanPricesDialog({
                         </SelectContent>
                       </Select>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                       <Input
                         type="number"
                         step="0.01"
@@ -203,7 +204,7 @@ function PlanPricesDialog({
                         onChange={(e) => setNewPlanPrice(e.target.value)}
                       />
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                       <Input
                         type="number"
                         step="0.01"
@@ -214,7 +215,7 @@ function PlanPricesDialog({
                         onChange={(e) => setNewReimbursement(e.target.value)}
                       />
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                       <Button size="sm" variant="ghost" disabled={saving} onClick={handleSaveNew}>
                         {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'OK'}
                       </Button>
@@ -223,6 +224,7 @@ function PlanPricesDialog({
                 )}
               </TableBody>
             </Table>
+            </div>
             {!addMode && availablePlans.length > 0 && (
               <Button variant="outline" size="sm" onClick={() => setAddMode(true)}>
                 <Plus className="w-4 h-4 mr-1" /> Adicionar convênio
@@ -346,16 +348,17 @@ export default function SettingsExamsPage() {
               <Loader2 className="w-6 h-6 animate-spin text-primary" />
             </div>
           ) : (
-            <div className="rounded-md border overflow-hidden">
-              <Table>
+            <div>
+              <div className="overflow-x-auto border border-slate-200 rounded-lg">
+              <Table className="min-w-full border-collapse bg-white text-sm">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Área</TableHead>
-                    <TableHead>Particular</TableHead>
-                    <TableHead>Custo Lab</TableHead>
-                    <TableHead>Margem</TableHead>
-                    <TableHead className="w-[140px]">Ações</TableHead>
+                    <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Nome</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Área</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Particular</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Custo Lab</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Margem</TableHead>
+                    <TableHead className="w-[140px] border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -366,16 +369,16 @@ export default function SettingsExamsPage() {
                         : '—';
                     return (
                       <TableRow key={r.id}>
-                        <TableCell>{r.name}</TableCell>
-                        <TableCell>{r.exam_area?.name ?? r.exam_area_id ?? '—'}</TableCell>
-                        <TableCell>{fmtBRL(r.private_price)}</TableCell>
-                        <TableCell>{fmtBRL(r.lab_cost)}</TableCell>
-                        <TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{r.name}</TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{r.exam_area?.name ?? r.exam_area_id ?? '—'}</TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{fmtBRL(r.private_price)}</TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{fmtBRL(r.lab_cost)}</TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                           {margin !== '—' ? (
                             <Badge variant="secondary">{margin}</Badge>
                           ) : '—'}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                           <div className="flex items-center gap-1">
                             <Button variant="ghost" size="sm" onClick={() => openEdit(r)} title="Editar">
                               <Pencil className="w-4 h-4" />
@@ -393,6 +396,7 @@ export default function SettingsExamsPage() {
                   })}
                 </TableBody>
               </Table>
+              </div>
               <ListPagination
                 page={listPage}
                 totalPages={listTotalPages}

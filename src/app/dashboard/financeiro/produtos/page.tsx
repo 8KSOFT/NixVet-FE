@@ -285,33 +285,34 @@ export default function ProdutosPage() {
             products.length === 0 ? (
               <p className="py-8 text-center text-sm text-muted-foreground">Nenhum produto cadastrado.</p>
             ) : (
-              <Table className="text-sm">
+              <div className="overflow-x-auto border border-slate-200 rounded-lg">
+              <Table className="min-w-full border-collapse bg-white text-sm">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Produto</TableHead>
-                    <TableHead className="text-right">Custo</TableHead>
-                    <TableHead className="text-right">Venda</TableHead>
-                    <TableHead className="text-right">Imposto</TableHead>
-                    <TableHead className="text-right">Margem</TableHead>
-                    <TableHead className="text-right">Estoque</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
+                    <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Produto</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">Custo</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">Venda</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">Imposto</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">Margem</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">Estoque</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {products.map((p) => (
                     <TableRow key={p.id} className={!p.active ? 'opacity-50' : ''}>
-                      <TableCell className="font-medium">
+                      <TableCell className="border border-slate-200 px-3 py-3 font-medium text-slate-900">
                         {p.name}
                         {p.sku ? <span className="ml-2 text-xs text-muted-foreground">{p.sku}</span> : null}
                       </TableCell>
-                      <TableCell className="text-right tabular-nums">{fmt(p.cost_price)}</TableCell>
-                      <TableCell className="text-right tabular-nums">{fmt(p.sale_price)}</TableCell>
-                      <TableCell className="text-right tabular-nums">{Number(p.tax_percentage)}%</TableCell>
-                      <TableCell className="text-right tabular-nums">
+                      <TableCell className="border border-slate-200 px-3 py-3 text-right tabular-nums text-slate-600">{fmt(p.cost_price)}</TableCell>
+                      <TableCell className="border border-slate-200 px-3 py-3 text-right tabular-nums text-slate-600">{fmt(p.sale_price)}</TableCell>
+                      <TableCell className="border border-slate-200 px-3 py-3 text-right tabular-nums text-slate-600">{Number(p.tax_percentage)}%</TableCell>
+                      <TableCell className="border border-slate-200 px-3 py-3 text-right tabular-nums text-slate-600">
                         {p.pricing ? `${p.pricing.margin_pct}%` : '—'}
                       </TableCell>
-                      <TableCell className="text-right tabular-nums">{p.stock_quantity}</TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="border border-slate-200 px-3 py-3 text-right tabular-nums text-slate-600">{p.stock_quantity}</TableCell>
+                      <TableCell className="border border-slate-200 px-3 py-3 text-right text-slate-600">
                         <div className="flex justify-end gap-1">
                           <Button size="icon" variant="ghost" onClick={() => openEditProduct(p)}>
                             <Pencil className="size-4" />
@@ -325,34 +326,37 @@ export default function ProdutosPage() {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             )
           ) : sales.length === 0 ? (
             <p className="py-8 text-center text-sm text-muted-foreground">Nenhuma venda registrada.</p>
           ) : (
-            <Table className="text-sm">
+            <div className="overflow-x-auto border border-slate-200 rounded-lg">
+            <Table className="min-w-full border-collapse bg-white text-sm">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Data</TableHead>
-                  <TableHead>Itens</TableHead>
-                  <TableHead className="text-right">Bruto</TableHead>
-                  <TableHead className="text-right">Imposto</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
+                  <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Data</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Itens</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">Bruto</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">Imposto</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">Total</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {sales.map((s) => (
                   <TableRow key={s.id}>
-                    <TableCell>{new Date(s.sold_at).toLocaleString('pt-BR')}</TableCell>
-                    <TableCell className="max-w-[320px] truncate">
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{new Date(s.sold_at).toLocaleString('pt-BR')}</TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600 max-w-[320px] truncate">
                       {(s.items ?? []).map((i) => `${i.quantity}× ${i.product_name}`).join(', ')}
                     </TableCell>
-                    <TableCell className="text-right tabular-nums">{fmt(s.total_gross)}</TableCell>
-                    <TableCell className="text-right tabular-nums">{fmt(s.total_tax)}</TableCell>
-                    <TableCell className="text-right font-semibold tabular-nums">{fmt(s.total_amount)}</TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-right tabular-nums text-slate-600">{fmt(s.total_gross)}</TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-right tabular-nums text-slate-600">{fmt(s.total_tax)}</TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-right font-semibold tabular-nums text-slate-900">{fmt(s.total_amount)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>

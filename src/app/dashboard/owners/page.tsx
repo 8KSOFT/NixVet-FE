@@ -308,38 +308,38 @@ export default function OwnersPage() {
         </div>
       </div>
 
-      <div className="rounded-md border border-gray-300 overflow-hidden">
-        <Table>
-          <TableHeader className="h-15">
-            <TableRow className="border-b border-gray-300">
-              <TableHead>{t('owners.table.name')}</TableHead>
-              <TableHead>{t('owners.table.email')}</TableHead>
-              <TableHead>{t('owners.table.phone')}</TableHead>
-              <TableHead>{t('owners.table.cpf')}</TableHead>
-              <TableHead>{t('owners.table.actions')}</TableHead>
+      <div className="overflow-x-auto border border-slate-200 rounded-lg">
+        <Table className="min-w-full border-collapse bg-white text-sm">
+          <TableHeader>
+            <TableRow>
+              <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('owners.table.name')}</TableHead>
+              <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('owners.table.email')}</TableHead>
+              <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('owners.table.phone')}</TableHead>
+              <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('owners.table.cpf')}</TableHead>
+              <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('owners.table.actions')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8">
+                <TableCell colSpan={5} className="border-t border-slate-200 py-8 text-center text-sm text-slate-500">
                   <Loader2 className="w-6 h-6 animate-spin mx-auto text-muted-foreground" />
                 </TableCell>
               </TableRow>
             ) : tutors.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={5} className="border-t border-slate-200 py-8 text-center text-sm text-slate-500">
                   {t('owners.empty')}
                 </TableCell>
               </TableRow>
             ) : (
               tutors.map((tutor) => (
-                <TableRow key={tutor.id} className="border-b border-gray-300">
-                  <TableCell>{tutor.name}</TableCell>
-                  <TableCell className="w-60">{tutor.email}</TableCell>
-                  <TableCell className="w-60">{formatPhoneDisplay(tutor.phone)}</TableCell>
-                  <TableCell className="w-60">{formatCpfDisplay(tutor.cpf)}</TableCell>
-                  <TableCell className="w-40">
+                <TableRow key={tutor.id}>
+                  <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{tutor.name}</TableCell>
+                  <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{tutor.email}</TableCell>
+                  <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{formatPhoneDisplay(tutor.phone)}</TableCell>
+                  <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{formatCpfDisplay(tutor.cpf)}</TableCell>
+                  <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                     <div className="flex items-center gap-1">
                       <Button variant="ghost" size="icon" className="p-0" onClick={() => handleEdit(tutor)}>
                         <Pencil className="w-4 h-4" />

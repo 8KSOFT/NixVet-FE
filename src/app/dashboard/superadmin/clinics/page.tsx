@@ -312,56 +312,57 @@ export default function SuperadminClinicsPage() {
           </div>
         ) : (
           <>
-          <Table>
+          <div className="overflow-x-auto border border-slate-200 rounded-lg">
+          <Table className="min-w-full border-collapse bg-white text-sm">
             <TableHeader>
               <TableRow>
-                <TableHead>Clínica</TableHead>
-                <TableHead>Código</TableHead>
-                <TableHead>Admin</TableHead>
-                <TableHead>Chatbot WhatsApp</TableHead>
-                <TableHead>Plataforma IA</TableHead>
-                <TableHead>Plano</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
+                <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Clínica</TableHead>
+                <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Código</TableHead>
+                <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Admin</TableHead>
+                <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Chatbot WhatsApp</TableHead>
+                <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Plataforma IA</TableHead>
+                <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Plano</TableHead>
+                <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Status</TableHead>
+                <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {rows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center text-muted-foreground py-12">
+                  <TableCell colSpan={8} className="border-t border-slate-200 py-8 text-center text-sm text-slate-500">
                     Nenhuma clínica cadastrada.
                   </TableCell>
                 </TableRow>
               ) : (
                 rows.map((row) => (
                   <TableRow key={row.id}>
-                    <TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                       <div className="font-medium">{row.name}</div>
                       <div className="text-xs text-muted-foreground">{row.email ?? ''} {row.phone ? `· ${row.phone}` : ''}</div>
                     </TableCell>
-                    <TableCell className="font-mono text-sm">{row.code}</TableCell>
-                    <TableCell className="text-sm">
+                    <TableCell className="border border-slate-200 px-3 py-3 font-mono text-sm text-slate-600">{row.code}</TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-sm text-slate-600">
                       <div>{row.admin_name ?? '—'}</div>
                       <div className="text-muted-foreground text-xs">{row.admin_email ?? ''}</div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                       <Switch
                         checked={row.whatsapp_ai_chatbot_enabled}
                         onCheckedChange={(v) => quickToggle(row, 'whatsapp_ai_chatbot_enabled', v)}
                       />
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                       <Switch
                         checked={row.ai_platform_enabled}
                         onCheckedChange={(v) => quickToggle(row, 'ai_platform_enabled', v)}
                       />
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                       <Badge variant="outline" className="capitalize w-fit">
                         {row.billing_plan?.trim() || '—'}
                       </Badge>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                       <div className="flex flex-col gap-1">
                         <Badge
                           variant={statusBadgeVariant(row.subscription_status)}
@@ -381,7 +382,7 @@ export default function SuperadminClinicsPage() {
                         )}
                       </div>
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="border border-slate-200 px-3 py-3 text-right text-slate-600">
                       <div className="flex items-center justify-end gap-1 flex-wrap">
                         {(row.subscription_status !== 'active' && row.subscription_status !== 'exempt') && (
                           <Button
@@ -446,6 +447,7 @@ export default function SuperadminClinicsPage() {
               )}
             </TableBody>
           </Table>
+          </div>
           <ListPagination
             page={listPage}
             totalPages={listTotalPages}

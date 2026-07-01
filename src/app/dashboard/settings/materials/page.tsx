@@ -126,25 +126,25 @@ export default function SettingsMaterialsPage() {
               <Loader2 className="w-6 h-6 animate-spin text-primary" />
             </div>
           ) : (
-            <div className="rounded-md border overflow-hidden">
-            <Table>
+            <div className="overflow-x-auto border border-slate-200 rounded-lg">
+            <Table className="min-w-full border-collapse bg-white text-sm">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead className="text-right">Custo</TableHead>
-                  <TableHead className="text-right">Venda</TableHead>
-                  <TableHead className="text-right">Imposto</TableHead>
-                  <TableHead className="w-[120px]">Ações</TableHead>
+                  <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Nome</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">Custo</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">Venda</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">Imposto</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600 w-[120px]">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {list.map((r) => (
                   <TableRow key={r.id}>
-                    <TableCell>{r.name}</TableCell>
-                    <TableCell className="text-right tabular-nums">{fmtBRL(r.cost_price)}</TableCell>
-                    <TableCell className="text-right tabular-nums">{fmtBRL(r.private_price)}</TableCell>
-                    <TableCell className="text-right tabular-nums">{r.tax_percentage != null ? `${Number(r.tax_percentage)}%` : '—'}</TableCell>
-                    <TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{r.name}</TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-right text-slate-600 tabular-nums">{fmtBRL(r.cost_price)}</TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-right text-slate-600 tabular-nums">{fmtBRL(r.private_price)}</TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-right text-slate-600 tabular-nums">{r.tax_percentage != null ? `${Number(r.tax_percentage)}%` : '—'}</TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                       <div className="flex items-center gap-2">
                         <Button variant="ghost" size="sm" onClick={() => openEdit(r)}>
                           <Pencil className="w-4 h-4" />

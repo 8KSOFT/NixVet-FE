@@ -134,7 +134,7 @@ export default function PatientDetailPage() {
           <CardTitle className="text-foreground">{patient.name}</CardTitle>
           <Button asChild size="sm" className="bg-primary hover:bg-blue-700">
             <Link href={`/dashboard/medical-records?patient=${id}`}>
-              <FileText className="w-4 h-4 mr-1" /> Prontuários
+              <FileText className="w-4 h-4 mr-1" /> Fichas
             </Link>
           </Button>
         </CardHeader>

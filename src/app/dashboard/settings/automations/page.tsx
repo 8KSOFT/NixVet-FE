@@ -120,27 +120,28 @@ export default function SettingsAutomationsPage() {
               <Loader2 className="w-6 h-6 animate-spin text-primary" />
             </div>
           ) : (
-            <div className="rounded-md border overflow-hidden">
-            <Table>
+            <div>
+            <div className="overflow-x-auto border border-slate-200 rounded-lg">
+            <Table className="min-w-full border-collapse bg-white text-sm">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Evento</TableHead>
-                  <TableHead>Ação</TableHead>
-                  <TableHead className="w-[100px]">Atraso (min)</TableHead>
-                  <TableHead>Canal</TableHead>
-                  <TableHead>Ativo</TableHead>
-                  <TableHead className="w-[80px]">Ações</TableHead>
+                  <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Evento</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Ação</TableHead>
+                  <TableHead className="w-[100px] border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Atraso (min)</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Canal</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Ativo</TableHead>
+                  <TableHead className="w-[80px] border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {list.map((r) => (
                   <TableRow key={r.id}>
-                    <TableCell>{r.event_name}</TableCell>
-                    <TableCell>{r.action_type}</TableCell>
-                    <TableCell>{r.delay_minutes}</TableCell>
-                    <TableCell>{r.channel}</TableCell>
-                    <TableCell>{r.is_active ? 'Sim' : 'Não'}</TableCell>
-                    <TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{r.event_name}</TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{r.action_type}</TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{r.delay_minutes}</TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{r.channel}</TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{r.is_active ? 'Sim' : 'Não'}</TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                       <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" onClick={() => handleDelete(r.id)}>
                         <Trash2 className="w-4 h-4" />
                       </Button>
@@ -149,6 +150,7 @@ export default function SettingsAutomationsPage() {
                 ))}
               </TableBody>
             </Table>
+            </div>
             <ListPagination
               page={listPage}
               totalPages={listTotalPages}

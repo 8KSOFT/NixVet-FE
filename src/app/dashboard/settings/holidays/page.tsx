@@ -245,22 +245,23 @@ export default function HolidaysPage() {
               Nenhum feriado cadastrado para {year}. Use o botão &quot;Buscar com IA&quot; para importar automaticamente.
             </p>
           ) : (
-            <Table>
+            <div className="overflow-x-auto border border-slate-200 rounded-lg">
+            <Table className="min-w-full border-collapse bg-white text-sm">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Data</TableHead>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Recorrente</TableHead>
-                  <TableHead>Ações</TableHead>
+                  <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Data</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Nome</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Tipo</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Recorrente</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {holidays.map((h) => (
                   <TableRow key={h.id}>
-                    <TableCell className="font-mono">{formatDate(h.date)}</TableCell>
-                    <TableCell>{h.name}</TableCell>
-                    <TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 font-mono text-slate-600">{formatDate(h.date)}</TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{h.name}</TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                       {h.is_regional ? (
                         <Badge variant="outline" className="border-orange-300 text-orange-700">
                           Regional {h.city ? `(${h.city}/${h.state})` : ''}
@@ -269,14 +270,14 @@ export default function HolidaysPage() {
                         <Badge variant="outline" className="border-blue-300 text-primary">Nacional</Badge>
                       )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                       {h.is_recurring ? (
                         <Badge className="bg-green-500">Sim</Badge>
                       ) : (
                         <Badge variant="secondary">Não</Badge>
                       )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button variant="destructive" size="icon" className="h-7 w-7">
@@ -301,6 +302,7 @@ export default function HolidaysPage() {
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -396,28 +398,28 @@ export default function HolidaysPage() {
                     </Button>
                   </div>
                 </div>
-                <div className="max-h-[40vh] overflow-y-auto border rounded-md">
-                  <Table>
+                <div className="max-h-[40vh] overflow-y-auto overflow-x-auto border border-slate-200 rounded-lg">
+                  <Table className="min-w-full border-collapse bg-white text-sm">
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-10"></TableHead>
-                        <TableHead>Data</TableHead>
-                        <TableHead>Nome</TableHead>
-                        <TableHead>Tipo</TableHead>
+                        <TableHead className="w-10 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600"></TableHead>
+                        <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Data</TableHead>
+                        <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Nome</TableHead>
+                        <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Tipo</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {suggestions.map((s, i) => (
                         <TableRow key={i} className={selectedSuggestions.has(i) ? '' : 'opacity-50'}>
-                          <TableCell>
+                          <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                             <Checkbox
                               checked={selectedSuggestions.has(i)}
                               onCheckedChange={() => toggleSuggestion(i)}
                             />
                           </TableCell>
-                          <TableCell className="font-mono">{formatDate(s.date)}</TableCell>
-                          <TableCell>{s.name}</TableCell>
-                          <TableCell>
+                          <TableCell className="border border-slate-200 px-3 py-3 font-mono text-slate-600">{formatDate(s.date)}</TableCell>
+                          <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{s.name}</TableCell>
+                          <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                             {s.is_regional ? (
                               <Badge variant="outline" className="border-orange-300 text-orange-700 text-xs">Regional</Badge>
                             ) : (

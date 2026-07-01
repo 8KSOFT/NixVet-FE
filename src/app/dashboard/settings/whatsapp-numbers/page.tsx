@@ -310,27 +310,27 @@ export default function SettingsWhatsappNumbersPage() {
               <Loader2 className="w-5 h-5 animate-spin text-primary" />
             </div>
           ) : (
-            <div className="rounded-md border overflow-hidden">
-            <Table>
+            <div className="overflow-x-auto border border-slate-200 rounded-lg">
+            <Table className="min-w-full border-collapse bg-white text-sm">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Instance ID</TableHead>
-                  <TableHead>Número conectado</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Ações</TableHead>
+                  <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Instance ID</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Número conectado</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Status</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {list.map((row) => (
                   <TableRow key={row.id}>
-                    <TableCell className="font-mono text-xs max-w-[160px] truncate" title={row.phone_number_id}>
+                    <TableCell className="border border-slate-200 px-3 py-3 font-mono text-xs text-slate-600 truncate" title={row.phone_number_id}>
                       {row.phone_number_id}
                     </TableCell>
-                    <TableCell>{row.display_phone ?? '—'}</TableCell>
-                    <TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{row.display_phone ?? '—'}</TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                       <StatusBadge status={statuses[row.id] ?? null} loading={statusLoading[row.id] ?? false} />
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                       <div className="flex gap-1">
                         <Button
                           size="sm"
@@ -367,7 +367,7 @@ export default function SettingsWhatsappNumbersPage() {
                 ))}
                 {list.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={4} className="border-t border-slate-200 py-8 text-center text-sm text-slate-500">
                       {provisionAvailable
                         ? 'Clique em "Provisionar nova instância" para conectar o WhatsApp da clínica.'
                         : 'Nenhuma instância cadastrada.'}

@@ -127,20 +127,21 @@ export default function AppointmentTypesPage() {
               <Loader2 className="w-6 h-6 animate-spin text-primary" />
             </div>
           ) : (
-            <div className="rounded-md border overflow-hidden">
-            <Table>
+            <div>
+            <div className="overflow-x-auto border border-slate-200 rounded-lg">
+            <Table className="min-w-full border-collapse bg-white text-sm">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Duração</TableHead>
-                  <TableHead>Cor no calendário</TableHead>
-                  <TableHead>Ações</TableHead>
+                  <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Nome</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Duração</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Cor no calendário</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {list.map((r) => (
                   <TableRow key={r.id}>
-                    <TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                       <div className="flex items-center gap-2">
                         {r.color && (
                           <span
@@ -150,15 +151,15 @@ export default function AppointmentTypesPage() {
                         {r.name}
                       </div>
                     </TableCell>
-                    <TableCell>{formatDuration(r.duration_minutes)}</TableCell>
-                    <TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{formatDuration(r.duration_minutes)}</TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                       {r.color ? (
                         <Badge style={{ background: r.color, color: '#fff', borderColor: r.color }}>{r.color}</Badge>
                       ) : (
                         <span className="text-muted-foreground/60">—</span>
                       )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                       <div className="flex items-center gap-2">
                         <Button variant="outline" size="sm" onClick={() => openEdit(r)}>
                           <Pencil className="w-4 h-4" />
@@ -186,6 +187,7 @@ export default function AppointmentTypesPage() {
                 ))}
               </TableBody>
             </Table>
+            </div>
             <ListPagination
               page={listPage}
               totalPages={listTotalPages}

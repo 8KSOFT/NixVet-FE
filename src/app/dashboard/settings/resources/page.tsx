@@ -94,19 +94,19 @@ export default function SettingsResourcesPage() {
               <Loader2 className="w-5 h-5 animate-spin text-primary" />
             </div>
           ) : (
-            <div className="rounded-md border overflow-hidden">
-            <Table>
+            <div className="overflow-x-auto border border-slate-200 rounded-lg">
+            <Table className="min-w-full border-collapse bg-white text-sm">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Tipo</TableHead>
+                  <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Nome</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Tipo</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {list.map((r) => (
                   <TableRow key={r.id}>
-                    <TableCell>{r.name}</TableCell>
-                    <TableCell>{TYPES.find((x) => x.value === r.type)?.label ?? r.type}</TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{r.name}</TableCell>
+                    <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{TYPES.find((x) => x.value === r.type)?.label ?? r.type}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

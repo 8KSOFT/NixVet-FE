@@ -129,21 +129,22 @@ export default function SettingsDiseasesPage() {
               <Loader2 className="w-6 h-6 animate-spin text-primary" />
             </div>
           ) : (
-            <div className="rounded-md border overflow-hidden">
-              <Table>
+            <div>
+              <div className="overflow-x-auto border border-slate-200 rounded-lg">
+              <Table className="min-w-full border-collapse bg-white text-sm">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Categoria</TableHead>
-                    <TableHead className="w-[120px]">Ações</TableHead>
+                    <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Nome</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Categoria</TableHead>
+                    <TableHead className="w-[120px] border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {list.map((r) => (
                     <TableRow key={r.id}>
-                      <TableCell>{r.name}</TableCell>
-                      <TableCell>{r.disease_category?.name ?? r.disease_category_id ?? '—'}</TableCell>
-                      <TableCell>
+                      <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{r.name}</TableCell>
+                      <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{r.disease_category?.name ?? r.disease_category_id ?? '—'}</TableCell>
+                      <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                         <div className="flex items-center gap-2">
                           <Button variant="ghost" size="sm" onClick={() => openEdit(r)}>
                             <Pencil className="w-4 h-4" />
@@ -157,6 +158,7 @@ export default function SettingsDiseasesPage() {
                   ))}
                 </TableBody>
               </Table>
+              </div>
               <ListPagination
                 page={listPage}
                 totalPages={listTotalPages}

@@ -96,6 +96,7 @@ export default function InternacoesPage() {
     health_plan_id: '',
     daily_rate: 0,
     notes: '',
+    belongings: '',
   });
 
   const fetchData = useCallback(async () => {
@@ -265,44 +266,46 @@ export default function InternacoesPage() {
         <TabsContent value="history" className="mt-4">
           <Card>
             <CardContent className="p-0">
-              <Table>
+              <div className="overflow-x-auto border border-slate-200 rounded-lg">
+              <Table className="min-w-full border-collapse bg-white text-sm">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Paciente</TableHead>
-                    <TableHead>Motivo</TableHead>
-                    <TableHead>Admissão</TableHead>
-                    <TableHead>Alta</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Vet.</TableHead>
+                    <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Paciente</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Motivo</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Admissão</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Alta</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Status</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Vet.</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {discharged.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="py-12 text-center text-muted-foreground">
+                      <TableCell colSpan={6} className="border-t border-slate-200 py-8 text-center text-sm text-slate-500">
                         Nenhum histórico
                       </TableCell>
                     </TableRow>
                   ) : (
                     discharged.map((h) => (
-                      <TableRow key={h.id} className="cursor-pointer hover:bg-muted/50">
-                        <TableCell>
+                      <TableRow key={h.id}>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                           <Link href={`/dashboard/internacoes/${h.id}`} className="font-medium hover:underline">
                             {h.patient?.name}
                           </Link>
                         </TableCell>
-                        <TableCell className="max-w-xs truncate text-muted-foreground">{h.reason}</TableCell>
-                        <TableCell>{new Date(h.admission_date).toLocaleDateString('pt-BR')}</TableCell>
-                        <TableCell className="text-muted-foreground">{h.status === 'discharged' ? '—' : ''}</TableCell>
-                        <TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 truncate text-muted-foreground">{h.reason}</TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{new Date(h.admission_date).toLocaleDateString('pt-BR')}</TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-muted-foreground">{h.status === 'discharged' ? '—' : ''}</TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                           <Badge variant={h.status === 'discharged' ? 'secondary' : 'default'}>{h.status}</Badge>
                         </TableCell>
-                        <TableCell className="text-muted-foreground">{h.veterinarian?.name}</TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-muted-foreground">{h.veterinarian?.name}</TableCell>
                       </TableRow>
                     ))
                   )}
                 </TableBody>
               </Table>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -422,6 +425,15 @@ export default function InternacoesPage() {
                 onChange={(e) => setForm((f) => ({ ...f, daily_rate: Number(e.target.value) }))}
               />
             </div>
+          </div>
+          <div className="space-y-1">
+            <Label>Pertences</Label>
+            <Textarea
+              rows={2}
+              value={form.belongings}
+              onChange={(e) => setForm((f) => ({ ...f, belongings: e.target.value }))}
+              placeholder="Ex.: coleira azul, ração Hills, cobertinha xadrez"
+            />
           </div>
         </div>
       </DashboardCreateFormDialog>

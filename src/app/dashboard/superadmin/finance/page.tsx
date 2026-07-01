@@ -315,24 +315,26 @@ export default function SuperadminFinancePage() {
             {(dashboard?.monthly_revenue?.length ?? 0) === 0 ? (
               <p className="text-sm text-muted-foreground">Nenhum pagamento no período.</p>
             ) : (
-              <Table>
+              <div className="overflow-x-auto border border-slate-200 rounded-lg">
+              <Table className="min-w-full border-collapse bg-white text-sm">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Mês</TableHead>
-                    <TableHead className="text-right">Pagamentos</TableHead>
-                    <TableHead className="text-right">Valor</TableHead>
+                    <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Mês</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">Pagamentos</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">Valor</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {dashboard!.monthly_revenue.map((r) => (
                     <TableRow key={r.month}>
-                      <TableCell>{formatMonth(r.month)}</TableCell>
-                      <TableCell className="text-right">{r.payments}</TableCell>
-                      <TableCell className="text-right font-medium">{formatBrl(r.value_brl)}</TableCell>
+                      <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{formatMonth(r.month)}</TableCell>
+                      <TableCell className="border border-slate-200 px-3 py-3 text-right text-slate-600">{r.payments}</TableCell>
+                      <TableCell className="border border-slate-200 px-3 py-3 text-right font-medium text-slate-900">{formatBrl(r.value_brl)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -343,26 +345,28 @@ export default function SuperadminFinancePage() {
             {(dashboard?.monthly_ai_cost?.length ?? 0) === 0 ? (
               <p className="text-sm text-muted-foreground">Nenhum uso de IA no período.</p>
             ) : (
-              <Table>
+              <div className="overflow-x-auto border border-slate-200 rounded-lg">
+              <Table className="min-w-full border-collapse bg-white text-sm">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Mês</TableHead>
-                    <TableHead className="text-right">Chamadas</TableHead>
-                    <TableHead className="text-right">Tokens</TableHead>
-                    <TableHead className="text-right">USD</TableHead>
+                    <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Mês</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">Chamadas</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">Tokens</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">USD</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {dashboard!.monthly_ai_cost.map((r) => (
                     <TableRow key={r.month}>
-                      <TableCell>{formatMonth(r.month)}</TableCell>
-                      <TableCell className="text-right">{r.calls}</TableCell>
-                      <TableCell className="text-right">{formatTokens(r.tokens)}</TableCell>
-                      <TableCell className="text-right">{formatUsd(r.cost_usd)}</TableCell>
+                      <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{formatMonth(r.month)}</TableCell>
+                      <TableCell className="border border-slate-200 px-3 py-3 text-right text-slate-600">{r.calls}</TableCell>
+                      <TableCell className="border border-slate-200 px-3 py-3 text-right text-slate-600">{formatTokens(r.tokens)}</TableCell>
+                      <TableCell className="border border-slate-200 px-3 py-3 text-right text-slate-600">{formatUsd(r.cost_usd)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -375,24 +379,26 @@ export default function SuperadminFinancePage() {
             {(dashboard?.ai_by_operation?.length ?? 0) === 0 ? (
               <p className="text-sm text-muted-foreground">Sem dados.</p>
             ) : (
-              <Table>
+              <div className="overflow-x-auto border border-slate-200 rounded-lg">
+              <Table className="min-w-full border-collapse bg-white text-sm">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Operação</TableHead>
-                    <TableHead className="text-right">Chamadas</TableHead>
-                    <TableHead className="text-right">USD</TableHead>
+                    <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Operação</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">Chamadas</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">USD</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {dashboard!.ai_by_operation.map((op) => (
                     <TableRow key={op.operation}>
-                      <TableCell>{OP_LABELS[op.operation] || op.operation}</TableCell>
-                      <TableCell className="text-right">{op.calls}</TableCell>
-                      <TableCell className="text-right">{formatUsd(op.cost_usd)}</TableCell>
+                      <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">{OP_LABELS[op.operation] || op.operation}</TableCell>
+                      <TableCell className="border border-slate-200 px-3 py-3 text-right text-slate-600">{op.calls}</TableCell>
+                      <TableCell className="border border-slate-200 px-3 py-3 text-right text-slate-600">{formatUsd(op.cost_usd)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -403,27 +409,29 @@ export default function SuperadminFinancePage() {
             {(dashboard?.top_ai_tenants?.length ?? 0) === 0 ? (
               <p className="text-sm text-muted-foreground">Sem dados.</p>
             ) : (
-              <Table>
+              <div className="overflow-x-auto border border-slate-200 rounded-lg">
+              <Table className="min-w-full border-collapse bg-white text-sm">
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Clínica</TableHead>
-                    <TableHead className="text-right">Chamadas</TableHead>
-                    <TableHead className="text-right">USD</TableHead>
+                    <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Clínica</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">Chamadas</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">USD</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {dashboard!.top_ai_tenants.map((t) => (
                     <TableRow key={t.tenant_id}>
-                      <TableCell>
+                      <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                         <div className="font-medium">{t.tenant_name}</div>
                         <div className="text-xs text-muted-foreground">{t.tenant_code}</div>
                       </TableCell>
-                      <TableCell className="text-right">{t.calls}</TableCell>
-                      <TableCell className="text-right">{formatUsd(t.cost_usd)}</TableCell>
+                      <TableCell className="border border-slate-200 px-3 py-3 text-right text-slate-600">{t.calls}</TableCell>
+                      <TableCell className="border border-slate-200 px-3 py-3 text-right text-slate-600">{formatUsd(t.cost_usd)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -445,29 +453,29 @@ export default function SuperadminFinancePage() {
             ))}
           </div>
 
-          <div className="overflow-x-auto">
-            <Table>
+          <div className="overflow-x-auto border border-slate-200 rounded-lg">
+            <Table className="min-w-full border-collapse bg-white text-sm">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Clínica</TableHead>
-                  <TableHead>Admin</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Plano</TableHead>
-                  <TableHead>Trial até</TableHead>
-                  <TableHead className="text-right">Chamadas IA</TableHead>
-                  <TableHead className="text-right">Custo IA</TableHead>
+                  <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Clínica</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Admin</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Status</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Plano</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Trial até</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">Chamadas IA</TableHead>
+                  <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">Custo IA</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loadingTenants ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={7} className="border-t border-slate-200 py-8 text-center text-sm text-slate-500">
                       Carregando...
                     </TableCell>
                   </TableRow>
                 ) : tenants.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={7} className="border-t border-slate-200 py-8 text-center text-sm text-slate-500">
                       Nenhuma clínica neste filtro.
                     </TableCell>
                   </TableRow>
@@ -479,15 +487,15 @@ export default function SuperadminFinancePage() {
                     };
                     return (
                       <TableRow key={row.id}>
-                        <TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                           <div className="font-medium">{row.name}</div>
                           <div className="text-xs text-muted-foreground">{row.code}</div>
                         </TableCell>
-                        <TableCell className="text-xs">{row.admin_email ?? '—'}</TableCell>
-                        <TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-xs text-slate-600">{row.admin_email ?? '—'}</TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                           <Badge variant={st.variant}>{st.label}</Badge>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
                           {row.billing_plan ? (
                             <span>
                               {PLAN_LABELS[row.billing_plan] || row.billing_plan}
@@ -501,13 +509,13 @@ export default function SuperadminFinancePage() {
                             '—'
                           )}
                         </TableCell>
-                        <TableCell className="text-xs whitespace-nowrap">
+                        <TableCell className="border border-slate-200 px-3 py-3 text-xs text-slate-600 whitespace-nowrap">
                           {row.trial_ends_at
                             ? dayjs(row.trial_ends_at).format('DD/MM/YYYY')
                             : '—'}
                         </TableCell>
-                        <TableCell className="text-right">{row.ai_calls}</TableCell>
-                        <TableCell className="text-right">{formatUsd(row.ai_cost_usd)}</TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-right text-slate-600">{row.ai_calls}</TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-3 text-right text-slate-600">{formatUsd(row.ai_cost_usd)}</TableCell>
                       </TableRow>
                     );
                   })
