@@ -359,7 +359,7 @@ function CustosTab({ hospitalizationId, status }: { hospitalizationId: string; s
   );
 }
 
-function EvolucaoTab({ hospitalizationId }: { hospitalizationId: string }) {
+function OcorrenciasTab({ hospitalizationId }: { hospitalizationId: string }) {
   const [evolutions, setEvolutions] = useState<Evolution[]>([]);
   const [loading, setLoading] = useState(true);
   const [openNew, setOpenNew] = useState(false);
@@ -380,7 +380,7 @@ function EvolucaoTab({ hospitalizationId }: { hospitalizationId: string }) {
       const res = await api.get<Evolution[]>(`/hospitalizations/${hospitalizationId}/evolutions`);
       setEvolutions(Array.isArray(res.data) ? res.data : []);
     } catch {
-      toast.error('Erro ao carregar evoluções');
+      toast.error('Erro ao carregar ocorrências');
     } finally {
       setLoading(false);
     }
@@ -390,7 +390,7 @@ function EvolucaoTab({ hospitalizationId }: { hospitalizationId: string }) {
     fetch();
   }, [fetch]);
 
-  const createEvolution = async () => {
+  const createOcorrencia = async () => {
     try {
       await api.post(`/hospitalizations/${hospitalizationId}/evolutions`, {
         ...form,
@@ -398,7 +398,7 @@ function EvolucaoTab({ hospitalizationId }: { hospitalizationId: string }) {
         temperature_c: form.temperature_c ? Number(form.temperature_c) : undefined,
         spo2_percent: form.spo2_percent ? Number(form.spo2_percent) : undefined,
       });
-      toast.success('Evolução registrada');
+      toast.success('Ocorrência registrada');
       setOpenNew(false);
       fetch();
     } catch {
@@ -429,7 +429,7 @@ function EvolucaoTab({ hospitalizationId }: { hospitalizationId: string }) {
       <div className="flex justify-between">
         <Button size="sm" variant="outline" onClick={() => setOpenNew(true)}>
           <Plus className="mr-2 size-4" />
-          Nova Evolução
+          Nova Ocorrência
         </Button>
         <Button size="sm" variant="ghost" onClick={downloadPdf}>
           <Download className="mr-2 size-4" />
@@ -439,7 +439,7 @@ function EvolucaoTab({ hospitalizationId }: { hospitalizationId: string }) {
 
       <div className="space-y-3">
         {evolutions.length === 0 ? (
-          <p className="py-12 text-center text-muted-foreground">Nenhuma evolução registrada</p>
+          <p className="py-12 text-center text-muted-foreground">Nenhuma ocorrência registrada</p>
         ) : (
           evolutions.map((e) => (
             <Card key={e.id}>
@@ -503,7 +503,7 @@ function EvolucaoTab({ hospitalizationId }: { hospitalizationId: string }) {
       <Dialog open={openNew} onOpenChange={setOpenNew}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Nova Evolução</DialogTitle>
+            <DialogTitle>Nova Ocorrência</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <div className="space-y-1">
@@ -569,7 +569,7 @@ function EvolucaoTab({ hospitalizationId }: { hospitalizationId: string }) {
               <Button variant="outline" onClick={() => setOpenNew(false)}>
                 Cancelar
               </Button>
-              <Button onClick={createEvolution}>Registrar</Button>
+              <Button onClick={createOcorrencia}>Registrar</Button>
             </div>
           </div>
         </DialogContent>
@@ -1215,7 +1215,7 @@ export default function HospitalizationDetailPage() {
       <Tabs defaultValue="resumo">
         <TabsList>
           <TabsTrigger value="resumo">Resumo</TabsTrigger>
-          <TabsTrigger value="prontuario">Ficha</TabsTrigger>
+          <TabsTrigger value="ocorrencias">Ocorrências</TabsTrigger>
           <TabsTrigger value="relatorio-medico"><FileText className="mr-1 size-4" /> Relatório Médico</TabsTrigger>
           <TabsTrigger value="sbar"><ClipboardList className="mr-1 size-4" /> Relatório SBAR</TabsTrigger>
           <TabsTrigger value="visitas"><Users className="mr-1 size-4" /> Visitas</TabsTrigger>
@@ -1231,8 +1231,8 @@ export default function HospitalizationDetailPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="prontuario" className="mt-4">
-          <EvolucaoTab hospitalizationId={hospitalizationId} />
+        <TabsContent value="ocorrencias" className="mt-4">
+          <OcorrenciasTab hospitalizationId={hospitalizationId} />
         </TabsContent>
 
         <TabsContent value="relatorio-medico" className="mt-4">
