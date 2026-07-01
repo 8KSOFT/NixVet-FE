@@ -314,7 +314,7 @@ export default function MedicalRecordsListPage() {
     <div>
       <div className="flex flex-wrap justify-between items-center gap-3 mb-8">
         <h1 className="text-2xl font-extrabold font-['InterDoFigma'] flex items-center gap-2">
-          Fichas
+          Prontuário
         </h1>
         <Button
           onClick={() => {
