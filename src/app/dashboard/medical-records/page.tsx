@@ -22,17 +22,10 @@ import {
   Search,
   UserPlus,
   PawPrint,
-  ChevronDown,
-  Stethoscope,
+  ChevronRight,
 } from "lucide-react";
 import api from "@/lib/axios";
-import {
-  API_PAGE_SIZE,
-  fetchAllListPages,
-  listQueryParams,
-  parseListResponse,
-} from "@/lib/pagination";
-import { ListPagination } from "@/components/list-pagination";
+import { fetchAllListPages } from "@/lib/pagination";
 import dayjs from "dayjs";
 
 interface Patient {
@@ -41,6 +34,7 @@ interface Patient {
   species?: string;
   breed?: string;
   tutor_id?: string | null;
+  tutor?: { id: string; name: string } | null;
 }
 interface Tutor {
   id: string;
@@ -101,12 +95,7 @@ export default function MedicalRecordsListPage() {
   const [vets, setVets] = useState<Vet[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
-  const [filterPatient, setFilterPatient] = useState("");
   const [search, setSearch] = useState("");
-  const [listPage, setListPage] = useState(1);
-  const [listTotal, setListTotal] = useState(0);
-  const [listTotalPages, setListTotalPages] = useState(1);
-  const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   const [form, setForm] = useState(emptyForm());
 
@@ -121,15 +110,8 @@ export default function MedicalRecordsListPage() {
   const fetchRecords = async () => {
     setLoading(true);
     try {
-      const params: Record<string, string | number> = {
-        ...listQueryParams(listPage),
-      };
-      if (filterPatient) params.patient_id = filterPatient;
-      const r = await api.get("/medical-records", { params });
-      const p = parseListResponse<MedicalRecord>(r.data, listPage);
-      setRecords(p.items);
-      setListTotal(p.total);
-      setListTotalPages(p.totalPages);
+      const all = await fetchAllListPages<MedicalRecord>("/medical-records");
+      setRecords(all);
     } catch {
       setRecords([]);
     } finally {
@@ -166,13 +148,8 @@ export default function MedicalRecordsListPage() {
     fetchPatients();
     fetchTutors();
     fetchVets();
-  }, []);
-  useEffect(() => {
-    setListPage(1);
-  }, [filterPatient]);
-  useEffect(() => {
     fetchRecords();
-  }, [filterPatient, listPage]);
+  }, []);
 
   const handleCreate = async () => {
     if (!form.patient_id) {
@@ -249,66 +226,48 @@ export default function MedicalRecordsListPage() {
     }
   };
 
-  const filtered = records.filter((r) => {
-    if (!search) return true;
-    const q = search.toLowerCase();
-    return (
-      (r.patient?.name || "").toLowerCase().includes(q) ||
-      (r.veterinarian?.name || "").toLowerCase().includes(q) ||
-      (r.chief_complaint || "").toLowerCase().includes(q) ||
-      (r.diagnosis || "").toLowerCase().includes(q)
-    );
-  });
-
-  // 2.1 — agrupa fichas por paciente, ordenadas por data (mais recente primeiro)
-  const groups = useMemo(() => {
-    const map = new Map<string, { patientId: string; patientName: string; records: MedicalRecord[] }>();
-    for (const r of filtered) {
-      if (!map.has(r.patient_id)) {
-        map.set(r.patient_id, { patientId: r.patient_id, patientName: r.patient?.name || "—", records: [] });
-      }
-      map.get(r.patient_id)!.records.push(r);
-    }
-    for (const g of map.values()) {
-      g.records.sort((a, b) => (a.record_date < b.record_date ? 1 : a.record_date > b.record_date ? -1 : 0));
-    }
-    return Array.from(map.values());
-  }, [filtered]);
-
-  useEffect(() => {
-    // Expande a ficha mais recente de cada paciente por padrão
-    const next = new Set<string>();
-    const seen = new Set<string>();
+  // Um prontuário por animal: agrega as fichas (medical-records) por paciente.
+  const prontuarios = useMemo(() => {
+    const stats = new Map<string, { count: number; lastDate: string | null; lastComplaint: string | null }>();
     for (const r of records) {
-      if (!seen.has(r.patient_id)) { seen.add(r.patient_id); next.add(r.id); }
+      const s = stats.get(r.patient_id) ?? { count: 0, lastDate: null, lastComplaint: null };
+      s.count += 1;
+      if (!s.lastDate || r.record_date > s.lastDate) {
+        s.lastDate = r.record_date;
+        s.lastComplaint = r.chief_complaint ?? null;
+      }
+      stats.set(r.patient_id, s);
     }
-    setExpanded(next);
-  }, [records]);
 
-  const toggleExpanded = (recordId: string) =>
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      if (next.has(recordId)) next.delete(recordId);
-      else next.add(recordId);
-      return next;
+    const rows = patients.map((p) => {
+      const s = stats.get(p.id);
+      return {
+        patient: p,
+        count: s?.count ?? 0,
+        lastDate: s?.lastDate ?? null,
+        lastComplaint: s?.lastComplaint ?? null,
+      };
     });
 
-  const typeLabel = (t: string) => {
-    const map: Record<string, string> = {
-      atendimento: "Atendimento",
-      retorno: "Retorno",
-      emergencia: "Emergência",
-      cirurgia: "Cirurgia",
-      internacao: "Internação",
-    };
-    return map[t] || t;
-  };
+    const q = search.trim().toLowerCase();
+    const visible = q
+      ? rows.filter(
+          (row) =>
+            row.patient.name.toLowerCase().includes(q) ||
+            (row.patient.tutor?.name || "").toLowerCase().includes(q) ||
+            (row.patient.species || "").toLowerCase().includes(q) ||
+            (row.patient.breed || "").toLowerCase().includes(q),
+        )
+      : rows;
 
-  const statusBadge = (s: string) => {
-    if (s === "closed")
-      return <Badge className="bg-green-500 text-white">Fechado</Badge>;
-    return <Badge className="bg-primary text-white">Aberto</Badge>;
-  };
+    // Prontuários com atendimento mais recente primeiro; sem fichas ao final (por nome).
+    return visible.sort((a, b) => {
+      if (a.lastDate && b.lastDate) return a.lastDate < b.lastDate ? 1 : a.lastDate > b.lastDate ? -1 : 0;
+      if (a.lastDate) return -1;
+      if (b.lastDate) return 1;
+      return a.patient.name.localeCompare(b.patient.name);
+    });
+  }, [records, patients, search]);
 
   return (
     <div>
@@ -331,31 +290,12 @@ export default function MedicalRecordsListPage() {
         <div className="flex-1 min-w-50 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-7 h-7" />
           <Input
-            placeholder="Buscar por paciente, veterinário, queixa..."
+            placeholder="Buscar por animal, tutor, espécie..."
             className="pl-12 rounded-full h-15! placeholder:text-black/80"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-
-        {/* <div className="w-55">
-          <Select
-            value={filterPatient || "_all"}
-            onValueChange={(v) => setFilterPatient(v === "_all" ? "" : v)}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Filtrar por paciente" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="_all">Todos os pacientes</SelectItem>
-              {patients.map((p) => (
-                <SelectItem key={p.id} value={p.id}>
-                  {p.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div> */}
       </div>
 
       <div className="bg-transparent border-none shadow-none">
@@ -363,91 +303,60 @@ export default function MedicalRecordsListPage() {
           <div className="flex justify-center py-12">
             <Loader2 className="w-8 h-8 animate-spin text-muted-foreground/60" />
           </div>
-        ) : filtered.length === 0 ? (
+        ) : prontuarios.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">
-            Nenhuma ficha encontrada.
+            Nenhum prontuário encontrado.
           </div>
         ) : (
-          <div className="space-y-6">
-            {groups.map((g) => (
-              <div key={g.patientId} className="space-y-2">
-                <div className="flex items-center gap-2 px-1">
-                  <Stethoscope className="h-4 w-4 text-primary" />
-                  <h2 className="text-sm font-bold text-slate-900">
-                    {g.patientName}
-                  </h2>
-                  <span className="text-xs text-muted-foreground">
-                    {g.records.length} ficha{g.records.length > 1 ? "s" : ""}
-                  </span>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {prontuarios.map(({ patient, count, lastDate, lastComplaint }) => (
+              <button
+                key={patient.id}
+                type="button"
+                onClick={() =>
+                  router.push(`/dashboard/medical-records/prontuario/${patient.id}`)
+                }
+                className="group flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 text-left transition hover:border-primary/50 hover:shadow-md"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    <PawPrint className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate font-bold text-slate-900">
+                      {patient.name}
+                    </div>
+                    <div className="truncate text-xs text-muted-foreground">
+                      {[patient.species, patient.breed].filter(Boolean).join(" · ") || "—"}
+                    </div>
+                  </div>
+                  <Badge variant="outline" className="shrink-0">
+                    {count} ficha{count === 1 ? "" : "s"}
+                  </Badge>
                 </div>
-                <div className="space-y-2">
-                  {g.records.map((r) => {
-                    const isOpen = expanded.has(r.id);
-                    return (
-                      <div
-                        key={r.id}
-                        className="overflow-hidden rounded-lg border border-slate-200 bg-white"
-                      >
-                        <button
-                          type="button"
-                          onClick={() => toggleExpanded(r.id)}
-                          className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-slate-50"
-                        >
-                          <span className="text-sm font-medium text-slate-900 whitespace-nowrap">
-                            {dayjs(r.record_date).format("DD/MM/YYYY")}
-                          </span>
-                          <Badge variant="outline">
-                            {typeLabel(r.record_type)}
-                          </Badge>
-                          <span className="text-sm text-muted-foreground truncate">
-                            {r.veterinarian?.name || "Sem veterinário"}
-                          </span>
-                          <span className="ml-auto flex items-center gap-2 shrink-0">
-                            {statusBadge(r.status)}
-                            <ChevronDown
-                              className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180" : ""}`}
-                            />
-                          </span>
-                        </button>
-                        {isOpen && (
-                          <div className="space-y-2 border-t border-slate-200 px-4 py-3 text-sm">
-                            <div>
-                              <span className="text-muted-foreground">Queixa: </span>
-                              {r.chief_complaint || "—"}
-                            </div>
-                            <div>
-                              <span className="text-muted-foreground">
-                                Diagnóstico Presuntivo:{" "}
-                              </span>
-                              {r.diagnosis || "—"}
-                            </div>
-                            <div className="pt-1">
-                              <Button
-                                size="sm"
-                                className="bg-primary"
-                                onClick={() =>
-                                  router.push(`/dashboard/medical-records/${r.id}`)
-                                }
-                              >
-                                Abrir ficha
-                              </Button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+
+                <div className="space-y-1 text-xs text-muted-foreground">
+                  <div className="truncate">
+                    <span className="font-medium">Tutor:</span>{" "}
+                    {patient.tutor?.name || "—"}
+                  </div>
+                  <div>
+                    <span className="font-medium">Último atendimento:</span>{" "}
+                    {lastDate ? dayjs(lastDate).format("DD/MM/YYYY") : "Nenhum"}
+                  </div>
+                  {lastComplaint && (
+                    <div className="truncate">
+                      <span className="font-medium">Queixa:</span> {lastComplaint}
+                    </div>
+                  )}
                 </div>
-              </div>
+
+                <span className="mt-auto flex items-center gap-1 text-xs font-medium text-primary">
+                  Abrir prontuário
+                  <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                </span>
+              </button>
             ))}
-            <ListPagination
-              page={listPage}
-              totalPages={listTotalPages}
-              total={listTotal}
-              pageSize={API_PAGE_SIZE}
-              onPageChange={setListPage}
-              disabled={loading}
-            />
           </div>
         )}
       </div>
