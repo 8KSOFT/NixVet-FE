@@ -138,6 +138,7 @@
     "statsVaccines": "Vaccines (next 30 days)",
     "statsExams": "Exams awaiting follow-up",
     "statsWhatsApp": "Unanswered conversations",
+    "statsAwaitingTutor": "Awaiting tutor reply",
     "tableTitle": "Today's appointments",
     "colDate": "Date",
     "colTime": "Time",

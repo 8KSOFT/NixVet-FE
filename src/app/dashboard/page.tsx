@@ -37,6 +37,7 @@ export default function DashboardPage() {
     vaccinesDue: 0,
     examsAwaitingFollowup: 0,
     unansweredConversations: 0,
+    awaitingTutorConversations: 0,
   });
   const [recentAppointments, setRecentAppointments] = useState<
     Array<{
@@ -67,6 +68,7 @@ export default function DashboardPage() {
         vaccines_due: number;
         exams_awaiting_followup: number;
         unanswered_conversations: number;
+        awaiting_tutor_conversations: number;
         monthly_revenue: number;
       };
 
@@ -106,6 +108,7 @@ export default function DashboardPage() {
         vaccinesDue: metrics.vaccines_due,
         examsAwaitingFollowup: metrics.exams_awaiting_followup,
         unansweredConversations: metrics.unanswered_conversations,
+        awaitingTutorConversations: metrics.awaiting_tutor_conversations ?? 0,
       });
 
       type ConsultTodayRow = {
@@ -228,12 +231,12 @@ export default function DashboardPage() {
         href: "/dashboard/whatsapp",
       },
       {
-        label: t("dashboardHome.statsWhatsApp"),
-        value: stats.unansweredConversations,
+        label: t("dashboardHome.statsAwaitingTutor"),
+        value: stats.awaitingTutorConversations,
         icon: MenuIconsColored.naoRespondidas,
-        color: "text-green-600",
-        bg: "bg-green-50",
-        valueColor: "text-green-700",
+        color: "text-sky-600",
+        bg: "bg-sky-50",
+        valueColor: "text-sky-700",
         href: "/dashboard/whatsapp",
       },
     ],
