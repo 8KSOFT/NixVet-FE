@@ -267,55 +267,57 @@ export default function TeamPage() {
           </div>
         }
       >
-        <form id="team-create-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div>
+        <form id="team-create-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4 md:space-y-6">
+          <div className="space-y-2">
             <Label>{t('team.formName')}</Label>
             <Input {...register('name', { required: true })} />
           </div>
-          <div>
-            <Label>{t('team.formEmail')}</Label>
-            <Input type="email" {...register('email', { required: true })} />
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label>{t('team.formEmail')}</Label>
+              <Input type="email" {...register('email', { required: true })} />
+            </div>
+            <div className="space-y-2">
+              <Label>{t('team.formRole')}</Label>
+              <Controller
+                name="role"
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={t('team.formRole')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {roleOptions.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              <p className="text-xs text-muted-foreground mt-1">{t('team.formRoleHint')}</p>
+            </div>
           </div>
-          <div>
-            <Label>{t('team.formRole')}</Label>
-            <Controller
-              name="role"
-              control={control}
-              rules={{ required: true }}
-              render={({ field }) => (
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={t('team.formRole')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {roleOptions.map((opt) => (
-                      <SelectItem key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-            <p className="text-xs text-muted-foreground mt-1">{t('team.formRoleHint')}</p>
-          </div>
-          <div>
-            <Label>{editingId ? t('team.formPasswordOptional') : t('team.formPassword')}</Label>
-            <Input
-              type="password"
-              {...register('password')}
-              placeholder={editingId ? t('team.passwordPlaceholder') : ''}
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label>{editingId ? t('team.formPasswordOptional') : t('team.formPassword')}</Label>
+              <Input
+                type="password"
+                {...register('password')}
+                placeholder={editingId ? t('team.passwordPlaceholder') : ''}
+              />
+            </div>
+            <div className="space-y-1">
               <Label>{t('team.formCrmv')}</Label>
               <Input {...register('crmv')} />
             </div>
-            <div>
-              <Label>{t('team.formSpecialty')}</Label>
-              <Input {...register('specialty')} />
-            </div>
+          </div>
+          <div className="space-y-1">
+            <Label>{t('team.formSpecialty')}</Label>
+            <Input {...register('specialty')} />
           </div>
         </form>
       </DashboardCreateFormDialog>

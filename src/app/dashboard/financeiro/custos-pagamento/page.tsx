@@ -12,14 +12,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import api from '@/lib/axios';
 import { toast } from 'sonner';
 import { getApiErrorMessage } from '@/app/utils/api-error-message';
@@ -55,9 +48,7 @@ function formatPieLabel(payload: PieLabelPayload): string {
 
 export default function CustosPagamentoPage() {
   const now = new Date();
-  const [period, setPeriod] = useState(
-    `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`,
-  );
+  const [period, setPeriod] = useState(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`);
   const [data, setData] = useState<Record<string, PaymentMethodData>>({});
   const [loading, setLoading] = useState(true);
 
@@ -101,7 +92,9 @@ export default function CustosPagamentoPage() {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             {periods.map((p) => (
-              <DropdownMenuItem key={p} onClick={() => setPeriod(p)}>{p}</DropdownMenuItem>
+              <DropdownMenuItem key={p} onClick={() => setPeriod(p)}>
+                {p}
+              </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
@@ -118,7 +111,11 @@ export default function CustosPagamentoPage() {
               <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
             </CardHeader>
             <CardContent>
-              {loading ? <Skeleton className="h-7 w-32" /> : <p className={`text-2xl font-bold ${color}`}>{fmt(value)}</p>}
+              {loading ? (
+                <Skeleton className="h-7 w-32" />
+              ) : (
+                <p className={`text-2xl font-bold ${color}`}>{fmt(value)}</p>
+              )}
             </CardContent>
           </Card>
         ))}
@@ -157,8 +154,8 @@ export default function CustosPagamentoPage() {
               <Skeleton className="h-60 w-full" />
             ) : (
               <Table>
-                <TableHeader>
-                  <TableRow>
+                <TableHeader className="h-15">
+                  <TableRow className="border-b border-gray-300">
                     <TableHead>Forma</TableHead>
                     <TableHead className="text-right">Volume</TableHead>
                     <TableHead className="text-right">Custo Total</TableHead>
@@ -166,7 +163,7 @@ export default function CustosPagamentoPage() {
                 </TableHeader>
                 <TableBody>
                   {methods.map(([method, v]) => (
-                    <TableRow key={method}>
+                    <TableRow className="cursor-pointer hover:bg-muted/50 h-15 border-b border-gray-300" key={method}>
                       <TableCell>{METHOD_LABELS[method] ?? method}</TableCell>
                       <TableCell className="text-right tabular-nums">{fmt(v.volume)}</TableCell>
                       <TableCell className="text-right tabular-nums text-orange-500">{fmt(v.fee_total)}</TableCell>

@@ -71,10 +71,13 @@ export default function ReceitaLiquidaPage() {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
   useEffect(() => {
-    api.get('/health-plans', { params: { limit: 200 } }).then((res) => {
-      const d = res.data?.items ?? res.data?.data ?? res.data ?? [];
-      setPlans(Array.isArray(d) ? d : []);
-    }).catch(() => {});
+    api
+      .get('/health-plans', { params: { limit: 200 } })
+      .then((res) => {
+        const d = res.data?.items ?? res.data?.data ?? res.data ?? [];
+        setPlans(Array.isArray(d) ? d : []);
+      })
+      .catch(() => {});
   }, []);
 
   const fetchData = async () => {
@@ -96,9 +99,7 @@ export default function ReceitaLiquidaPage() {
   }, []);
 
   const sortedItems = data
-    ? [...data.items].sort((a, b) =>
-        sortDir === 'desc' ? b.net_amount - a.net_amount : a.net_amount - b.net_amount
-      )
+    ? [...data.items].sort((a, b) => (sortDir === 'desc' ? b.net_amount - a.net_amount : a.net_amount - b.net_amount))
     : [];
 
   return (
@@ -129,7 +130,9 @@ export default function ReceitaLiquidaPage() {
                   <SelectItem value="all">Todos</SelectItem>
                   <SelectItem value="particular">Particular</SelectItem>
                   {plans.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.name}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -205,9 +208,7 @@ export default function ReceitaLiquidaPage() {
                   <BarChart data={data.by_period}>
                     <XAxis dataKey="date" tick={{ fontSize: 11 }} />
                     <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `R$${Number(v).toFixed(0)}`} />
-                    <Tooltip
-                      formatter={(value) => fmtBRL(Number(value))}
-                    />
+                    <Tooltip formatter={(value) => fmtBRL(Number(value))} />
                     <Legend />
                     <Bar dataKey="gross" name="Receita Bruta" fill="#3b82f6" radius={[3, 3, 0, 0]} />
                     <Bar dataKey="net" name="Receita Líquida" fill="#22c55e" radius={[3, 3, 0, 0]} />
@@ -221,18 +222,14 @@ export default function ReceitaLiquidaPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-base">Detalhamento por item</CardTitle>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setSortDir((d) => (d === 'desc' ? 'asc' : 'desc'))}
-              >
+              <Button variant="ghost" size="sm" onClick={() => setSortDir((d) => (d === 'desc' ? 'asc' : 'desc'))}>
                 Receita Líquida {sortDir === 'desc' ? '↓' : '↑'}
               </Button>
             </CardHeader>
             <CardContent className="p-0">
               <Table>
-                <TableHeader>
-                  <TableRow>
+                <TableHeader className="h-15">
+                  <TableRow className="border-b border-gray-300">
                     <TableHead>Item</TableHead>
                     <TableHead>Tipo</TableHead>
                     <TableHead className="text-right">Cobrado</TableHead>
@@ -250,21 +247,25 @@ export default function ReceitaLiquidaPage() {
                     </TableRow>
                   )}
                   {sortedItems.map((item, i) => (
-                    <TableRow key={i}>
+                    <TableRow className="cursor-pointer hover:bg-muted/50 h-15 border-b border-gray-300" key={i}>
                       <TableCell className="font-medium">{item.description ?? '—'}</TableCell>
                       <TableCell>
                         <Badge variant="outline">{item.item_type}</Badge>
                       </TableCell>
                       <TableCell className="text-right">{fmtBRL(item.charged_amount)}</TableCell>
                       <TableCell className="text-right text-muted-foreground">{fmtBRL(item.cost_amount)}</TableCell>
-                      <TableCell className={`text-right font-semibold ${item.net_amount >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+                      <TableCell
+                        className={`text-right font-semibold ${item.net_amount >= 0 ? 'text-green-600' : 'text-red-500'}`}
+                      >
                         {fmtBRL(item.net_amount)}
                       </TableCell>
                       <TableCell>
                         {item.payment_source === 'particular' ? (
                           <Badge className="bg-green-100 text-green-800 border-green-300">Particular</Badge>
                         ) : (
-                          <Badge className="bg-blue-100 text-blue-800 border-blue-300">{item.health_plan_name ?? 'Convênio'}</Badge>
+                          <Badge className="bg-blue-100 text-blue-800 border-blue-300">
+                            {item.health_plan_name ?? 'Convênio'}
+                          </Badge>
                         )}
                       </TableCell>
                     </TableRow>

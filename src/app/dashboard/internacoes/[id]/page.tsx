@@ -237,8 +237,8 @@ function CustosTab({ hospitalizationId, status }: { hospitalizationId: string; s
       </div>
 
       <Table>
-        <TableHeader>
-          <TableRow>
+        <TableHeader className="h-15">
+          <TableRow className="border-b border-gray-300">
             <TableHead>Tipo</TableHead>
             <TableHead>Data</TableHead>
             <TableHead>Descrição</TableHead>
@@ -251,7 +251,7 @@ function CustosTab({ hospitalizationId, status }: { hospitalizationId: string; s
         </TableHeader>
         <TableBody>
           {costs.map((c) => (
-            <TableRow key={c.id}>
+            <TableRow className="cursor-pointer hover:bg-muted/50 h-15 border-b border-gray-300" key={c.id}>
               <TableCell>
                 <Badge variant="outline">{COST_TYPE_LABELS[c.type] ?? c.type}</Badge>
               </TableCell>

@@ -681,8 +681,8 @@ export default function PatientsPage() {
             </div>
           </div>
 
-          {/* Idade, Peso, Sexo */}
-          <div className="grid grid-cols-3 md:grid-cols-3 gap-4 md:gap-4 max-md:grid-cols-3">
+          {/* Idade, Peso, Sexo, Microchip */}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
             <div className="space-y-1">
               <Label htmlFor="age">Idade (anos) *</Label>
               <Controller
@@ -743,16 +743,14 @@ export default function PatientsPage() {
               />
               {errors.sex && <p className="text-sm text-destructive">{errors.sex.message}</p>}
             </div>
-          </div>
-
-          {/* Microchip */}
-          <div className="space-y-1">
-            <Label htmlFor="chip_number">Nº Microchip</Label>
-            <Controller
-              name="chip_number"
-              control={control}
-              render={({ field }) => <Input id="chip_number" {...field} value={field.value ?? ''} />}
-            />
+            <div className="space-y-1">
+              <Label htmlFor="chip_number">Nº Microchip</Label>
+              <Controller
+                name="chip_number"
+                control={control}
+                render={({ field }) => <Input id="chip_number" {...field} value={field.value ?? ''} />}
+              />
+            </div>
           </div>
         </form>
       </DashboardCreateFormDialog>

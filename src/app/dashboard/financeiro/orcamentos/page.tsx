@@ -1,32 +1,14 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { Plus, FileText, CheckCircle, ArrowRight, Eye } from 'lucide-react';
+import { Plus, FileText, CheckCircle, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import api from '@/lib/axios';
@@ -138,7 +120,17 @@ export default function OrcamentosPage() {
     type: 'procedure',
     valid_until: '',
     notes: '',
-    items: [{ item_type: 'procedure', description: '', quantity: 1, unit_price: 0, discount_percentage: 0, covered_by_plan: false, plan_coverage_amount: 0 }],
+    items: [
+      {
+        item_type: 'procedure',
+        description: '',
+        quantity: 1,
+        unit_price: 0,
+        discount_percentage: 0,
+        covered_by_plan: false,
+        plan_coverage_amount: 0,
+      },
+    ],
   });
 
   const fetchBudgets = useCallback(async () => {
@@ -155,8 +147,14 @@ export default function OrcamentosPage() {
 
   useEffect(() => {
     fetchBudgets();
-    api.get<Patient[] | { data?: Patient[] }>('/patients').then((r) => setPatients(getArrayResponseData<Patient>(r.data))).catch(() => {});
-    api.get<User[] | { data?: User[] }>('/users').then((r) => setUsers(getArrayResponseData<User>(r.data))).catch(() => {});
+    api
+      .get<Patient[] | { data?: Patient[] }>('/patients')
+      .then((r) => setPatients(getArrayResponseData<Patient>(r.data)))
+      .catch(() => {});
+    api
+      .get<User[] | { data?: User[] }>('/users')
+      .then((r) => setUsers(getArrayResponseData<User>(r.data)))
+      .catch(() => {});
   }, [fetchBudgets]);
 
   const handleCreate = async () => {
@@ -197,15 +195,22 @@ export default function OrcamentosPage() {
   const addItem = () => {
     setForm((f) => ({
       ...f,
-      items: [...f.items, { item_type: 'procedure', description: '', quantity: 1, unit_price: 0, discount_percentage: 0, covered_by_plan: false, plan_coverage_amount: 0 }],
+      items: [
+        ...f.items,
+        {
+          item_type: 'procedure',
+          description: '',
+          quantity: 1,
+          unit_price: 0,
+          discount_percentage: 0,
+          covered_by_plan: false,
+          plan_coverage_amount: 0,
+        },
+      ],
     }));
   };
 
-  const updateItem = <TKey extends keyof BudgetFormItem>(
-    index: number,
-    key: TKey,
-    value: BudgetFormItem[TKey],
-  ) => {
+  const updateItem = <TKey extends keyof BudgetFormItem>(index: number, key: TKey, value: BudgetFormItem[TKey]) => {
     setForm((f) => {
       const items = [...f.items];
       items[index] = { ...items[index], [key]: value };
@@ -226,77 +231,77 @@ export default function OrcamentosPage() {
         </Button>
       </div>
 
-      <Card>
-        <CardContent className="p-0">
-          {loading ? (
-            <div className="p-6 space-y-2">
-              {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
+      <div className="border border-gray-300 rounded-md p-0">
+        {loading ? (
+          <div className="p-6 space-y-2">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-12 w-full" />
+            ))}
+          </div>
+        ) : (
+          <Table>
+            <TableHeader className="h-15">
+              <TableRow className="border-b border-gray-300">
+                <TableHead>Nº</TableHead>
+                <TableHead>Paciente</TableHead>
+                <TableHead>Tipo</TableHead>
+                <TableHead className="text-right">Total</TableHead>
+                <TableHead className="text-right">Plano Cobre</TableHead>
+                <TableHead className="text-right">Tutor Paga</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Validade</TableHead>
+                <TableHead>Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {budgets.length === 0 ? (
                 <TableRow>
-                  <TableHead>Nº</TableHead>
-                  <TableHead>Paciente</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
-                  <TableHead className="text-right">Plano Cobre</TableHead>
-                  <TableHead className="text-right">Tutor Paga</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Validade</TableHead>
-                  <TableHead>Ações</TableHead>
+                  <TableCell colSpan={9} className="py-12 text-center text-muted-foreground">
+                    Nenhum orçamento encontrado
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {budgets.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={9} className="py-12 text-center text-muted-foreground">
-                      Nenhum orçamento encontrado
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  budgets.map((b) => {
-                    const totals = computeTotals(b.items ?? []);
-                    return (
-                      <TableRow key={b.id}>
-                        <TableCell className="font-mono text-xs">{b.id.substring(0, 8).toUpperCase()}</TableCell>
-                        <TableCell>{b.patient?.name}</TableCell>
-                        <TableCell>{b.type === 'procedure' ? 'Procedimento' : 'Internação'}</TableCell>
-                        <TableCell className="text-right tabular-nums">{fmt(totals.total)}</TableCell>
-                        <TableCell className="text-right tabular-nums text-green-600">{fmt(totals.plan)}</TableCell>
-                        <TableCell className="text-right tabular-nums text-blue-600">{fmt(totals.tutor)}</TableCell>
-                        <TableCell>
-                          <Badge variant={STATUS_COLORS[b.status] ?? 'secondary'}>
-                            {STATUS_LABELS[b.status] ?? b.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {b.valid_until ? new Date(b.valid_until).toLocaleDateString('pt-BR') : '—'}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <Button variant="ghost" size="icon" onClick={() => setSelected(b)} title="Visualizar">
-                              <Eye className="size-4" />
+              ) : (
+                budgets.map((b) => {
+                  const totals = computeTotals(b.items ?? []);
+                  return (
+                    <TableRow className="cursor-pointer hover:bg-muted/50 h-15 border-b border-gray-300" key={b.id}>
+                      <TableCell className="font-mono text-xs">{b.id.substring(0, 8).toUpperCase()}</TableCell>
+                      <TableCell>{b.patient?.name}</TableCell>
+                      <TableCell>{b.type === 'procedure' ? 'Procedimento' : 'Internação'}</TableCell>
+                      <TableCell className="text-right tabular-nums">{fmt(totals.total)}</TableCell>
+                      <TableCell className="text-right tabular-nums text-green-600">{fmt(totals.plan)}</TableCell>
+                      <TableCell className="text-right tabular-nums text-blue-600">{fmt(totals.tutor)}</TableCell>
+                      <TableCell>
+                        <Badge variant={STATUS_COLORS[b.status] ?? 'secondary'}>
+                          {STATUS_LABELS[b.status] ?? b.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {b.valid_until ? new Date(b.valid_until).toLocaleDateString('pt-BR') : '—'}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Button variant="ghost" size="icon" onClick={() => setSelected(b)} title="Visualizar">
+                            <Eye className="size-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => handleDownloadPdf(b.id)} title="PDF">
+                            <FileText className="size-4" />
+                          </Button>
+                          {b.status === 'draft' || b.status === 'sent' ? (
+                            <Button variant="ghost" size="icon" onClick={() => handleApprove(b.id)} title="Aprovar">
+                              <CheckCircle className="size-4 text-green-600" />
                             </Button>
-                            <Button variant="ghost" size="icon" onClick={() => handleDownloadPdf(b.id)} title="PDF">
-                              <FileText className="size-4" />
-                            </Button>
-                            {b.status === 'draft' || b.status === 'sent' ? (
-                              <Button variant="ghost" size="icon" onClick={() => handleApprove(b.id)} title="Aprovar">
-                                <CheckCircle className="size-4 text-green-600" />
-                              </Button>
-                            ) : null}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
-                )}
-              </TableBody>
-            </Table>
-          )}
-        </CardContent>
-      </Card>
+                          ) : null}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        )}
+      </div>
 
       {/* Modal Novo Orçamento */}
       <Dialog open={openNew} onOpenChange={setOpenNew}>
@@ -309,25 +314,45 @@ export default function OrcamentosPage() {
               <div className="space-y-1">
                 <Label>Paciente</Label>
                 <Select value={form.patient_id} onValueChange={(v) => setForm((f) => ({ ...f, patient_id: v }))}>
-                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
                   <SelectContent>
-                    {patients.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                    {patients.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1">
                 <Label>Veterinário</Label>
-                <Select value={form.veterinarian_id} onValueChange={(v) => setForm((f) => ({ ...f, veterinarian_id: v }))}>
-                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <Select
+                  value={form.veterinarian_id}
+                  onValueChange={(v) => setForm((f) => ({ ...f, veterinarian_id: v }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
                   <SelectContent>
-                    {users.map((u) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}
+                    {users.map((u) => (
+                      <SelectItem key={u.id} value={u.id}>
+                        {u.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1">
                 <Label>Tipo</Label>
-                <Select value={form.type} onValueChange={(value: BudgetType) => setForm((f) => ({ ...f, type: value }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                <Select
+                  value={form.type}
+                  onValueChange={(value: BudgetType) => setForm((f) => ({ ...f, type: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="procedure">Procedimento</SelectItem>
                     <SelectItem value="hospitalization">Internação</SelectItem>
@@ -336,28 +361,51 @@ export default function OrcamentosPage() {
               </div>
               <div className="space-y-1">
                 <Label>Válido até</Label>
-                <Input type="date" value={form.valid_until} onChange={(e) => setForm((f) => ({ ...f, valid_until: e.target.value }))} />
+                <Input
+                  type="date"
+                  value={form.valid_until}
+                  onChange={(e) => setForm((f) => ({ ...f, valid_until: e.target.value }))}
+                />
               </div>
             </div>
 
             <div>
               <div className="mb-2 flex items-center justify-between">
                 <Label>Itens</Label>
-                <Button type="button" variant="outline" size="sm" onClick={addItem}>+ Adicionar Item</Button>
+                <Button type="button" variant="outline" size="sm" onClick={addItem}>
+                  + Adicionar Item
+                </Button>
               </div>
               <div className="space-y-2">
                 {form.items.map((item, i) => (
                   <div key={i} className="grid grid-cols-4 gap-2 rounded-lg border p-3">
-                    <Input placeholder="Descrição" value={item.description} onChange={(e) => updateItem(i, 'description', e.target.value)} className="col-span-2" />
-                    <Input type="number" placeholder="Qtd" value={item.quantity} onChange={(e) => updateItem(i, 'quantity', Number(e.target.value))} />
-                    <Input type="number" placeholder="Valor unit." value={item.unit_price} onChange={(e) => updateItem(i, 'unit_price', Number(e.target.value))} />
+                    <Input
+                      placeholder="Descrição"
+                      value={item.description}
+                      onChange={(e) => updateItem(i, 'description', e.target.value)}
+                      className="col-span-2"
+                    />
+                    <Input
+                      type="number"
+                      placeholder="Qtd"
+                      value={item.quantity}
+                      onChange={(e) => updateItem(i, 'quantity', Number(e.target.value))}
+                    />
+                    <Input
+                      type="number"
+                      placeholder="Valor unit."
+                      value={item.unit_price}
+                      onChange={(e) => updateItem(i, 'unit_price', Number(e.target.value))}
+                    />
                   </div>
                 ))}
               </div>
             </div>
 
             <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setOpenNew(false)}>Cancelar</Button>
+              <Button variant="outline" onClick={() => setOpenNew(false)}>
+                Cancelar
+              </Button>
               <Button onClick={handleCreate}>Criar Orçamento</Button>
             </div>
           </div>
@@ -373,10 +421,18 @@ export default function OrcamentosPage() {
             </DialogHeader>
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-2 text-sm">
-                <div><span className="font-medium">Paciente:</span> {selected.patient?.name}</div>
-                <div><span className="font-medium">Veterinário:</span> {selected.veterinarian?.name}</div>
-                <div><span className="font-medium">Tipo:</span> {selected.type}</div>
-                <div><span className="font-medium">Status:</span> {STATUS_LABELS[selected.status]}</div>
+                <div>
+                  <span className="font-medium">Paciente:</span> {selected.patient?.name}
+                </div>
+                <div>
+                  <span className="font-medium">Veterinário:</span> {selected.veterinarian?.name}
+                </div>
+                <div>
+                  <span className="font-medium">Tipo:</span> {selected.type}
+                </div>
+                <div>
+                  <span className="font-medium">Status:</span> {STATUS_LABELS[selected.status]}
+                </div>
               </div>
               <Table>
                 <TableHeader>
@@ -402,9 +458,18 @@ export default function OrcamentosPage() {
                 const t = computeTotals(selected.items ?? []);
                 return (
                   <div className="rounded-lg bg-muted/50 p-3 space-y-1 text-sm">
-                    <div className="flex justify-between"><span>Total Geral</span><span className="font-semibold">{fmt(t.total)}</span></div>
-                    <div className="flex justify-between text-green-600"><span>Coberto pelo Plano</span><span>{fmt(t.plan)}</span></div>
-                    <div className="flex justify-between text-blue-600"><span>Responsabilidade do Tutor</span><span>{fmt(t.tutor)}</span></div>
+                    <div className="flex justify-between">
+                      <span>Total Geral</span>
+                      <span className="font-semibold">{fmt(t.total)}</span>
+                    </div>
+                    <div className="flex justify-between text-green-600">
+                      <span>Coberto pelo Plano</span>
+                      <span>{fmt(t.plan)}</span>
+                    </div>
+                    <div className="flex justify-between text-blue-600">
+                      <span>Responsabilidade do Tutor</span>
+                      <span>{fmt(t.tutor)}</span>
+                    </div>
                   </div>
                 );
               })()}

@@ -227,16 +227,17 @@ export default function InternacoesPage() {
           ) : active.length === 0 ? (
             <div className="py-16 text-center text-muted-foreground">Nenhum paciente internado no momento</div>
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            // <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="flex flex-wrap gap-4">
               {active.map((h) => {
                 const days = daysInternado(h.admission_date);
                 const { color, label } = semaforo(days, h.status);
                 return (
                   <Link key={h.id} href={`/dashboard/internacoes/${h.id}`}>
-                    <Card className="cursor-pointer transition-shadow hover:shadow-md">
+                    <Card className="cursor-pointer transition-shadow hover:shadow-md w-100 h-55">
                       <CardContent className="p-4 space-y-3">
                         <div className="flex items-start justify-between">
-                          <div>
+                          <div className="">
                             <p className="text-2xl">{speciesEmoji(h.patient?.species ?? '')}</p>
                             <p className="font-semibold">{h.patient?.name}</p>
                             <p className="text-xs text-muted-foreground">{h.patient?.species}</p>
@@ -263,48 +264,46 @@ export default function InternacoesPage() {
         </TabsContent>
 
         <TabsContent value="history" className="mt-4">
-          <Card>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
+          <div className="border border-gray-300 rounded-md p-0">
+            <Table>
+              <TableHeader className="h-15">
+                <TableRow className="border-b border-gray-300">
+                  <TableHead>Paciente</TableHead>
+                  <TableHead>Motivo</TableHead>
+                  <TableHead>Admissão</TableHead>
+                  <TableHead>Alta</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Vet.</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {discharged.length === 0 ? (
                   <TableRow>
-                    <TableHead>Paciente</TableHead>
-                    <TableHead>Motivo</TableHead>
-                    <TableHead>Admissão</TableHead>
-                    <TableHead>Alta</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Vet.</TableHead>
+                    <TableCell colSpan={6} className="py-12 text-center text-muted-foreground">
+                      Nenhum histórico
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {discharged.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="py-12 text-center text-muted-foreground">
-                        Nenhum histórico
+                ) : (
+                  discharged.map((h) => (
+                    <TableRow key={h.id} className="cursor-pointer hover:bg-muted/50">
+                      <TableCell>
+                        <Link href={`/dashboard/internacoes/${h.id}`} className="font-medium hover:underline">
+                          {h.patient?.name}
+                        </Link>
                       </TableCell>
+                      <TableCell className="max-w-xs truncate text-muted-foreground">{h.reason}</TableCell>
+                      <TableCell>{new Date(h.admission_date).toLocaleDateString('pt-BR')}</TableCell>
+                      <TableCell className="text-muted-foreground">{h.status === 'discharged' ? '—' : ''}</TableCell>
+                      <TableCell>
+                        <Badge variant={h.status === 'discharged' ? 'secondary' : 'default'}>{h.status}</Badge>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{h.veterinarian?.name}</TableCell>
                     </TableRow>
-                  ) : (
-                    discharged.map((h) => (
-                      <TableRow key={h.id} className="cursor-pointer hover:bg-muted/50">
-                        <TableCell>
-                          <Link href={`/dashboard/internacoes/${h.id}`} className="font-medium hover:underline">
-                            {h.patient?.name}
-                          </Link>
-                        </TableCell>
-                        <TableCell className="max-w-xs truncate text-muted-foreground">{h.reason}</TableCell>
-                        <TableCell>{new Date(h.admission_date).toLocaleDateString('pt-BR')}</TableCell>
-                        <TableCell className="text-muted-foreground">{h.status === 'discharged' ? '—' : ''}</TableCell>
-                        <TableCell>
-                          <Badge variant={h.status === 'discharged' ? 'secondary' : 'default'}>{h.status}</Badge>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">{h.veterinarian?.name}</TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </TabsContent>
       </Tabs>
 
@@ -323,8 +322,8 @@ export default function InternacoesPage() {
           </div>
         }
       >
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-4 md:space-y-6">
+          <div className="grid grid-cols-2 gap-4 md:gap-4 max-md:grid-cols-2">
             <div className="space-y-1">
               <Label>Paciente *</Label>
               <Select value={form.patient_id} onValueChange={(v) => setForm((f) => ({ ...f, patient_id: v }))}>
@@ -382,7 +381,7 @@ export default function InternacoesPage() {
                 placeholder="Ex: B-03"
               />
             </div>
-            <div className="space-y-1">
+            <div className="space-y-1 col-span-2">
               <Label>Forma de Pagamento</Label>
               <Select value={form.payment_source} onValueChange={(v) => setForm((f) => ({ ...f, payment_source: v }))}>
                 <SelectTrigger>
@@ -395,7 +394,7 @@ export default function InternacoesPage() {
               </Select>
             </div>
             {form.payment_source === 'health_plan' && (
-              <div className="space-y-1">
+              <div className="space-y-1 col-span-2">
                 <Label>Plano de Saúde</Label>
                 <Select
                   value={form.health_plan_id}
@@ -414,7 +413,7 @@ export default function InternacoesPage() {
                 </Select>
               </div>
             )}
-            <div className="space-y-1">
+            <div className="space-y-1 col-span-2">
               <Label>Diária (R$)</Label>
               <Input
                 type="number"

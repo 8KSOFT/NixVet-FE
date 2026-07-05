@@ -379,15 +379,14 @@ export default function ChatbotWorkflowsPage() {
           </div>
         }
       >
-        <div className="space-y-4 py-2">
-          <div>
+        <div className="space-y-4 md:space-y-6">
+          <div className="space-y-2">
             <Label>Nome do workflow</Label>
             <Input
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               placeholder="Ex: Workflow Principal"
               onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
-              className="mt-1.5"
             />
           </div>
         </div>

@@ -1,45 +1,27 @@
-"use client";
+'use client';
 
-import React, { useCallback, useEffect, useState } from "react";
-import type { ApiRequestError } from "@/app/types/api-error";
+import React, { useCallback, useEffect, useState } from 'react';
+import type { ApiRequestError } from '@/app/types/api-error';
 import type {
   ExamFollowup,
   FollowupExamRequestOption,
   FollowupFormValues,
   FollowupPatientOption,
-} from "@/app/types/exam-followup";
-import { Button } from "@/components/ui/button";
-import { DashboardCreateFormDialog } from "@/components/dashboard-create-form-dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { toast } from "sonner";
-import { useForm, Controller } from "react-hook-form";
-import { Loader2, FileSearch } from "lucide-react";
-import api from "@/lib/axios";
-import {
-  API_PAGE_SIZE,
-  fetchAllListPages,
-  listQueryParams,
-  parseListResponse,
-} from "@/lib/pagination";
-import { ListPagination } from "@/components/list-pagination";
+} from '@/app/types/exam-followup';
+import { Button } from '@/components/ui/button';
+import { DashboardCreateFormDialog } from '@/components/dashboard-create-form-dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { toast } from 'sonner';
+import { useForm, Controller } from 'react-hook-form';
+import { Loader2, FileSearch } from 'lucide-react';
+import api from '@/lib/axios';
+import { API_PAGE_SIZE, fetchAllListPages, listQueryParams, parseListResponse } from '@/lib/pagination';
+import { ListPagination } from '@/components/list-pagination';
 
 function getApiErrorMessage(error: unknown, fallbackMessage: string): string {
   const typedError = error as ApiRequestError;
@@ -61,25 +43,22 @@ export default function FollowupsPage() {
   const [allPage, setAllPage] = useState(1);
   const [allTotal, setAllTotal] = useState(0);
   const [allTotalPages, setAllTotalPages] = useState(1);
-  const [examRequests, setExamRequests] = useState<FollowupExamRequestOption[]>(
-    [],
-  );
+  const [examRequests, setExamRequests] = useState<FollowupExamRequestOption[]>([]);
   const [patients, setPatients] = useState<FollowupPatientOption[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
-  const { register, handleSubmit, reset, control } =
-    useForm<FollowupFormValues>();
+  const { register, handleSubmit, reset, control } = useForm<FollowupFormValues>();
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const [awaitRes, allRes, exams, patients] = await Promise.all([
-        api.get("/exam-followups/awaiting-followup", {
+        api.get('/exam-followups/awaiting-followup', {
           params: listQueryParams(awaitingPage),
         }),
-        api.get("/exam-followups", { params: listQueryParams(allPage) }),
-        fetchAllListPages<{ id: string }>("/exam-requests"),
-        fetchAllListPages<{ id: string; name: string }>("/patients"),
+        api.get('/exam-followups', { params: listQueryParams(allPage) }),
+        fetchAllListPages<{ id: string }>('/exam-requests'),
+        fetchAllListPages<{ id: string; name: string }>('/patients'),
       ]);
       const a = parseListResponse<ExamFollowup>(awaitRes.data, awaitingPage);
       setAwaiting(a.items);
@@ -92,7 +71,7 @@ export default function FollowupsPage() {
       setExamRequests(exams);
       setPatients(patients);
     } catch {
-      toast.error("Erro ao carregar");
+      toast.error('Erro ao carregar');
     } finally {
       setLoading(false);
     }
@@ -104,33 +83,33 @@ export default function FollowupsPage() {
 
   const onSubmit = async (values: FollowupFormValues) => {
     try {
-      await api.post("/exam-followups", values);
-      toast.success("Acompanhamento criado");
+      await api.post('/exam-followups', values);
+      toast.success('Acompanhamento criado');
       setModalOpen(false);
       reset();
       void fetchData();
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, "Erro ao criar"));
+      toast.error(getApiErrorMessage(error, 'Erro ao criar'));
     }
   };
 
   const updateStatus = async (id: string, followup_status: string) => {
     try {
       await api.put(`/exam-followups/${id}`, { followup_status });
-      toast.success("Atualizado");
+      toast.success('Atualizado');
       void fetchData();
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, "Erro"));
+      toast.error(getApiErrorMessage(error, 'Erro'));
     }
   };
 
   const markResultAvailable = async (id: string) => {
     try {
       await api.put(`/exam-followups/${id}/result-available`);
-      toast.success("Tutor notificado sobre resultado disponível");
+      toast.success('Tutor notificado sobre resultado disponível');
       void fetchData();
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, "Erro ao notificar"));
+      toast.error(getApiErrorMessage(error, 'Erro ao notificar'));
     }
   };
 
@@ -141,16 +120,11 @@ export default function FollowupsPage() {
       </h1>
       <Card>
         <CardContent>
-          <Button
-            onClick={() => setModalOpen(true)}
-            className="mb-4 bg-primary"
-          >
+          <Button onClick={() => setModalOpen(true)} className="mb-4 bg-primary">
             Novo acompanhamento
           </Button>
 
-          <h3 className="font-medium text-foreground mb-2">
-            Aguardando retorno
-          </h3>
+          <h3 className="font-medium text-foreground mb-2">Aguardando retorno</h3>
           {loading ? (
             <div className="flex justify-center py-8">
               <Loader2 className="w-6 h-6 animate-spin text-primary" />
@@ -179,7 +153,7 @@ export default function FollowupsPage() {
                         <TableCell>{item.expected_result_date}</TableCell>
                         <TableCell>{item.followup_status}</TableCell>
                         <TableCell className="space-x-1">
-                          {item.followup_status === "pending_result" && (
+                          {item.followup_status === 'pending_result' && (
                             <Button
                               variant="outline"
                               size="sm"
@@ -189,11 +163,7 @@ export default function FollowupsPage() {
                               Resultado Disponível
                             </Button>
                           )}
-                          <Button
-                            variant="link"
-                            size="sm"
-                            onClick={() => updateStatus(item.id, "closed")}
-                          >
+                          <Button variant="link" size="sm" onClick={() => updateStatus(item.id, 'closed')}>
                             Fechar
                           </Button>
                         </TableCell>
@@ -226,17 +196,14 @@ export default function FollowupsPage() {
               </TableHeader>
               <TableBody>
                 {all.map((item) => (
-                  <TableRow
-                    className="cursor-pointer hover:bg-muted/50 h-15 border-b border-gray-300"
-                    key={item.id}
-                  >
+                  <TableRow className="cursor-pointer hover:bg-muted/50 h-15 border-b border-gray-300" key={item.id}>
                     <TableCell>{item.Patient?.name}</TableCell>
                     <TableCell>{item.expected_result_date}</TableCell>
                     <TableCell>
                       <Badge variant="secondary">{item.followup_status}</Badge>
                     </TableCell>
                     <TableCell className="space-x-1">
-                      {item.followup_status === "pending_result" && (
+                      {item.followup_status === 'pending_result' && (
                         <Button
                           variant="outline"
                           size="sm"
@@ -246,12 +213,8 @@ export default function FollowupsPage() {
                           Resultado Disponível
                         </Button>
                       )}
-                      {item.followup_status !== "closed" && (
-                        <Button
-                          variant="link"
-                          size="sm"
-                          onClick={() => updateStatus(item.id, "closed")}
-                        >
+                      {item.followup_status !== 'closed' && (
+                        <Button variant="link" size="sm" onClick={() => updateStatus(item.id, 'closed')}>
                           Fechar
                         </Button>
                       )}
@@ -278,29 +241,17 @@ export default function FollowupsPage() {
         title="Novo acompanhamento"
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setModalOpen(false)}
-            >
+            <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>
               Cancelar
             </Button>
-            <Button
-              type="submit"
-              form="followup-create-form"
-              className="bg-primary"
-            >
+            <Button type="submit" form="followup-create-form" className="bg-primary">
               Criar
             </Button>
           </div>
         }
       >
-        <form
-          id="followup-create-form"
-          onSubmit={handleSubmit(onSubmit)}
-          className="space-y-4"
-        >
-          <div>
+        <form id="followup-create-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4 md:space-y-6">
+          <div className="space-y-2">
             <Label>Solicitação de exame</Label>
             <Controller
               name="exam_request_id"
@@ -322,31 +273,33 @@ export default function FollowupsPage() {
               )}
             />
           </div>
-          <div>
-            <Label>Paciente</Label>
-            <Controller
-              name="patient_id"
-              control={control}
-              rules={{ required: true }}
-              render={({ field }) => (
-                <Select onValueChange={field.onChange} value={field.value}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {patients.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            />
-          </div>
-          <div>
-            <Label>Previsão do resultado</Label>
-            <Input type="date" {...register("expected_result_date")} />
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Paciente</Label>
+              <Controller
+                name="patient_id"
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {patients.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Previsão do resultado</Label>
+              <Input type="date" {...register('expected_result_date')} />
+            </div>
           </div>
         </form>
       </DashboardCreateFormDialog>
