@@ -22,7 +22,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { useForm, Controller } from 'react-hook-form';
-import { Plus, Loader2, X } from 'lucide-react';
+import { Plus, Loader2, X, FileText, Mail } from 'lucide-react';
 import api from '@/lib/axios';
 import { API_PAGE_SIZE, fetchAllListPages, listQueryParams, parseListResponse } from '@/lib/pagination';
 import { ListPagination } from '@/components/list-pagination';
@@ -328,23 +328,29 @@ function ExamRequestsContent() {
                             .join(', ')
                         : '—'}
                     </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
+                    <TableCell className="w-24">
+                      <div className="flex items-center gap-1">
                         <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-red-500 border-red-500 hover:bg-red-50"
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="p-0"
+                          title="Baixar PDF"
+                          aria-label="Baixar PDF"
                           onClick={() => handleDownloadPdf(record.id)}
                         >
-                          PDF
+                          <FileText className="w-4 h-4" />
                         </Button>
                         <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-primary border-blue-500 hover:bg-primary/10"
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="p-0"
+                          title="Enviar por e-mail"
+                          aria-label="Enviar por e-mail"
                           onClick={() => handleOpenEmailModal(record)}
                         >
-                          Email
+                          <Mail className="w-4 h-4" />
                         </Button>
                       </div>
                     </TableCell>

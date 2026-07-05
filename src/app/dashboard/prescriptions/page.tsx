@@ -445,31 +445,40 @@ export default function PrescriptionsPage() {
                     <TableCell>
                       {record.prescription_type === 'solicitacao_cirurgia' ? 'Cirurgia' : 'Receita'}
                     </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
+                    <TableCell className="w-32">
+                      <div className="flex items-center gap-1">
                         <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-red-500 border-red-500 hover:bg-red-50"
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="p-0"
+                          title="Baixar PDF"
+                          aria-label="Baixar PDF"
                           onClick={() => handleDownloadPdf(record.id)}
                         >
-                          <FileText className="w-3 h-3 mr-1" /> PDF
+                          <FileText className="w-4 h-4" />
                         </Button>
                         <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-primary border-blue-500 hover:bg-primary/10"
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="p-0"
+                          title="Enviar por e-mail"
+                          aria-label="Enviar por e-mail"
                           onClick={() => handleOpenEmailModal(record)}
                         >
-                          <Mail className="w-3 h-3 mr-1" /> Email
+                          <Mail className="w-4 h-4" />
                         </Button>
                         <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-green-600 border-green-600 hover:bg-green-50"
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="p-0"
+                          title="Solicitar exame"
+                          aria-label="Solicitar exame"
                           onClick={() => handleSolicitarExame(record)}
                         >
-                          <FlaskConical className="w-3 h-3 mr-1" /> Exame
+                          <FlaskConical className="w-4 h-4" />
                         </Button>
                       </div>
                     </TableCell>
