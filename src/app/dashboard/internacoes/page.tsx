@@ -96,6 +96,7 @@ export default function InternacoesPage() {
     health_plan_id: '',
     daily_rate: 0,
     notes: '',
+    belongings: '',
   });
 
   const fetchData = useCallback(async () => {
@@ -264,10 +265,10 @@ export default function InternacoesPage() {
         </TabsContent>
 
         <TabsContent value="history" className="mt-4">
-          <div className="border border-gray-300 rounded-md p-0">
-            <Table>
-              <TableHeader className="h-15">
-                <TableRow className="border-b border-gray-300">
+          <div className="overflow-x-auto border border-gray-300 rounded-lg">
+            <Table className="min-w-full border-collapse bg-white text-sm">
+              <TableHeader>
+                <TableRow className="border-b border-gray-300 h-15">
                   <TableHead>Paciente</TableHead>
                   <TableHead>Motivo</TableHead>
                   <TableHead>Admissão</TableHead>
@@ -279,13 +280,13 @@ export default function InternacoesPage() {
               <TableBody>
                 {discharged.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="py-12 text-center text-muted-foreground">
+                    <TableCell colSpan={6} className="border-t border-slate-200 py-8 text-center text-sm text-slate-500">
                       Nenhum histórico
                     </TableCell>
                   </TableRow>
                 ) : (
                   discharged.map((h) => (
-                    <TableRow key={h.id} className="cursor-pointer hover:bg-muted/50">
+                    <TableRow key={h.id} className="cursor-pointer hover:bg-muted/50 border-b border-gray-300 h-15">
                       <TableCell>
                         <Link href={`/dashboard/internacoes/${h.id}`} className="font-medium hover:underline">
                           {h.patient?.name}
@@ -421,6 +422,15 @@ export default function InternacoesPage() {
                 onChange={(e) => setForm((f) => ({ ...f, daily_rate: Number(e.target.value) }))}
               />
             </div>
+          </div>
+          <div className="space-y-1">
+            <Label>Pertences</Label>
+            <Textarea
+              rows={2}
+              value={form.belongings}
+              onChange={(e) => setForm((f) => ({ ...f, belongings: e.target.value }))}
+              placeholder="Ex.: coleira azul, ração Hills, cobertinha xadrez"
+            />
           </div>
         </div>
       </DashboardCreateFormDialog>

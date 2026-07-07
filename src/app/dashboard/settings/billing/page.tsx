@@ -56,6 +56,23 @@ export default function BillingSettingsPage() {
   const [loadingInvoices, setLoadingInvoices] = useState(true);
   const [cancelling, setCancelling] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
+  const [paying, setPaying] = useState(false);
+
+  const handlePayPending = async () => {
+    setPaying(true);
+    try {
+      const { data } = await api.get('/billing/payment-link');
+      if (data?.paymentUrl) {
+        window.location.href = data.paymentUrl;
+      } else {
+        toast.info('Nenhuma cobrança pendente encontrada.');
+      }
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, 'Erro ao obter a cobrança.'));
+    } finally {
+      setPaying(false);
+    }
+  };
 
   useEffect(() => {
     api.get('/billing/status')
@@ -141,6 +158,13 @@ export default function BillingSettingsPage() {
                     {billing.status === 'overdue' ? 'Regularizar pagamento' : 'Escolher plano'}
                   </Button>
                 </Link>
+              )}
+
+              {(billing.status === 'active' || billing.status === 'overdue') && (
+                <Button size="sm" onClick={handlePayPending} disabled={paying}>
+                  {paying ? <Loader2 className="mr-2 size-4 animate-spin" /> : <CreditCard className="mr-2 size-4" />}
+                  Pagar cobrança pendente
+                </Button>
               )}
 
               {billing.status === 'active' && !cancelAtDate && (

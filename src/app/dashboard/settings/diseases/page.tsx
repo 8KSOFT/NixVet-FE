@@ -129,10 +129,11 @@ export default function SettingsDiseasesPage() {
               <Loader2 className="w-6 h-6 animate-spin text-primary" />
             </div>
           ) : (
-            <div className="rounded-md border overflow-hidden">
-              <Table>
+            <div>
+              <div className="overflow-x-auto">
+              <Table className="min-w-full border-collapse bg-white text-sm">
                 <TableHeader>
-                  <TableRow>
+                  <TableRow className="border-b border-gray-300 h-15">
                     <TableHead>Nome</TableHead>
                     <TableHead>Categoria</TableHead>
                     <TableHead className="w-[120px]">Ações</TableHead>
@@ -140,7 +141,7 @@ export default function SettingsDiseasesPage() {
                 </TableHeader>
                 <TableBody>
                   {list.map((r) => (
-                    <TableRow key={r.id}>
+                    <TableRow className="border-b border-gray-300 h-15" key={r.id}>
                       <TableCell>{r.name}</TableCell>
                       <TableCell>{r.disease_category?.name ?? r.disease_category_id ?? '—'}</TableCell>
                       <TableCell>
@@ -157,6 +158,7 @@ export default function SettingsDiseasesPage() {
                   ))}
                 </TableBody>
               </Table>
+              </div>
               <ListPagination
                 page={listPage}
                 totalPages={listTotalPages}

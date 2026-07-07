@@ -164,7 +164,7 @@ export default function MedicalRecordsListPage() {
       const res = await api.post<MedicalRecord>('/medical-records', form);
       toast.success('Prontuário criado');
       setModalVisible(false);
-      router.push(`/dashboard/medical-records/${res.data.id}`);
+      router.push(`/dashboard/medical-records/prontuario/${res.data.patient_id}`);
     } catch {
       toast.error('Erro ao criar prontuário');
     }
@@ -306,10 +306,10 @@ export default function MedicalRecordsListPage() {
           <div className="text-center py-12 text-muted-foreground">Nenhum prontuário encontrado.</div>
         ) : (
           <div>
-            <div className="border border-gray-300 rounded-md">
-              <Table>
-                <TableHeader className="h-15">
-                  <TableRow className="border-b border-gray-300">
+            <div className="overflow-x-auto border border-gray-300 rounded-lg">
+              <Table className="min-w-full border-collapse bg-white text-sm">
+                <TableHeader>
+                  <TableRow className="border-b border-gray-300 h-15">
                     <TableHead>Data</TableHead>
                     <TableHead>Paciente</TableHead>
                     <TableHead>Tipo</TableHead>
@@ -323,8 +323,8 @@ export default function MedicalRecordsListPage() {
                   {filtered.map((r) => (
                     <TableRow
                       key={r.id}
-                      className="cursor-pointer hover:bg-muted/50 h-15 border-b border-gray-300"
-                      onClick={() => router.push(`/dashboard/medical-records/${r.id}`)}
+                      className="cursor-pointer hover:bg-muted/50 border-b border-gray-300 h-15"
+                      onClick={() => router.push(`/dashboard/medical-records/prontuario/${r.patient_id}`)}
                     >
                       <TableCell className="whitespace-nowrap">{dayjs(r.record_date).format('DD/MM/YYYY')}</TableCell>
                       <TableCell className="font-medium">{r.patient?.name || '—'}</TableCell>

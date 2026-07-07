@@ -94,17 +94,17 @@ export default function SettingsResourcesPage() {
               <Loader2 className="w-5 h-5 animate-spin text-primary" />
             </div>
           ) : (
-            <div className="rounded-md border overflow-hidden">
-            <Table>
+            <div className="overflow-x-auto">
+            <Table className="min-w-full border-collapse bg-white text-sm">
               <TableHeader>
-                <TableRow>
+                <TableRow className="border-b border-gray-300 h-15">
                   <TableHead>Nome</TableHead>
                   <TableHead>Tipo</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {list.map((r) => (
-                  <TableRow key={r.id}>
+                  <TableRow className="border-b border-gray-300 h-15" key={r.id}>
                     <TableCell>{r.name}</TableCell>
                     <TableCell>{TYPES.find((x) => x.value === r.type)?.label ?? r.type}</TableCell>
                   </TableRow>

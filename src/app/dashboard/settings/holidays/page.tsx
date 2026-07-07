@@ -231,7 +231,7 @@ export default function HolidaysPage() {
             <Button onClick={() => { resetAddForm(); setAddOpen(true); }} className="bg-primary">
               <Plus className="w-4 h-4 mr-2" /> Adicionar
             </Button>
-            <Button onClick={() => setAiOpen(true)} variant="outline" className="border-purple-300 text-purple-700 hover:bg-purple-50">
+            <Button onClick={() => setAiOpen(true)} variant="outline" className="border-primary/40 text-primary hover:bg-primary/10">
               <Sparkles className="w-4 h-4 mr-2" /> Buscar com IA
             </Button>
           </div>
@@ -245,9 +245,10 @@ export default function HolidaysPage() {
               Nenhum feriado cadastrado para {year}. Use o botão &quot;Buscar com IA&quot; para importar automaticamente.
             </p>
           ) : (
-            <Table>
+            <div className="overflow-x-auto">
+            <Table className="min-w-full border-collapse bg-white text-sm">
               <TableHeader>
-                <TableRow>
+                <TableRow className="border-b border-gray-300 h-15">
                   <TableHead>Data</TableHead>
                   <TableHead>Nome</TableHead>
                   <TableHead>Tipo</TableHead>
@@ -257,7 +258,7 @@ export default function HolidaysPage() {
               </TableHeader>
               <TableBody>
                 {holidays.map((h) => (
-                  <TableRow key={h.id}>
+                  <TableRow className="border-b border-gray-300 h-15" key={h.id}>
                     <TableCell className="font-mono">{formatDate(h.date)}</TableCell>
                     <TableCell>{h.name}</TableCell>
                     <TableCell>
@@ -266,7 +267,7 @@ export default function HolidaysPage() {
                           Regional {h.city ? `(${h.city}/${h.state})` : ''}
                         </Badge>
                       ) : (
-                        <Badge variant="outline" className="border-blue-300 text-primary">Nacional</Badge>
+                        <Badge variant="outline" className="border-primary/40 text-primary">Nacional</Badge>
                       )}
                     </TableCell>
                     <TableCell>
@@ -301,6 +302,7 @@ export default function HolidaysPage() {
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -354,7 +356,7 @@ export default function HolidaysPage() {
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-purple-600" />
+              <Sparkles className="w-5 h-5 text-primary" />
               Buscar feriados com IA
             </DialogTitle>
             <DialogDescription>
@@ -372,7 +374,7 @@ export default function HolidaysPage() {
                 <Input value={aiState} onChange={(e) => setAiState(e.target.value.toUpperCase())} maxLength={2} placeholder="SP" />
               </div>
             </div>
-            <Button onClick={handleAiSearch} disabled={aiLoading} variant="outline" className="border-purple-300 text-purple-700">
+            <Button onClick={handleAiSearch} disabled={aiLoading} variant="outline" className="border-primary/40 text-primary hover:bg-primary/10">
               {aiLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
               {aiLoading ? 'Consultando IA...' : 'Buscar feriados'}
             </Button>
@@ -396,10 +398,10 @@ export default function HolidaysPage() {
                     </Button>
                   </div>
                 </div>
-                <div className="max-h-[40vh] overflow-y-auto border rounded-md">
-                  <Table>
+                <div className="max-h-[40vh] overflow-y-auto overflow-x-auto border border-gray-300 rounded-lg">
+                  <Table className="min-w-full border-collapse bg-white text-sm">
                     <TableHeader>
-                      <TableRow>
+                      <TableRow className="border-b border-gray-300 h-15">
                         <TableHead className="w-10"></TableHead>
                         <TableHead>Data</TableHead>
                         <TableHead>Nome</TableHead>
@@ -408,7 +410,7 @@ export default function HolidaysPage() {
                     </TableHeader>
                     <TableBody>
                       {suggestions.map((s, i) => (
-                        <TableRow key={i} className={selectedSuggestions.has(i) ? '' : 'opacity-50'}>
+                        <TableRow key={i} className={selectedSuggestions.has(i) ? 'border-b border-gray-300 h-15' : 'opacity-50 border-b border-gray-300 h-15'}>
                           <TableCell>
                             <Checkbox
                               checked={selectedSuggestions.has(i)}
@@ -421,7 +423,7 @@ export default function HolidaysPage() {
                             {s.is_regional ? (
                               <Badge variant="outline" className="border-orange-300 text-orange-700 text-xs">Regional</Badge>
                             ) : (
-                              <Badge variant="outline" className="border-blue-300 text-primary text-xs">Nacional</Badge>
+                              <Badge variant="outline" className="border-primary/40 text-primary text-xs">Nacional</Badge>
                             )}
                           </TableCell>
                         </TableRow>

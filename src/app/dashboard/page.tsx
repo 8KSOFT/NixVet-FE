@@ -313,23 +313,23 @@ export default function DashboardPage() {
               ))}
             </div>
           ) : (
-            <div className="overflow-x-auto border border-slate-200 rounded-lg">
+            <div className="overflow-x-auto border border-gray-300 rounded-lg">
               <Table className="min-w-full border-collapse bg-white text-sm">
                 <TableHeader>
-                  <TableRow>
-                    <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">
+                  <TableRow className="border-b border-gray-300 h-15">
+                    <TableHead>
                       {t("dashboardHome.colDate")}
                     </TableHead>
-                    <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">
+                    <TableHead>
                       {t("dashboardHome.colTime")}
                     </TableHead>
-                    <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">
+                    <TableHead>
                       {t("dashboardHome.colPatient")}
                     </TableHead>
-                    <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">
+                    <TableHead>
                       {t("dashboardHome.colVet")}
                     </TableHead>
-                    <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">
+                    <TableHead>
                       {t("dashboardHome.colStatus")}
                     </TableHead>
                   </TableRow>
@@ -349,20 +349,20 @@ export default function DashboardPage() {
                     </TableRow>
                   ) : (
                     recentAppointments.map((row) => (
-                      <TableRow key={row.key}>
-                        <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
+                      <TableRow className="border-b border-gray-300 h-15" key={row.key}>
+                        <TableCell>
                           {row.date}
                         </TableCell>
-                        <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
+                        <TableCell>
                           {row.time}
                         </TableCell>
-                        <TableCell className="border border-slate-200 px-3 py-3 font-medium text-slate-900">
+                        <TableCell className="font-medium">
                           {row.patient}
                         </TableCell>
-                        <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
+                        <TableCell>
                           {row.veterinarian}
                         </TableCell>
-                        <TableCell className="border border-slate-200 px-3 py-3">
+                        <TableCell>
                           <span className={statusTextClass(row.statusKey)}>
                             {row.status}
                           </span>

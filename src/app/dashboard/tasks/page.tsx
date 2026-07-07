@@ -113,10 +113,10 @@ export default function TasksPage() {
           </div>
         ) : (
           <div>
-            <div className="rounded-md border border-gray-300 overflow-hidden">
-              <Table>
-                <TableHeader className="h-15">
-                  <TableRow className="border-b border-gray-300">
+            <div className="overflow-x-auto border border-gray-300 rounded-lg">
+              <Table className="min-w-full border-collapse bg-white text-sm">
+                <TableHeader>
+                  <TableRow className="border-b border-gray-300 h-15">
                     <TableHead>Paciente</TableHead>
                     <TableHead>Tipo</TableHead>
                     <TableHead>Vencimento</TableHead>
@@ -135,8 +135,15 @@ export default function TasksPage() {
                       </TableCell>
                       <TableCell>
                         {task.status !== 'completed' ? (
-                          <Button size="sm" onClick={() => markDone(task.id)}>
-                            <CheckCircle2 className="w-4 h-4 mr-1" /> Concluir
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="p-0"
+                            title="Concluir"
+                            aria-label="Concluir"
+                            onClick={() => markDone(task.id)}
+                          >
+                            <CheckCircle2 className="w-4 h-4 text-green-600" />
                           </Button>
                         ) : (
                           '—'

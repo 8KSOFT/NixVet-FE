@@ -231,7 +231,7 @@ export default function OrcamentosPage() {
         </Button>
       </div>
 
-      <div className="border border-gray-300 rounded-md p-0">
+      <div className="overflow-x-auto border border-gray-300 rounded-lg">
         {loading ? (
           <div className="p-6 space-y-2">
             {Array.from({ length: 4 }).map((_, i) => (
@@ -239,9 +239,9 @@ export default function OrcamentosPage() {
             ))}
           </div>
         ) : (
-          <Table>
-            <TableHeader className="h-15">
-              <TableRow className="border-b border-gray-300">
+          <Table className="min-w-full border-collapse bg-white text-sm">
+            <TableHeader>
+              <TableRow className="border-b border-gray-300 h-15">
                 <TableHead>Nº</TableHead>
                 <TableHead>Paciente</TableHead>
                 <TableHead>Tipo</TableHead>
@@ -256,7 +256,7 @@ export default function OrcamentosPage() {
             <TableBody>
               {budgets.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="py-12 text-center text-muted-foreground">
+                  <TableCell colSpan={9} className="border-t border-slate-200 py-8 text-center text-sm text-slate-500">
                     Nenhum orçamento encontrado
                   </TableCell>
                 </TableRow>
@@ -264,7 +264,7 @@ export default function OrcamentosPage() {
                 budgets.map((b) => {
                   const totals = computeTotals(b.items ?? []);
                   return (
-                    <TableRow className="cursor-pointer hover:bg-muted/50 h-15 border-b border-gray-300" key={b.id}>
+                    <TableRow className="cursor-pointer hover:bg-muted/50 border-b border-gray-300 h-15" key={b.id}>
                       <TableCell className="font-mono text-xs">{b.id.substring(0, 8).toUpperCase()}</TableCell>
                       <TableCell>{b.patient?.name}</TableCell>
                       <TableCell>{b.type === 'procedure' ? 'Procedimento' : 'Internação'}</TableCell>

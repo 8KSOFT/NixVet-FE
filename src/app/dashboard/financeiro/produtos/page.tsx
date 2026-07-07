@@ -285,9 +285,10 @@ export default function ProdutosPage() {
             products.length === 0 ? (
               <p className="py-8 text-center text-sm text-muted-foreground">Nenhum produto cadastrado.</p>
             ) : (
-              <Table className="text-sm">
+              <div className="overflow-x-auto">
+              <Table className="min-w-full border-collapse bg-white text-sm">
                 <TableHeader>
-                  <TableRow>
+                  <TableRow className="border-b border-gray-300 h-15">
                     <TableHead>Produto</TableHead>
                     <TableHead className="text-right">Custo</TableHead>
                     <TableHead className="text-right">Venda</TableHead>
@@ -299,7 +300,7 @@ export default function ProdutosPage() {
                 </TableHeader>
                 <TableBody>
                   {products.map((p) => (
-                    <TableRow key={p.id} className={!p.active ? 'opacity-50' : ''}>
+                    <TableRow key={p.id} className={`border-b border-gray-300 h-15${!p.active ? ' opacity-50' : ''}`}>
                       <TableCell className="font-medium">
                         {p.name}
                         {p.sku ? <span className="ml-2 text-xs text-muted-foreground">{p.sku}</span> : null}
@@ -325,13 +326,15 @@ export default function ProdutosPage() {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             )
           ) : sales.length === 0 ? (
             <p className="py-8 text-center text-sm text-muted-foreground">Nenhuma venda registrada.</p>
           ) : (
-            <Table className="text-sm">
+            <div className="overflow-x-auto">
+            <Table className="min-w-full border-collapse bg-white text-sm">
               <TableHeader>
-                <TableRow>
+                <TableRow className="border-b border-gray-300 h-15">
                   <TableHead>Data</TableHead>
                   <TableHead>Itens</TableHead>
                   <TableHead className="text-right">Bruto</TableHead>
@@ -341,7 +344,7 @@ export default function ProdutosPage() {
               </TableHeader>
               <TableBody>
                 {sales.map((s) => (
-                  <TableRow key={s.id}>
+                  <TableRow className="border-b border-gray-300 h-15" key={s.id}>
                     <TableCell>{new Date(s.sold_at).toLocaleString('pt-BR')}</TableCell>
                     <TableCell className="max-w-[320px] truncate">
                       {(s.items ?? []).map((i) => `${i.quantity}× ${i.product_name}`).join(', ')}
@@ -353,6 +356,7 @@ export default function ProdutosPage() {
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>

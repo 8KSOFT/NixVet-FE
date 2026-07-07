@@ -44,7 +44,7 @@ export default function ConfiguracoesFiscaisPage() {
         <CardContent className="space-y-3 text-sm text-muted-foreground">
           <p>
             A <strong className="text-foreground">Nota Fiscal de Serviços Eletrônica (NFS-e)</strong> é o documento fiscal emitido
-            pela clínica para os clientes (tutores) após a prestação de serviços como consultas, cirurgias, exames e internações.
+            pela clínica para os clientes (responsáveis) após a prestação de serviços como consultas, cirurgias, exames e internações.
           </p>
           <p>
             É diferente da NFS-e da assinatura do NixVet — esta é emitida pelo NixVet para a clínica e já funciona

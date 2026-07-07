@@ -116,7 +116,7 @@ export default function PatientDetailPage() {
     { label: 'Idade', value: `${patient.age} ano(s)` },
     { label: 'Peso', value: `${patient.weight} kg` },
     { label: 'Sexo', value: patient.sex },
-    { label: 'Tutor', value: patient.tutor?.name ?? '—' },
+    { label: 'Responsável', value: patient.tutor?.name ?? '—' },
   ];
 
   return (
@@ -134,7 +134,7 @@ export default function PatientDetailPage() {
           <CardTitle className="text-foreground">{patient.name}</CardTitle>
           <Button asChild size="sm" className="bg-primary hover:bg-blue-700">
             <Link href={`/dashboard/medical-records?patient=${id}`}>
-              <FileText className="w-4 h-4 mr-1" /> Prontuários
+              <FileText className="w-4 h-4 mr-1" /> Fichas
             </Link>
           </Button>
         </CardHeader>

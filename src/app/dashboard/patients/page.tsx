@@ -14,7 +14,7 @@ import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Link from 'next/link';
 
-import { Plus, Pencil, Trash2, History, ChevronsUpDown, Check } from 'lucide-react';
+import { Plus, Pencil, Trash2, History } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { API_PAGE_SIZE, fetchAllListPages, listQueryParams, parseListResponse } from '@/lib/pagination';
@@ -40,8 +40,6 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 
 const NO_TUTOR_REASON_LABELS: Record<string, string> = {
   EMERGENCIA: 'Emergência',
@@ -183,10 +181,11 @@ export default function PatientsPage() {
   const fetchBreedOptions = async (species: string) => {
     const disc = getBreedDiscriminator(species);
     try {
-      const res = await api.get('/catalog/support', {
-        params: { discriminator: disc },
-      });
-      setBreedOptions(normalizeSupportOptions(res.data));
+      // Busca TODAS as páginas — o catálogo de raças passou de ~500 itens e o
+      // endpoint pagina de 50 em 50; sem isso, raças no fim do alfabeto
+      // (ex.: Pastor de Shetland) não apareciam no autocomplete.
+      const all = await fetchAllListPages<SupportOption>('/catalog/support', { discriminator: disc });
+      setBreedOptions(all);
     } catch (error) {
       console.error('Error fetching breed options:', error);
       setBreedOptions([]);
@@ -206,7 +205,7 @@ export default function PatientsPage() {
       toast.success(`Raça "${newBreed}" cadastrada`);
       await fetchBreedOptions(species);
       setValue('breed', newBreed);
-      setBreedSearchValue('');
+      setBreedSearchValue(newBreed);
       setBreedOpen(false);
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao cadastrar raça'));
@@ -229,6 +228,8 @@ export default function PatientsPage() {
   const handleAdd = () => {
     setEditingId(null);
     reset();
+    setBreedSearchValue('');
+    setBreedOptions([]);
     setModalVisible(true);
   };
 
@@ -247,6 +248,7 @@ export default function PatientsPage() {
       tutor_choice: hasTutor ? 'yes' : 'no',
       no_tutor_reason: record.no_tutor_reason ?? undefined,
     });
+    setBreedSearchValue(record.breed ?? '');
     fetchBreedOptions(record.species);
     setModalVisible(true);
   };
@@ -288,12 +290,16 @@ export default function PatientsPage() {
     }
   };
 
-  const filteredBreeds = breedOptions.filter((o) =>
-    o.description.toLowerCase().includes(breedSearchValue.toLowerCase()),
-  );
+  const MIN_BREED_SEARCH = 3;
+  const breedQuery = breedSearchValue.trim();
+  const canSearchBreed = breedQuery.length >= MIN_BREED_SEARCH;
+  // Autocomplete: só filtra/sugere a partir de 3 caracteres digitados.
+  const filteredBreeds = canSearchBreed
+    ? breedOptions.filter((o) => o.description.toLowerCase().includes(breedQuery.toLowerCase()))
+    : [];
   const showAddBreed =
-    breedSearchValue.trim() !== '' &&
-    !breedOptions.some((o) => o.description.toLowerCase() === breedSearchValue.trim().toLowerCase());
+    canSearchBreed &&
+    !breedOptions.some((o) => o.description.toLowerCase() === breedQuery.toLowerCase());
 
   return (
     <div>
@@ -328,11 +334,11 @@ export default function PatientsPage() {
         <div className="text-center py-8 text-muted-foreground">Carregando...</div>
       ) : (
         <div>
-          <div className="rounded-md border border-gray-300 overflow-hidden">
-            <Table>
-              <TableHeader className="h-15">
+          <div className="overflow-x-auto border border-gray-300 rounded-lg">
+            <Table className="min-w-full border-collapse bg-white text-sm">
+              <TableHeader>
                 {/* Borda ou fundo customizado para o cabeçalho se desejar */}
-                <TableRow className="border-b border-gray-300">
+                <TableRow className="border-b border-gray-300 h-15">
                   <TableHead>{t('patients.table.name')}</TableHead>
                   <TableHead>{t('patients.table.species')}</TableHead>
                   <TableHead>{t('patients.table.breed')}</TableHead>
@@ -343,17 +349,17 @@ export default function PatientsPage() {
               <TableBody>
                 {patients.map((record) => (
                   /* Aplica a cor gray-300 na borda inferior da linha */
-                  <TableRow key={record.id} className="border-b border-gray-300">
+                  <TableRow className="border-b border-gray-300 h-15" key={record.id}>
                     <TableCell>{record.name}</TableCell>
-                    <TableCell className="w-60">{record.species}</TableCell>
-                    <TableCell className="w-60">{record.breed}</TableCell>
-                    <TableCell className="w-100">
+                    <TableCell>{record.species}</TableCell>
+                    <TableCell>{record.breed}</TableCell>
+                    <TableCell>
                       {record.tutor?.name ??
                         (record.no_tutor_reason
-                          ? `Sem tutor (${NO_TUTOR_REASON_LABELS[record.no_tutor_reason] ?? record.no_tutor_reason})`
+                          ? `Sem responsável (${NO_TUTOR_REASON_LABELS[record.no_tutor_reason] ?? record.no_tutor_reason})`
                           : '—')}
                     </TableCell>
-                    <TableCell className="w-50">
+                    <TableCell>
                       <div className="flex items-center gap-1">
                         <Button asChild variant="ghost" size="icon" className="p-0" title="Ver timeline">
                           <Link href={`/dashboard/patients/${record.id}`}>
@@ -388,8 +394,8 @@ export default function PatientsPage() {
                 ))}
                 {patients.length === 0 && (
                   /* Mantém o padrão visual mesmo se a tabela estiver vazia */
-                  <TableRow className="border-b border-gray-300">
-                    <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                  <TableRow>
+                    <TableCell colSpan={5} className="border-t border-slate-200 py-8 text-center text-sm text-slate-500">
                       Nenhum paciente cadastrado.
                     </TableCell>
                   </TableRow>
@@ -452,17 +458,17 @@ export default function PatientsPage() {
 
           {/* Tutor choice */}
           <div className="space-y-2">
-            <Label>Tutor *</Label>
+            <Label>Responsável *</Label>
             {editingId && (
               <p className="text-xs text-muted-foreground">
-                Você pode vincular ou alterar o tutor ao editar o paciente.
+                Você pode vincular ou alterar o responsável ao editar o paciente.
               </p>
             )}
             <Controller
               name="tutor_choice"
               control={control}
               rules={{
-                required: 'Defina se informa o tutor agora ou não',
+                required: 'Defina se informa o responsável agora ou não',
               }}
               render={({ field }) => (
                 <RadioGroup
@@ -480,7 +486,7 @@ export default function PatientsPage() {
                       id="tutor-yes"
                       className="size-4 bg-gray-300 data-[state=checked]:bg-transparent flex items-center justify-center [&_span]:flex [&_span]:items-center [&_span]:justify-center [&_span]:size-full [&_svg]:!size-[85%] [&_svg]:fill-current"
                     />
-                    <span className="text-sm font-normal text-foreground">Informar tutor agora</span>
+                    <span className="text-sm font-normal text-foreground">Informar responsável</span>
                   </label>
 
                   {/* Linha Divisória Central */}
@@ -496,7 +502,7 @@ export default function PatientsPage() {
                       id="tutor-no"
                       className="size-4 bg-gray-300 data-[state=checked]:bg-transparent flex items-center justify-center [&_span]:flex [&_span]:items-center [&_span]:justify-center [&_span]:size-full [&_svg]:!size-[85%] [&_svg]:fill-current"
                     />
-                    <span className="text-sm font-normal text-foreground">Não informar tutor</span>
+                    <span className="text-sm font-normal text-foreground">Não informar</span>
                   </label>
                 </RadioGroup>
               )}
@@ -512,20 +518,20 @@ export default function PatientsPage() {
           >
             {/* Conteúdo Dinâmico com Fade-in Interno */}
             <div key={watchedTutorChoice} className="animate-in fade-in duration-200 space-y-1">
-              {/* CASO: Informar tutor agora */}
+              {/* CASO: Informar responsável agora */}
               {watchedTutorChoice === 'yes' && (
                 <>
-                  <Label>Selecione o tutor *</Label>
+                  <Label>Selecione o responsável *</Label>
                   <Controller
                     name="tutor_id"
                     control={control}
                     rules={{
-                      required: watchedTutorChoice === 'yes' ? 'Selecione um tutor' : false,
+                      required: watchedTutorChoice === 'yes' ? 'Selecione um responsável' : false,
                     }}
                     render={({ field }) => (
                       <Select value={field.value ?? ''} onValueChange={field.onChange}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Selecione um tutor" />
+                          <SelectValue placeholder="Selecione um responsável" />
                         </SelectTrigger>
                         <SelectContent>
                           {tutors.map((tutor) => (
@@ -541,7 +547,7 @@ export default function PatientsPage() {
                 </>
               )}
 
-              {/* CASO: Não informar tutor */}
+              {/* CASO: Não informar responsável */}
               {watchedTutorChoice === 'no' && (
                 <>
                   <Label>Motivo *</Label>
@@ -606,7 +612,7 @@ export default function PatientsPage() {
               {errors.species && <p className="text-sm text-destructive">{errors.species.message}</p>}
             </div>
 
-            {/* Raça com Combobox */}
+            {/* Raça — autocomplete (Input + sugestões), 3+ letras */}
             <div className="space-y-1">
               <Label>Raça *</Label>
               <Controller
@@ -614,67 +620,63 @@ export default function PatientsPage() {
                 control={control}
                 rules={{ required: 'Obrigatório' }}
                 render={({ field }) => (
-                  <Popover open={breedOpen} onOpenChange={setBreedOpen}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        role="combobox"
-                        disabled={!watchedSpecies}
-                        className="h-8 w-full justify-between font-normal sm:h-11"
-                      >
-                        <span className="truncate">
-                          {field.value
-                            ? field.value
-                            : breedOptions.length
-                              ? 'Selecione ou cadastre a raça'
-                              : 'Selecione primeiro a espécie'}
-                        </span>
-                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-64 p-0 popover-responsive" align="start">
-                      <Command shouldFilter={false}>
-                        <CommandInput
-                          placeholder="Buscar raça..."
-                          value={breedSearchValue}
-                          onValueChange={setBreedSearchValue}
-                        />
-                        <CommandList>
-                          <CommandEmpty>Nenhuma raça encontrada.</CommandEmpty>
-                          <CommandGroup>
+                  <div className="relative">
+                    <Input
+                      value={breedSearchValue}
+                      disabled={!watchedSpecies}
+                      autoComplete="off"
+                      placeholder={watchedSpecies ? 'Digite a raça (mín. 3 letras)' : 'Selecione primeiro a espécie'}
+                      onFocus={() => setBreedOpen(true)}
+                      onBlur={() => window.setTimeout(() => setBreedOpen(false), 150)}
+                      onChange={(e) => {
+                        const v = e.target.value;
+                        setBreedSearchValue(v);
+                        field.onChange(v);
+                        setBreedOpen(true);
+                      }}
+                    />
+                    {breedOpen && watchedSpecies && (
+                      <div className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border bg-popover p-1 shadow-md">
+                        {!canSearchBreed ? (
+                          <div className="px-2 py-3 text-center text-sm text-muted-foreground">
+                            Digite ao menos 3 letras para buscar a raça
+                          </div>
+                        ) : filteredBreeds.length === 0 && !showAddBreed ? (
+                          <div className="px-2 py-3 text-center text-sm text-muted-foreground">
+                            Nenhuma raça encontrada.
+                          </div>
+                        ) : (
+                          <>
                             {filteredBreeds.map((o) => (
-                              <CommandItem
+                              <button
+                                type="button"
                                 key={o.id}
-                                value={o.description}
-                                onSelect={(val) => {
-                                  field.onChange(val);
-                                  setBreedSearchValue('');
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={() => {
+                                  field.onChange(o.description);
+                                  setBreedSearchValue(o.description);
                                   setBreedOpen(false);
                                 }}
+                                className="flex w-full items-center rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent"
                               >
-                                <Check
-                                  className={`mr-2 h-4 w-4 ${
-                                    field.value === o.description ? 'opacity-100' : 'opacity-0'
-                                  }`}
-                                />
                                 {o.description}
-                              </CommandItem>
+                              </button>
                             ))}
                             {showAddBreed && (
-                              <CommandItem
-                                value={`__NEW__:${breedSearchValue.trim()}`}
-                                onSelect={() => handleAddBreed(breedSearchValue.trim())}
+                              <button
+                                type="button"
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={() => handleAddBreed(breedSearchValue.trim())}
+                                className="flex w-full items-center rounded-sm px-2 py-1.5 text-left text-sm text-primary hover:bg-accent"
                               >
-                                <Plus className="mr-2 h-4 w-4" />+ Cadastrar &quot;{breedSearchValue.trim()}
-                                &quot;
-                              </CommandItem>
+                                <Plus className="mr-2 h-4 w-4" /> Cadastrar &quot;{breedSearchValue.trim()}&quot;
+                              </button>
                             )}
-                          </CommandGroup>
-                        </CommandList>
-                      </Command>
-                    </PopoverContent>
-                  </Popover>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 )}
               />
               {errors.breed && <p className="text-sm text-destructive">{errors.breed.message}</p>}

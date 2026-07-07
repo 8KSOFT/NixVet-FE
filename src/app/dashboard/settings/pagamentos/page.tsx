@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import { Save } from 'lucide-react';
+import { Save, X, Pencil, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -107,9 +107,10 @@ export default function PagamentosSettingsPage() {
               {Array.from({ length: 7 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
             </div>
           ) : (
-            <Table>
+            <div className="overflow-x-auto">
+            <Table className="min-w-full border-collapse bg-white text-sm">
               <TableHeader>
-                <TableRow>
+                <TableRow className="border-b border-gray-300 h-15">
                   <TableHead>Forma de Pagamento</TableHead>
                   <TableHead>Taxa (%)</TableHead>
                   <TableHead>Liquidação (dias)</TableHead>
@@ -122,7 +123,7 @@ export default function PagamentosSettingsPage() {
                   const isEditing = s.method in editing;
                   const row = editing[s.method];
                   return (
-                    <TableRow key={s.id}>
+                    <TableRow className="border-b border-gray-300 h-15" key={s.id}>
                       <TableCell className="font-medium">{METHOD_LABELS[s.method] ?? s.method}</TableCell>
                       <TableCell>
                         {row ? (
@@ -159,22 +160,41 @@ export default function PagamentosSettingsPage() {
                           {row ? (
                             <>
                               <Button
-                                variant="default"
-                                size="sm"
-                                className="h-7 text-xs"
+                                variant="ghost"
+                                size="icon"
+                                className="p-0"
+                                title={saving === s.method ? 'Salvando...' : 'Salvar'}
+                                aria-label="Salvar"
                                 disabled={saving === s.method}
                                 onClick={() => saveEdit(s.method)}
                               >
-                                <Save className="mr-1 size-3" />
-                                {saving === s.method ? 'Salvando...' : 'Salvar'}
+                                {saving === s.method ? (
+                                  <Loader2 className="size-4 animate-spin" />
+                                ) : (
+                                  <Save className="size-4" />
+                                )}
                               </Button>
-                              <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => cancelEdit(s.method)}>
-                                Cancelar
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="p-0"
+                                title="Cancelar"
+                                aria-label="Cancelar"
+                                onClick={() => cancelEdit(s.method)}
+                              >
+                                <X className="size-4" />
                               </Button>
                             </>
                           ) : (
-                            <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => startEdit(s)}>
-                              Editar
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="p-0"
+                              title="Editar"
+                              aria-label="Editar"
+                              onClick={() => startEdit(s)}
+                            >
+                              <Pencil className="size-4" />
                             </Button>
                           )}
                         </div>
@@ -184,6 +204,7 @@ export default function PagamentosSettingsPage() {
                 })}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>

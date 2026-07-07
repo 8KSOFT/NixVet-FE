@@ -138,9 +138,10 @@ export default function PlanosSaudePage() {
               {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
             </div>
           ) : (
-            <Table>
+            <div className="overflow-x-auto">
+            <Table className="min-w-full border-collapse bg-white text-sm">
               <TableHeader>
-                <TableRow>
+                <TableRow className="border-b border-gray-300 h-15">
                   <TableHead>Nome</TableHead>
                   <TableHead>CNPJ</TableHead>
                   <TableHead>Contato</TableHead>
@@ -152,16 +153,16 @@ export default function PlanosSaudePage() {
               <TableBody>
                 {plans.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="py-12 text-center text-muted-foreground">
+                    <TableCell colSpan={6} className="border-t border-slate-200 py-8 text-center text-sm text-slate-500">
                       Nenhum plano cadastrado
                     </TableCell>
                   </TableRow>
                 ) : (
                   plans.map((p) => (
-                    <TableRow key={p.id}>
+                    <TableRow className="border-b border-gray-300 h-15" key={p.id}>
                       <TableCell className="font-medium">{p.name}</TableCell>
-                      <TableCell className="text-muted-foreground">{p.document ?? '—'}</TableCell>
-                      <TableCell className="text-muted-foreground">{p.contact_phone ?? p.contact_email ?? '—'}</TableCell>
+                      <TableCell>{p.document ?? '—'}</TableCell>
+                      <TableCell>{p.contact_phone ?? p.contact_email ?? '—'}</TableCell>
                       <TableCell className="text-right">{p.reimbursement_days}d</TableCell>
                       <TableCell>
                         <Badge variant={p.active ? 'default' : 'secondary'}>
@@ -185,6 +186,7 @@ export default function PlanosSaudePage() {
                 )}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>

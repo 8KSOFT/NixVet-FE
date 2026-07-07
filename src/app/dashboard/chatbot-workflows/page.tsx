@@ -269,10 +269,10 @@ export default function ChatbotWorkflowsPage() {
               </Button>
             </div>
           ) : (
-            <div className="rounded-md border overflow-hidden">
-              <Table>
+            <div className="overflow-x-auto border border-gray-300 rounded-lg">
+              <Table className="min-w-full border-collapse bg-white text-sm">
                 <TableHeader>
-                  <TableRow>
+                  <TableRow className="border-b border-gray-300 h-15">
                     <TableHead>Nome</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Criado em</TableHead>
@@ -281,7 +281,7 @@ export default function ChatbotWorkflowsPage() {
                 </TableHeader>
                 <TableBody>
                   {workflows.map((wf) => (
-                    <TableRow key={wf.id}>
+                    <TableRow className="border-b border-gray-300 h-15" key={wf.id}>
                       <TableCell>
                         <span className="font-medium text-foreground">{wf.name}</span>
                       </TableCell>
@@ -300,32 +300,38 @@ export default function ChatbotWorkflowsPage() {
                         {wf.createdAt ? new Date(wf.createdAt).toLocaleDateString('pt-BR') : '—'}
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1.5">
+                        <div className="flex items-center justify-end gap-1">
                           <Button
-                            variant="outline"
-                            size="sm"
+                            variant="ghost"
+                            size="icon"
+                            className="p-0"
+                            title="Editar"
+                            aria-label="Editar"
                             onClick={() => router.push(`/dashboard/chatbot-workflows/${wf.id}`)}
-                            className="gap-1"
                           >
-                            <Pencil className="w-3 h-3" /> Editar
+                            <Pencil className="w-4 h-4" />
                           </Button>
                           {!wf.is_active && (
                             <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-primary border-primary/30 hover:bg-primary/5 gap-1"
+                              variant="ghost"
+                              size="icon"
+                              className="p-0"
+                              title="Ativar"
+                              aria-label="Ativar"
                               onClick={() => handleActivate(wf.id)}
                             >
-                              <Zap className="w-3 h-3" /> Ativar
+                              <Zap className="w-4 h-4 text-primary" />
                             </Button>
                           )}
                           <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-destructive border-destructive/30 hover:bg-destructive/5"
+                            variant="ghost"
+                            size="icon"
+                            className="p-0"
+                            title="Excluir"
+                            aria-label="Excluir"
                             onClick={() => handleDelete(wf.id)}
                           >
-                            <Trash2 className="w-3 h-3" />
+                            <Trash2 className="w-4 h-4 text-destructive" />
                           </Button>
                         </div>
                       </TableCell>

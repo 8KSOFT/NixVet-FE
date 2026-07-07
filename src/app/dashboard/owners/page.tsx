@@ -130,7 +130,7 @@ export default function OwnersPage() {
       setListTotalPages(p.totalPages);
     } catch (error) {
       console.error('Error fetching tutors:', error);
-      toast.error('Erro ao carregar tutores');
+      toast.error('Erro ao carregar responsáveis');
     } finally {
       setLoading(false);
     }
@@ -213,11 +213,11 @@ export default function OwnersPage() {
   const handleDelete = async (id: string) => {
     try {
       await api.delete(`/tutors/${id}`);
-      toast.success('Tutor removido com sucesso');
+      toast.success('Responsável removido com sucesso');
       fetchTutors();
     } catch (error) {
       console.error('Error deleting tutor:', error);
-      toast.error('Erro ao remover tutor');
+      toast.error('Erro ao remover responsável');
     }
   };
 
@@ -270,10 +270,10 @@ export default function OwnersPage() {
 
       if (editingId) {
         await api.put(`/tutors/${editingId}`, payload);
-        toast.success('Tutor atualizado com sucesso');
+        toast.success('Responsável atualizado com sucesso');
       } else {
         await api.post('/tutors', payload);
-        toast.success('Tutor criado com sucesso');
+        toast.success('Responsável criado com sucesso');
       }
       setModalVisible(false);
       setEditingId(null);
@@ -281,7 +281,7 @@ export default function OwnersPage() {
       fetchTutors();
     } catch (error) {
       console.error('Error saving tutor:', error);
-      toast.error('Erro ao salvar tutor');
+      toast.error('Erro ao salvar responsável');
     }
   };
 
@@ -308,10 +308,10 @@ export default function OwnersPage() {
         </div>
       </div>
 
-      <div className="rounded-md border border-gray-300 overflow-hidden">
-        <Table>
-          <TableHeader className="h-15">
-            <TableRow className="border-b border-gray-300">
+      <div className="overflow-x-auto border border-gray-300 rounded-lg">
+        <Table className="min-w-full border-collapse bg-white text-sm">
+          <TableHeader>
+            <TableRow className="border-b border-gray-300 h-15">
               <TableHead>{t('owners.table.name')}</TableHead>
               <TableHead>{t('owners.table.email')}</TableHead>
               <TableHead>{t('owners.table.phone')}</TableHead>
@@ -322,24 +322,24 @@ export default function OwnersPage() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8">
+                <TableCell colSpan={5} className="border-t border-slate-200 py-8 text-center text-sm text-slate-500">
                   <Loader2 className="w-6 h-6 animate-spin mx-auto text-muted-foreground" />
                 </TableCell>
               </TableRow>
             ) : tutors.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={5} className="border-t border-slate-200 py-8 text-center text-sm text-slate-500">
                   {t('owners.empty')}
                 </TableCell>
               </TableRow>
             ) : (
               tutors.map((tutor) => (
-                <TableRow key={tutor.id} className="border-b border-gray-300">
+                <TableRow className="border-b border-gray-300 h-15" key={tutor.id}>
                   <TableCell>{tutor.name}</TableCell>
-                  <TableCell className="w-60">{tutor.email}</TableCell>
-                  <TableCell className="w-60">{formatPhoneDisplay(tutor.phone)}</TableCell>
-                  <TableCell className="w-60">{formatCpfDisplay(tutor.cpf)}</TableCell>
-                  <TableCell className="w-40">
+                  <TableCell>{tutor.email}</TableCell>
+                  <TableCell>{formatPhoneDisplay(tutor.phone)}</TableCell>
+                  <TableCell>{formatCpfDisplay(tutor.cpf)}</TableCell>
+                  <TableCell>
                     <div className="flex items-center gap-1">
                       <Button variant="ghost" size="icon" className="p-0" onClick={() => handleEdit(tutor)}>
                         <Pencil className="w-4 h-4" />
@@ -396,7 +396,7 @@ export default function OwnersPage() {
           }
           setModalVisible(open);
         }}
-        title={editingId ? 'Editar Tutor' : 'Novo Tutor'}
+        title={editingId ? 'Editar Responsável' : 'Novo Responsável'}
         containerClassName="max-w-2xl mx-auto"
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">

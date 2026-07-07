@@ -18,13 +18,13 @@ const FEATURES: LandingPageFeature[] = [
     iconBackgroundClassName: "bg-orange-50 text-blue-500",
     title: "Gestão Clínica",
     description:
-      "Prontuário completo com anamnese, histórico e exame físico. Tudo organizado por paciente e tutor.",
+      "Prontuário completo com anamnese, histórico e exame físico. Tudo organizado por paciente e responsável.",
   },
   {
     iconBackgroundClassName: "bg-blue-50 text-blue-600",
     title: "Segurança LGPD",
     description:
-      "Dados sensíveis criptografados (AES-256), consentimento de tutores e logs de auditoria completos.",
+      "Dados sensíveis criptografados (AES-256), consentimento de responsáveis e logs de auditoria completos.",
   },
   {
     iconBackgroundClassName: "bg-orange-50 text-blue-500",

@@ -188,10 +188,10 @@ export default function TeamPage() {
         </div>
       ) : (
         <div>
-          <div className="rounded-md border border-gray-300 overflow-hidden">
-            <Table>
-              <TableHeader className="h-15">
-                <TableRow className="border-b border-gray-300">
+          <div className="overflow-x-auto border border-gray-300 rounded-lg">
+            <Table className="min-w-full border-collapse bg-white text-sm">
+              <TableHeader>
+                <TableRow className="border-b border-gray-300 h-15">
                   <TableHead>{t('team.colName')}</TableHead>
                   <TableHead>{t('team.colEmail')}</TableHead>
                   <TableHead>{t('team.colCrmv')}</TableHead>
@@ -202,7 +202,7 @@ export default function TeamPage() {
               </TableHeader>
               <TableBody>
                 {users.map((user) => (
-                  <TableRow key={user.id} className="border-b border-gray-300">
+                  <TableRow className="border-b border-gray-300 h-15" key={user.id}>
                     <TableCell>{user.name}</TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>{user.crmv}</TableCell>
@@ -212,7 +212,7 @@ export default function TeamPage() {
                         {t(`roles.${user.role}`, { defaultValue: user.role })}
                       </Badge>
                     </TableCell>
-                    <TableCell className="w-40">
+                    <TableCell>
                       <div className="flex items-center gap-1">
                         <Button variant="ghost" size="icon" className="p-0" onClick={() => handleEdit(user)}>
                           <Pencil className="w-4 h-4" />

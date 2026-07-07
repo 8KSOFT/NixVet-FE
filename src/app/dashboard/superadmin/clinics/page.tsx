@@ -305,16 +305,17 @@ export default function SuperadminClinicsPage() {
         </Button>
       </div>
 
-      <div className="rounded-xl border border-border bg-card overflow-x-auto">
+      <div className="rounded-xl bg-card overflow-x-auto">
         {loading ? (
           <div className="flex items-center justify-center py-20 text-muted-foreground gap-2">
             <Loader2 className="size-5 animate-spin" /> Carregando...
           </div>
         ) : (
           <>
-          <Table>
+          <div className="overflow-x-auto border border-gray-300 rounded-lg">
+          <Table className="min-w-full border-collapse bg-white text-sm">
             <TableHeader>
-              <TableRow>
+              <TableRow className="border-b border-gray-300 h-15">
                 <TableHead>Clínica</TableHead>
                 <TableHead>Código</TableHead>
                 <TableHead>Admin</TableHead>
@@ -328,13 +329,13 @@ export default function SuperadminClinicsPage() {
             <TableBody>
               {rows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center text-muted-foreground py-12">
+                  <TableCell colSpan={8} className="border-t border-slate-200 py-8 text-center text-sm text-slate-500">
                     Nenhuma clínica cadastrada.
                   </TableCell>
                 </TableRow>
               ) : (
                 rows.map((row) => (
-                  <TableRow key={row.id}>
+                  <TableRow className="border-b border-gray-300 h-15" key={row.id}>
                     <TableCell>
                       <div className="font-medium">{row.name}</div>
                       <div className="text-xs text-muted-foreground">{row.email ?? ''} {row.phone ? `· ${row.phone}` : ''}</div>
@@ -385,38 +386,47 @@ export default function SuperadminClinicsPage() {
                       <div className="flex items-center justify-end gap-1 flex-wrap">
                         {(row.subscription_status !== 'active' && row.subscription_status !== 'exempt') && (
                           <Button
-                            type="button" variant="outline" size="sm"
-                            className="gap-1 text-emerald-700 border-emerald-200 hover:bg-emerald-50"
+                            type="button" variant="ghost" size="icon" className="p-0"
+                            title="Liberar"
+                            aria-label="Liberar"
                             onClick={() => void quickPatch(row.id, { subscription_status: 'active' })}
                           >
-                            <ShieldCheck className="size-3.5" /> Liberar
+                            <ShieldCheck className="size-4 text-emerald-700" />
                           </Button>
                         )}
                         {(row.subscription_status === 'active' || row.subscription_status === 'exempt') && (
                           <Button
-                            type="button" variant="outline" size="sm"
-                            className="gap-1 text-red-600 border-red-200 hover:bg-red-50"
+                            type="button" variant="ghost" size="icon" className="p-0"
+                            title="Suspender"
+                            aria-label="Suspender"
                             onClick={() => void quickPatch(row.id, { subscription_status: 'suspended' })}
                           >
-                            <ShieldOff className="size-3.5" /> Suspender
+                            <ShieldOff className="size-4 text-red-600" />
                           </Button>
                         )}
-                        <Button type="button" variant="outline" size="sm" className="gap-1" onClick={() => openEdit(row)}>
-                          <Settings2 className="size-3.5" /> Editar
-                        </Button>
-                        <Button type="button" variant="outline" size="sm" className="gap-1" onClick={() => openReset(row)} disabled={!row.admin_email}>
-                          <KeyRound className="size-3.5" /> Senha
+                        <Button variant="ghost" size="icon" className="p-0" title="Editar" aria-label="Editar" onClick={() => openEdit(row)}>
+                          <Settings2 className="size-4" />
                         </Button>
                         <Button
-                          type="button" variant="outline" size="sm"
-                          className="gap-1 text-green-700 border-green-200 hover:bg-green-50"
+                          variant="ghost" size="icon" className="p-0"
+                          title="Redefinir senha"
+                          aria-label="Redefinir senha"
+                          onClick={() => openReset(row)}
+                          disabled={!row.admin_email}
+                        >
+                          <KeyRound className="size-4" />
+                        </Button>
+                        <Button
+                          type="button" variant="ghost" size="icon" className="p-0"
+                          title="WhatsApp"
+                          aria-label="WhatsApp"
                           onClick={() => { setWhatsappTenantId(row.id); setWhatsappClinicName(row.name); }}
                         >
-                          <MessageCircle className="size-3.5" /> WhatsApp
+                          <MessageCircle className="size-4 text-green-700" />
                         </Button>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button type="button" variant="outline" size="sm" className="px-2">
+                            <Button type="button" variant="ghost" size="icon" className="p-0" title="Mais ações" aria-label="Mais ações">
                               <MoreHorizontal className="size-4" />
                             </Button>
                           </DropdownMenuTrigger>
@@ -446,6 +456,7 @@ export default function SuperadminClinicsPage() {
               )}
             </TableBody>
           </Table>
+          </div>
           <ListPagination
             page={listPage}
             totalPages={listTotalPages}

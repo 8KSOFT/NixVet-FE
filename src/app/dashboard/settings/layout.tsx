@@ -80,7 +80,24 @@ const navSections: NavSection[] = [
 export default function SettingsLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const currentPathname = pathname ?? '';
-  const isSuperAdmin = getStoredUserRole() === 'superadmin';
+  const role = (getStoredUserRole() || '').toLowerCase();
+  const isSuperAdmin = role === 'superadmin';
+  const canManageTerms = ['admin', 'manager', 'superadmin'].includes(role);
+
+  // GRUPO 7 — "Termos da Clínica" visível só para admin/manager
+  const sections = canManageTerms
+    ? navSections.map((s) =>
+        s.label === 'Geral'
+          ? {
+              ...s,
+              items: [
+                ...s.items,
+                { key: '/dashboard/settings/clinic-terms', icon: FileText, label: 'Termos da Clínica' },
+              ],
+            }
+          : s,
+      )
+    : navSections;
 
   const platformItems = isSuperAdmin
     ? [
@@ -120,7 +137,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
               <div className="my-1 border-t border-slate-200" />
             </>
           )}
-          {navSections.map((section) => (
+          {sections.map((section) => (
             <div key={section.label}>
               <p className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
                 {section.label}

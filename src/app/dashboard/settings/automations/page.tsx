@@ -120,10 +120,11 @@ export default function SettingsAutomationsPage() {
               <Loader2 className="w-6 h-6 animate-spin text-primary" />
             </div>
           ) : (
-            <div className="rounded-md border overflow-hidden">
-            <Table>
+            <div>
+            <div className="overflow-x-auto">
+            <Table className="min-w-full border-collapse bg-white text-sm">
               <TableHeader>
-                <TableRow>
+                <TableRow className="border-b border-gray-300 h-15">
                   <TableHead>Evento</TableHead>
                   <TableHead>Ação</TableHead>
                   <TableHead className="w-[100px]">Atraso (min)</TableHead>
@@ -134,7 +135,7 @@ export default function SettingsAutomationsPage() {
               </TableHeader>
               <TableBody>
                 {list.map((r) => (
-                  <TableRow key={r.id}>
+                  <TableRow className="border-b border-gray-300 h-15" key={r.id}>
                     <TableCell>{r.event_name}</TableCell>
                     <TableCell>{r.action_type}</TableCell>
                     <TableCell>{r.delay_minutes}</TableCell>
@@ -149,6 +150,7 @@ export default function SettingsAutomationsPage() {
                 ))}
               </TableBody>
             </Table>
+            </div>
             <ListPagination
               page={listPage}
               totalPages={listTotalPages}

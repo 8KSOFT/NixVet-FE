@@ -310,10 +310,10 @@ export default function SettingsWhatsappNumbersPage() {
               <Loader2 className="w-5 h-5 animate-spin text-primary" />
             </div>
           ) : (
-            <div className="rounded-md border overflow-hidden">
-            <Table>
+            <div className="overflow-x-auto">
+            <Table className="min-w-full border-collapse bg-white text-sm">
               <TableHeader>
-                <TableRow>
+                <TableRow className="border-b border-gray-300 h-15">
                   <TableHead>Instance ID</TableHead>
                   <TableHead>Número conectado</TableHead>
                   <TableHead>Status</TableHead>
@@ -322,8 +322,8 @@ export default function SettingsWhatsappNumbersPage() {
               </TableHeader>
               <TableBody>
                 {list.map((row) => (
-                  <TableRow key={row.id}>
-                    <TableCell className="font-mono text-xs max-w-[160px] truncate" title={row.phone_number_id}>
+                  <TableRow className="border-b border-gray-300 h-15" key={row.id}>
+                    <TableCell className="font-mono text-xs truncate" title={row.phone_number_id}>
                       {row.phone_number_id}
                     </TableCell>
                     <TableCell>{row.display_phone ?? '—'}</TableCell>
@@ -367,7 +367,7 @@ export default function SettingsWhatsappNumbersPage() {
                 ))}
                 {list.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={4} className="border-t border-slate-200 py-8 text-center text-sm text-slate-500">
                       {provisionAvailable
                         ? 'Clique em "Provisionar nova instância" para conectar o WhatsApp da clínica.'
                         : 'Nenhuma instância cadastrada.'}

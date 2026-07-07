@@ -12,13 +12,12 @@ import { Button } from '@/components/ui/button';
 import { DashboardCreateFormDialog } from '@/components/dashboard-create-form-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { useForm, Controller } from 'react-hook-form';
-import { Loader2, FileSearch } from 'lucide-react';
+import { Loader2, Plus, CheckCircle2, XCircle } from 'lucide-react';
 import api from '@/lib/axios';
 import { API_PAGE_SIZE, fetchAllListPages, listQueryParams, parseListResponse } from '@/lib/pagination';
 import { ListPagination } from '@/components/list-pagination';
@@ -115,125 +114,141 @@ export default function FollowupsPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-extrabold font-['interDoFigma'] flex items-center gap-2 mb-8">
-        Acompanhamento de exames
-      </h1>
-      <Card>
-        <CardContent>
-          <Button onClick={() => setModalOpen(true)} className="mb-4 bg-primary">
-            Novo acompanhamento
-          </Button>
+      <div className="flex flex-wrap justify-between items-center gap-3 mb-8">
+        <h1 className="text-2xl font-extrabold font-['interDoFigma'] flex items-center gap-2">
+          Acompanhamento de exames
+        </h1>
+        <Button onClick={() => setModalOpen(true)} className="bg-primary">
+          <Plus className="w-4 h-4 mr-2" /> Novo acompanhamento
+        </Button>
+      </div>
 
-          <h3 className="font-medium text-foreground mb-2">Aguardando retorno</h3>
-          {loading ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="w-6 h-6 animate-spin text-primary" />
-            </div>
-          ) : (
-            <div>
-              <div className="border border-gray-300 rounded-md">
-                <Table>
-                  <TableHeader className="h-15">
-                    <TableRow className="border-b border-gray-300">
-                      <TableHead>Paciente</TableHead>
-                      <TableHead>Solicitação</TableHead>
-                      <TableHead>Previsão resultado</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {awaiting.map((item) => (
-                      <TableRow
-                        className="cursor-pointer hover:bg-muted/50 h-15 border-b border-gray-300"
-                        key={item.id}
-                      >
-                        <TableCell>{item.Patient?.name}</TableCell>
-                        <TableCell>{item.exam_request_id}</TableCell>
-                        <TableCell>{item.expected_result_date}</TableCell>
-                        <TableCell>{item.followup_status}</TableCell>
-                        <TableCell className="space-x-1">
-                          {item.followup_status === 'pending_result' && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-green-600 border-green-300"
-                              onClick={() => markResultAvailable(item.id)}
-                            >
-                              Resultado Disponível
-                            </Button>
-                          )}
-                          <Button variant="link" size="sm" onClick={() => updateStatus(item.id, 'closed')}>
-                            Fechar
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-              <ListPagination
-                page={awaitingPage}
-                totalPages={awaitingTotalPages}
-                total={awaitingTotal}
-                pageSize={API_PAGE_SIZE}
-                onPageChange={setAwaitingPage}
-                disabled={loading}
-              />
-            </div>
-          )}
-
-          <h3 className="font-medium text-foreground mt-6 mb-2">Todos</h3>
-          <div className="border border-gray-300 rounded-md">
-            <Table>
-              <TableHeader className="h-15">
-                <TableRow className="border-b border-gray-300">
+      <h3 className="font-medium text-foreground mb-2">Aguardando retorno</h3>
+      {loading ? (
+        <div className="flex justify-center py-8">
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+        </div>
+      ) : (
+        <div>
+          <div className="overflow-x-auto border border-gray-300 rounded-lg">
+            <Table className="min-w-full border-collapse bg-white text-sm">
+              <TableHeader>
+                <TableRow className="border-b border-gray-300 h-15">
                   <TableHead>Paciente</TableHead>
-                  <TableHead>Previsão</TableHead>
+                  <TableHead>Solicitação</TableHead>
+                  <TableHead>Previsão resultado</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {all.map((item) => (
-                  <TableRow className="cursor-pointer hover:bg-muted/50 h-15 border-b border-gray-300" key={item.id}>
+                {awaiting.map((item) => (
+                  <TableRow
+                    className="cursor-pointer hover:bg-muted/50 border-b border-gray-300 h-15"
+                    key={item.id}
+                  >
                     <TableCell>{item.Patient?.name}</TableCell>
+                    <TableCell>{item.exam_request_id}</TableCell>
                     <TableCell>{item.expected_result_date}</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">{item.followup_status}</Badge>
-                    </TableCell>
+                    <TableCell>{item.followup_status}</TableCell>
                     <TableCell className="space-x-1">
                       {item.followup_status === 'pending_result' && (
                         <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-green-600 border-green-300"
+                          variant="ghost"
+                          size="icon"
+                          className="p-0"
+                          title="Resultado Disponível"
+                          aria-label="Resultado Disponível"
                           onClick={() => markResultAvailable(item.id)}
                         >
-                          Resultado Disponível
+                          <CheckCircle2 className="w-4 h-4 text-green-600" />
                         </Button>
                       )}
-                      {item.followup_status !== 'closed' && (
-                        <Button variant="link" size="sm" onClick={() => updateStatus(item.id, 'closed')}>
-                          Fechar
-                        </Button>
-                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="p-0"
+                        title="Fechar"
+                        aria-label="Fechar"
+                        onClick={() => updateStatus(item.id, 'closed')}
+                      >
+                        <XCircle className="w-4 h-4" />
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
-            <ListPagination
-              page={allPage}
-              totalPages={allTotalPages}
-              total={allTotal}
-              pageSize={API_PAGE_SIZE}
-              onPageChange={setAllPage}
-              disabled={loading}
-            />
           </div>
-        </CardContent>
-      </Card>
+          <ListPagination
+            page={awaitingPage}
+            totalPages={awaitingTotalPages}
+            total={awaitingTotal}
+            pageSize={API_PAGE_SIZE}
+            onPageChange={setAwaitingPage}
+            disabled={loading}
+          />
+        </div>
+      )}
+
+      <h3 className="font-medium text-foreground mt-6 mb-2">Todos</h3>
+      <div className="overflow-x-auto border border-gray-300 rounded-lg">
+        <Table className="min-w-full border-collapse bg-white text-sm">
+          <TableHeader>
+            <TableRow className="border-b border-gray-300 h-15">
+              <TableHead>Paciente</TableHead>
+              <TableHead>Previsão</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {all.map((item) => (
+              <TableRow className="cursor-pointer hover:bg-muted/50 border-b border-gray-300 h-15" key={item.id}>
+                <TableCell>{item.Patient?.name}</TableCell>
+                <TableCell>{item.expected_result_date}</TableCell>
+                <TableCell>
+                  <Badge variant="secondary">{item.followup_status}</Badge>
+                </TableCell>
+                <TableCell className="space-x-1">
+                  {item.followup_status === 'pending_result' && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="p-0"
+                      title="Resultado Disponível"
+                      aria-label="Resultado Disponível"
+                      onClick={() => markResultAvailable(item.id)}
+                    >
+                      <CheckCircle2 className="w-4 h-4 text-green-600" />
+                    </Button>
+                  )}
+                  {item.followup_status !== 'closed' && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="p-0"
+                      title="Fechar"
+                      aria-label="Fechar"
+                      onClick={() => updateStatus(item.id, 'closed')}
+                    >
+                      <XCircle className="w-4 h-4" />
+                    </Button>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+      <ListPagination
+        page={allPage}
+        totalPages={allTotalPages}
+        total={allTotal}
+        pageSize={API_PAGE_SIZE}
+        onPageChange={setAllPage}
+        disabled={loading}
+      />
 
       <DashboardCreateFormDialog
         open={modalOpen}

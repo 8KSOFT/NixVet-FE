@@ -168,28 +168,30 @@ export default function AiCostsPage() {
               <TrendingUp className="size-4" />
               Consumo por operação
             </h2>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Operação</TableHead>
-                  <TableHead className="text-right">Chamadas</TableHead>
-                  <TableHead className="text-right">Tokens</TableHead>
-                  <TableHead className="text-right">Custo (USD)</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data!.by_operation.map((op) => (
-                  <TableRow key={op.operation}>
-                    <TableCell className="font-medium">
-                      {OP_LABELS[op.operation] || op.operation}
-                    </TableCell>
-                    <TableCell className="text-right">{Number(op.calls)}</TableCell>
-                    <TableCell className="text-right">{formatTokens(Number(op.tokens))}</TableCell>
-                    <TableCell className="text-right">{formatCost(Number(op.cost_usd))}</TableCell>
+            <div className="overflow-x-auto">
+              <Table className="min-w-full border-collapse bg-white text-sm">
+                <TableHeader>
+                  <TableRow className="border-b border-gray-300 h-15">
+                    <TableHead>Operação</TableHead>
+                    <TableHead className="text-right">Chamadas</TableHead>
+                    <TableHead className="text-right">Tokens</TableHead>
+                    <TableHead className="text-right">Custo (USD)</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {data!.by_operation.map((op) => (
+                    <TableRow className="border-b border-gray-300 h-15" key={op.operation}>
+                      <TableCell className="font-medium">
+                        {OP_LABELS[op.operation] || op.operation}
+                      </TableCell>
+                      <TableCell className="text-right">{Number(op.calls)}</TableCell>
+                      <TableCell className="text-right">{formatTokens(Number(op.tokens))}</TableCell>
+                      <TableCell className="text-right">{formatCost(Number(op.cost_usd))}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       )}
@@ -198,26 +200,28 @@ export default function AiCostsPage() {
         <Card>
           <CardContent className="p-5">
             <h2 className="text-sm font-semibold text-foreground mb-3">Consumo diário</h2>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Data</TableHead>
-                  <TableHead className="text-right">Chamadas</TableHead>
-                  <TableHead className="text-right">Tokens</TableHead>
-                  <TableHead className="text-right">Custo (USD)</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data!.daily.map((d) => (
-                  <TableRow key={d.date}>
-                    <TableCell>{dayjs(d.date).format('DD/MM/YYYY')}</TableCell>
-                    <TableCell className="text-right">{Number(d.calls)}</TableCell>
-                    <TableCell className="text-right">{formatTokens(Number(d.tokens))}</TableCell>
-                    <TableCell className="text-right">{formatCost(Number(d.cost_usd))}</TableCell>
+            <div className="overflow-x-auto">
+              <Table className="min-w-full border-collapse bg-white text-sm">
+                <TableHeader>
+                  <TableRow className="border-b border-gray-300 h-15">
+                    <TableHead>Data</TableHead>
+                    <TableHead className="text-right">Chamadas</TableHead>
+                    <TableHead className="text-right">Tokens</TableHead>
+                    <TableHead className="text-right">Custo (USD)</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {data!.daily.map((d) => (
+                    <TableRow className="border-b border-gray-300 h-15" key={d.date}>
+                      <TableCell>{dayjs(d.date).format('DD/MM/YYYY')}</TableCell>
+                      <TableCell className="text-right">{Number(d.calls)}</TableCell>
+                      <TableCell className="text-right">{formatTokens(Number(d.tokens))}</TableCell>
+                      <TableCell className="text-right">{formatCost(Number(d.cost_usd))}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       )}
@@ -227,9 +231,9 @@ export default function AiCostsPage() {
           <CardContent className="p-5">
             <h2 className="text-sm font-semibold text-foreground mb-3">Últimas chamadas</h2>
             <div className="overflow-x-auto">
-              <Table>
+              <Table className="min-w-full border-collapse bg-white text-sm">
                 <TableHeader>
-                  <TableRow>
+                  <TableRow className="border-b border-gray-300 h-15">
                     <TableHead>Data/Hora</TableHead>
                     <TableHead>Operação</TableHead>
                     <TableHead>Modelo</TableHead>
@@ -241,7 +245,7 @@ export default function AiCostsPage() {
                 </TableHeader>
                 <TableBody>
                   {data!.recent.map((log) => (
-                    <TableRow key={log.id}>
+                    <TableRow className="border-b border-gray-300 h-15" key={log.id}>
                       <TableCell className="text-xs whitespace-nowrap">
                         {dayjs(log.created_at).format('DD/MM HH:mm')}
                       </TableCell>

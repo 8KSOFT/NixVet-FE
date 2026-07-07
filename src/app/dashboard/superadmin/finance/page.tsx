@@ -315,9 +315,10 @@ export default function SuperadminFinancePage() {
             {(dashboard?.monthly_revenue?.length ?? 0) === 0 ? (
               <p className="text-sm text-muted-foreground">Nenhum pagamento no período.</p>
             ) : (
-              <Table>
+              <div className="overflow-x-auto">
+              <Table className="min-w-full border-collapse bg-white text-sm">
                 <TableHeader>
-                  <TableRow>
+                  <TableRow className="border-b border-gray-300 h-15">
                     <TableHead>Mês</TableHead>
                     <TableHead className="text-right">Pagamentos</TableHead>
                     <TableHead className="text-right">Valor</TableHead>
@@ -325,7 +326,7 @@ export default function SuperadminFinancePage() {
                 </TableHeader>
                 <TableBody>
                   {dashboard!.monthly_revenue.map((r) => (
-                    <TableRow key={r.month}>
+                    <TableRow className="border-b border-gray-300 h-15" key={r.month}>
                       <TableCell>{formatMonth(r.month)}</TableCell>
                       <TableCell className="text-right">{r.payments}</TableCell>
                       <TableCell className="text-right font-medium">{formatBrl(r.value_brl)}</TableCell>
@@ -333,6 +334,7 @@ export default function SuperadminFinancePage() {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -343,9 +345,10 @@ export default function SuperadminFinancePage() {
             {(dashboard?.monthly_ai_cost?.length ?? 0) === 0 ? (
               <p className="text-sm text-muted-foreground">Nenhum uso de IA no período.</p>
             ) : (
-              <Table>
+              <div className="overflow-x-auto">
+              <Table className="min-w-full border-collapse bg-white text-sm">
                 <TableHeader>
-                  <TableRow>
+                  <TableRow className="border-b border-gray-300 h-15">
                     <TableHead>Mês</TableHead>
                     <TableHead className="text-right">Chamadas</TableHead>
                     <TableHead className="text-right">Tokens</TableHead>
@@ -354,7 +357,7 @@ export default function SuperadminFinancePage() {
                 </TableHeader>
                 <TableBody>
                   {dashboard!.monthly_ai_cost.map((r) => (
-                    <TableRow key={r.month}>
+                    <TableRow className="border-b border-gray-300 h-15" key={r.month}>
                       <TableCell>{formatMonth(r.month)}</TableCell>
                       <TableCell className="text-right">{r.calls}</TableCell>
                       <TableCell className="text-right">{formatTokens(r.tokens)}</TableCell>
@@ -363,6 +366,7 @@ export default function SuperadminFinancePage() {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -375,9 +379,10 @@ export default function SuperadminFinancePage() {
             {(dashboard?.ai_by_operation?.length ?? 0) === 0 ? (
               <p className="text-sm text-muted-foreground">Sem dados.</p>
             ) : (
-              <Table>
+              <div className="overflow-x-auto">
+              <Table className="min-w-full border-collapse bg-white text-sm">
                 <TableHeader>
-                  <TableRow>
+                  <TableRow className="border-b border-gray-300 h-15">
                     <TableHead>Operação</TableHead>
                     <TableHead className="text-right">Chamadas</TableHead>
                     <TableHead className="text-right">USD</TableHead>
@@ -385,7 +390,7 @@ export default function SuperadminFinancePage() {
                 </TableHeader>
                 <TableBody>
                   {dashboard!.ai_by_operation.map((op) => (
-                    <TableRow key={op.operation}>
+                    <TableRow className="border-b border-gray-300 h-15" key={op.operation}>
                       <TableCell>{OP_LABELS[op.operation] || op.operation}</TableCell>
                       <TableCell className="text-right">{op.calls}</TableCell>
                       <TableCell className="text-right">{formatUsd(op.cost_usd)}</TableCell>
@@ -393,6 +398,7 @@ export default function SuperadminFinancePage() {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -403,9 +409,10 @@ export default function SuperadminFinancePage() {
             {(dashboard?.top_ai_tenants?.length ?? 0) === 0 ? (
               <p className="text-sm text-muted-foreground">Sem dados.</p>
             ) : (
-              <Table>
+              <div className="overflow-x-auto">
+              <Table className="min-w-full border-collapse bg-white text-sm">
                 <TableHeader>
-                  <TableRow>
+                  <TableRow className="border-b border-gray-300 h-15">
                     <TableHead>Clínica</TableHead>
                     <TableHead className="text-right">Chamadas</TableHead>
                     <TableHead className="text-right">USD</TableHead>
@@ -413,7 +420,7 @@ export default function SuperadminFinancePage() {
                 </TableHeader>
                 <TableBody>
                   {dashboard!.top_ai_tenants.map((t) => (
-                    <TableRow key={t.tenant_id}>
+                    <TableRow className="border-b border-gray-300 h-15" key={t.tenant_id}>
                       <TableCell>
                         <div className="font-medium">{t.tenant_name}</div>
                         <div className="text-xs text-muted-foreground">{t.tenant_code}</div>
@@ -424,6 +431,7 @@ export default function SuperadminFinancePage() {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -446,9 +454,9 @@ export default function SuperadminFinancePage() {
           </div>
 
           <div className="overflow-x-auto">
-            <Table>
+            <Table className="min-w-full border-collapse bg-white text-sm">
               <TableHeader>
-                <TableRow>
+                <TableRow className="border-b border-gray-300 h-15">
                   <TableHead>Clínica</TableHead>
                   <TableHead>Admin</TableHead>
                   <TableHead>Status</TableHead>
@@ -461,13 +469,13 @@ export default function SuperadminFinancePage() {
               <TableBody>
                 {loadingTenants ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={7} className="border-t border-slate-200 py-8 text-center text-sm text-slate-500">
                       Carregando...
                     </TableCell>
                   </TableRow>
                 ) : tenants.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={7} className="border-t border-slate-200 py-8 text-center text-sm text-slate-500">
                       Nenhuma clínica neste filtro.
                     </TableCell>
                   </TableRow>
@@ -478,7 +486,7 @@ export default function SuperadminFinancePage() {
                       variant: 'outline' as const,
                     };
                     return (
-                      <TableRow key={row.id}>
+                      <TableRow className="border-b border-gray-300 h-15" key={row.id}>
                         <TableCell>
                           <div className="font-medium">{row.name}</div>
                           <div className="text-xs text-muted-foreground">{row.code}</div>

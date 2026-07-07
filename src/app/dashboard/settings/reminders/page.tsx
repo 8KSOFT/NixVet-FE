@@ -30,7 +30,7 @@ interface ReminderSettings {
 
 const FIELD_INFO: Record<keyof ReminderSettings, string> = {
   confirmation_enabled: 'Envia mensagem de confirmação de presença antes da consulta.',
-  confirmation_hours_before: 'Quantas horas antes da consulta o tutor recebe o pedido de confirmação.',
+  confirmation_hours_before: 'Quantas horas antes da consulta o responsável recebe o pedido de confirmação.',
   reminder_enabled: 'Envia lembrete próximo ao horário da consulta com o tempo restante.',
   reminder_hours_before: 'Quantas horas antes da consulta enviar o lembrete.',
   follow_up_enabled: 'Envia mensagem de acompanhamento após a consulta.',
@@ -134,7 +134,7 @@ export default function RemindersSettingsPage() {
         <CardHeader>
           <CardTitle className="text-base">Confirmação de presença</CardTitle>
           <CardDescription>
-            Enviada antes da consulta para confirmar se o tutor comparecerá.
+            Enviada antes da consulta para confirmar se o responsável comparecerá.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

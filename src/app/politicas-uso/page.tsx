@@ -39,7 +39,7 @@ export default function PoliticasUsoPage() {
         <p>Dependendo dos módulos utilizados, podemos tratar, entre outros:</p>
         <ul className="list-disc space-y-1 pl-6">
           <li>Dados de cadastro de usuários (nome, e-mail, perfil de acesso, identificação da clínica/tenant);</li>
-          <li>Dados de tutores e pacientes (animais) inseridos na plataforma pela clínica;</li>
+          <li>Dados de responsáveis e pacientes (animais) inseridos na plataforma pela clínica;</li>
           <li>Dados de agendamentos, consultas, prontuários e documentos gerados no sistema;</li>
           <li>Registros técnicos (logs, IP, data/hora de acesso) para segurança e auditoria;</li>
           <li>

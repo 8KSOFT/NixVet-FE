@@ -13,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { useForm, Controller, useFieldArray } from 'react-hook-form';
-import { Plus, BookOpen, Loader2, X, Info, Search, FileText, Mail, FlaskConical } from 'lucide-react';
+import { Plus, BookOpen, Loader2, X, Info, Search, FileText, Mail, FlaskConical, Eye } from 'lucide-react';
 import api from '@/lib/axios';
 import { API_PAGE_SIZE, fetchAllListPages, listQueryParams, parseListResponse } from '@/lib/pagination';
 import { ListPagination } from '@/components/list-pagination';
@@ -141,6 +141,9 @@ export default function PrescriptionsPage() {
   const router = useRouter();
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
   const [loading, setLoading] = useState(false);
+  const [pdfPreviewOpen, setPdfPreviewOpen] = useState(false);
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
+  const [pdfPreviewLoading, setPdfPreviewLoading] = useState(false);
   const [listPage, setListPage] = useState(1);
   const [listTotal, setListTotal] = useState(0);
   const [listTotalPages, setListTotalPages] = useState(1);
@@ -289,6 +292,37 @@ export default function PrescriptionsPage() {
     }
   };
 
+  // GRUPO 4 — preview do PDF sem download
+  const handlePreviewPdf = async (id: string) => {
+    setPdfPreviewLoading(true);
+    setPdfPreviewOpen(true);
+    try {
+      const response = await api.get(`/prescriptions/${id}/pdf`, {
+        responseType: "blob",
+      });
+      const url = window.URL.createObjectURL(
+        new Blob([response.data], { type: "application/pdf" }),
+      );
+      setPdfPreviewUrl((prev) => {
+        if (prev) window.URL.revokeObjectURL(prev);
+        return url;
+      });
+    } catch {
+      toast.error("Erro ao carregar PDF");
+      setPdfPreviewOpen(false);
+    } finally {
+      setPdfPreviewLoading(false);
+    }
+  };
+
+  const closePdfPreview = () => {
+    setPdfPreviewOpen(false);
+    setPdfPreviewUrl((prev) => {
+      if (prev) window.URL.revokeObjectURL(prev);
+      return null;
+    });
+  };
+
   const onSubmit = async (values: FormValues) => {
     try {
       const userStr = localStorage.getItem('user');
@@ -423,10 +457,10 @@ export default function PrescriptionsPage() {
         </div>
       ) : (
         <div>
-          <div className="border border-gray-300 rounded-md">
-            <Table>
-              <TableHeader className="h-15">
-                <TableRow className="border-b border-gray-300">
+          <div className="overflow-x-auto border border-gray-300 rounded-lg">
+            <Table className="min-w-full border-collapse bg-white text-sm">
+              <TableHeader>
+                <TableRow className="border-b border-gray-300 h-15">
                   <TableHead>Data</TableHead>
                   <TableHead>Paciente</TableHead>
                   <TableHead>Tutor</TableHead>
@@ -437,7 +471,7 @@ export default function PrescriptionsPage() {
               </TableHeader>
               <TableBody>
                 {prescriptions.map((record) => (
-                  <TableRow className="cursor-pointer hover:bg-muted/50 h-15 border-b border-gray-300" key={record.id}>
+                  <TableRow className="cursor-pointer hover:bg-muted/50 border-b border-gray-300 h-15" key={record.id}>
                     <TableCell>{new Date(record.createdAt).toLocaleDateString('pt-BR')}</TableCell>
                     <TableCell>{getPatient(record)?.name ?? '—'}</TableCell>
                     <TableCell>{getTutorName(record)}</TableCell>
@@ -447,6 +481,17 @@ export default function PrescriptionsPage() {
                     </TableCell>
                     <TableCell className="w-32">
                       <div className="flex items-center gap-1">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="p-0"
+                          title="Visualizar"
+                          aria-label="Visualizar"
+                          onClick={() => handlePreviewPdf(record.id)}
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
                         <Button
                           type="button"
                           variant="ghost"
@@ -1025,6 +1070,31 @@ export default function PrescriptionsPage() {
           </div>
         </form>
       </DashboardCreateFormDialog>
+
+      {/* GRUPO 4 — Preview de PDF */}
+      <Dialog
+        open={pdfPreviewOpen}
+        onOpenChange={(o) => {
+          if (!o) closePdfPreview();
+        }}
+      >
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Visualizar prescrição</DialogTitle>
+          </DialogHeader>
+          {pdfPreviewLoading || !pdfPreviewUrl ? (
+            <div className="flex h-[75vh] items-center justify-center">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground/60" />
+            </div>
+          ) : (
+            <iframe
+              src={pdfPreviewUrl}
+              className="w-full h-[75vh] rounded"
+              title="Visualizar prescrição"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={emailModalVisible} onOpenChange={setEmailModalVisible}>
         <DialogContent>

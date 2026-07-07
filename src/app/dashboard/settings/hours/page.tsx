@@ -26,7 +26,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { useForm, Controller } from 'react-hook-form';
-import { Plus, Trash2, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Loader2, Pencil } from 'lucide-react';
 import api from '@/lib/axios';
 import { fetchAllListPages } from '@/lib/pagination';
 
@@ -340,9 +340,10 @@ export default function SettingsHoursPage() {
                 <Button onClick={() => openBusinessModal()} className="mb-4 bg-primary">
                   <Plus className="w-4 h-4 mr-2" /> Configurar dias
                 </Button>
-                <Table>
+                <div className="overflow-x-auto">
+                <Table className="min-w-full border-collapse bg-white text-sm">
                   <TableHeader>
-                    <TableRow>
+                    <TableRow className="border-b border-gray-300 h-15">
                       <TableHead>Dia</TableHead>
                       <TableHead>Abre</TableHead>
                       <TableHead>Fecha</TableHead>
@@ -352,7 +353,7 @@ export default function SettingsHoursPage() {
                   </TableHeader>
                   <TableBody>
                     {businessHours.map((r) => (
-                      <TableRow key={r.id ?? r.day_of_week}>
+                      <TableRow className="border-b border-gray-300 h-15" key={r.id ?? r.day_of_week}>
                         <TableCell>{DAYS.find((x) => x.value === r.day_of_week)?.label ?? r.day_of_week}</TableCell>
                         <TableCell>{r.is_closed ? '—' : r.is_24h ? '00:00' : (r.open_time ?? '—')}</TableCell>
                         <TableCell>{r.is_closed ? '—' : r.is_24h ? '23:59' : (r.close_time ?? '—')}</TableCell>
@@ -366,14 +367,22 @@ export default function SettingsHoursPage() {
                           )}
                         </TableCell>
                         <TableCell>
-                          <Button variant="link" size="sm" onClick={() => openBusinessModal(r)}>
-                            Editar
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="p-0"
+                            title="Editar"
+                            aria-label="Editar"
+                            onClick={() => openBusinessModal(r)}
+                          >
+                            <Pencil className="size-4" />
                           </Button>
                         </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
+                </div>
               </TabsContent>
 
               {/* ── Emergency Hours ── */}
@@ -384,9 +393,10 @@ export default function SettingsHoursPage() {
                 <Button onClick={() => openEmergencyModal()} className="mb-4 bg-primary">
                   <Plus className="w-4 h-4 mr-2" /> Configurar plantão
                 </Button>
-                <Table>
+                <div className="overflow-x-auto">
+                <Table className="min-w-full border-collapse bg-white text-sm">
                   <TableHeader>
-                    <TableRow>
+                    <TableRow className="border-b border-gray-300 h-15">
                       <TableHead>Dia</TableHead>
                       <TableHead>Início</TableHead>
                       <TableHead>Fim</TableHead>
@@ -396,7 +406,7 @@ export default function SettingsHoursPage() {
                   </TableHeader>
                   <TableBody>
                     {emergencyHours.map((r) => (
-                      <TableRow key={r.id ?? r.day_of_week}>
+                      <TableRow className="border-b border-gray-300 h-15" key={r.id ?? r.day_of_week}>
                         <TableCell>{DAYS.find((x) => x.value === r.day_of_week)?.label ?? r.day_of_week}</TableCell>
                         <TableCell>{r.start_time}</TableCell>
                         <TableCell>{r.end_time}</TableCell>
@@ -408,14 +418,22 @@ export default function SettingsHoursPage() {
                           )}
                         </TableCell>
                         <TableCell>
-                          <Button variant="link" size="sm" onClick={() => openEmergencyModal(r)}>
-                            Editar
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="p-0"
+                            title="Editar"
+                            aria-label="Editar"
+                            onClick={() => openEmergencyModal(r)}
+                          >
+                            <Pencil className="size-4" />
                           </Button>
                         </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
+                </div>
               </TabsContent>
 
               {/* ── Vet Schedules ── */}
@@ -434,9 +452,10 @@ export default function SettingsHoursPage() {
                 >
                   <Plus className="w-4 h-4 mr-2" /> Adicionar horário
                 </Button>
-                <Table>
+                <div className="overflow-x-auto">
+                <Table className="min-w-full border-collapse bg-white text-sm">
                   <TableHeader>
-                    <TableRow>
+                    <TableRow className="border-b border-gray-300 h-15">
                       <TableHead>Veterinário</TableHead>
                       <TableHead>Dia</TableHead>
                       <TableHead>Início</TableHead>
@@ -448,7 +467,7 @@ export default function SettingsHoursPage() {
                   </TableHeader>
                   <TableBody>
                     {vetSchedules.map((r) => (
-                      <TableRow key={r.id}>
+                      <TableRow className="border-b border-gray-300 h-15" key={r.id}>
                         <TableCell>
                           {r.user?.name ?? veterinarians.find((v) => v.id === r.user_id)?.name ?? r.user_id}
                         </TableCell>
@@ -488,6 +507,7 @@ export default function SettingsHoursPage() {
                     ))}
                   </TableBody>
                 </Table>
+                </div>
               </TabsContent>
             </Tabs>
           </CardContent>

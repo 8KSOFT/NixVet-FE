@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { useForm, Controller } from 'react-hook-form';
-import { Plus, Pencil, Trash2, Loader2, DollarSign, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, Loader2, DollarSign, X, Check } from 'lucide-react';
 import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import api from '@/lib/axios';
 import { API_PAGE_SIZE, fetchAllListPages, listQueryParams, parseListResponse } from '@/lib/pagination';
@@ -147,9 +147,10 @@ function PlanPricesDialog({
           </div>
         ) : (
           <div className="space-y-4">
-            <Table>
+            <div className="overflow-x-auto border border-gray-300 rounded-lg">
+            <Table className="min-w-full border-collapse bg-white text-sm">
               <TableHeader>
-                <TableRow>
+                <TableRow className="border-b border-gray-300 h-15">
                   <TableHead>Convênio</TableHead>
                   <TableHead>Valor cobrado</TableHead>
                   <TableHead>Reembolso recebido</TableHead>
@@ -159,25 +160,32 @@ function PlanPricesDialog({
               <TableBody>
                 {prices.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center text-muted-foreground py-6">
+                    <TableCell colSpan={4} className="border-t border-slate-200 py-8 text-center text-sm text-slate-500">
                       Nenhum convênio configurado
                     </TableCell>
                   </TableRow>
                 )}
                 {prices.map((p) => (
-                  <TableRow key={p.id}>
+                  <TableRow className="border-b border-gray-300 h-15" key={p.id}>
                     <TableCell>{p.health_plan_name ?? p.health_plan_id}</TableCell>
                     <TableCell>{fmtBRL(p.plan_price)}</TableCell>
                     <TableCell>{fmtBRL(p.reimbursement)}</TableCell>
                     <TableCell>
-                      <Button variant="ghost" size="sm" className="text-red-500" onClick={() => handleDelete(p.health_plan_id)}>
-                        <X className="w-4 h-4" />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="p-0"
+                        title="Remover"
+                        aria-label="Remover"
+                        onClick={() => handleDelete(p.health_plan_id)}
+                      >
+                        <X className="w-4 h-4 text-red-500" />
                       </Button>
                     </TableCell>
                   </TableRow>
                 ))}
                 {addMode && (
-                  <TableRow>
+                  <TableRow className="border-b border-gray-300 h-15">
                     <TableCell>
                       <Select value={newPlanId} onValueChange={setNewPlanId}>
                         <SelectTrigger className="h-8">
@@ -213,14 +221,23 @@ function PlanPricesDialog({
                       />
                     </TableCell>
                     <TableCell>
-                      <Button size="sm" variant="ghost" disabled={saving} onClick={handleSaveNew}>
-                        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'OK'}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="p-0"
+                        title="Salvar"
+                        aria-label="Salvar"
+                        disabled={saving}
+                        onClick={handleSaveNew}
+                      >
+                        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                       </Button>
                     </TableCell>
                   </TableRow>
                 )}
               </TableBody>
             </Table>
+            </div>
             {!addMode && availablePlans.length > 0 && (
               <Button variant="outline" size="sm" onClick={() => setAddMode(true)}>
                 <Plus className="w-4 h-4 mr-1" /> Adicionar convênio
@@ -342,10 +359,10 @@ export default function SettingsSurgicalProceduresPage() {
               <Loader2 className="w-6 h-6 animate-spin text-primary" />
             </div>
           ) : (
-            <div className="rounded-md border overflow-hidden">
-              <Table>
+            <div className="overflow-x-auto">
+              <Table className="min-w-full border-collapse bg-white text-sm">
                 <TableHeader>
-                  <TableRow>
+                  <TableRow className="border-b border-gray-300 h-15">
                     <TableHead>Nome</TableHead>
                     <TableHead>Categoria</TableHead>
                     <TableHead>Particular</TableHead>
@@ -361,7 +378,7 @@ export default function SettingsSurgicalProceduresPage() {
                         ? ((r.private_price - r.cost_price) / r.private_price * 100).toFixed(0) + '%'
                         : '—';
                     return (
-                      <TableRow key={r.id}>
+                      <TableRow className="border-b border-gray-300 h-15" key={r.id}>
                         <TableCell>{r.name}</TableCell>
                         <TableCell>{r.surgical_procedure_category?.name ?? r.surgical_procedure_category_id ?? '—'}</TableCell>
                         <TableCell>{fmtBRL(r.private_price)}</TableCell>

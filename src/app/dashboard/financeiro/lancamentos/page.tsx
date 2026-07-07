@@ -228,9 +228,10 @@ export default function LancamentosPage() {
               Nenhum lançamento {status === 'suggested' ? 'sugerido' : status === 'confirmed' ? 'confirmado' : 'cancelado'}.
             </p>
           ) : (
-            <Table className="text-sm">
+            <div className="overflow-x-auto">
+            <Table className="min-w-full border-collapse bg-white text-sm">
               <TableHeader>
-                <TableRow>
+                <TableRow className="border-b border-gray-300 h-15">
                   <TableHead>Data</TableHead>
                   <TableHead>Categoria</TableHead>
                   <TableHead>Descrição</TableHead>
@@ -243,7 +244,7 @@ export default function LancamentosPage() {
               </TableHeader>
               <TableBody>
                 {entries.map((e) => (
-                  <TableRow key={e.id}>
+                  <TableRow className="border-b border-gray-300 h-15" key={e.id}>
                     <TableCell>{new Date(e.entry_date).toLocaleDateString('pt-BR')}</TableCell>
                     <TableCell>
                       <Badge variant="secondary">{CATEGORY_LABELS[e.category] ?? e.category}</Badge>
@@ -255,12 +256,26 @@ export default function LancamentosPage() {
                     {status === 'confirmed' && <TableCell>{methodLabel(e.payment_method)}</TableCell>}
                     <TableCell className="text-right">
                       {status === 'suggested' ? (
-                        <div className="flex justify-end gap-2">
-                          <Button size="sm" onClick={() => openConfirm(e)}>
-                            Confirmar
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="p-0"
+                            title="Confirmar"
+                            aria-label="Confirmar"
+                            onClick={() => openConfirm(e)}
+                          >
+                            <CheckCircle className="size-4 text-green-600" />
                           </Button>
-                          <Button size="sm" variant="ghost" onClick={() => cancelEntry(e)}>
-                            Cancelar
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="p-0"
+                            title="Cancelar"
+                            aria-label="Cancelar"
+                            onClick={() => cancelEntry(e)}
+                          >
+                            <XCircle className="size-4" />
                           </Button>
                         </div>
                       ) : (
@@ -271,6 +286,7 @@ export default function LancamentosPage() {
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>

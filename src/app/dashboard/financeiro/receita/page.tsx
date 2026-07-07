@@ -227,9 +227,9 @@ export default function ReceitaLiquidaPage() {
               </Button>
             </CardHeader>
             <CardContent className="p-0">
-              <Table>
-                <TableHeader className="h-15">
-                  <TableRow className="border-b border-gray-300">
+              <Table className="min-w-full border-collapse bg-white text-sm">
+                <TableHeader>
+                  <TableRow className="border-b border-gray-300 h-15">
                     <TableHead>Item</TableHead>
                     <TableHead>Tipo</TableHead>
                     <TableHead className="text-right">Cobrado</TableHead>
@@ -241,13 +241,13 @@ export default function ReceitaLiquidaPage() {
                 <TableBody>
                   {sortedItems.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                      <TableCell colSpan={6} className="border-t border-slate-200 py-8 text-center text-sm text-slate-500">
                         Nenhuma receita no período
                       </TableCell>
                     </TableRow>
                   )}
                   {sortedItems.map((item, i) => (
-                    <TableRow className="cursor-pointer hover:bg-muted/50 h-15 border-b border-gray-300" key={i}>
+                    <TableRow className="cursor-pointer hover:bg-muted/50 border-b border-gray-300 h-15" key={i}>
                       <TableCell className="font-medium">{item.description ?? '—'}</TableCell>
                       <TableCell>
                         <Badge variant="outline">{item.item_type}</Badge>

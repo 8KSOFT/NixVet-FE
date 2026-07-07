@@ -161,9 +161,10 @@ export default function TermosPage() {
           ) : terms.length === 0 ? (
             <p className="py-8 text-center text-sm text-muted-foreground">Nenhum termo emitido.</p>
           ) : (
-            <Table className="text-sm">
+            <div className="overflow-x-auto">
+            <Table className="min-w-full border-collapse bg-white text-sm">
               <TableHeader>
-                <TableRow>
+                <TableRow className="border-b border-gray-300 h-15">
                   <TableHead>Data</TableHead>
                   <TableHead>Tipo</TableHead>
                   <TableHead>Responsável</TableHead>
@@ -173,7 +174,7 @@ export default function TermosPage() {
               </TableHeader>
               <TableBody>
                 {terms.map((t) => (
-                  <TableRow key={t.id}>
+                  <TableRow className="border-b border-gray-300 h-15" key={t.id}>
                     <TableCell>{new Date(t.created_at).toLocaleDateString('pt-BR')}</TableCell>
                     <TableCell>
                       <Badge variant="secondary">{TYPE_LABELS[t.type] ?? t.type}</Badge>
@@ -181,14 +182,22 @@ export default function TermosPage() {
                     <TableCell>{t.responsible_name}</TableCell>
                     <TableCell>{patientName(t.patient_id)}</TableCell>
                     <TableCell className="text-right">
-                      <Button size="sm" variant="ghost" onClick={() => downloadPdf(t.id)}>
-                        <Download className="mr-2 size-4" /> Baixar
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="p-0"
+                        title="Baixar"
+                        aria-label="Baixar"
+                        onClick={() => downloadPdf(t.id)}
+                      >
+                        <Download className="size-4" />
                       </Button>
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
+            </div>
           )}
         </CardContent>
       </Card>

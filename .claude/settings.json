@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Select-String -Pattern \"\")",
+      "Bash(Select-Object -Skip 214 -First 45)",
+      "Bash(awk 'NR>=255 && NR<=280')",
+      "Bash(awk 'NR>=95 && NR<=225')",
+      "Read(//d/Jobs/8KSOFt/Nixvet/NixVet-FE/src/app/dashboard/tasks/**)",
+      "Bash(awk 'NR>=267 && NR<=305')",
+      "Bash(awk 'NR>=300 && NR<=345')",
+      "Bash(awk 'NR>=1108 && NR<=1180')",
+      "Bash(awk 'NR>=1195 && NR<=1290')",
+      "Bash(awk 'NR>=1290 && NR<=1340')",
+      "Bash(echo \"exit: $?\")",
+      "Bash(rm -f /tmp/head_calendar.tsx /tmp/head_calendar_check.tsx /tmp/head_followups.tsx /tmp/head_prescriptions.tsx)",
+      "Bash(awk 'NR>=1 && NR<=40')",
+      "Bash(git check-ignore *)",
+      "Bash(nslookup nixvet-api.8ksoft.com)"
+    ],
+    "additionalDirectories": [
+      "\\tmp"
+    ]
+  }
+}

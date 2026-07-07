@@ -126,10 +126,10 @@ export default function SettingsMaterialsPage() {
               <Loader2 className="w-6 h-6 animate-spin text-primary" />
             </div>
           ) : (
-            <div className="rounded-md border overflow-hidden">
-            <Table>
+            <div className="overflow-x-auto">
+            <Table className="min-w-full border-collapse bg-white text-sm">
               <TableHeader>
-                <TableRow>
+                <TableRow className="border-b border-gray-300 h-15">
                   <TableHead>Nome</TableHead>
                   <TableHead className="text-right">Custo</TableHead>
                   <TableHead className="text-right">Venda</TableHead>
@@ -139,7 +139,7 @@ export default function SettingsMaterialsPage() {
               </TableHeader>
               <TableBody>
                 {list.map((r) => (
-                  <TableRow key={r.id}>
+                  <TableRow className="border-b border-gray-300 h-15" key={r.id}>
                     <TableCell>{r.name}</TableCell>
                     <TableCell className="text-right tabular-nums">{fmtBRL(r.cost_price)}</TableCell>
                     <TableCell className="text-right tabular-nums">{fmtBRL(r.private_price)}</TableCell>

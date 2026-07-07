@@ -52,10 +52,10 @@ function ReminderTable({ data, loading }: { data: VaccineReminder[]; loading: bo
     );
   }
   return (
-    <div className="border border-gray-300 rounded-md">
-      <Table>
-        <TableHeader className="h-15">
-          <TableRow className="border-b border-gray-300">
+    <div className="overflow-x-auto border border-gray-300 rounded-lg">
+      <Table className="min-w-full border-collapse bg-white text-sm">
+        <TableHeader>
+          <TableRow className="border-b border-gray-300 h-15">
             <TableHead>Paciente</TableHead>
             <TableHead>Vacina</TableHead>
             <TableHead>Próxima dose</TableHead>

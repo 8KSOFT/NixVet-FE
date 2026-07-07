@@ -299,10 +299,10 @@ function ExamRequestsContent() {
         </div>
       ) : (
         <div>
-          <div className="border border-gray-300 rounded-md">
-            <Table>
-              <TableHeader className="h-15">
-                <TableRow className="border-b border-gray-300">
+          <div className="overflow-x-auto border border-gray-300 rounded-lg">
+            <Table className="min-w-full border-collapse bg-white text-sm">
+              <TableHeader>
+                <TableRow className="border-b border-gray-300 h-15">
                   <TableHead>Data</TableHead>
                   <TableHead>Paciente</TableHead>
                   <TableHead>Tutor</TableHead>
@@ -313,7 +313,7 @@ function ExamRequestsContent() {
               </TableHeader>
               <TableBody>
                 {examRequests.map((record) => (
-                  <TableRow className="cursor-pointer hover:bg-muted/50 h-15 border-b border-gray-300" key={record.id}>
+                  <TableRow className="cursor-pointer hover:bg-muted/50 border-b border-gray-300 h-15" key={record.id}>
                     <TableCell>{new Date(record.createdAt).toLocaleDateString('pt-BR')}</TableCell>
                     <TableCell>{getPatient(record)?.name ?? '—'}</TableCell>
                     <TableCell>{getPatient(record)?.tutor?.name ?? '—'}</TableCell>

@@ -153,9 +153,9 @@ export default function CustosPagamentoPage() {
             {loading ? (
               <Skeleton className="h-60 w-full" />
             ) : (
-              <Table>
-                <TableHeader className="h-15">
-                  <TableRow className="border-b border-gray-300">
+              <Table className="min-w-full border-collapse bg-white text-sm">
+                <TableHeader>
+                  <TableRow className="border-b border-gray-300 h-15">
                     <TableHead>Forma</TableHead>
                     <TableHead className="text-right">Volume</TableHead>
                     <TableHead className="text-right">Custo Total</TableHead>
@@ -163,7 +163,7 @@ export default function CustosPagamentoPage() {
                 </TableHeader>
                 <TableBody>
                   {methods.map(([method, v]) => (
-                    <TableRow className="cursor-pointer hover:bg-muted/50 h-15 border-b border-gray-300" key={method}>
+                    <TableRow className="cursor-pointer hover:bg-muted/50 border-b border-gray-300 h-15" key={method}>
                       <TableCell>{METHOD_LABELS[method] ?? method}</TableCell>
                       <TableCell className="text-right tabular-nums">{fmt(v.volume)}</TableCell>
                       <TableCell className="text-right tabular-nums text-orange-500">{fmt(v.fee_total)}</TableCell>
