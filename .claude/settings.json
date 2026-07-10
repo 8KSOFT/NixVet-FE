@@ -15,10 +15,14 @@
       "Bash(rm -f /tmp/head_calendar.tsx /tmp/head_calendar_check.tsx /tmp/head_followups.tsx /tmp/head_prescriptions.tsx)",
       "Bash(awk 'NR>=1 && NR<=40')",
       "Bash(git check-ignore *)",
-      "Bash(nslookup nixvet-api.8ksoft.com)"
+      "Bash(nslookup nixvet-api.8ksoft.com)",
+      "Bash(cd \"d:/Jobs/8KSOFT/Nixvet/NixVet-FE\" && mkdir -p \"src/app/\\(app\\)/patients/[id]\" && git mv \"src/app/dashboard/patients/page.tsx\" \"src/app/\\(app\\)/patients/page.tsx\" && git mv \"src/app/dashboard/patients/[id]/page.tsx\" \"src/app/\\(app\\)/patients/[id]/page.tsx\" && echo OK)",
+      "Bash(find \"src/app/dashboard/patients\")",
+      "Bash(echo \"exit:$?\")"
     ],
     "additionalDirectories": [
-      "\\tmp"
+      "\\tmp",
+      "D:\\Jobs\\8KSOFT\\Nixvet\\NixVet-FE\\src\\app\\(app)\\patients"
     ]
   }
 }
