@@ -29,7 +29,7 @@ export function DashboardCreateFormDialog({
       <DialogContent
         showCloseButton={false}
         className={cn(
-          'h-fit max-h-[90vh] max-w-[calc(100%-4rem)] overflow-y-auto rounded-none border-none bg-white p-2.5 modal-responsive',
+          'h-fit max-h-[90vh] max-w-[calc(100%-4rem)] overflow-y-auto rounded-2xl border-none bg-white p-0 modal-responsive',
           contentClassName,
         )}
         onInteractOutside={preventOutsideClose ? (event) => event.preventDefault() : undefined}
