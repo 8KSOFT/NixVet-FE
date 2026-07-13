@@ -374,7 +374,7 @@ function ExamRequestsContent() {
         open={modalVisible}
         onOpenChange={setModalVisible}
         title="Nova Solicitação de Exames"
-        containerClassName="mx-auto max-w-2xl h-[96dvh] sm:h-[90dvh]"
+        containerClassName="mx-auto max-w-2xl max-h-[96dvh] sm:max-h-[90dvh]"
         bodyClassName="px-6 py-5"
         preventOutsideClose
         preventEscapeClose
@@ -458,7 +458,7 @@ function ExamRequestsContent() {
 
           {/* Exames */}
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
               <Label className="text-sm font-medium">Exames *</Label>
               <span className="text-xs text-muted-foreground">
                 Selecione da lista, digite para filtrar ou adicione texto livre (Enter)

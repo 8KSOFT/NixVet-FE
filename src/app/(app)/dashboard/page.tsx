@@ -258,7 +258,7 @@ export default function DashboardPage() {
           const cardContent = (
             <Card
               className={cn(
-                "m-0 p-0 w-full h-33.75 rounded-xl border border-black/20",
+                "m-0 p-0 w-full h-33.75 rounded-xl border border-gray-300",
                 card.href && "cursor-pointer hover:shadow-md",
               )}
             >

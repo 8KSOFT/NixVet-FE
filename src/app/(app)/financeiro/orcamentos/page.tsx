@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import api from '@/lib/axios';
+import { fetchAllListPages } from '@/lib/pagination';
 import { toast } from 'sonner';
 
 interface BudgetItem {
@@ -151,9 +152,8 @@ export default function OrcamentosPage() {
       .get<Patient[] | { data?: Patient[] }>('/patients')
       .then((r) => setPatients(getArrayResponseData<Patient>(r.data)))
       .catch(() => {});
-    api
-      .get<User[] | { data?: User[] }>('/users')
-      .then((r) => setUsers(getArrayResponseData<User>(r.data)))
+    fetchAllListPages<User>('/users/veterinarians')
+      .then(setUsers)
       .catch(() => {});
   }, [fetchBudgets]);
 

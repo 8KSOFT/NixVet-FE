@@ -422,7 +422,7 @@ export default function OwnersPage() {
             {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
           </div>
 
-          <div className="grid grid-cols-2 gap-4 md:gap-4 max-md:grid-cols-2">
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <Label htmlFor="cpf">CPF *</Label>
               <Input
@@ -451,12 +451,13 @@ export default function OwnersPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <div className="space-y-2 md:col-span-2">
-              <Label htmlFor="email">Email *</Label>
-              <Input id="email" type="email" {...register('email')} placeholder="email@exemplo.com" />
-              {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="email">Email *</Label>
+            <Input id="email" type="email" {...register('email')} placeholder="email@exemplo.com" />
+            {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <Label htmlFor="cep">CEP *</Label>
               <div className="flex gap-2">
@@ -470,46 +471,54 @@ export default function OwnersPage() {
                     setValue('cep', formatted);
                   }}
                 />
-                <Button type="button" variant="outline" size="icon" onClick={handleCepSearch} disabled={loadingCep}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="shrink-0"
+                  onClick={handleCepSearch}
+                  disabled={loadingCep}
+                >
                   {loadingCep ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
                 </Button>
               </div>
               {errors.cep && <p className="text-sm text-destructive">{errors.cep.message}</p>}
             </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
-            <div className="space-y-1 md:col-span-7">
-              <Label htmlFor="street">Logradouro *</Label>
-              <Input id="street" {...register('street')} placeholder="Rua, Av, etc" />
-              {errors.street && <p className="text-sm text-destructive">{errors.street.message}</p>}
-            </div>
-            <div className="space-y-1 md:col-span-2">
-              <Label htmlFor="number">Número *</Label>
-              <Input id="number" {...register('number')} placeholder="123" />
-              {errors.number && <p className="text-sm text-destructive">{errors.number.message}</p>}
-            </div>
-            <div className="space-y-1 md:col-span-3">
-              <Label htmlFor="complement">Complemento</Label>
-              <Input id="complement" {...register('complement')} placeholder="Apto 101" />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
-            <div className="space-y-1 md:col-span-4">
-              <Label htmlFor="neighborhood">Bairro *</Label>
-              <Input id="neighborhood" {...register('neighborhood')} />
-              {errors.neighborhood && <p className="text-sm text-destructive">{errors.neighborhood.message}</p>}
-            </div>
-            <div className="space-y-1 md:col-span-6">
+            <div className="space-y-1">
               <Label htmlFor="city">Cidade *</Label>
               <Input id="city" {...register('city')} />
               {errors.city && <p className="text-sm text-destructive">{errors.city.message}</p>}
             </div>
-            <div className="space-y-1 md:col-span-2">
+          </div>
+
+          <div className="space-y-1">
+            <Label htmlFor="street">Logradouro *</Label>
+            <Input id="street" {...register('street')} placeholder="Rua, Av, etc" />
+            {errors.street && <p className="text-sm text-destructive">{errors.street.message}</p>}
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <Label htmlFor="number">Número *</Label>
+              <Input id="number" {...register('number')} placeholder="123" />
+              {errors.number && <p className="text-sm text-destructive">{errors.number.message}</p>}
+            </div>
+            <div className="space-y-1">
               <Label htmlFor="state">UF *</Label>
-              <Input id="state" {...register('state')} maxLength={2} />
+              <Input id="state" {...register('state')} placeholder="SP" maxLength={2} />
               {errors.state && <p className="text-sm text-destructive">{errors.state.message}</p>}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <Label htmlFor="complement">Complemento</Label>
+              <Input id="complement" {...register('complement')} placeholder="Apto 101" />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="neighborhood">Bairro *</Label>
+              <Input id="neighborhood" {...register('neighborhood')} />
+              {errors.neighborhood && <p className="text-sm text-destructive">{errors.neighborhood.message}</p>}
             </div>
           </div>
         </form>

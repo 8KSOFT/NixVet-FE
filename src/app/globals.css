@@ -126,9 +126,9 @@ body {
   font-family: var(--font-heading), var(--font-sans), system-ui, sans-serif;
 }
 
-/* * {
+* {
   border-color: var(--border);
-} */
+}
 
 .login-shell {
   background: var(--background);
@@ -362,9 +362,11 @@ body {
     margin-bottom: 0.5rem !important;
   }
 
-  /* Grid layouts: stack vertically on mobile */
+  /* Grid layouts: auto-fit as many columns as fit (min 8.5rem each) instead of
+     forcing a single column, so short fields (e.g. numero, UF, cep, cidade)
+     can still pair up side by side without overflowing narrow screens. */
   .modal-responsive .grid {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr)) !important;
     gap: 0.5rem !important;
   }
 

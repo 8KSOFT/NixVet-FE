@@ -474,33 +474,33 @@ export default function PatientsPage() {
                 <RadioGroup
                   value={field.value}
                   onValueChange={field.onChange}
-                  className="flex h-11 items-center gap-0 border border-gray-300 rounded-lg overflow-hidden"
+                  className="flex min-h-11 items-stretch gap-0 border border-gray-300 rounded-lg overflow-hidden"
                 >
                   {/* LADO ESQUERDO: Transforma a div em Label clicável */}
                   <label
                     htmlFor="tutor-yes"
-                    className="w-1/2 h-full flex items-center gap-2 p-4 cursor-pointer hover:bg-gray-50 active:bg-gray-100 transition-colors"
+                    className="w-1/2 flex items-center gap-2 p-3 cursor-pointer hover:bg-gray-50 active:bg-gray-100 transition-colors"
                   >
                     <RadioGroupItem
                       value="yes"
                       id="tutor-yes"
-                      className="size-4 bg-gray-300 data-[state=checked]:bg-transparent flex items-center justify-center [&_span]:flex [&_span]:items-center [&_span]:justify-center [&_span]:size-full [&_svg]:!size-[85%] [&_svg]:fill-current"
+                      className="size-4 shrink-0 bg-gray-300 data-[state=checked]:bg-transparent flex items-center justify-center [&_span]:flex [&_span]:items-center [&_span]:justify-center [&_span]:size-full [&_svg]:!size-[85%] [&_svg]:fill-current"
                     />
                     <span className="text-sm font-normal text-foreground">Informar responsável</span>
                   </label>
 
                   {/* Linha Divisória Central */}
-                  <div className="w-px h-11 bg-gray-300 shrink-0"></div>
+                  <div className="w-px self-stretch bg-gray-300 shrink-0"></div>
 
                   {/* LADO DIREITO: Transforma a div em Label clicável */}
                   <label
                     htmlFor="tutor-no"
-                    className="w-1/2 h-full flex items-center gap-2 p-4 cursor-pointer hover:bg-gray-50 active:bg-gray-100 transition-colors"
+                    className="w-1/2 flex items-center gap-2 p-3 cursor-pointer hover:bg-gray-50 active:bg-gray-100 transition-colors"
                   >
                     <RadioGroupItem
                       value="no"
                       id="tutor-no"
-                      className="size-4 bg-gray-300 data-[state=checked]:bg-transparent flex items-center justify-center [&_span]:flex [&_span]:items-center [&_span]:justify-center [&_span]:size-full [&_svg]:!size-[85%] [&_svg]:fill-current"
+                      className="size-4 shrink-0 bg-gray-300 data-[state=checked]:bg-transparent flex items-center justify-center [&_span]:flex [&_span]:items-center [&_span]:justify-center [&_span]:size-full [&_svg]:!size-[85%] [&_svg]:fill-current"
                     />
                     <span className="text-sm font-normal text-foreground">Não informar</span>
                   </label>

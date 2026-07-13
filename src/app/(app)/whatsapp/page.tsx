@@ -10,7 +10,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { Send, Bot, Loader2, MessageSquare, Lightbulb, Clock, AlertTriangle, User, Archive, ArchiveRestore, CheckCheck, Tag, X } from 'lucide-react';
+import { Send, Bot, Loader2, MessageSquare, Lightbulb, Clock, AlertTriangle, User, Archive, ArchiveRestore, CheckCheck, Tag, X, ChevronDown } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -500,113 +500,125 @@ export default function WhatsAppPage() {
         </div>
       </div>
 
-      {alerts.length > 0 && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50/60 p-4 shadow-sm shrink-0">
-          <div className="flex items-center gap-2 mb-3">
-            <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-            <span className="text-sm font-semibold text-amber-800">{alerts.length} conversa(s) aguardando há mais de 20 min</span>
-            <span className="text-xs text-amber-600 ml-auto">Clique em uma linha para ações rápidas</span>
-          </div>
-          <div className="space-y-1.5">
-            {alerts.map((a) => (
-              <div key={a.id} className="rounded-lg border border-amber-200 bg-white">
-                <div
-                  className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-amber-50/80 transition-colors"
-                  onClick={() => setAlertActionPhone(alertActionPhone === a.tutor_phone ? null : a.tutor_phone)}
-                >
-                  <Badge variant="outline" className="font-mono text-xs shrink-0">{a.tutor_phone}</Badge>
-                  {a.waiting_since && (
-                    <span className="text-muted-foreground text-xs flex-1">
-                      aguardando desde {dayjs(a.waiting_since).format('DD/MM HH:mm')} ({dayjs(a.waiting_since).fromNow()})
-                    </span>
-                  )}
-                  <button
-                    type="button"
-                    className="text-primary text-xs hover:underline shrink-0"
-                    onClick={(e) => { e.stopPropagation(); setSelectedId(null); fetchConversations(false); }}
-                  >
-                    Ver na lista
-                  </button>
-                </div>
-
-                {/* Ações rápidas inline */}
-                {alertActionPhone === a.tutor_phone && (
-                  <div className="border-t border-amber-100 px-3 py-2.5 bg-amber-50/40 space-y-2">
-                    <p className="text-xs text-muted-foreground font-medium">Encerrar com classificação:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {CLASSIFICATIONS.map((c) => (
-                        <button
-                          key={c.value}
-                          type="button"
-                          disabled={alertActionLoading}
-                          onClick={() => handleCloseByPhone(a.tutor_phone, c.value)}
-                          className={cn(
-                            'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-all hover:ring-2 hover:ring-offset-1 hover:ring-current disabled:opacity-50',
-                            c.badgeClass,
-                          )}
-                        >
-                          {alertActionLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCheck className="w-3 h-3" />}
-                          {c.label}
-                        </button>
-                      ))}
-                    </div>
-                    <button
-                      type="button"
-                      className="text-xs text-muted-foreground hover:text-foreground mt-1"
-                      onClick={() => setAlertActionPhone(null)}
-                    >
-                      Cancelar
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       <div className="flex flex-1 min-h-0 flex-col gap-4 lg:flex-row">
-        {/* Lista de conversas */}
-        <div className="rounded-lg border bg-card shadow-sm flex flex-col min-h-0 shrink-0 max-h-[min(40vh,320px)] lg:max-h-none lg:w-80 lg:self-stretch">
-          <div className="px-4 py-3 border-b shrink-0 space-y-2">
-            <div className="flex items-center gap-2">
-              <span className="font-medium text-sm">Conversas</span>
-              <div className="ml-auto inline-flex rounded-md border overflow-hidden">
-                <button
-                  type="button"
-                  onClick={() => setArchivedFilter('false')}
-                  className={cn(
-                    'px-2 py-1 text-xs',
-                    archivedFilter === 'false' ? 'bg-primary text-white' : 'bg-card hover:bg-muted/50',
-                  )}
-                >
-                  Ativas
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setArchivedFilter('true')}
-                  className={cn(
-                    'px-2 py-1 text-xs border-l',
-                    archivedFilter === 'true' ? 'bg-primary text-white' : 'bg-card hover:bg-muted/50',
-                  )}
-                >
-                  Arquivadas
-                </button>
+        {/* Coluna esquerda: conversas aguardando + lista de conversas */}
+        <div className="flex flex-col gap-4 min-h-0 shrink-0 lg:w-80 lg:self-stretch">
+          {alerts.length > 0 && (
+            <div className="rounded-lg border border-amber-200 bg-amber-50/60 shadow-sm shrink-0 max-h-64 overflow-y-auto">
+              <div className="flex items-center gap-1.5 px-3 pt-3 pb-2">
+                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                <span className="text-sm font-semibold text-amber-800 truncate">Aguardando +20min</span>
+                <Badge className="ml-auto shrink-0 bg-amber-200 text-amber-800 hover:bg-amber-200 m-0 text-[10px]">
+                  {alerts.length}
+                </Badge>
+              </div>
+              <div className="grid grid-cols-[1fr_auto_1.25rem] gap-2 px-3 pb-1 text-[10px] font-medium uppercase tracking-wide text-amber-700/70">
+                <span>Número</span>
+                <span>Aguard.</span>
+                <span aria-hidden />
+              </div>
+              <div className="space-y-1 px-2 pb-2">
+                {alerts.map((a) => {
+                  const minutesAgo = a.waiting_since ? Math.max(0, dayjs().diff(dayjs(a.waiting_since), 'minute')) : null;
+                  const expanded = alertActionPhone === a.tutor_phone;
+                  return (
+                    <div key={a.id} className="rounded-lg border border-amber-200 bg-white overflow-hidden">
+                      <button
+                        type="button"
+                        className="grid w-full grid-cols-[1fr_auto_1.25rem] items-center gap-2 px-2 py-1.5 text-left hover:bg-amber-50/80 transition-colors"
+                        onClick={() => setAlertActionPhone(expanded ? null : a.tutor_phone)}
+                      >
+                        <span className="font-mono text-xs truncate">{a.tutor_phone}</span>
+                        <span className="text-muted-foreground text-[11px] whitespace-nowrap">
+                          {minutesAgo != null ? `${minutesAgo}min` : '—'}
+                        </span>
+                        <ChevronDown
+                          className={cn('w-3.5 h-3.5 text-amber-600 transition-transform shrink-0', expanded && 'rotate-180')}
+                        />
+                      </button>
+
+                      {/* Ações rápidas inline */}
+                      {expanded && (
+                        <div className="border-t border-amber-100 px-2 py-2 bg-amber-50/40 space-y-1.5">
+                          <p className="text-[11px] text-muted-foreground font-medium">Encerrar com classificação:</p>
+                          <div className="grid grid-cols-1 gap-1">
+                            {CLASSIFICATIONS.map((c) => (
+                              <button
+                                key={c.value}
+                                type="button"
+                                disabled={alertActionLoading}
+                                onClick={() => handleCloseByPhone(a.tutor_phone, c.value)}
+                                className={cn(
+                                  'flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-medium transition-all hover:ring-2 hover:ring-offset-1 hover:ring-current disabled:opacity-50',
+                                  c.badgeClass,
+                                )}
+                              >
+                                {alertActionLoading ? (
+                                  <Loader2 className="w-3 h-3 animate-spin shrink-0" />
+                                ) : (
+                                  <CheckCheck className="w-3 h-3 shrink-0" />
+                                )}
+                                <span className="truncate">{c.label}</span>
+                              </button>
+                            ))}
+                          </div>
+                          <button
+                            type="button"
+                            className="text-[11px] text-muted-foreground hover:text-foreground"
+                            onClick={() => setAlertActionPhone(null)}
+                          >
+                            Cancelar
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
-            <Select value={classificationFilter || 'all'} onValueChange={(v) => setClassificationFilter(v === 'all' ? '' : v)}>
-              <SelectTrigger className="h-7 text-xs">
-                <SelectValue placeholder="Classificação: Todas" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas as classificações</SelectItem>
-                {CLASSIFICATIONS.map((c) => (
-                  <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <ScrollArea className="flex-1 min-h-0">
+          )}
+
+          {/* Lista de conversas */}
+          <div className="rounded-lg border bg-card shadow-sm flex flex-col min-h-0 flex-1 max-h-[min(40vh,320px)] lg:max-h-none">
+            <div className="px-4 py-3 border-b shrink-0 space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="font-medium text-sm">Conversas</span>
+                <div className="ml-auto inline-flex rounded-md border overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setArchivedFilter('false')}
+                    className={cn(
+                      'px-2 py-1 text-xs',
+                      archivedFilter === 'false' ? 'bg-primary text-white' : 'bg-card hover:bg-muted/50',
+                    )}
+                  >
+                    Ativas
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setArchivedFilter('true')}
+                    className={cn(
+                      'px-2 py-1 text-xs border-l',
+                      archivedFilter === 'true' ? 'bg-primary text-white' : 'bg-card hover:bg-muted/50',
+                    )}
+                  >
+                    Arquivadas
+                  </button>
+                </div>
+              </div>
+              <Select value={classificationFilter || 'all'} onValueChange={(v) => setClassificationFilter(v === 'all' ? '' : v)}>
+                <SelectTrigger className="h-7 text-xs">
+                  <SelectValue placeholder="Classificação: Todas" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas as classificações</SelectItem>
+                  {CLASSIFICATIONS.map((c) => (
+                    <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <ScrollArea className="flex-1 min-h-0">
             <div className="p-2">
               {loadingConv ? (
                 <div className="space-y-3 p-2">
@@ -658,6 +670,7 @@ export default function WhatsAppPage() {
               )}
             </div>
           </ScrollArea>
+          </div>
         </div>
 
         {/* Painel de mensagens */}
