@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import type { ApiRequestError } from '@/app/types/api-error';
 import { Button } from '@/components/ui/button';
 import { DashboardCreateFormDialog } from '@/components/dashboard-create-form-dialog';
@@ -12,19 +12,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { useForm, Controller } from 'react-hook-form';
 import { Plus, CheckCircle2, Loader2 } from 'lucide-react';
-import api from '@/lib/axios';
-import { API_PAGE_SIZE, fetchAllListPages, listQueryParams, parseListResponse } from '@/lib/pagination';
+import { API_PAGE_SIZE } from '@/lib/pagination';
 import { ListPagination } from '@/components/list-pagination';
-
-interface ClinicalTask {
-  id: string;
-  patient_id: string;
-  consultation_id: string | null;
-  task_type: string;
-  due_date: string | null;
-  status: string;
-  Patient?: { name: string };
-}
+import type { ClinicalTaskPayload } from '@/app/types/clinical-task';
+import {
+  useClinicalTasksQuery,
+  useCreateClinicalTaskMutation,
+  useMarkClinicalTaskDoneMutation,
+} from '@/hooks/apiHooks/useClinicalTasks';
+import { usePatientsListQuery } from '@/hooks/apiHooks/usePatients';
 
 interface TaskFormValues {
   patient_id: string;
@@ -44,45 +40,27 @@ function getApiErrorMessage(error: unknown, fallbackMessage: string): string {
 }
 
 export default function TasksPage() {
-  const [list, setList] = useState<ClinicalTask[]>([]);
   const [listPage, setListPage] = useState(1);
-  const [listTotal, setListTotal] = useState(0);
-  const [listTotalPages, setListTotalPages] = useState(1);
-  const [patients, setPatients] = useState<{ id: string; name: string }[]>([]);
-  const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const { register, handleSubmit, reset, control } = useForm<TaskFormValues>();
 
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const [tasksRes, patientsList] = await Promise.all([
-        api.get('/clinical-tasks', { params: listQueryParams(listPage) }),
-        fetchAllListPages<{ id: string; name: string }>('/patients'),
-      ]);
-      const p = parseListResponse<ClinicalTask>(tasksRes.data, listPage);
-      setList(p.items);
-      setListTotal(p.total);
-      setListTotalPages(p.totalPages);
-      setPatients(patientsList);
-    } catch {
-      toast.error('Erro ao carregar tarefas');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: tasksPage, isLoading: loading } = useClinicalTasksQuery(listPage);
+  const list = tasksPage?.items ?? [];
+  const listTotal = tasksPage?.total ?? 0;
+  const listTotalPages = tasksPage?.totalPages ?? 1;
 
-  useEffect(() => {
-    fetchData();
-  }, [listPage]);
+  const { data: patients = [] } = usePatientsListQuery();
+
+  const createTask = useCreateClinicalTaskMutation();
+  const markDoneMutation = useMarkClinicalTaskDoneMutation();
 
   const onSubmit = async (values: TaskFormValues) => {
     try {
-      await api.post('/clinical-tasks', values);
+      const payload: ClinicalTaskPayload = values;
+      await createTask.mutateAsync(payload);
       toast.success('Tarefa criada');
       setModalOpen(false);
       reset();
-      fetchData();
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao criar'));
     }
@@ -90,9 +68,8 @@ export default function TasksPage() {
 
   const markDone = async (id: string) => {
     try {
-      await api.put(`/clinical-tasks/${id}/status`, { status: 'completed' });
+      await markDoneMutation.mutateAsync(id);
       toast.success('Tarefa concluída');
-      fetchData();
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro'));
     }

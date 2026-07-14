@@ -1,30 +1,26 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import type { ApiRequestError } from '@/app/types/api-error';
 import { Button } from '@/components/ui/button';
 import { DashboardCreateFormDialog } from '@/components/dashboard-create-form-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { useForm, Controller } from 'react-hook-form';
 import { Plus, Loader2 } from 'lucide-react';
-import api from '@/lib/axios';
-import { API_PAGE_SIZE, fetchAllListPages, listQueryParams, parseListResponse } from '@/lib/pagination';
+import { API_PAGE_SIZE } from '@/lib/pagination';
 import { ListPagination } from '@/components/list-pagination';
-
-interface VaccineReminder {
-  id: string;
-  patient_id: string;
-  vaccine_name: string;
-  next_due_date: string;
-  reminder_status: string;
-  patient?: { name: string };
-}
+import type { VaccineReminder, VaccineReminderPayload } from '@/app/types/vaccine-reminder';
+import {
+  useCreateVaccineReminderMutation,
+  useDueVaccineRemindersQuery,
+  useVaccineRemindersQuery,
+} from '@/hooks/apiHooks/useVaccineReminders';
+import { usePatientsListQuery } from '@/hooks/apiHooks/usePatients';
 
 interface VaccineFormValues {
   patient_id: string;
@@ -78,56 +74,32 @@ function ReminderTable({ data, loading }: { data: VaccineReminder[]; loading: bo
 }
 
 export default function VaccinesPage() {
-  const [allReminders, setAllReminders] = useState<VaccineReminder[]>([]);
-  const [dueSoon, setDueSoon] = useState<VaccineReminder[]>([]);
   const [duePage, setDuePage] = useState(1);
-  const [dueTotal, setDueTotal] = useState(0);
-  const [dueTotalPages, setDueTotalPages] = useState(1);
   const [allPage, setAllPage] = useState(1);
-  const [allTotal, setAllTotal] = useState(0);
-  const [allTotalPages, setAllTotalPages] = useState(1);
-  const [patients, setPatients] = useState<{ id: string; name: string }[]>([]);
-  const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const { register, handleSubmit, reset, control } = useForm<VaccineFormValues>();
 
-  const fetchAll = async () => {
-    setLoading(true);
-    try {
-      const [allRes, dueRes, patientsList] = await Promise.all([
-        api.get('/vaccine/reminders', { params: listQueryParams(allPage) }),
-        api.get('/vaccine/reminders/due', {
-          params: { days: 30, ...listQueryParams(duePage) },
-        }),
-        fetchAllListPages<{ id: string; name: string }>('/patients'),
-      ]);
-      const a = parseListResponse<VaccineReminder>(allRes.data, allPage);
-      setAllReminders(a.items);
-      setAllTotal(a.total);
-      setAllTotalPages(a.totalPages);
-      const d = parseListResponse<VaccineReminder>(dueRes.data, duePage);
-      setDueSoon(d.items);
-      setDueTotal(d.total);
-      setDueTotalPages(d.totalPages);
-      setPatients(patientsList);
-    } catch {
-      toast.error('Erro ao carregar lembretes');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: allPageData, isLoading: loadingAll } = useVaccineRemindersQuery(allPage);
+  const { data: duePageData, isLoading: loadingDue } = useDueVaccineRemindersQuery(duePage, 30);
+  const { data: patients = [] } = usePatientsListQuery();
+  const loading = loadingAll || loadingDue;
 
-  useEffect(() => {
-    fetchAll();
-  }, [allPage, duePage]);
+  const allReminders = allPageData?.items ?? [];
+  const allTotal = allPageData?.total ?? 0;
+  const allTotalPages = allPageData?.totalPages ?? 1;
+  const dueSoon = duePageData?.items ?? [];
+  const dueTotal = duePageData?.total ?? 0;
+  const dueTotalPages = duePageData?.totalPages ?? 1;
+
+  const createReminder = useCreateVaccineReminderMutation();
 
   const onSubmit = async (values: VaccineFormValues) => {
     try {
-      await api.post('/vaccine/reminders', values);
+      const payload: VaccineReminderPayload = values;
+      await createReminder.mutateAsync(payload);
       toast.success('Lembrete criado');
       setModalOpen(false);
       reset();
-      fetchAll();
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao criar'));
     }

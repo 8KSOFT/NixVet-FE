@@ -9,41 +9,35 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { useForm, Controller } from 'react-hook-form';
-import { Plus, Pencil, Trash2, Loader2, DollarSign, X, Check } from 'lucide-react';
+import { Plus, Pencil, Trash2, Loader2, DollarSign, X, Check, EyeOff } from 'lucide-react';
 import { getApiErrorMessage } from '@/app/utils/api-error-message';
-import api from '@/lib/axios';
-import { API_PAGE_SIZE, fetchAllListPages, listQueryParams, parseListResponse } from '@/lib/pagination';
+import { API_PAGE_SIZE } from '@/lib/pagination';
 import { ListPagination } from '@/components/list-pagination';
-
-interface Category {
-  id: number;
-  name: string;
-}
-
-interface SurgicalProcedure {
-  id: number;
-  name: string;
-  surgical_procedure_category_id?: number;
-  surgical_procedure_category?: Category;
-  private_price?: number | null;
-  cost_price?: number | null;
-  tax_percentage?: number | null;
-}
-
-interface HealthPlan {
-  id: string;
-  name: string;
-}
-
-interface PlanPrice {
-  id: string;
-  health_plan_id: string;
-  health_plan_name: string | null;
-  plan_price: number;
-  reimbursement: number;
-}
+import {
+  useSurgicalProcedureCategoriesQuery,
+  useSurgicalProceduresPagedQuery,
+  useCreateSurgicalProcedureMutation,
+  useUpdateSurgicalProcedureMutation,
+  useDeleteSurgicalProcedureMutation,
+  useSurgicalProcedurePlanPricesQuery,
+  useSaveSurgicalProcedurePlanPriceMutation,
+  useDeleteSurgicalProcedurePlanPriceMutation,
+} from '@/hooks/apiHooks/useSurgicalProcedures';
+import { useHealthPlansListQuery } from '@/hooks/apiHooks/useHealthPlans';
+import type { SurgicalProcedure } from '@/app/types/surgical-procedure';
 
 type FormValues = {
   name: string;
@@ -58,6 +52,11 @@ function fmtBRL(v?: number | null) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
 }
 
+/** Itens base do catálogo global não têm tenant_id — só a clínica dona de um item personalizado pode editá-lo/excluí-lo. */
+function isBaseProcedure(procedure: SurgicalProcedure) {
+  return procedure.tenant_id == null;
+}
+
 function PlanPricesDialog({
   procedure,
   open,
@@ -67,44 +66,27 @@ function PlanPricesDialog({
   open: boolean;
   onClose: () => void;
 }) {
-  const [prices, setPrices] = useState<PlanPrice[]>([]);
-  const [plans, setPlans] = useState<HealthPlan[]>([]);
-  const [loading, setLoading] = useState(false);
   const [addMode, setAddMode] = useState(false);
   const [newPlanId, setNewPlanId] = useState('');
   const [newPlanPrice, setNewPlanPrice] = useState('');
   const [newReimbursement, setNewReimbursement] = useState('');
-  const [saving, setSaving] = useState(false);
 
-  const load = async () => {
-    setLoading(true);
-    try {
-      const [priceRes, planRes] = await Promise.all([
-        api.get(`/catalog/surgical-procedures/${procedure.id}/plan-prices`),
-        api.get('/health-plans', { params: { limit: 200 } }),
-      ]);
-      setPrices(priceRes.data);
-      const planData = planRes.data?.items ?? planRes.data?.data ?? planRes.data ?? [];
-      setPlans(Array.isArray(planData) ? planData : []);
-    } catch {
-      toast.error('Erro ao carregar preços por convênio');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: prices = [], isLoading: loading } = useSurgicalProcedurePlanPricesQuery(procedure.id, open);
+  const { data: plans = [] } = useHealthPlansListQuery();
+  const saveMutation = useSaveSurgicalProcedurePlanPriceMutation(procedure.id);
+  const deleteMutation = useDeleteSurgicalProcedurePlanPriceMutation(procedure.id);
+  const saving = saveMutation.isPending;
 
   useEffect(() => {
     if (open) {
-      void load();
       setAddMode(false);
     }
   }, [open]);
 
   const handleSaveNew = async () => {
     if (!newPlanId || !newPlanPrice) return;
-    setSaving(true);
     try {
-      await api.put(`/catalog/surgical-procedures/${procedure.id}/plan-prices`, {
+      await saveMutation.mutateAsync({
         health_plan_id: newPlanId,
         plan_price: parseFloat(newPlanPrice),
         reimbursement: newReimbursement ? parseFloat(newReimbursement) : 0,
@@ -114,19 +96,15 @@ function PlanPricesDialog({
       setNewPlanId('');
       setNewPlanPrice('');
       setNewReimbursement('');
-      void load();
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao salvar'));
-    } finally {
-      setSaving(false);
     }
   };
 
   const handleDelete = async (healthPlanId: string) => {
     try {
-      await api.delete(`/catalog/surgical-procedures/${procedure.id}/plan-prices/${healthPlanId}`);
+      await deleteMutation.mutateAsync(healthPlanId);
       toast.success('Removido');
-      void load();
     } catch {
       toast.error('Erro ao remover');
     }
@@ -251,48 +229,20 @@ function PlanPricesDialog({
 }
 
 export default function SettingsSurgicalProceduresPage() {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [list, setList] = useState<SurgicalProcedure[]>([]);
-  const [loading, setLoading] = useState(false);
   const [listPage, setListPage] = useState(1);
-  const [listTotal, setListTotal] = useState(0);
-  const [listTotalPages, setListTotalPages] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [planPricesFor, setPlanPricesFor] = useState<SurgicalProcedure | null>(null);
   const { register, handleSubmit, reset, control, formState: { errors } } = useForm<FormValues>();
 
-  const fetchCategories = async () => {
-    try {
-      const rows = await fetchAllListPages<Category>('/catalog/surgical-procedure-categories');
-      setCategories(rows);
-    } catch {
-      toast.error('Erro ao carregar categorias');
-    }
-  };
-
-  const fetchProcedures = async () => {
-    setLoading(true);
-    try {
-      const res = await api.get('/catalog/surgical-procedures', { params: listQueryParams(listPage) });
-      const p = parseListResponse<SurgicalProcedure>(res.data, listPage);
-      setList(p.items);
-      setListTotal(p.total);
-      setListTotalPages(p.totalPages);
-    } catch {
-      toast.error('Erro ao carregar procedimentos');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    void fetchCategories();
-  }, []);
-
-  useEffect(() => {
-    void fetchProcedures();
-  }, [listPage]);
+  const { data: categories = [] } = useSurgicalProcedureCategoriesQuery();
+  const { data, isLoading: loading } = useSurgicalProceduresPagedQuery(listPage);
+  const list = data?.items ?? [];
+  const listTotal = data?.total ?? 0;
+  const listTotalPages = data?.totalPages ?? 1;
+  const createMutation = useCreateSurgicalProcedureMutation();
+  const updateMutation = useUpdateSurgicalProcedureMutation();
+  const deleteMutation = useDeleteSurgicalProcedureMutation();
 
   const openCreate = () => {
     setEditingId(null);
@@ -302,7 +252,7 @@ export default function SettingsSurgicalProceduresPage() {
 
   const openEdit = (row: SurgicalProcedure) => {
     setEditingId(row.id);
-    const catId = row.surgical_procedure_category_id ?? row.surgical_procedure_category?.id;
+    const catId = row.category_id ?? row.category?.id;
     reset({
       name: row.name,
       category_id: catId ? String(catId) : undefined,
@@ -315,9 +265,12 @@ export default function SettingsSurgicalProceduresPage() {
 
   const handleDelete = async (id: number) => {
     try {
-      await api.delete(`/catalog/surgical-procedures/${id}`);
-      toast.success('Removido');
-      void fetchProcedures();
+      const result = await deleteMutation.mutateAsync(id);
+      toast.success(
+        result.action === 'hidden_base'
+          ? 'Procedimento base ocultado para sua clínica'
+          : 'Procedimento removido',
+      );
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao remover'));
     }
@@ -333,14 +286,13 @@ export default function SettingsSurgicalProceduresPage() {
     };
     try {
       if (editingId) {
-        await api.put(`/catalog/surgical-procedures/${editingId}`, payload);
+        await updateMutation.mutateAsync({ id: editingId, payload });
         toast.success('Atualizado');
       } else {
-        await api.post('/catalog/surgical-procedures', payload);
+        await createMutation.mutateAsync(payload);
         toast.success('Criado');
       }
       setModalOpen(false);
-      void fetchProcedures();
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao salvar'));
     }
@@ -365,6 +317,7 @@ export default function SettingsSurgicalProceduresPage() {
                   <TableRow className="border-b border-gray-300 h-15">
                     <TableHead>Nome</TableHead>
                     <TableHead>Categoria</TableHead>
+                    <TableHead>Origem</TableHead>
                     <TableHead>Particular</TableHead>
                     <TableHead>Custo</TableHead>
                     <TableHead>Margem</TableHead>
@@ -377,10 +330,16 @@ export default function SettingsSurgicalProceduresPage() {
                       r.private_price && r.cost_price && r.private_price > 0
                         ? ((r.private_price - r.cost_price) / r.private_price * 100).toFixed(0) + '%'
                         : '—';
+                    const isBase = isBaseProcedure(r);
                     return (
                       <TableRow className="border-b border-gray-300 h-15" key={r.id}>
                         <TableCell>{r.name}</TableCell>
-                        <TableCell>{r.surgical_procedure_category?.name ?? r.surgical_procedure_category_id ?? '—'}</TableCell>
+                        <TableCell>{r.category?.name ?? r.category_id ?? '—'}</TableCell>
+                        <TableCell>
+                          <Badge variant={isBase ? 'outline' : 'secondary'}>
+                            {isBase ? 'Base' : 'Personalizado'}
+                          </Badge>
+                        </TableCell>
                         <TableCell>{fmtBRL(r.private_price)}</TableCell>
                         <TableCell>{fmtBRL(r.cost_price)}</TableCell>
                         <TableCell>
@@ -390,15 +349,44 @@ export default function SettingsSurgicalProceduresPage() {
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1">
-                            <Button variant="ghost" size="sm" onClick={() => openEdit(r)} title="Editar">
-                              <Pencil className="w-4 h-4" />
-                            </Button>
+                            {!isBase && (
+                              <Button variant="ghost" size="sm" onClick={() => openEdit(r)} title="Editar">
+                                <Pencil className="w-4 h-4" />
+                              </Button>
+                            )}
                             <Button variant="ghost" size="sm" onClick={() => setPlanPricesFor(r)} title="Preços por convênio">
                               <DollarSign className="w-4 h-4 text-blue-500" />
                             </Button>
-                            <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" onClick={() => handleDelete(r.id)}>
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-red-600 hover:text-red-700"
+                                  title={isBase ? 'Ocultar para minha clínica' : 'Remover'}
+                                >
+                                  {isBase ? <EyeOff className="w-4 h-4" /> : <Trash2 className="w-4 h-4" />}
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>
+                                    {isBase ? 'Ocultar este procedimento base?' : 'Remover este procedimento?'}
+                                  </AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    {isBase
+                                      ? 'O item continua disponível para as demais clínicas — apenas deixa de aparecer para a sua.'
+                                      : 'Esta ação não pode ser desfeita.'}
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDelete(r.id)}>
+                                    {isBase ? 'Ocultar' : 'Remover'}
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           </div>
                         </TableCell>
                       </TableRow>

@@ -1,16 +1,7 @@
 'use client';
 
-import React, { Suspense, useCallback, useEffect, useState } from 'react';
-import type {
-  ConsultationOption,
-  CreateExamRequestPayload,
-  ExamAreaOption,
-  ExamOption,
-  ExamPatientOption,
-  ExamRequest,
-  ExamRequestFormValues,
-  StoredUser,
-} from '@/app/types/exam-request';
+import React, { Suspense, useEffect, useMemo, useState } from 'react';
+import type { CreateExamRequestPayload, ExamRequest, ExamRequestFormValues, StoredUser } from '@/app/types/exam-request';
 import { DashboardCreateFormDialog } from '@/components/dashboard-create-form-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,26 +14,30 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { useForm, Controller } from 'react-hook-form';
 import { Plus, Loader2, X, FileText, Mail } from 'lucide-react';
-import api from '@/lib/axios';
-import { API_PAGE_SIZE, fetchAllListPages, listQueryParams, parseListResponse } from '@/lib/pagination';
+import { API_PAGE_SIZE } from '@/lib/pagination';
 import { ListPagination } from '@/components/list-pagination';
 import dayjs from 'dayjs';
 import { useSearchParams } from 'next/navigation';
+import {
+  useCreateExamRequestMutation,
+  useDownloadExamRequestPdfMutation,
+  useExamRequestsQuery,
+  useSendExamRequestEmailMutation,
+} from '@/hooks/apiHooks/useExamRequests';
+import {
+  useCreateExamCatalogItemMutation,
+  useExamAreasQuery,
+  useExamCatalogQuery,
+} from '@/hooks/apiHooks/useExamCatalog';
+import { usePatientsListQuery } from '@/hooks/apiHooks/usePatients';
+import { useConsultationsQuery } from '@/hooks/apiHooks/useConsultations';
 
 function ExamRequestsContent() {
   const searchParams = useSearchParams();
   const preselectedPatientId = searchParams?.get('patientId') ?? null;
 
-  const [examRequests, setExamRequests] = useState<ExamRequest[]>([]);
-  const [loading, setLoading] = useState(false);
   const [listPage, setListPage] = useState(1);
-  const [listTotal, setListTotal] = useState(0);
-  const [listTotalPages, setListTotalPages] = useState(1);
   const [modalVisible, setModalVisible] = useState(false);
-  const [patients, setPatients] = useState<ExamPatientOption[]>([]);
-  const [consultationsByPatient, setConsultationsByPatient] = useState<ConsultationOption[]>([]);
-  const [examsFromCatalog, setExamsFromCatalog] = useState<ExamOption[]>([]);
-  const [examAreas, setExamAreas] = useState<ExamAreaOption[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
   const [selectedExams, setSelectedExams] = useState<string[]>([]);
   const [examInput, setExamInput] = useState('');
@@ -50,70 +45,29 @@ function ExamRequestsContent() {
 
   const { control, handleSubmit, reset, setValue } = useForm<ExamRequestFormValues>();
 
-  const fetchExamRequests = useCallback(async () => {
-    setLoading(true);
-    try {
-      const response = await api.get('/exam-requests', {
-        params: listQueryParams(listPage),
-      });
-      const p = parseListResponse<ExamRequest>(response.data, listPage);
-      setExamRequests(p.items);
-      setListTotal(p.total);
-      setListTotalPages(p.totalPages);
-    } catch {
-      toast.error('Erro ao carregar solicitações de exames');
-    } finally {
-      setLoading(false);
-    }
-  }, [listPage]);
+  const { data: examRequestsPage, isLoading: loading } = useExamRequestsQuery(listPage);
+  const examRequests = examRequestsPage?.items ?? [];
+  const listTotal = examRequestsPage?.total ?? 0;
+  const listTotalPages = examRequestsPage?.totalPages ?? 1;
 
-  const fetchPatients = async () => {
-    try {
-      setPatients(await fetchAllListPages<ExamPatientOption>('/patients'));
-    } catch (error) {
-      console.error(error);
-    }
-  };
+  const { data: patients = [] } = usePatientsListQuery();
+  const { data: allConsultations = [] } = useConsultationsQuery();
+  const { data: examsFromCatalog = [] } = useExamCatalogQuery();
+  const { data: examAreas = [] } = useExamAreasQuery();
+  const consultationsByPatient = useMemo(
+    () => (selectedPatientId ? allConsultations.filter((c) => c.patient?.id === selectedPatientId) : []),
+    [allConsultations, selectedPatientId],
+  );
 
-  const fetchExamsAndAreas = async () => {
-    try {
-      const [exams, areas] = await Promise.all([
-        fetchAllListPages<ExamOption>('/catalog/exams'),
-        fetchAllListPages<ExamAreaOption>('/catalog/exam-areas'),
-      ]);
-      setExamsFromCatalog(exams);
-      setExamAreas(areas);
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  const fetchConsultationsForPatient = async (patientId: string) => {
-    try {
-      const raw = await fetchAllListPages<ConsultationOption>('/consultations');
-      const all = (raw ?? []).filter(
-        (consultation) => consultation.patient_id === patientId || consultation.patient?.id === patientId,
-      );
-      setConsultationsByPatient(all);
-    } catch {
-      setConsultationsByPatient([]);
-    }
-  };
-
-  useEffect(() => {
-    fetchPatients();
-    fetchExamsAndAreas();
-  }, []);
-
-  useEffect(() => {
-    void fetchExamRequests();
-  }, [fetchExamRequests]);
+  const createExamRequest = useCreateExamRequestMutation();
+  const downloadPdf = useDownloadExamRequestPdfMutation();
+  const sendEmailMutation = useSendExamRequestEmailMutation();
+  const createExamCatalogItem = useCreateExamCatalogItemMutation();
 
   useEffect(() => {
     if (preselectedPatientId && modalVisible) {
       setValue('patient_id', preselectedPatientId);
       setSelectedPatientId(preselectedPatientId);
-      fetchConsultationsForPatient(preselectedPatientId);
     }
   }, [modalVisible, preselectedPatientId, setValue]);
 
@@ -121,11 +75,9 @@ function ExamRequestsContent() {
     reset();
     setSelectedPatientId(null);
     setSelectedExams([]);
-    setConsultationsByPatient([]);
     if (preselectedPatientId) {
       setValue('patient_id', preselectedPatientId);
       setSelectedPatientId(preselectedPatientId);
-      fetchConsultationsForPatient(preselectedPatientId);
     }
     setModalVisible(true);
   };
@@ -134,16 +86,12 @@ function ExamRequestsContent() {
     setSelectedPatientId(patientId || null);
     setValue('consultation_id', undefined);
     setValue('request_date', undefined);
-    if (patientId) fetchConsultationsForPatient(patientId);
-    else setConsultationsByPatient([]);
   };
 
   const handleDownloadPdf = async (id: string) => {
     try {
-      const response = await api.get(`/exam-requests/${id}/pdf`, {
-        responseType: 'blob',
-      });
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const blob = await downloadPdf.mutateAsync(id);
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', `exames-${id}.pdf`);
@@ -181,10 +129,7 @@ function ExamRequestsContent() {
         const trimmed = name.trim();
         if (trimmed && !catalogNames.has(trimmed) && defaultAreaId) {
           try {
-            await api.post('/catalog/exams', {
-              name: trimmed,
-              area_id: defaultAreaId,
-            });
+            await createExamCatalogItem.mutateAsync({ name: trimmed, areaId: defaultAreaId });
             catalogNames.add(trimmed);
           } catch {
             console.warn('Não foi possível adicionar exame ao catálogo:', trimmed);
@@ -205,11 +150,9 @@ function ExamRequestsContent() {
         payload.request_date = values.request_date ? dayjs(values.request_date).format('YYYY-MM-DD') : null;
       }
 
-      await api.post('/exam-requests', payload);
+      await createExamRequest.mutateAsync(payload);
       toast.success('Solicitação gerada com sucesso');
       setModalVisible(false);
-      fetchExamRequests();
-      fetchExamsAndAreas();
     } catch {
       toast.error('Erro ao gerar solicitação');
     }
@@ -228,7 +171,7 @@ function ExamRequestsContent() {
   const handleSendEmail = async () => {
     if (!selectedExamRequest) return;
     try {
-      await api.post(`/exam-requests/${selectedExamRequest.id}/email`);
+      await sendEmailMutation.mutateAsync(selectedExamRequest.id);
       toast.success('Email enviado com sucesso');
       setEmailModalVisible(false);
     } catch {
@@ -246,15 +189,11 @@ function ExamRequestsContent() {
       return;
     }
     try {
-      await api.post('/catalog/exams', {
-        name: newExamName.trim(),
-        area_id: Number(newExamAreaId),
-      });
+      await createExamCatalogItem.mutateAsync({ name: newExamName.trim(), areaId: Number(newExamAreaId) });
       toast.success('Exame adicionado ao catálogo da clínica');
       setAddExamModalVisible(false);
       setNewExamName('');
       setNewExamAreaId('');
-      fetchExamsAndAreas();
     } catch {
       toast.error('Erro ao adicionar exame');
     }

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Plus, FileText, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -31,26 +31,14 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import api from '@/lib/axios';
-import { fetchAllListPages } from '@/lib/pagination';
 import { toast } from 'sonner';
-
-type TermType = 'no_medical_discharge' | 'hospitalization_refusal';
-
-interface ClinicalTerm {
-  id: string;
-  type: TermType;
-  patient_id: string | null;
-  responsible_name: string;
-  responsible_document: string | null;
-  reason: string | null;
-  created_at: string;
-}
-
-interface Patient {
-  id: string;
-  name: string;
-}
+import {
+  useClinicalTermsQuery,
+  useCreateClinicalTermMutation,
+  useClinicalTermPdfMutation,
+} from '@/hooks/apiHooks/useClinicalTerms';
+import { usePatientsListQuery } from '@/hooks/apiHooks/usePatients';
+import type { ClinicalTermType as TermType } from '@/app/types/clinical-term';
 
 const TYPE_LABELS: Record<TermType, string> = {
   no_medical_discharge: 'Saída sem alta médica',
@@ -66,37 +54,19 @@ const EMPTY = {
 };
 
 export default function TermosPage() {
-  const [terms, setTerms] = useState<ClinicalTerm[]>([]);
-  const [patients, setPatients] = useState<Patient[]>([]);
-  const [loading, setLoading] = useState(true);
   const [dialog, setDialog] = useState(false);
   const [form, setForm] = useState({ ...EMPTY });
-  const [saving, setSaving] = useState(false);
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [termsRes, pts] = await Promise.all([
-        api.get<ClinicalTerm[]>('/clinical-terms'),
-        fetchAllListPages<Patient>('/patients'),
-      ]);
-      setTerms(Array.isArray(termsRes.data) ? termsRes.data : []);
-      setPatients(pts);
-    } catch {
-      toast.error('Erro ao carregar termos');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  const { data: terms = [], isLoading: loading } = useClinicalTermsQuery();
+  const { data: patients = [] } = usePatientsListQuery();
+  const createMutation = useCreateClinicalTermMutation();
+  const pdfMutation = useClinicalTermPdfMutation();
+  const saving = createMutation.isPending;
 
   const downloadPdf = async (id: string) => {
     try {
-      const res = await api.get(`/clinical-terms/${id}/pdf`, { responseType: 'blob' });
-      const url = URL.createObjectURL(res.data as Blob);
+      const blob = await pdfMutation.mutateAsync(id);
+      const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = `termo-${id}.pdf`;
@@ -112,9 +82,8 @@ export default function TermosPage() {
       toast.error('Informe o nome do responsável');
       return;
     }
-    setSaving(true);
     try {
-      const res = await api.post<ClinicalTerm>('/clinical-terms', {
+      const created = await createMutation.mutateAsync({
         type: form.type,
         patient_id: form.patient_id || undefined,
         responsible_name: form.responsible_name.trim(),
@@ -124,12 +93,9 @@ export default function TermosPage() {
       toast.success('Termo criado');
       setDialog(false);
       setForm({ ...EMPTY });
-      await fetchData();
-      if (res.data?.id) downloadPdf(res.data.id);
+      if (created?.id) downloadPdf(created.id);
     } catch {
       toast.error('Erro ao criar termo');
-    } finally {
-      setSaving(false);
     }
   };
 

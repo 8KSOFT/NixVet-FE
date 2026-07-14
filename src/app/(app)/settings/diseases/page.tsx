@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,66 +12,33 @@ import { toast } from 'sonner';
 import { useForm, Controller } from 'react-hook-form';
 import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
 import { getApiErrorMessage } from '@/app/utils/api-error-message';
-import api from '@/lib/axios';
-import { API_PAGE_SIZE, fetchAllListPages, listQueryParams, parseListResponse } from '@/lib/pagination';
+import { API_PAGE_SIZE } from '@/lib/pagination';
 import { ListPagination } from '@/components/list-pagination';
-
-interface Category {
-  id: number;
-  name: string;
-}
-
-interface Disease {
-  id: number;
-  name: string;
-  disease_category_id?: number;
-  disease_category?: Category;
-}
+import {
+  useDiseaseCategoriesQuery,
+  useDiseasesPagedQuery,
+  useCreateDiseaseMutation,
+  useUpdateDiseaseMutation,
+  useDeleteDiseaseMutation,
+} from '@/hooks/apiHooks/useDiseases';
+import type { Disease } from '@/app/types/disease';
 
 type FormValues = { name: string; category_id?: string };
 
 export default function SettingsDiseasesPage() {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [list, setList] = useState<Disease[]>([]);
-  const [loading, setLoading] = useState(false);
   const [listPage, setListPage] = useState(1);
-  const [listTotal, setListTotal] = useState(0);
-  const [listTotalPages, setListTotalPages] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const { register, handleSubmit, reset, control, formState: { errors } } = useForm<FormValues>();
 
-  const fetchCategories = async () => {
-    try {
-      const rows = await fetchAllListPages<Category>('/catalog/disease-categories');
-      setCategories(rows);
-    } catch {
-      toast.error('Erro ao carregar categorias');
-    }
-  };
-
-  const fetchDiseases = async () => {
-    setLoading(true);
-    try {
-      const res = await api.get('/catalog/diseases', { params: listQueryParams(listPage) });
-      const p = parseListResponse<Disease>(res.data, listPage);
-      setList(p.items);
-      setListTotal(p.total);
-      setListTotalPages(p.totalPages);
-    } catch {
-      toast.error('Erro ao carregar doenças');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    void fetchCategories();
-  }, []);
-
-  useEffect(() => {
-    void fetchDiseases();
-  }, [listPage]);
+  const { data: categories = [] } = useDiseaseCategoriesQuery();
+  const { data, isLoading: loading } = useDiseasesPagedQuery(listPage);
+  const list = data?.items ?? [];
+  const listTotal = data?.total ?? 0;
+  const listTotalPages = data?.totalPages ?? 1;
+  const createMutation = useCreateDiseaseMutation();
+  const updateMutation = useUpdateDiseaseMutation();
+  const deleteMutation = useDeleteDiseaseMutation();
 
   const openCreate = () => {
     setEditingId(null);
@@ -88,9 +55,8 @@ export default function SettingsDiseasesPage() {
 
   const handleDelete = async (id: number) => {
     try {
-      await api.delete(`/catalog/diseases/${id}`);
+      await deleteMutation.mutateAsync(id);
       toast.success('Removido');
-      void fetchDiseases();
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao remover'));
     }
@@ -103,14 +69,13 @@ export default function SettingsDiseasesPage() {
     };
     try {
       if (editingId) {
-        await api.put(`/catalog/diseases/${editingId}`, payload);
+        await updateMutation.mutateAsync({ id: editingId, payload });
         toast.success('Atualizado');
       } else {
-        await api.post('/catalog/diseases', payload);
+        await createMutation.mutateAsync(payload);
         toast.success('Criado');
       }
       setModalOpen(false);
-      void fetchDiseases();
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao salvar'));
     }

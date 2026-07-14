@@ -1,12 +1,17 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
   ArrowLeft, ShieldCheck, ShieldOff, Loader2, Save, KeyRound, MessageCircle,
 } from 'lucide-react';
-import api from '@/lib/axios';
+import {
+  useSuperadminTenantQuery,
+  usePatchSuperadminTenantMutation,
+  useResetSuperadminTenantAdminPasswordMutation,
+  useProvisionSuperadminWhatsappMutation,
+} from '@/hooks/apiHooks/useSuperadminTenants';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,25 +22,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
-
-type ClinicDetail = {
-  id: string;
-  name: string;
-  code: string;
-  email: string | null;
-  phone: string | null;
-  address: string | null;
-  cpf_cnpj: string | null;
-  billing_plan: string | null;
-  subscription_status: string | null;
-  trial_ends_at: string | null;
-  cancel_at: string | null;
-  whatsapp_ai_chatbot_enabled: boolean;
-  ai_platform_enabled: boolean;
-  createdAt?: string;
-  admin_email?: string | null;
-  admin_name?: string | null;
-};
 
 const PLAN_OPTIONS = [
   { value: 'essencial', label: 'Essencial — R$179/mês' },
@@ -62,83 +48,67 @@ export default function ClinicDetailPage() {
   const id = typeof params?.id === 'string' ? params.id : '';
   const router = useRouter();
 
-  const [clinic, setClinic] = useState<ClinicDetail | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data: clinic, isLoading: loading, error } = useSuperadminTenantQuery(id);
+  const patchMutation = usePatchSuperadminTenantMutation();
+  const resetPasswordMutation = useResetSuperadminTenantAdminPasswordMutation();
+  const provisionMutation = useProvisionSuperadminWhatsappMutation();
+  const savingPlan = patchMutation.isPending;
+  const resetting = resetPasswordMutation.isPending;
+  const whatsappProvisioning = provisionMutation.isPending;
 
   const [plan, setPlan] = useState('');
-  const [savingPlan, setSavingPlan] = useState(false);
 
   const [resetOpen, setResetOpen] = useState(false);
   const [newPassword, setNewPassword] = useState('');
-  const [resetting, setResetting] = useState(false);
 
-  const [whatsappProvisioning, setWhatsappProvisioning] = useState(false);
   const [whatsappOpen, setWhatsappOpen] = useState(false);
 
-  const load = useCallback(async () => {
-    if (!id) {
-      setLoading(false);
-      toast.error('Clínica inválida');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const { data } = await api.get<ClinicDetail>(`/superadmin/tenants/${id}`);
-      setClinic(data);
-      setPlan(data.billing_plan ?? 'essencial');
-    } catch {
-      toast.error('Falha ao carregar dados da clínica');
-    } finally {
-      setLoading(false);
-    }
+  useEffect(() => {
+    if (!id) toast.error('Clínica inválida');
   }, [id]);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    if (error) toast.error('Falha ao carregar dados da clínica');
+  }, [error]);
+
+  useEffect(() => {
+    if (clinic) setPlan(clinic.billing_plan ?? 'essencial');
+  }, [clinic]);
 
   const patch = async (payload: Record<string, unknown>, successMsg?: string) => {
     try {
-      await api.patch(`/superadmin/tenants/${id}`, payload);
+      await patchMutation.mutateAsync({ id, payload });
       toast.success(successMsg ?? 'Atualizado');
-      await load();
     } catch {
       toast.error('Falha ao atualizar');
     }
   };
 
   const savePlan = async () => {
-    setSavingPlan(true);
     try {
-      await api.patch(`/superadmin/tenants/${id}`, { billing_plan: plan });
+      await patchMutation.mutateAsync({ id, payload: { billing_plan: plan } });
       toast.success('Plano atualizado');
-      await load();
     } catch {
       toast.error('Falha ao salvar plano');
-    } finally {
-      setSavingPlan(false);
     }
   };
 
   const submitReset = async () => {
     if (newPassword.trim().length < 8) { toast.error('Senha mínimo 8 caracteres'); return; }
-    setResetting(true);
     try {
-      await api.post(`/superadmin/tenants/${id}/reset-admin-password`, { newPassword: newPassword.trim() });
+      await resetPasswordMutation.mutateAsync({ id, payload: { newPassword: newPassword.trim() } });
       toast.success('Senha redefinida');
       setResetOpen(false);
       setNewPassword('');
     } catch { toast.error('Erro ao redefinir senha'); }
-    finally { setResetting(false); }
   };
 
   const submitProvision = async () => {
-    setWhatsappProvisioning(true);
     try {
-      await api.post('/whatsapp/provision', { tenantId: id, instanceName: `NixVet - ${clinic?.name}` });
+      await provisionMutation.mutateAsync({ tenantId: id, instanceName: `NixVet - ${clinic?.name}` });
       toast.success('Instância WhatsApp provisionada');
       setWhatsappOpen(false);
     } catch { toast.error('Erro ao provisionar WhatsApp'); }
-    finally { setWhatsappProvisioning(false); }
   };
 
   if (loading) {

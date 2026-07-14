@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
@@ -22,13 +22,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import api from "@/lib/axios";
-import {
-  API_PAGE_SIZE,
-  listQueryParams,
-  parseListResponse,
-} from "@/lib/pagination";
+import { API_PAGE_SIZE } from "@/lib/pagination";
 import { ListPagination } from "@/components/list-pagination";
+import {
+  useSuperadminTenantsQuery,
+  useCreateSuperadminTenantMutation,
+  usePatchSuperadminTenantMutation,
+  useResetSuperadminTenantAdminPasswordMutation,
+  useProvisionSuperadminWhatsappMutation,
+} from "@/hooks/apiHooks/useSuperadminTenants";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -59,22 +61,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useRouter } from "next/navigation";
 import { getStoredUserRole } from "@/lib/role-permissions";
-
-type ClinicRow = {
-  id: string;
-  name: string;
-  code: string;
-  email: string | null;
-  phone: string | null;
-  whatsapp_ai_chatbot_enabled: boolean;
-  ai_platform_enabled: boolean;
-  billing_plan: string | null;
-  subscription_status: string | null;
-  trial_ends_at: string | null;
-  cancel_at?: string | null;
-  admin_email: string | null;
-  admin_name: string | null;
-};
+import type { SuperadminTenantRow as ClinicRow } from "@/app/types/tenant";
 
 const PLAN_OPTIONS = [
   { value: "essencial", label: "Essencial — R$179/mês" },
@@ -144,55 +131,34 @@ const emptyCreate = () => ({
 export default function SuperadminClinicsPage() {
   const { t } = useTranslation("common");
   const router = useRouter();
-  const [rows, setRows] = useState<ClinicRow[]>([]);
-  const [loading, setLoading] = useState(true);
   const [listPage, setListPage] = useState(1);
-  const [listTotal, setListTotal] = useState(0);
-  const [listTotalPages, setListTotalPages] = useState(1);
 
   const [resetTenantId, setResetTenantId] = useState<string | null>(null);
   const [resetClinicName, setResetClinicName] = useState("");
   const [newPassword, setNewPassword] = useState("");
-  const [resetting, setResetting] = useState(false);
 
   const [createOpen, setCreateOpen] = useState(false);
   const [createForm, setCreateForm] = useState(emptyCreate());
-  const [creating, setCreating] = useState(false);
 
   const [editRow, setEditRow] = useState<ClinicRow | null>(null);
   const [editForm, setEditForm] = useState<Partial<ClinicRow>>({});
-  const [editing, setEditing] = useState(false);
 
   // WhatsApp provisioning
   const [whatsappTenantId, setWhatsappTenantId] = useState<string | null>(null);
   const [whatsappClinicName, setWhatsappClinicName] = useState("");
-  const [whatsappProvisioning, setWhatsappProvisioning] = useState(false);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const { data } = await api.get("/superadmin/tenants", {
-        params: listQueryParams(listPage),
-      });
-      const p = parseListResponse<ClinicRow>(data, listPage);
-      setRows(p.items);
-      setListTotal(p.total);
-      setListTotalPages(p.totalPages);
-    } catch (e: unknown) {
-      const err = e as { response?: { status?: number } };
-      if (err.response?.status === 403) {
-        toast.error(
-          "Apenas superadmin pode acessar. Faça logout e entre com uma conta superadmin.",
-        );
-        router.replace("/dashboard");
-        return;
-      }
-      toast.error("Falha ao carregar clínicas");
-      setRows([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [router, listPage]);
+  const { data, isLoading: loading, error } = useSuperadminTenantsQuery(listPage);
+  const rows = data?.items ?? [];
+  const listTotal = data?.total ?? 0;
+  const listTotalPages = data?.totalPages ?? 1;
+  const createMutation = useCreateSuperadminTenantMutation();
+  const patchMutation = usePatchSuperadminTenantMutation();
+  const resetPasswordMutation = useResetSuperadminTenantAdminPasswordMutation();
+  const provisionWhatsappMutation = useProvisionSuperadminWhatsappMutation();
+  const creating = createMutation.isPending;
+  const editing = patchMutation.isPending;
+  const resetting = resetPasswordMutation.isPending;
+  const whatsappProvisioning = provisionWhatsappMutation.isPending;
 
   useEffect(() => {
     const role = getStoredUserRole();
@@ -201,10 +167,21 @@ export default function SuperadminClinicsPage() {
         `Você está logado como "${role ?? "desconhecido"}". Faça logout e logue como superadmin.`,
       );
       router.replace("/dashboard");
+    }
+  }, [router]);
+
+  useEffect(() => {
+    if (!error) return;
+    const err = error as { response?: { status?: number } };
+    if (err.response?.status === 403) {
+      toast.error(
+        "Apenas superadmin pode acessar. Faça logout e entre com uma conta superadmin.",
+      );
+      router.replace("/dashboard");
       return;
     }
-    void load();
-  }, [load, router]);
+    toast.error("Falha ao carregar clínicas");
+  }, [error, router]);
 
   const openReset = (row: ClinicRow) => {
     setResetTenantId(row.id);
@@ -217,14 +194,11 @@ export default function SuperadminClinicsPage() {
       toast.error("Senha precisa ter no mínimo 8 caracteres");
       return;
     }
-    setResetting(true);
     try {
-      await api.post(
-        `/superadmin/tenants/${resetTenantId}/reset-admin-password`,
-        {
-          newPassword: newPassword.trim(),
-        },
-      );
+      await resetPasswordMutation.mutateAsync({
+        id: resetTenantId,
+        payload: { newPassword: newPassword.trim() },
+      });
       toast.success("Senha do admin redefinida");
       setResetTenantId(null);
     } catch (e: unknown) {
@@ -236,8 +210,6 @@ export default function SuperadminClinicsPage() {
         ? msg.join(" | ")
         : (msg as string) || "Erro";
       toast.error(text);
-    } finally {
-      setResetting(false);
     }
   };
 
@@ -246,9 +218,8 @@ export default function SuperadminClinicsPage() {
       toast.error("Informe nome e código");
       return;
     }
-    setCreating(true);
     try {
-      await api.post("/superadmin/tenants", {
+      await createMutation.mutateAsync({
         ...createForm,
         name: createForm.name.trim(),
         code: createForm.code.trim().toLowerCase(),
@@ -259,7 +230,6 @@ export default function SuperadminClinicsPage() {
       toast.success("Clínica criada");
       setCreateOpen(false);
       setCreateForm(emptyCreate());
-      await load();
     } catch (e: unknown) {
       const err = e as {
         response?: { data?: { message?: string | string[] } };
@@ -269,8 +239,6 @@ export default function SuperadminClinicsPage() {
         ? msg.join(" | ")
         : (msg as string) || "Erro ao criar";
       toast.error(text);
-    } finally {
-      setCreating(false);
     }
   };
 
@@ -292,9 +260,8 @@ export default function SuperadminClinicsPage() {
     payload: Record<string, unknown>,
   ) => {
     try {
-      await api.patch(`/superadmin/tenants/${tenantId}`, payload);
+      await patchMutation.mutateAsync({ id: tenantId, payload });
       toast.success("Atualizado");
-      await load();
     } catch {
       toast.error("Falha ao atualizar");
     }
@@ -302,12 +269,10 @@ export default function SuperadminClinicsPage() {
 
   const submitEdit = async () => {
     if (!editRow) return;
-    setEditing(true);
     try {
-      await api.patch(`/superadmin/tenants/${editRow.id}`, editForm);
+      await patchMutation.mutateAsync({ id: editRow.id, payload: editForm });
       toast.success("Clínica atualizada");
       setEditRow(null);
-      await load();
     } catch (e: unknown) {
       const err = e as {
         response?: { data?: { message?: string | string[] } };
@@ -317,16 +282,13 @@ export default function SuperadminClinicsPage() {
         ? msg.join(" | ")
         : (msg as string) || "Erro";
       toast.error(text);
-    } finally {
-      setEditing(false);
     }
   };
 
   const submitProvisionWhatsapp = async () => {
     if (!whatsappTenantId) return;
-    setWhatsappProvisioning(true);
     try {
-      await api.post("/whatsapp/provision", {
+      await provisionWhatsappMutation.mutateAsync({
         tenantId: whatsappTenantId,
         instanceName: `NixVet - ${whatsappClinicName}`,
       });
@@ -343,8 +305,6 @@ export default function SuperadminClinicsPage() {
         ? msg.join(" | ")
         : (msg as string) || "Erro ao provisionar";
       toast.error(text);
-    } finally {
-      setWhatsappProvisioning(false);
     }
   };
 
@@ -353,14 +313,10 @@ export default function SuperadminClinicsPage() {
     field: "whatsapp_ai_chatbot_enabled" | "ai_platform_enabled",
     value: boolean,
   ) => {
-    setRows((prev) =>
-      prev.map((r) => (r.id === row.id ? { ...r, [field]: value } : r)),
-    );
     try {
-      await api.patch(`/superadmin/tenants/${row.id}`, { [field]: value });
+      await patchMutation.mutateAsync({ id: row.id, payload: { [field]: value } });
     } catch {
       toast.error("Falha ao atualizar — recarregue");
-      await load();
     }
   };
 

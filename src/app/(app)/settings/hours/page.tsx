@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -27,8 +27,17 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { useForm, Controller } from 'react-hook-form';
 import { Plus, Trash2, Loader2, Pencil } from 'lucide-react';
-import api from '@/lib/axios';
-import { fetchAllListPages } from '@/lib/pagination';
+import {
+  useBusinessHoursQuery,
+  useSaveBusinessHoursBatchMutation,
+  useEmergencyHoursQuery,
+  useCreateEmergencyHourMutation,
+  useVetSchedulesQuery,
+  useCreateVetScheduleMutation,
+  useDeleteVetScheduleMutation,
+} from '@/hooks/apiHooks/useAvailabilityConfig';
+import { useVeterinariansQuery } from '@/hooks/apiHooks/useUsers';
+import type { BusinessHour, EmergencyHour, VetSchedule } from '@/app/types/availability';
 
 const DAYS = [
   { value: 0, label: 'Domingo' },
@@ -45,34 +54,6 @@ const SCHEDULE_TYPES = [
   { value: 'on_call', label: 'Plantão / Emergência' },
 ];
 
-interface BusinessHour {
-  id?: string;
-  day_of_week: number;
-  open_time: string | null;
-  close_time: string | null;
-  is_closed: boolean;
-  is_24h?: boolean;
-}
-
-interface EmergencyHour {
-  id?: string;
-  day_of_week: number;
-  start_time: string;
-  end_time: string;
-  is_active: boolean;
-}
-
-interface VetSchedule {
-  id: string;
-  user_id: string;
-  day_of_week: number;
-  start_time: string;
-  end_time: string;
-  slot_duration_minutes: number;
-  schedule_type: 'regular' | 'on_call';
-  user?: { name: string };
-}
-
 interface VetFormValues {
   user_id: string;
   start_time: string;
@@ -82,11 +63,16 @@ interface VetFormValues {
 }
 
 export default function SettingsHoursPage() {
-  const [businessHours, setBusinessHours] = useState<BusinessHour[]>([]);
-  const [emergencyHours, setEmergencyHours] = useState<EmergencyHour[]>([]);
-  const [vetSchedules, setVetSchedules] = useState<VetSchedule[]>([]);
-  const [veterinarians, setVeterinarians] = useState<{ id: string; name: string }[]>([]);
-  const [loading, setLoading] = useState(false);
+  const { data: businessHours = [], isLoading: loadingBusiness } = useBusinessHoursQuery();
+  const { data: emergencyHours = [], isLoading: loadingEmergency } = useEmergencyHoursQuery();
+  const { data: vetSchedules = [], isLoading: loadingVet } = useVetSchedulesQuery();
+  const { data: veterinarians = [] } = useVeterinariansQuery();
+  const loading = loadingBusiness || loadingEmergency || loadingVet;
+
+  const saveBusinessBatchMutation = useSaveBusinessHoursBatchMutation();
+  const createEmergencyMutation = useCreateEmergencyHourMutation();
+  const createVetScheduleMutation = useCreateVetScheduleMutation();
+  const deleteVetScheduleMutation = useDeleteVetScheduleMutation();
 
   // Business hours form state
   const [businessModalOpen, setBusinessModalOpen] = useState(false);
@@ -95,7 +81,7 @@ export default function SettingsHoursPage() {
   const [bhCloseTime, setBhCloseTime] = useState('18:00');
   const [bhIsClosed, setBhIsClosed] = useState(false);
   const [bhIs24h, setBhIs24h] = useState(false);
-  const [bhSaving, setBhSaving] = useState(false);
+  const bhSaving = saveBusinessBatchMutation.isPending;
 
   // Emergency hours form state
   const [emergencyModalOpen, setEmergencyModalOpen] = useState(false);
@@ -112,47 +98,6 @@ export default function SettingsHoursPage() {
   const vetForm = useForm<VetFormValues>({
     defaultValues: { user_id: '', start_time: '', end_time: '', slot_duration_minutes: 30, schedule_type: 'regular' },
   });
-
-  const fetchBusiness = async () => {
-    try {
-      const res = await api.get('/availability/config/business-hours');
-      setBusinessHours(res.data ?? []);
-    } catch {
-      toast.error('Erro ao carregar horário de funcionamento');
-    }
-  };
-
-  const fetchEmergency = async () => {
-    try {
-      const res = await api.get('/availability/config/emergency-hours');
-      setEmergencyHours(res.data ?? []);
-    } catch {
-      toast.error('Erro ao carregar horário de emergência');
-    }
-  };
-
-  const fetchVetSchedules = async () => {
-    try {
-      const res = await api.get('/availability/config/veterinarian-schedules');
-      setVetSchedules(res.data ?? []);
-    } catch {
-      toast.error('Erro ao carregar agendas');
-    }
-  };
-
-  const fetchVets = async () => {
-    try {
-      const list = await fetchAllListPages<{ id: string; name: string }>('/users/veterinarians');
-      setVeterinarians(list);
-    } catch {
-      toast.error('Erro ao carregar veterinários');
-    }
-  };
-
-  useEffect(() => {
-    setLoading(true);
-    Promise.all([fetchBusiness(), fetchEmergency(), fetchVetSchedules(), fetchVets()]).finally(() => setLoading(false));
-  }, []);
 
   // ── Business hours handlers ──
 
@@ -186,9 +131,8 @@ export default function SettingsHoursPage() {
       toast.error('Selecione ao menos um dia');
       return;
     }
-    setBhSaving(true);
     try {
-      await api.post('/availability/config/business-hours/batch', {
+      await saveBusinessBatchMutation.mutateAsync({
         days: bhSelectedDays,
         open_time: bhIsClosed ? undefined : bhIs24h ? '00:00' : bhOpenTime,
         close_time: bhIsClosed ? undefined : bhIs24h ? '23:59' : bhCloseTime,
@@ -197,11 +141,8 @@ export default function SettingsHoursPage() {
       });
       toast.success(bhSelectedDays.length > 1 ? `${bhSelectedDays.length} dias atualizados` : 'Salvo');
       setBusinessModalOpen(false);
-      fetchBusiness();
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao salvar'));
-    } finally {
-      setBhSaving(false);
     }
   };
 
@@ -235,7 +176,7 @@ export default function SettingsHoursPage() {
     const errors: string[] = [];
     for (const day of ehSelectedDays) {
       try {
-        await api.post('/availability/config/emergency-hours', {
+        await createEmergencyMutation.mutateAsync({
           day_of_week: day,
           start_time: ehStartTime,
           end_time: ehEndTime,
@@ -251,7 +192,6 @@ export default function SettingsHoursPage() {
       toast.success(ehSelectedDays.length > 1 ? `${ehSelectedDays.length} dias atualizados` : 'Salvo');
     }
     setEmergencyModalOpen(false);
-    fetchEmergency();
     setEhSaving(false);
   };
 
@@ -265,7 +205,7 @@ export default function SettingsHoursPage() {
     const errors: string[] = [];
     for (const day of vetSelectedDays) {
       try {
-        await api.post('/availability/config/veterinarian-schedules', {
+        await createVetScheduleMutation.mutateAsync({
           user_id: values.user_id,
           day_of_week: day,
           start_time: values.start_time,
@@ -285,14 +225,12 @@ export default function SettingsHoursPage() {
     setVetModalOpen(false);
     vetForm.reset();
     setVetSelectedDays([]);
-    fetchVetSchedules();
   };
 
   const handleDeleteVetSchedule = async (id: string) => {
     try {
-      await api.delete(`/availability/config/veterinarian-schedules/${id}`);
+      await deleteVetScheduleMutation.mutateAsync(id);
       toast.success('Removido');
-      fetchVetSchedules();
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao remover'));
     }

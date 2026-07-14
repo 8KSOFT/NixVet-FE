@@ -23,9 +23,15 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { useForm, Controller } from 'react-hook-form';
-import { Plus, Pencil, Trash2, Loader2, Users } from 'lucide-react';
-import api from '@/lib/axios';
-import { API_PAGE_SIZE, listQueryParams, parseListResponse } from '@/lib/pagination';
+import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
+import { API_PAGE_SIZE } from '@/lib/pagination';
+import {
+  useCreateUserMutation,
+  useDeleteUserMutation,
+  useStaffUsersQuery,
+  useUpdateUserMutation,
+  type UserPayload,
+} from '@/hooks/apiHooks/useUsers';
 import { ListPagination } from '@/components/list-pagination';
 import { getStoredUserRole } from '@/lib/role-permissions';
 import { useTranslation } from 'react-i18next';
@@ -51,14 +57,9 @@ function getApiErrorMessage(error: unknown, fallbackMessage: string): string {
 
 export default function TeamPage() {
   const { t } = useTranslation('common');
-  const [users, setUsers] = useState<TeamUserRow[]>([]);
-  const [loading, setLoading] = useState(false);
   const [listPage, setListPage] = useState(1);
-  const [listTotal, setListTotal] = useState(0);
-  const [listTotalPages, setListTotalPages] = useState(1);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [forbidden, setForbidden] = useState(false);
 
   const { register, handleSubmit, reset, control } = useForm<TeamUserFormValues>();
 
@@ -69,34 +70,22 @@ export default function TeamPage() {
     label: t(r.labelKey),
   }));
 
-  const fetchUsers = async () => {
-    setLoading(true);
-    setForbidden(false);
-    try {
-      const response = await api.get('/users/staff', {
-        params: listQueryParams(listPage),
-      });
-      const p = parseListResponse<TeamUserRow>(response.data, listPage);
-      setUsers(p.items);
-      setListTotal(p.total);
-      setListTotalPages(p.totalPages);
-    } catch (error: unknown) {
-      const statusCode = (error as ApiRequestError).response?.status;
-      if (statusCode === 403) {
-        setForbidden(true);
-        setUsers([]);
-      } else {
-        console.error('Error fetching users:', error);
-        toast.error(t('team.loadError'));
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: usersPage, isLoading: loading, error: usersError } = useStaffUsersQuery(listPage);
+  const forbidden = (usersError as ApiRequestError | null)?.response?.status === 403;
+  const users = forbidden ? [] : (usersPage?.items ?? []);
+  const listTotal = usersPage?.total ?? 0;
+  const listTotalPages = usersPage?.totalPages ?? 1;
+
+  const createUser = useCreateUserMutation();
+  const updateUser = useUpdateUserMutation();
+  const deleteUser = useDeleteUserMutation();
 
   useEffect(() => {
-    fetchUsers();
-  }, [listPage]);
+    if (usersError && (usersError as ApiRequestError).response?.status !== 403) {
+      console.error('Error fetching users:', usersError);
+      toast.error(t('team.loadError'));
+    }
+  }, [usersError, t]);
 
   const handleAdd = () => {
     setEditingId(null);
@@ -126,9 +115,8 @@ export default function TeamPage() {
 
   const handleDelete = async (id: string) => {
     try {
-      await api.delete(`/users/${id}`);
+      await deleteUser.mutateAsync(id);
       toast.success(t('team.removed'));
-      fetchUsers();
     } catch (error) {
       console.error('Error deleting user:', error);
       toast.error(t('team.removeError'));
@@ -137,17 +125,16 @@ export default function TeamPage() {
 
   const onSubmit = async (values: TeamUserFormValues) => {
     try {
-      const payload: Record<string, string> = { ...values };
+      const payload: UserPayload = { ...values };
       if (editingId) {
         if (!payload.password?.trim()) delete payload.password;
-        await api.put(`/users/${editingId}`, payload);
+        await updateUser.mutateAsync({ id: editingId, payload });
         toast.success(t('team.updated'));
       } else {
-        await api.post('/users', payload);
+        await createUser.mutateAsync(payload);
         toast.success(t('team.created'));
       }
       setModalVisible(false);
-      fetchUsers();
     } catch (error: unknown) {
       console.error('Error saving user:', error);
       toast.error(getApiErrorMessage(error, t('team.saveError')));

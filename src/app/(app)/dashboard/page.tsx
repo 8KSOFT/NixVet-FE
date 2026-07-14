@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useMemo } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,10 +14,11 @@ import {
 } from "@/components/ui/table";
 
 import { useTranslation } from "react-i18next";
-import api from "@/lib/axios";
-import { fetchAllListPages } from "@/lib/pagination";
 import { cn } from "@/lib/utils";
 import { MenuIconsColored } from "@/components/MenuIconsColored";
+import { useDashboardMetricsQuery } from "@/hooks/apiHooks/useDashboardMetrics";
+import { useConsultationsQuery } from "@/hooks/apiHooks/useConsultations";
+import { usePatientsListQuery } from "@/hooks/apiHooks/usePatients";
 
 export default function DashboardPage() {
   const { t, i18n } = useTranslation("common");
@@ -28,139 +29,86 @@ export default function DashboardPage() {
     return "pt-BR";
   }, [i18n.language]);
 
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({
-    appointmentsToday: 0,
-    newPatientsMonth: 0,
-    revenueMonth: 0,
-    cancelledThisMonth: 0,
-    vaccinesDue: 0,
-    examsAwaitingFollowup: 0,
-    unansweredConversations: 0,
-  });
-  const [recentAppointments, setRecentAppointments] = useState<
-    Array<{
-      key: string;
-      time: string;
-      date: string;
-      patient: string;
-      veterinarian: string;
-      status: string;
-      statusKey: string;
-    }>
-  >([]);
+  const { data: metrics, isLoading: loadingMetrics } = useDashboardMetricsQuery();
+  const { data: consultations = [], isLoading: loadingConsultations } = useConsultationsQuery();
+  const { data: patients = [], isLoading: loadingPatients } = usePatientsListQuery();
+  const loading = loadingMetrics || loadingConsultations || loadingPatients;
 
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      const [metricsRes, consultations, patients] = await Promise.all([
-        api.get("/metrics/dashboard"),
-        fetchAllListPages<{
-          consultation_date?: string;
-          status?: string;
-        }>("/consultations"),
-        fetchAllListPages<{ createdAt?: string }>("/patients"),
-      ]);
+  // Compara em data LOCAL (BRT), não UTC: toISOString() desloca o dia
+  // perto da virada e fazia a tabela "Atendimentos de hoje" ficar vazia.
+  const localYMD = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
-      const metrics = metricsRes.data as {
-        consultations_today: number;
-        vaccines_due: number;
-        exams_awaiting_followup: number;
-        unanswered_conversations: number;
-        monthly_revenue: number;
-      };
+  const stats = useMemo(() => {
+    const now = new Date();
+    const todayStr = localYMD(now);
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
 
-      const now = new Date();
-      // Compara em data LOCAL (BRT), não UTC: toISOString() desloca o dia
-      // perto da virada e fazia a tabela "Atendimentos de hoje" ficar vazia.
-      const localYMD = (d: Date) =>
-        `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-      const todayStr = localYMD(now);
-      const currentMonth = now.getMonth();
-      const currentYear = now.getFullYear();
+    const newPatientsMonth = patients.filter((p) => {
+      if (!p.createdAt) return false;
+      const d = new Date(p.createdAt);
+      return d.getFullYear() === currentYear && d.getMonth() === currentMonth;
+    }).length;
 
-      const newPatientsMonth = patients.filter((p: { createdAt?: string }) => {
-        if (!p.createdAt) return false;
-        const d = new Date(p.createdAt);
-        return d.getFullYear() === currentYear && d.getMonth() === currentMonth;
-      }).length;
+    const cancelledThisMonth = consultations.filter((c) => {
+      if (!c.consultation_date) return false;
+      const d = new Date(c.consultation_date);
+      return (
+        d.getFullYear() === currentYear &&
+        d.getMonth() === currentMonth &&
+        d <= now &&
+        c.status === "cancelled"
+      );
+    }).length;
 
-      const cancelledThisMonth = consultations.filter(
-        (c: { consultation_date?: string; status?: string }) => {
-          if (!c.consultation_date) return false;
-          const d = new Date(c.consultation_date);
-          return (
-            d.getFullYear() === currentYear &&
-            d.getMonth() === currentMonth &&
-            d <= now &&
-            c.status === "cancelled"
-          );
-        },
-      ).length;
+    return {
+      appointmentsToday: metrics?.consultations_today ?? 0,
+      newPatientsMonth,
+      revenueMonth: metrics?.monthly_revenue ?? 0,
+      cancelledThisMonth,
+      vaccinesDue: metrics?.vaccines_due ?? 0,
+      examsAwaitingFollowup: metrics?.exams_awaiting_followup ?? 0,
+      unansweredConversations: metrics?.unanswered_conversations ?? 0,
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [metrics, consultations, patients]);
 
-      setStats({
-        appointmentsToday: metrics.consultations_today,
-        newPatientsMonth,
-        revenueMonth: metrics.monthly_revenue,
-        cancelledThisMonth,
-        vaccinesDue: metrics.vaccines_due,
-        examsAwaitingFollowup: metrics.exams_awaiting_followup,
-        unansweredConversations: metrics.unanswered_conversations,
-      });
+  const recentAppointments = useMemo(() => {
+    const todayStr = localYMD(new Date());
 
-      type ConsultTodayRow = {
-        id: string;
-        consultation_date: string;
-        patient?: { name?: string };
-        veterinarian?: { name?: string };
-        status?: string;
-      };
+    const todayConsultations = consultations.filter((c) => {
+      const raw = c.consultation_date;
+      if (!raw) return false;
+      return localYMD(new Date(raw)) === todayStr;
+    });
 
-      const todayConsultations = consultations.filter(
-        (c: { consultation_date?: string }) => {
-          const raw = c.consultation_date;
-          if (!raw) return false;
-          const dateStr = localYMD(new Date(raw));
-          return dateStr === todayStr;
-        },
-      ) as ConsultTodayRow[];
+    const statusLabel = (status: string) => {
+      if (status === "cancelled") return t("consultation.status.cancelled");
+      if (status === "completed") return t("consultation.status.completed");
+      return t("consultation.status.scheduled");
+    };
 
-      const statusLabel = (status: string) => {
-        if (status === "cancelled") return t("consultation.status.cancelled");
-        if (status === "completed") return t("consultation.status.completed");
-        return t("consultation.status.scheduled");
-      };
-
-      const recent = todayConsultations
-        .sort(
-          (a, b) =>
-            new Date(b.consultation_date).getTime() -
-            new Date(a.consultation_date).getTime(),
-        )
-        .map((c) => ({
-          key: c.id,
-          time: new Date(c.consultation_date).toLocaleTimeString(locale, {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-          date: new Date(c.consultation_date).toLocaleDateString(locale),
-          patient: c.patient?.name || t("dashboardHome.na"),
-          veterinarian: c.veterinarian?.name || t("dashboardHome.na"),
-          status: statusLabel(c.status || "scheduled"),
-          statusKey: c.status || "scheduled",
-        }));
-
-      setRecentAppointments(recent);
-    } catch (error) {
-      console.error("Error loading dashboard:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, [locale, t]);
+    return todayConsultations
+      .sort(
+        (a, b) =>
+          new Date(b.consultation_date).getTime() -
+          new Date(a.consultation_date).getTime(),
+      )
+      .map((c) => ({
+        key: c.id,
+        time: new Date(c.consultation_date).toLocaleTimeString(locale, {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        date: new Date(c.consultation_date).toLocaleDateString(locale),
+        patient: c.patient?.name || t("dashboardHome.na"),
+        veterinarian: c.veterinarian?.name || t("dashboardHome.na"),
+        status: statusLabel(c.status || "scheduled"),
+        statusKey: c.status || "scheduled",
+      }));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [consultations, locale, t]);
 
   const statCards = useMemo(
     () => [

@@ -20,25 +20,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
-import api from '@/lib/axios';
 import { toast } from 'sonner';
-
-interface DRE {
-  gross_revenue: number;
-  deductions: number;
-  net_revenue: number;
-  operational_costs: number;
-  gross_profit: number;
-  breakdown: {
-    by_category: Record<string, number>;
-    by_payment_source: { particular: number; health_plan: number };
-    by_payment_method: Record<string, number>;
-  };
-}
-
-interface MonthlyDRE extends DRE {
-  period: string;
-}
+import { useDREQuery, useExportDREMutation, useMonthlyDREQuery } from '@/hooks/apiHooks/useFinancialReports';
 
 function fmt(n: number) {
   return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -108,34 +91,19 @@ export default function FinanceiroDREPage() {
   const [period, setPeriod] = useState(
     `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`,
   );
-  const [dre, setDRE] = useState<DRE | null>(null);
-  const [monthly, setMonthly] = useState<MonthlyDRE[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: dre, isLoading: loadingDRE, isError: dreError } = useDREQuery(period);
+  const { data: monthly = [], isLoading: loadingMonthly } = useMonthlyDREQuery();
+  const loading = loadingDRE || loadingMonthly;
+  const exportDRE = useExportDREMutation();
 
-  const fetchDRE = async () => {
-    setLoading(true);
-    try {
-      const [dreRes, monthlyRes] = await Promise.all([
-        api.get<DRE>(`/financial-reports/dre?period=${period}`),
-        api.get<MonthlyDRE[]>('/financial-reports/dre/monthly'),
-      ]);
-      setDRE(dreRes.data);
-      setMonthly(monthlyRes.data);
-    } catch {
-      toast.error('Erro ao carregar DRE');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => { fetchDRE(); }, [period]);
+  useEffect(() => {
+    if (dreError) toast.error('Erro ao carregar DRE');
+  }, [dreError]);
 
   const handleExport = async (format: 'pdf' | 'xlsx') => {
     try {
-      const res = await api.get(`/financial-reports/dre/export?period=${period}&format=${format}`, {
-        responseType: 'blob',
-      });
-      const url = URL.createObjectURL(res.data as Blob);
+      const blob = await exportDRE.mutateAsync({ period, format });
+      const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = `dre-${period}.${format === 'xlsx' ? 'csv' : 'txt'}`;

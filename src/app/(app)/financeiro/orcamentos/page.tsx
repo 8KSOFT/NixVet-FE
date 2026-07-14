@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Plus, FileText, CheckCircle, Eye, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,68 +11,18 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import api from '@/lib/axios';
-import { fetchAllListPages } from '@/lib/pagination';
 import { toast } from 'sonner';
+import { useProductsQuery } from '@/hooks/apiHooks/useProducts';
+import { usePatientsListQuery } from '@/hooks/apiHooks/usePatients';
+import { useVeterinariansQuery } from '@/hooks/apiHooks/useUsers';
+import {
+  useApproveBudgetMutation,
+  useBudgetsQuery,
+  useCreateBudgetMutation,
+  useDownloadBudgetPdfMutation,
+} from '@/hooks/apiHooks/useBudgets';
+import type { Budget, BudgetItem, BudgetItemType, BudgetPayload, BudgetType } from '@/app/types/budget';
 
-interface BudgetItem {
-  id: string;
-  item_type: string;
-  description: string;
-  quantity: number;
-  unit_price: number;
-  total_price: number;
-  covered_by_plan: boolean;
-  plan_coverage_amount: number;
-  reference_id?: string | null;
-  reference_type?: string | null;
-  unit_price_formatted?: string;
-  total_price_formatted?: string;
-  plan_coverage_amount_formatted?: string;
-}
-
-interface BudgetSummary {
-  currency: string;
-  total: number;
-  total_formatted: string;
-  plan_coverage: number;
-  plan_coverage_formatted: string;
-  tutor_responsibility: number;
-  tutor_responsibility_formatted: string;
-}
-
-interface Budget {
-  id: string;
-  type: string;
-  status: string;
-  valid_until: string | null;
-  notes: string | null;
-  patient: { id: string; name: string };
-  veterinarian: { id: string; name: string } | null;
-  items: BudgetItem[];
-  summary?: BudgetSummary;
-  created_at: string;
-}
-
-interface Patient {
-  id: string;
-  name: string;
-}
-
-interface User {
-  id: string;
-  name: string;
-}
-
-interface Product {
-  id: string;
-  name: string;
-  sale_price: number;
-  sale_price_formatted?: string;
-}
-
-type BudgetType = 'procedure' | 'hospitalization';
-type BudgetItemType = 'procedure' | 'product';
 type BudgetBadgeVariant = 'secondary' | 'default' | 'destructive';
 
 interface BudgetFormItem {
@@ -130,15 +80,6 @@ function fmt(n: number) {
   return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
-function getArrayResponseData<TItem>(responseData: unknown): TItem[] {
-  if (Array.isArray(responseData)) {
-    return responseData as TItem[];
-  }
-
-  const responseEnvelope = responseData as { data?: TItem[] };
-  return Array.isArray(responseEnvelope.data) ? responseEnvelope.data : [];
-}
-
 function computeTotals(items: BudgetItem[]) {
   const total = items.reduce((s, i) => s + Number(i.total_price), 0);
   const plan = items.reduce((s, i) => s + Number(i.plan_coverage_amount), 0);
@@ -146,13 +87,16 @@ function computeTotals(items: BudgetItem[]) {
 }
 
 export default function OrcamentosPage() {
-  const [budgets, setBudgets] = useState<Budget[]>([]);
-  const [loading, setLoading] = useState(true);
   const [openNew, setOpenNew] = useState(false);
   const [selected, setSelected] = useState<Budget | null>(null);
-  const [patients, setPatients] = useState<Patient[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
+  const { data: patients = [] } = usePatientsListQuery();
+  const { data: users = [] } = useVeterinariansQuery();
+  const { data: products = [] } = useProductsQuery();
+
+  const { data: budgets = [], isLoading: loading } = useBudgetsQuery();
+  const createBudget = useCreateBudgetMutation();
+  const approveBudget = useApproveBudgetMutation();
+  const downloadBudgetPdf = useDownloadBudgetPdfMutation();
 
   const [form, setForm] = useState<BudgetFormValues>({
     patient_id: '',
@@ -162,33 +106,6 @@ export default function OrcamentosPage() {
     notes: '',
     items: [emptyBudgetItem()],
   });
-
-  const fetchBudgets = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await api.get<Budget[]>('/budgets');
-      setBudgets(Array.isArray(res.data) ? res.data : []);
-    } catch {
-      toast.error('Erro ao carregar orçamentos');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchBudgets();
-    api
-      .get<Patient[] | { data?: Patient[] }>('/patients')
-      .then((r) => setPatients(getArrayResponseData<Patient>(r.data)))
-      .catch(() => {});
-    fetchAllListPages<User>('/users/veterinarians')
-      .then(setUsers)
-      .catch(() => {});
-    api
-      .get<Product[] | { data?: Product[] }>('/products')
-      .then((r) => setProducts(getArrayResponseData<Product>(r.data)))
-      .catch(() => {});
-  }, [fetchBudgets]);
 
   const handleCreate = async () => {
     if (!form.patient_id) {
@@ -203,7 +120,7 @@ export default function OrcamentosPage() {
       return;
     }
 
-    const payload = {
+    const payload: BudgetPayload = {
       ...form,
       veterinarian_id: form.veterinarian_id || undefined,
       items: form.items.map((item) =>
@@ -229,7 +146,7 @@ export default function OrcamentosPage() {
     };
 
     try {
-      await api.post('/budgets', payload);
+      await createBudget.mutateAsync(payload);
       toast.success('Orçamento criado');
       setOpenNew(false);
       setForm({
@@ -240,7 +157,6 @@ export default function OrcamentosPage() {
         notes: '',
         items: [emptyBudgetItem()],
       });
-      fetchBudgets();
     } catch {
       toast.error('Erro ao criar orçamento');
     }
@@ -248,9 +164,8 @@ export default function OrcamentosPage() {
 
   const handleApprove = async (id: string) => {
     try {
-      await api.patch(`/budgets/${id}/approve`);
+      await approveBudget.mutateAsync(id);
       toast.success('Orçamento aprovado');
-      fetchBudgets();
     } catch {
       toast.error('Erro ao aprovar');
     }
@@ -258,8 +173,8 @@ export default function OrcamentosPage() {
 
   const handleDownloadPdf = async (id: string) => {
     try {
-      const res = await api.get(`/budgets/${id}/pdf`, { responseType: 'blob' });
-      const url = URL.createObjectURL(res.data as Blob);
+      const blob = await downloadBudgetPdf.mutateAsync(id);
+      const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = `orcamento-${id}.pdf`;

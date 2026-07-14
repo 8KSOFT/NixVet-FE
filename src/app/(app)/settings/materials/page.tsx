@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,17 +11,15 @@ import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
 import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
 import { getApiErrorMessage } from '@/app/utils/api-error-message';
-import api from '@/lib/axios';
-import { API_PAGE_SIZE, listQueryParams, parseListResponse } from '@/lib/pagination';
+import { API_PAGE_SIZE } from '@/lib/pagination';
 import { ListPagination } from '@/components/list-pagination';
-
-interface Material {
-  id: number;
-  name: string;
-  private_price?: number | null;
-  cost_price?: number | null;
-  tax_percentage?: number | null;
-}
+import {
+  useMaterialsPagedQuery,
+  useCreateMaterialMutation,
+  useUpdateMaterialMutation,
+  useDeleteMaterialMutation,
+} from '@/hooks/apiHooks/useMaterials';
+import type { Material } from '@/app/types/material';
 
 type FormValues = {
   name: string;
@@ -36,33 +34,18 @@ function fmtBRL(v?: number | null) {
 }
 
 export default function SettingsMaterialsPage() {
-  const [list, setList] = useState<Material[]>([]);
-  const [loading, setLoading] = useState(false);
   const [listPage, setListPage] = useState(1);
-  const [listTotal, setListTotal] = useState(0);
-  const [listTotalPages, setListTotalPages] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const { register, handleSubmit, reset, formState: { errors } } = useForm<FormValues>();
 
-  const fetchMaterials = async () => {
-    setLoading(true);
-    try {
-      const res = await api.get('/catalog/materials', { params: listQueryParams(listPage) });
-      const p = parseListResponse<Material>(res.data, listPage);
-      setList(p.items);
-      setListTotal(p.total);
-      setListTotalPages(p.totalPages);
-    } catch {
-      toast.error('Erro ao carregar materiais');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchMaterials();
-  }, [listPage]);
+  const { data, isLoading: loading } = useMaterialsPagedQuery(listPage);
+  const list = data?.items ?? [];
+  const listTotal = data?.total ?? 0;
+  const listTotalPages = data?.totalPages ?? 1;
+  const createMutation = useCreateMaterialMutation();
+  const updateMutation = useUpdateMaterialMutation();
+  const deleteMutation = useDeleteMaterialMutation();
 
   const openCreate = () => {
     setEditingId(null);
@@ -83,9 +66,8 @@ export default function SettingsMaterialsPage() {
 
   const handleDelete = async (id: number) => {
     try {
-      await api.delete(`/catalog/materials/${id}`);
+      await deleteMutation.mutateAsync(id);
       toast.success('Removido');
-      fetchMaterials();
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao remover'));
     }
@@ -100,14 +82,13 @@ export default function SettingsMaterialsPage() {
     };
     try {
       if (editingId) {
-        await api.put(`/catalog/materials/${editingId}`, payload);
+        await updateMutation.mutateAsync({ id: editingId, payload });
         toast.success('Atualizado');
       } else {
-        await api.post('/catalog/materials', payload);
+        await createMutation.mutateAsync(payload);
         toast.success('Criado');
       }
       setModalOpen(false);
-      fetchMaterials();
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao salvar'));
     }

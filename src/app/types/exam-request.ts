@@ -28,6 +28,26 @@ export interface ExamAreaOption {
   name: string;
 }
 
+export interface Exam {
+  id: number;
+  name: string;
+  exam_area_id?: number;
+  exam_area?: ExamAreaOption;
+  private_price?: number | null;
+  lab_cost?: number | null;
+  tax_percentage?: number | null;
+  is_third_party?: boolean;
+}
+
+export interface ExamPayload {
+  name: string;
+  area_id?: number;
+  private_price?: number;
+  lab_cost?: number;
+  tax_percentage?: number;
+  is_third_party?: boolean;
+}
+
 export interface ExamPatientOption {
   id: string;
   name: string;

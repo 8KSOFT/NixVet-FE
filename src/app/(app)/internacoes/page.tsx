@@ -1,15 +1,8 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import type { ApiRequestError } from '@/app/types/api-error';
-import type {
-  HealthPlanOption,
-  Hospitalization,
-  HospitalizationFormValues,
-  HospitalizationPatientOption,
-  HospitalizationUserOption,
-  PaginatedListEnvelope,
-} from '@/app/types/hospitalization';
+import type { HospitalizationCreatePayload, HospitalizationFormValues } from '@/app/types/hospitalization';
 import { Plus, Clock } from 'lucide-react';
 import { DashboardCreateFormDialog } from '@/components/dashboard-create-form-dialog';
 import { Button } from '@/components/ui/button';
@@ -23,9 +16,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
-import api from '@/lib/axios';
 import { toast } from 'sonner';
 import Link from 'next/link';
+import {
+  useActiveHospitalizationsListQuery,
+  useCreateHospitalizationMutation,
+  useHospitalizationsQuery,
+} from '@/hooks/apiHooks/useHospitalizations';
+import { usePatientsListQuery } from '@/hooks/apiHooks/usePatients';
+import { useStaffUsersListQuery, useVeterinariansQuery } from '@/hooks/apiHooks/useUsers';
+import { useHealthPlansListQuery } from '@/hooks/apiHooks/useHealthPlans';
 
 function daysInternado(admissionDate: string): number {
   const ms = Date.now() - new Date(admissionDate).getTime();
@@ -58,32 +58,20 @@ function getApiErrorMessage(error: unknown, fallbackMessage: string): string {
   return responseMessage ?? typedError.message ?? fallbackMessage;
 }
 
-function parsePaginatedItems<TItem>(responseData: unknown): {
-  items: TItem[];
-  total: number;
-} {
-  if (Array.isArray(responseData)) {
-    return {
-      items: responseData as TItem[],
-      total: responseData.length,
-    };
-  }
-
-  const parsedResponse = responseData as PaginatedListEnvelope<TItem>;
-  const items = parsedResponse.data ?? parsedResponse.items ?? [];
-  const total = parsedResponse.total ?? items.length;
-
-  return { items, total };
-}
-
 export default function InternacoesPage() {
-  const [active, setActive] = useState<Hospitalization[]>([]);
-  const [all, setAll] = useState<Hospitalization[]>([]);
-  const [loading, setLoading] = useState(true);
   const [openNew, setOpenNew] = useState(false);
-  const [patients, setPatients] = useState<HospitalizationPatientOption[]>([]);
-  const [users, setUsers] = useState<HospitalizationUserOption[]>([]);
-  const [healthPlans, setHealthPlans] = useState<HealthPlanOption[]>([]);
+
+  const { data: active = [], isLoading: loadingActive } = useActiveHospitalizationsListQuery();
+  const { data: all = [], isLoading: loadingAll } = useHospitalizationsQuery();
+  const loading = loadingActive || loadingAll;
+
+  const { data: patients = [] } = usePatientsListQuery();
+  const { data: veterinarians = [] } = useVeterinariansQuery();
+  const { data: staffUsers = [] } = useStaffUsersListQuery();
+  const users = veterinarians.length > 0 ? veterinarians : staffUsers;
+  const { data: healthPlans = [] } = useHealthPlansListQuery();
+
+  const createHospitalization = useCreateHospitalizationMutation();
 
   const [form, setForm] = useState<HospitalizationFormValues>({
     patient_id: '',
@@ -99,77 +87,6 @@ export default function InternacoesPage() {
     belongings: '',
   });
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [activeRes, allRes] = await Promise.all([
-        api.get<Hospitalization[]>('/hospitalizations/active'),
-        api.get<Hospitalization[]>('/hospitalizations'),
-      ]);
-      setActive(Array.isArray(activeRes.data) ? activeRes.data : []);
-      setAll(Array.isArray(allRes.data) ? allRes.data : []);
-    } catch {
-      toast.error('Erro ao carregar internações');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchData();
-
-    const PAGE_LIMIT = 50;
-
-    const fetchAllPages = async <TItem,>(url: string): Promise<TItem[]> => {
-      const result: TItem[] = [];
-      let page = 1;
-
-      while (true) {
-        const response = await api.get(url, { params: { limit: PAGE_LIMIT, page } });
-        const { items, total } = parsePaginatedItems<TItem>(response.data);
-        result.push(...items);
-
-        if (result.length >= total || items.length < PAGE_LIMIT) break;
-
-        page++;
-      }
-
-      return result;
-    };
-
-    // Pacientes
-    fetchAllPages<HospitalizationPatientOption>('/patients')
-      .then((list) => setPatients(list))
-      .catch((error: unknown) =>
-        toast.error(`Erro ao carregar pacientes: ${getApiErrorMessage(error, 'desconhecido')}`),
-      );
-
-    // Veterinários — tenta rota específica, fallback para staff
-    const loadUsers = async () => {
-      try {
-        const list = await fetchAllPages<HospitalizationUserOption>('/users/veterinarians');
-        if (list.length > 0) {
-          setUsers(list);
-          return;
-        }
-      } catch {
-        /* segue para fallback */
-      }
-      try {
-        const list = await fetchAllPages<HospitalizationUserOption>('/users/staff');
-        setUsers(list);
-      } catch (error: unknown) {
-        toast.error(`Erro ao carregar veterinários: ${getApiErrorMessage(error, 'desconhecido')}`);
-      }
-    };
-    loadUsers();
-
-    // Planos
-    fetchAllPages<HealthPlanOption>('/health-plans')
-      .then((list) => setHealthPlans(list))
-      .catch(() => {});
-  }, [fetchData]);
-
   const handleCreate = async () => {
     if (!form.patient_id) {
       toast.error('Selecione o paciente');
@@ -184,14 +101,14 @@ export default function InternacoesPage() {
       return;
     }
     try {
-      await api.post('/hospitalizations', {
+      const payload: HospitalizationCreatePayload = {
         ...form,
         veterinarian_id: form.veterinarian_id || undefined,
         health_plan_id: form.health_plan_id || undefined,
-      });
+      };
+      await createHospitalization.mutateAsync(payload);
       toast.success('Internação aberta');
       setOpenNew(false);
-      void fetchData();
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao abrir internação'));
     }

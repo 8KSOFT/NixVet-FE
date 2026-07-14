@@ -13,26 +13,23 @@ import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
 import { Plus, Loader2, ExternalLink, RefreshCw, Wifi, WifiOff, Trash2, QrCode } from 'lucide-react';
 import { getApiErrorMessage } from '@/app/utils/api-error-message';
-import api from '@/lib/axios';
-import { API_PAGE_SIZE, listQueryParams, parseListResponse } from '@/lib/pagination';
+import { API_PAGE_SIZE } from '@/lib/pagination';
 import { ListPagination } from '@/components/list-pagination';
 import { getApiBaseUrl } from '@/lib/api-base';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import QRCode from 'react-qr-code';
-
-interface WhatsappNumberRow {
-  id: string;
-  phone_number_id: string;
-  display_phone: string | null;
-  is_active: boolean;
-}
-
-interface NumberStatus {
-  connected: boolean;
-  smartphoneConnected: boolean;
-  error?: string;
-}
+import {
+  useWhatsappNumbersQuery,
+  useWhatsappProvisionAvailableQuery,
+  useWhatsappNumberStatusMutation,
+  useWhatsappQrCodeMutation,
+  useProvisionWhatsappMutation,
+  useRegisterWhatsappNumberMutation,
+  useDisconnectWhatsappNumberMutation,
+} from '@/hooks/apiHooks/useWhatsappNumbers';
+import { useTenantMeQuery, useUpdateTenantMeMutation } from '@/hooks/apiHooks/useTenantSettings';
+import type { WhatsappNumberRow, WhatsappNumberStatus as NumberStatus } from '@/app/types/whatsapp-number';
 
 interface RegisterFormValues {
   phone_number_id: string;
@@ -68,21 +65,30 @@ function StatusBadge({ status, loading }: { status: NumberStatus | null; loading
 }
 
 export default function SettingsWhatsappNumbersPage() {
-  const [list, setList] = useState<WhatsappNumberRow[]>([]);
   const [listPage, setListPage] = useState(1);
-  const [listTotal, setListTotal] = useState(0);
-  const [listTotalPages, setListTotalPages] = useState(1);
-  const [loading, setLoading] = useState(false);
   const [registerOpen, setRegisterOpen] = useState(false);
-  const [provisionAvailable, setProvisionAvailable] = useState(false);
-  const [provisioning, setProvisioning] = useState(false);
   const form = useForm<RegisterFormValues>();
 
   const currentRole = getCurrentUserRole();
   const canManageChatbot = currentRole === 'admin' || currentRole === 'manager' || currentRole === 'superadmin';
   const canManageNumbers = currentRole === 'admin' || currentRole === 'superadmin' || currentRole === 'manager';
-  const [chatbotEnabled, setChatbotEnabled] = useState(false);
-  const [chatbotSaving, setChatbotSaving] = useState(false);
+
+  const { data: listData, isLoading: loading } = useWhatsappNumbersQuery(listPage);
+  const list = listData?.items ?? [];
+  const listTotal = listData?.total ?? 0;
+  const listTotalPages = listData?.totalPages ?? 1;
+  const { data: provisionAvailable = false } = useWhatsappProvisionAvailableQuery();
+  const provisionMutation = useProvisionWhatsappMutation();
+  const registerMutation = useRegisterWhatsappNumberMutation();
+  const disconnectMutation = useDisconnectWhatsappNumberMutation();
+  const statusMutation = useWhatsappNumberStatusMutation();
+  const qrCodeMutation = useWhatsappQrCodeMutation();
+  const provisioning = provisionMutation.isPending;
+
+  const { data: tenantMe } = useTenantMeQuery(canManageChatbot);
+  const chatbotEnabled = Boolean(tenantMe?.whatsapp_ai_chatbot_enabled);
+  const updateTenantMutation = useUpdateTenantMeMutation();
+  const chatbotSaving = updateTenantMutation.isPending;
 
   // Status por número
   const [statuses, setStatuses] = useState<Record<string, NumberStatus>>({});
@@ -96,78 +102,34 @@ export default function SettingsWhatsappNumbersPage() {
 
   const zapiWebhookUrl = `${getApiBaseUrl()}/whatsapp/webhook/zapi`;
 
-  const fetchList = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await api.get('/whatsapp/numbers', { params: listQueryParams(listPage) });
-      const p = parseListResponse<WhatsappNumberRow>(res.data, listPage);
-      setList(p.items);
-      setListTotal(p.total);
-      setListTotalPages(p.totalPages);
-    } catch {
-      toast.error('Erro ao carregar números');
-    } finally {
-      setLoading(false);
-    }
-  }, [listPage]);
-
-  const fetchProvisionAvailable = useCallback(async () => {
-    try {
-      const res = await api.get<{ available: boolean }>('/whatsapp/provision/available');
-      setProvisionAvailable(res.data.available);
-    } catch {
-      setProvisionAvailable(false);
-    }
-  }, []);
-
   const fetchStatus = useCallback(async (numberId: string) => {
     setStatusLoading((s) => ({ ...s, [numberId]: true }));
     try {
-      const res = await api.get<NumberStatus>(`/whatsapp/numbers/${numberId}/status`);
-      setStatuses((s) => ({ ...s, [numberId]: res.data }));
-      return res.data;
+      const data = await statusMutation.mutateAsync(numberId);
+      setStatuses((s) => ({ ...s, [numberId]: data }));
+      return data;
     } catch {
       return null;
     } finally {
       setStatusLoading((s) => ({ ...s, [numberId]: false }));
     }
-  }, []);
+  }, [statusMutation]);
 
   const fetchAllStatuses = useCallback(async (numbers: WhatsappNumberRow[]) => {
     await Promise.all(numbers.filter((n) => n.is_active).map((n) => fetchStatus(n.id)));
   }, [fetchStatus]);
 
   useEffect(() => {
-    void fetchList().then((r: void) => r);
-    void fetchProvisionAvailable();
-  }, [fetchList, fetchProvisionAvailable]);
-
-  useEffect(() => {
     if (list.length > 0) void fetchAllStatuses(list);
-  }, [list, fetchAllStatuses]);
-
-  const fetchTenantChatbot = useCallback(async () => {
-    if (!canManageChatbot) return;
-    try {
-      const res = await api.get<{ whatsapp_ai_chatbot_enabled?: boolean }>('/tenants/me');
-      setChatbotEnabled(Boolean(res.data?.whatsapp_ai_chatbot_enabled));
-    } catch {
-      setChatbotEnabled(false);
-    }
-  }, [canManageChatbot]);
-
-  useEffect(() => { void fetchTenantChatbot(); }, [fetchTenantChatbot]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [list]);
 
   const saveChatbotToggle = async (enabled: boolean) => {
-    setChatbotSaving(true);
     try {
-      await api.put('/tenants/me', { whatsapp_ai_chatbot_enabled: enabled });
-      setChatbotEnabled(enabled);
+      await updateTenantMutation.mutateAsync({ whatsapp_ai_chatbot_enabled: enabled });
       toast.success(enabled ? 'Chatbot de IA ativado' : 'Chatbot de IA desativado');
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao salvar'));
-    } finally {
-      setChatbotSaving(false);
     }
   };
 
@@ -181,8 +143,8 @@ export default function SettingsWhatsappNumbersPage() {
     setQrCode(null);
     setQrLoading(true);
     try {
-      const res = await api.get<{ qrCode: string | null }>(`/whatsapp/numbers/${numberId}/qr-code`);
-      setQrCode(res.data.qrCode);
+      const qr = await qrCodeMutation.mutateAsync(numberId);
+      setQrCode(qr);
     } catch {
       toast.error('Erro ao obter QR Code');
     } finally {
@@ -199,8 +161,8 @@ export default function SettingsWhatsappNumbersPage() {
           toast.success('WhatsApp conectado com sucesso!');
           return;
         }
-        const res = await api.get<{ qrCode: string | null }>(`/whatsapp/numbers/${numberId}/qr-code`);
-        setQrCode(res.data.qrCode);
+        const qr = await qrCodeMutation.mutateAsync(numberId);
+        setQrCode(qr);
       } catch { /* silencioso */ }
     }, 20000);
   };
@@ -213,26 +175,21 @@ export default function SettingsWhatsappNumbersPage() {
 
   // --- Provision ---
   const handleProvision = async () => {
-    setProvisioning(true);
     try {
-      await api.post('/whatsapp/provision', {});
+      await provisionMutation.mutateAsync(undefined);
       toast.success('Instância Z-API provisionada! Escaneie o QR Code para conectar.');
-      await fetchList();
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao provisionar instância'));
-    } finally {
-      setProvisioning(false);
     }
   };
 
   // --- Register manual ---
   const onRegister = async (values: RegisterFormValues) => {
     try {
-      await api.post('/whatsapp/numbers', values);
+      await registerMutation.mutateAsync(values);
       toast.success('Instância cadastrada');
       setRegisterOpen(false);
       form.reset();
-      await fetchList();
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao cadastrar'));
     }
@@ -242,9 +199,8 @@ export default function SettingsWhatsappNumbersPage() {
   const handleDisconnect = async (numberId: string) => {
     if (!confirm('Desconectar este número? O WhatsApp será desvinculado da instância.')) return;
     try {
-      await api.delete(`/whatsapp/numbers/${numberId}`);
+      await disconnectMutation.mutateAsync(numberId);
       toast.success('Número desconectado');
-      await fetchList();
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao desconectar'));
     }

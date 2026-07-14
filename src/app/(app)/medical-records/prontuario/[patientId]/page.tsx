@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
@@ -18,25 +18,10 @@ import {
   FileText,
 } from "lucide-react";
 import { toast } from "sonner";
-import api from "@/lib/axios";
-import { fetchAllListPages } from "@/lib/pagination";
-import type {
-  PatientDetail,
-  PatientTimelineEvent,
-} from "@/app/types/patient";
+import type { PatientTimelineEvent } from "@/app/types/patient";
 import dayjs from "dayjs";
-
-interface MedicalRecord {
-  id: string;
-  patient_id: string;
-  record_type: string;
-  record_date: string;
-  chief_complaint: string | null;
-  diagnosis: string | null;
-  status: string;
-  veterinarian?: { id: string; name: string } | null;
-  created_at?: string;
-}
+import { usePatientQuery, usePatientTimelineQuery } from "@/hooks/apiHooks/usePatients";
+import { useCreateMedicalRecordMutation, useMedicalRecordsByPatientQuery } from "@/hooks/apiHooks/useMedicalRecords";
 
 const typeConfig: Record<
   string,
@@ -80,39 +65,12 @@ export default function ProntuarioDetailPage() {
   const router = useRouter();
   const patientId = typeof params?.patientId === "string" ? params.patientId : "";
 
-  const [patient, setPatient] = useState<PatientDetail | null>(null);
-  const [records, setRecords] = useState<MedicalRecord[]>([]);
-  const [events, setEvents] = useState<PatientTimelineEvent[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: patient, isLoading: loadingPatient } = usePatientQuery(patientId);
+  const { data: records = [], isLoading: loadingRecords } = useMedicalRecordsByPatientQuery(patientId);
+  const { data: events = [] } = usePatientTimelineQuery(patientId);
+  const loading = loadingPatient || loadingRecords;
   const [creating, setCreating] = useState(false);
-
-  const load = async () => {
-    if (!patientId) return;
-    setLoading(true);
-    try {
-      const [patientRes, recordsRes, timelineRes] = await Promise.all([
-        api.get<PatientDetail>(`/patients/${patientId}`),
-        fetchAllListPages<MedicalRecord>("/medical-records", {
-          patient_id: patientId,
-        }),
-        api.get<PatientTimelineEvent[]>(`/patients/${patientId}/timeline`),
-      ]);
-      setPatient(patientRes.data);
-      setRecords(Array.isArray(recordsRes) ? recordsRes : []);
-      setEvents(Array.isArray(timelineRes.data) ? timelineRes.data : []);
-    } catch {
-      setPatient(null);
-      setRecords([]);
-      setEvents([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [patientId]);
+  const createRecord = useCreateMedicalRecordMutation();
 
   // Fichas mais recentes primeiro
   const sortedRecords = useMemo(
@@ -135,11 +93,9 @@ export default function ProntuarioDetailPage() {
     if (!patientId) return;
     setCreating(true);
     try {
-      const res = await api.post<MedicalRecord>("/medical-records", {
-        patient_id: patientId,
-      });
+      const record = await createRecord.mutateAsync({ patient_id: patientId });
       toast.success("Ficha criada");
-      router.push(`/medical-records/${res.data.id}`);
+      router.push(`/medical-records/${record.id}`);
     } catch {
       toast.error("Erro ao criar ficha");
       setCreating(false);

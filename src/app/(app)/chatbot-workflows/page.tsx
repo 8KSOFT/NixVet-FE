@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import type { ApiRequestError } from '@/app/types/api-error';
-import type { WorkflowItem } from '@/app/types/chatbot-workflow';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { DashboardCreateFormDialog } from '@/components/dashboard-create-form-dialog';
@@ -29,9 +28,16 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import api from '@/lib/axios';
-import { API_PAGE_SIZE, listQueryParams, parseListResponse } from '@/lib/pagination';
+import { API_PAGE_SIZE } from '@/lib/pagination';
 import { ListPagination } from '@/components/list-pagination';
+import {
+  useChatbotWorkflowsPagedQuery,
+  useCreateChatbotWorkflowMutation,
+  useSeedDefaultChatbotWorkflowMutation,
+  useActivateChatbotWorkflowMutation,
+  useDeleteChatbotWorkflowMutation,
+} from '@/hooks/apiHooks/useChatbotWorkflows';
+import { useTenantMeQuery, useUpdateTenantMeMutation } from '@/hooks/apiHooks/useTenantSettings';
 
 function getApiErrorMessage(error: unknown, fallbackMessage: string): string {
   const typedError = error as ApiRequestError;
@@ -45,57 +51,37 @@ function getApiErrorMessage(error: unknown, fallbackMessage: string): string {
 }
 
 export default function ChatbotWorkflowsPage() {
-  const [workflows, setWorkflows] = useState<WorkflowItem[]>([]);
   const [listPage, setListPage] = useState(1);
-  const [listTotal, setListTotal] = useState(0);
-  const [listTotalPages, setListTotalPages] = useState(1);
-  const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
   const [newName, setNewName] = useState('');
-  const [botEnabled, setBotEnabled] = useState(false);
-  const [botSaving, setBotSaving] = useState(false);
   const router = useRouter();
 
-  const fetchWorkflows = async () => {
-    setLoading(true);
-    try {
-      const [wfRes, tenantRes] = await Promise.all([
-        api.get('/chatbot-workflows', { params: listQueryParams(listPage) }),
-        api.get<{ whatsapp_ai_chatbot_enabled?: boolean }>('/tenants/me'),
-      ]);
-      const p = parseListResponse<WorkflowItem>(wfRes.data, listPage);
-      setWorkflows(p.items);
-      setListTotal(p.total);
-      setListTotalPages(p.totalPages);
-      setBotEnabled(Boolean(tenantRes.data?.whatsapp_ai_chatbot_enabled));
-    } catch {
-      toast.error('Erro ao carregar dados');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchWorkflows();
-  }, [listPage]);
+  const { data, isLoading: loading } = useChatbotWorkflowsPagedQuery(listPage);
+  const workflows = data?.items ?? [];
+  const listTotal = data?.total ?? 0;
+  const listTotalPages = data?.totalPages ?? 1;
+  const { data: tenantMe } = useTenantMeQuery();
+  const botEnabled = Boolean(tenantMe?.whatsapp_ai_chatbot_enabled);
+  const updateTenantMutation = useUpdateTenantMeMutation();
+  const botSaving = updateTenantMutation.isPending;
+  const createMutation = useCreateChatbotWorkflowMutation();
+  const seedDefaultMutation = useSeedDefaultChatbotWorkflowMutation();
+  const activateMutation = useActivateChatbotWorkflowMutation();
+  const deleteMutation = useDeleteChatbotWorkflowMutation();
 
   const toggleBot = async (enabled: boolean) => {
-    setBotSaving(true);
     try {
-      await api.put('/tenants/me', { whatsapp_ai_chatbot_enabled: enabled });
-      setBotEnabled(enabled);
+      await updateTenantMutation.mutateAsync({ whatsapp_ai_chatbot_enabled: enabled });
       toast.success(enabled ? 'Chatbot ativado' : 'Chatbot desativado');
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao salvar'));
-    } finally {
-      setBotSaving(false);
     }
   };
 
   const handleCreate = async () => {
     if (!newName.trim()) return;
     try {
-      const res = await api.post<WorkflowItem>('/chatbot-workflows', {
+      const created = await createMutation.mutateAsync({
         name: newName.trim(),
         nodes: [
           {
@@ -113,7 +99,7 @@ export default function ChatbotWorkflowsPage() {
       toast.success('Workflow criado');
       setCreateOpen(false);
       setNewName('');
-      router.push(`/chatbot-workflows/${res.data.id}`);
+      router.push(`/chatbot-workflows/${created.id}`);
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao criar'));
     }
@@ -121,9 +107,8 @@ export default function ChatbotWorkflowsPage() {
 
   const handleSeedDefault = async () => {
     try {
-      await api.post('/chatbot-workflows/seed-default');
+      await seedDefaultMutation.mutateAsync();
       toast.success('Workflow padrão criado');
-      fetchWorkflows();
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro'));
     }
@@ -131,9 +116,8 @@ export default function ChatbotWorkflowsPage() {
 
   const handleActivate = async (id: string) => {
     try {
-      await api.put(`/chatbot-workflows/${id}/activate`);
+      await activateMutation.mutateAsync(id);
       toast.success('Workflow ativado');
-      fetchWorkflows();
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro'));
     }
@@ -142,9 +126,8 @@ export default function ChatbotWorkflowsPage() {
   const handleDelete = async (id: string) => {
     if (!confirm('Tem certeza que deseja excluir?')) return;
     try {
-      await api.delete(`/chatbot-workflows/${id}`);
+      await deleteMutation.mutateAsync(id);
       toast.success('Workflow excluído');
-      fetchWorkflows();
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro'));
     }

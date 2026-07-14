@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -22,54 +22,57 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { toast } from 'sonner';
 import { Loader2, ChevronLeft, Save, Lock, Syringe, Paperclip, FileText, Pill, FlaskConical, Activity, ImageIcon, AlertTriangle, Sparkles, Info, Plus, ChevronDown, Undo2, Trash2, Stethoscope } from 'lucide-react';
 import Link from 'next/link';
-import api from '@/lib/axios';
-import { fetchAllListPages } from '@/lib/pagination';
 import dayjs from 'dayjs';
-
-interface Vaccine { name: string; date: string; batch?: string; next_dose?: string; }
-interface Attachment { name: string; url: string; type: string; uploaded_at: string; }
-interface MedicalRecord {
-  id: string; patient_id: string; veterinarian_id: string | null;
-  record_type: string; record_date: string;
-  chief_complaint: string | null; anamnesis: string | null;
-  physical_exam: string | null; diagnosis: string | null;
-  observations: string | null;
-  weight_kg: number | null; temperature_c: number | null;
-  lymph_nodes: string | null; hydration: string | null; mucous_membranes: string | null;
-  heart_rate: number | null; respiratory_rate: number | null; capillary_refill_time: number | null;
-  team_notes: string | null;
-  status: string; vaccines: Vaccine[] | null; attachments: Attachment[] | null;
-  consultation_id: string | null;
-  patient?: { id: string; name: string; species?: string; breed?: string };
-  veterinarian?: { id: string; name: string };
-}
-
-interface ActiveHospitalization { id: string; status: string; }
-interface PatientFileItem { id: string; original_filename: string; category: string; mime_type: string | null; created_at: string; }
-
-interface Prescription { id: string; prescription_date: string; medications: string; prescription_type: string; }
-interface ExamRequest { id: string; request_date: string; exam_type: string; status: string; }
-interface VaccineRecord { id: string; vaccine_name: string; application_date: string; next_due_date: string; batch_number: string; }
+import { useQueryClient } from '@tanstack/react-query';
+import {
+  medicalRecordKeys,
+  useAddVaccineToRecordMutation,
+  useMedicalRecordQuery,
+  useRecordExamRequestsQuery,
+  useRecordPrescriptionsQuery,
+  useRecordVaccineHistoryQuery,
+  useUpdateMedicalRecordMutation,
+} from '@/hooks/apiHooks/useMedicalRecords';
+import { useActiveHospitalizationQuery } from '@/hooks/apiHooks/useHospitalizations';
+import {
+  useCreatePatientFileMutation,
+  useDownloadPatientFileUrlMutation,
+  usePatientFilesQuery,
+  useRequestPatientFileUploadUrlMutation,
+} from '@/hooks/apiHooks/usePatientFiles';
+import { useFormatTextMutation } from '@/hooks/apiHooks/useAi';
+import { useCreatePrescriptionMutation } from '@/hooks/apiHooks/usePrescriptions';
 
 export default function MedicalRecordDetailPage() {
   const params = useParams();
   const router = useRouter();
   const id = typeof params?.id === 'string' ? params.id : '';
 
-  const [record, setRecord] = useState<MedicalRecord | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const queryClient = useQueryClient();
+  const { data: record, isLoading: loading } = useMedicalRecordQuery(id);
+  const patientId = record?.patient_id ?? null;
 
-  const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
-  const [examRequests, setExamRequests] = useState<ExamRequest[]>([]);
-  const [vaccineRecords, setVaccineRecords] = useState<VaccineRecord[]>([]);
+  const { data: prescriptions = [] } = useRecordPrescriptionsQuery(patientId);
+  const { data: examRequests = [] } = useRecordExamRequestsQuery(patientId);
+  const { data: vaccineRecords = [] } = useRecordVaccineHistoryQuery(patientId);
+  const { data: activeHosp } = useActiveHospitalizationQuery(patientId);
+  const { data: patientFiles = [] } = usePatientFilesQuery(patientId);
+
+  const updateRecord = useUpdateMedicalRecordMutation();
+  const addVaccine = useAddVaccineToRecordMutation();
+  const requestUploadUrl = useRequestPatientFileUploadUrlMutation();
+  const createPatientFile = useCreatePatientFileMutation();
+  const downloadFileUrl = useDownloadPatientFileUrlMutation();
+  const formatTextMutation = useFormatTextMutation();
+  const createPrescription = useCreatePrescriptionMutation();
+  const saving = updateRecord.isPending;
+  const formattingAi = formatTextMutation.isPending;
 
   const [vaccineModal, setVaccineModal] = useState(false);
   const [vaccineForm, setVaccineForm] = useState({ name: '', date: dayjs().format('YYYY-MM-DD'), batch: '', next_dose: '' });
   const [attachModal, setAttachModal] = useState(false);
   const [attachForm, setAttachForm] = useState<{ name: string; category: string; file: File | null }>({ name: '', category: 'exame', file: null });
   const [attachUploading, setAttachUploading] = useState(false);
-  const [patientFiles, setPatientFiles] = useState<PatientFileItem[]>([]);
 
   const [form, setForm] = useState({
     chief_complaint: '', anamnesis: '', diagnosis: '',
@@ -79,134 +82,75 @@ export default function MedicalRecordDetailPage() {
     team_notes: '',
   });
 
-  // Banner de internação ativa (2.2)
-  const [activeHosp, setActiveHosp] = useState<ActiveHospitalization | null>(null);
   // Card de exame físico colapsável (2.4)
   const [examOpen, setExamOpen] = useState(true);
   // Formatação de anamnese por IA (2.6)
-  const [formattingAi, setFormattingAi] = useState(false);
   const [originalAnamnese, setOriginalAnamnese] = useState<string | null>(null);
 
   // Nova prescrição inline (2.3)
   const emptyMed = () => ({ name: '', via: '', dosage: '', frequency_value: '', frequency_unit: 'horas', duration_value: '', duration_unit: 'dias' });
   const [presModal, setPresModal] = useState(false);
-  const [presSaving, setPresSaving] = useState(false);
+  const presSaving = createPrescription.isPending;
   const [presForm, setPresForm] = useState<{ prescription_type: string; observations: string; medications: ReturnType<typeof emptyMed>[] }>({
     prescription_type: 'receita', observations: '', medications: [emptyMed()],
   });
 
-  const fetchRecord = useCallback(async () => {
-    if (!id) {
-      setLoading(false);
-      toast.error('Ficha inválida');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const r = await api.get<MedicalRecord>(`/medical-records/${id}`);
-      setRecord(r.data);
-      setForm({
-        chief_complaint: r.data.chief_complaint || '',
-        anamnesis: r.data.anamnesis || '',
-        diagnosis: r.data.diagnosis || '',
-        observations: r.data.observations || '',
-        weight_kg: r.data.weight_kg != null ? String(r.data.weight_kg) : '',
-        temperature_c: r.data.temperature_c != null ? String(r.data.temperature_c) : '',
-        lymph_nodes: r.data.lymph_nodes || '',
-        hydration: r.data.hydration || '',
-        mucous_membranes: r.data.mucous_membranes || '',
-        heart_rate: r.data.heart_rate != null ? String(r.data.heart_rate) : '',
-        respiratory_rate: r.data.respiratory_rate != null ? String(r.data.respiratory_rate) : '',
-        capillary_refill_time: r.data.capillary_refill_time != null ? String(r.data.capillary_refill_time) : '',
-        team_notes: r.data.team_notes || '',
-      });
-      setOriginalAnamnese(null);
-    } catch { setRecord(null); } finally { setLoading(false); }
+  useEffect(() => {
+    if (!id) toast.error('Ficha inválida');
   }, [id]);
 
-  const fetchPatientFiles = useCallback(async (patientId: string) => {
-    try {
-      const r = await api.get<PatientFileItem[]>('/patient-files', { params: { patient_id: patientId } });
-      setPatientFiles(Array.isArray(r.data) ? r.data : []);
-    } catch {
-      setPatientFiles([]);
-    }
-  }, []);
-
-  const fetchActiveHosp = useCallback(async (patientId: string) => {
-    try {
-      const r = await api.get<ActiveHospitalization[] | { data: ActiveHospitalization[] }>(
-        '/hospitalizations',
-        { params: { patient_id: patientId, status: 'active' } },
-      );
-      const list = Array.isArray(r.data) ? r.data : (r.data?.data ?? []);
-      setActiveHosp(list.length > 0 ? list[0] : null);
-    } catch {
-      setActiveHosp(null);
-    }
-  }, []);
-
-  const fetchRelated = useCallback(async (patientId: string) => {
-    try {
-      const [pres, ex, vac] = await Promise.all([
-        fetchAllListPages<Prescription>('/prescriptions', { patient_id: patientId }),
-        fetchAllListPages<ExamRequest>('/exam-requests', { patient_id: patientId }),
-        fetchAllListPages<VaccineRecord>('/vaccines', { patient_id: patientId }),
-      ]);
-      setPrescriptions(pres);
-      setExamRequests(ex);
-      setVaccineRecords(vac);
-    } catch {
-      setPrescriptions([]);
-      setExamRequests([]);
-      setVaccineRecords([]);
-    }
-  }, []);
-
-  useEffect(() => { if (id) fetchRecord(); }, [id, fetchRecord]);
   useEffect(() => {
-    if (record?.patient_id) {
-      fetchRelated(record.patient_id);
-      fetchActiveHosp(record.patient_id);
-      fetchPatientFiles(record.patient_id);
-    }
-  }, [record?.patient_id, fetchRelated, fetchActiveHosp, fetchPatientFiles]);
+    if (!record) return;
+    setForm({
+      chief_complaint: record.chief_complaint || '',
+      anamnesis: record.anamnesis || '',
+      diagnosis: record.diagnosis || '',
+      observations: record.observations || '',
+      weight_kg: record.weight_kg != null ? String(record.weight_kg) : '',
+      temperature_c: record.temperature_c != null ? String(record.temperature_c) : '',
+      lymph_nodes: record.lymph_nodes || '',
+      hydration: record.hydration || '',
+      mucous_membranes: record.mucous_membranes || '',
+      heart_rate: record.heart_rate != null ? String(record.heart_rate) : '',
+      respiratory_rate: record.respiratory_rate != null ? String(record.respiratory_rate) : '',
+      capillary_refill_time: record.capillary_refill_time != null ? String(record.capillary_refill_time) : '',
+      team_notes: record.team_notes || '',
+    });
+    setOriginalAnamnese(null);
+  }, [record]);
 
   const handleSave = async () => {
     if (!record) return;
-    setSaving(true);
     try {
-      await api.put(`/medical-records/${id}`, {
-        ...form,
-        weight_kg: form.weight_kg ? parseFloat(form.weight_kg) : null,
-        temperature_c: form.temperature_c ? parseFloat(form.temperature_c) : null,
-        heart_rate: form.heart_rate ? parseInt(form.heart_rate, 10) : null,
-        respiratory_rate: form.respiratory_rate ? parseInt(form.respiratory_rate, 10) : null,
-        capillary_refill_time: form.capillary_refill_time ? parseFloat(form.capillary_refill_time) : null,
+      await updateRecord.mutateAsync({
+        id,
+        payload: {
+          ...form,
+          weight_kg: form.weight_kg ? parseFloat(form.weight_kg) : null,
+          temperature_c: form.temperature_c ? parseFloat(form.temperature_c) : null,
+          heart_rate: form.heart_rate ? parseInt(form.heart_rate, 10) : null,
+          respiratory_rate: form.respiratory_rate ? parseInt(form.respiratory_rate, 10) : null,
+          capillary_refill_time: form.capillary_refill_time ? parseFloat(form.capillary_refill_time) : null,
+        },
       });
       toast.success('Ficha salva');
-      fetchRecord();
-    } catch { toast.error('Erro ao salvar'); } finally { setSaving(false); }
+    } catch { toast.error('Erro ao salvar'); }
   };
 
   const handleClose = async () => {
     if (!record) return;
-    setSaving(true);
     try {
-      await api.put(`/medical-records/${id}`, { status: 'closed' });
+      await updateRecord.mutateAsync({ id, payload: { status: 'closed' } });
       toast.success('Ficha fechada');
-      fetchRecord();
-    } catch { toast.error('Erro ao fechar'); } finally { setSaving(false); }
+    } catch { toast.error('Erro ao fechar'); }
   };
 
   const handleAddVaccine = async () => {
     if (!vaccineForm.name) { toast.error('Informe o nome da vacina'); return; }
     try {
-      await api.post(`/medical-records/${id}/vaccines`, vaccineForm);
+      await addVaccine.mutateAsync({ id, payload: vaccineForm });
       toast.success('Vacina adicionada');
       setVaccineModal(false);
-      fetchRecord();
     } catch { toast.error('Erro ao adicionar vacina'); }
   };
 
@@ -217,17 +161,19 @@ export default function MedicalRecordDetailPage() {
     setAttachUploading(true);
     try {
       const file = attachForm.file;
-      const { data: par } = await api.post<{ upload_url: string; storage_path: string }>(
-        '/patient-files/upload-url',
-        { patient_id: record.patient_id, category: attachForm.category, filename: file.name, mime_type: file.type },
-      );
+      const par = await requestUploadUrl.mutateAsync({
+        patient_id: record.patient_id,
+        category: attachForm.category,
+        filename: file.name,
+        mime_type: file.type,
+      });
       const put = await fetch(par.upload_url, {
         method: 'PUT',
         body: file,
         headers: { 'Content-Type': file.type || 'application/octet-stream' },
       });
       if (!put.ok) throw new Error('upload falhou');
-      await api.post('/patient-files', {
+      await createPatientFile.mutateAsync({
         patient_id: record.patient_id,
         category: attachForm.category,
         original_filename: attachForm.name || file.name,
@@ -238,31 +184,26 @@ export default function MedicalRecordDetailPage() {
       toast.success('Anexo enviado');
       setAttachModal(false);
       setAttachForm({ name: '', category: 'exame', file: null });
-      fetchPatientFiles(record.patient_id);
     } catch { toast.error('Erro ao enviar anexo'); } finally { setAttachUploading(false); }
   };
 
   const handleOpenPatientFile = async (fileId: string) => {
     try {
-      const { data } = await api.get<{ download_url: string }>(`/patient-files/${fileId}/download-url`);
-      window.open(data.download_url, '_blank', 'noopener,noreferrer');
+      const url = await downloadFileUrl.mutateAsync(fileId);
+      window.open(url, '_blank', 'noopener,noreferrer');
     } catch { toast.error('Erro ao abrir arquivo'); }
   };
 
   // 2.6 — Formatar anamnese com IA
   const handleFormatAnamnese = async () => {
     if (!form.anamnesis.trim()) return;
-    setFormattingAi(true);
     try {
       const prev = form.anamnesis;
-      const r = await api.post<{ formatted: string }>('/ai/format-text', {
-        text: prev,
-        context: 'veterinary_anamnesis',
-      });
+      const result = await formatTextMutation.mutateAsync({ text: prev, context: 'veterinary_anamnesis' });
       setOriginalAnamnese(prev);
-      setForm(p => ({ ...p, anamnesis: r.data.formatted || prev }));
+      setForm(p => ({ ...p, anamnesis: result.formatted || prev }));
       toast.success('Anamnese formatada com IA');
-    } catch { toast.error('Não foi possível formatar com IA'); } finally { setFormattingAi(false); }
+    } catch { toast.error('Não foi possível formatar com IA'); }
   };
   const handleUndoAnamnese = () => {
     if (originalAnamnese == null) return;
@@ -281,9 +222,8 @@ export default function MedicalRecordDetailPage() {
     if (!record.veterinarian_id) { toast.error('Defina um veterinário na ficha antes de prescrever'); return; }
     const meds = presForm.medications.filter(m => m.name.trim());
     if (meds.length === 0) { toast.error('Adicione ao menos um medicamento'); return; }
-    setPresSaving(true);
     try {
-      await api.post('/prescriptions', {
+      await createPrescription.mutateAsync({
         patient_id: record.patient_id,
         veterinarian_id: record.veterinarian_id,
         prescription_date: dayjs().format('YYYY-MM-DD'),
@@ -302,8 +242,8 @@ export default function MedicalRecordDetailPage() {
       toast.success('Prescrição criada');
       setPresModal(false);
       setPresForm({ prescription_type: 'receita', observations: '', medications: [emptyMed()] });
-      if (record.patient_id) fetchRelated(record.patient_id);
-    } catch { toast.error('Erro ao criar prescrição'); } finally { setPresSaving(false); }
+      queryClient.invalidateQueries({ queryKey: medicalRecordKeys.relatedPrescriptions(record.patient_id) });
+    } catch { toast.error('Erro ao criar prescrição'); }
   };
 
   if (loading) return <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground/60" /></div>;

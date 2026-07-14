@@ -16,17 +16,13 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import api from '@/lib/axios';
-
-interface ReminderSettings {
-  confirmation_enabled: boolean;
-  confirmation_hours_before: number;
-  reminder_enabled: boolean;
-  reminder_hours_before: number;
-  follow_up_enabled: boolean;
-  follow_up_hours_after: number;
-  follow_up_only_when_completed: boolean;
-}
+import {
+  useReminderSettingsQuery,
+  useSystemReminderDefaultsQuery,
+  useSaveReminderSettingsMutation,
+  useResetReminderSettingsMutation,
+} from '@/hooks/apiHooks/useReminderSettings';
+import type { ReminderSettings } from '@/app/types/reminder-settings';
 
 const FIELD_INFO: Record<keyof ReminderSettings, string> = {
   confirmation_enabled: 'Envia mensagem de confirmação de presença antes da consulta.',
@@ -56,49 +52,36 @@ function FieldLabel({ label, field }: { label: string; field: keyof ReminderSett
 
 export default function RemindersSettingsPage() {
   const [settings, setSettings] = useState<ReminderSettings | null>(null);
-  const [systemDefaults, setSystemDefaults] = useState<ReminderSettings | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [resetting, setResetting] = useState(false);
+
+  const { data: effective, isLoading: loading } = useReminderSettingsQuery();
+  const { data: systemDefaults } = useSystemReminderDefaultsQuery();
+  const saveMutation = useSaveReminderSettingsMutation();
+  const resetMutation = useResetReminderSettingsMutation();
+  const saving = saveMutation.isPending;
+  const resetting = resetMutation.isPending;
 
   useEffect(() => {
-    Promise.all([
-      api.get<ReminderSettings>('/settings/reminders'),
-      api.get<ReminderSettings>('/settings/reminders/system'),
-    ])
-      .then(([eff, sys]) => {
-        setSettings(eff.data);
-        setSystemDefaults(sys.data);
-      })
-      .catch(() => toast.error('Erro ao carregar configurações de lembretes.'))
-      .finally(() => setLoading(false));
-  }, []);
+    if (effective) setSettings(effective);
+  }, [effective]);
 
   const handleSave = async () => {
     if (!settings) return;
-    setSaving(true);
     try {
-      const res = await api.put<ReminderSettings>('/settings/reminders', settings);
-      setSettings(res.data);
+      const saved = await saveMutation.mutateAsync(settings);
+      setSettings(saved);
       toast.success('Configurações salvas com sucesso.');
     } catch {
       toast.error('Erro ao salvar configurações.');
-    } finally {
-      setSaving(false);
     }
   };
 
   const handleReset = async () => {
-    setResetting(true);
     try {
-      await api.delete('/settings/reminders');
-      const res = await api.get<ReminderSettings>('/settings/reminders');
-      setSettings(res.data);
+      const reset = await resetMutation.mutateAsync();
+      setSettings(reset);
       toast.success('Configurações redefinidas para o padrão do sistema.');
     } catch {
       toast.error('Erro ao redefinir configurações.');
-    } finally {
-      setResetting(false);
     }
   };
 

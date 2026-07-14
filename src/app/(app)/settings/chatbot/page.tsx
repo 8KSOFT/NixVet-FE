@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,17 +19,8 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { getApiErrorMessage } from '@/app/utils/api-error-message';
-import api from '@/lib/axios';
-
-interface ChatbotSettings {
-  persona_name?: string;
-  greeting_message?: string | null;
-  farewell_message?: string | null;
-  fallback_message?: string | null;
-  emergency_message?: string | null;
-  human_handoff_message?: string | null;
-  system_prompt_extra?: string | null;
-}
+import { useChatbotSettingsQuery, useSaveChatbotSettingsMutation } from '@/hooks/apiHooks/useChatbotSettings';
+import type { ChatbotSettings } from '@/app/types/chatbot-settings';
 
 const DEFAULTS: Record<string, string> = {
   persona_name: 'Assistente',
@@ -58,44 +49,34 @@ export default function ChatbotSettingsPage() {
   const { register, handleSubmit, reset, formState: { errors } } = useForm<ChatbotSettings>({
     defaultValues: DEFAULTS,
   });
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
 
-  const fetchSettings = async () => {
-    setLoading(true);
-    try {
-      const res = await api.get<ChatbotSettings>('/chatbot-settings');
-      const data = res.data ?? {};
-      reset({
-        persona_name: data.persona_name ?? DEFAULTS.persona_name,
-        greeting_message: data.greeting_message ?? DEFAULTS.greeting_message,
-        farewell_message: data.farewell_message ?? DEFAULTS.farewell_message,
-        fallback_message: data.fallback_message ?? DEFAULTS.fallback_message,
-        emergency_message: data.emergency_message ?? DEFAULTS.emergency_message,
-        human_handoff_message: data.human_handoff_message ?? DEFAULTS.human_handoff_message,
-        system_prompt_extra: data.system_prompt_extra ?? '',
-      });
-    } catch {
-      reset(DEFAULTS);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data, isLoading: loading, isError } = useChatbotSettingsQuery();
+  const saveMutation = useSaveChatbotSettingsMutation();
+  const saving = saveMutation.isPending;
 
   useEffect(() => {
-    fetchSettings();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (isError) {
+      reset(DEFAULTS);
+      return;
+    }
+    if (!data) return;
+    reset({
+      persona_name: data.persona_name ?? DEFAULTS.persona_name,
+      greeting_message: data.greeting_message ?? DEFAULTS.greeting_message,
+      farewell_message: data.farewell_message ?? DEFAULTS.farewell_message,
+      fallback_message: data.fallback_message ?? DEFAULTS.fallback_message,
+      emergency_message: data.emergency_message ?? DEFAULTS.emergency_message,
+      human_handoff_message: data.human_handoff_message ?? DEFAULTS.human_handoff_message,
+      system_prompt_extra: data.system_prompt_extra ?? '',
+    });
+  }, [data, isError, reset]);
 
   const onSubmit = async (values: ChatbotSettings) => {
-    setSaving(true);
     try {
-      await api.put('/chatbot-settings', values);
+      await saveMutation.mutateAsync(values);
       toast.success('Configurações do chatbot salvas');
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao salvar'));
-    } finally {
-      setSaving(false);
     }
   };
 

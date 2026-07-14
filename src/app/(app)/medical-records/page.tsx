@@ -11,44 +11,17 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { Loader2, Plus, Search, UserPlus, PawPrint, FolderOpen, ChevronRight } from 'lucide-react';
-import api from '@/lib/axios';
-import { API_PAGE_SIZE, fetchAllListPages, listQueryParams, parseListResponse } from '@/lib/pagination';
+import { API_PAGE_SIZE } from '@/lib/pagination';
 import { ListPagination } from '@/components/list-pagination';
 import dayjs from 'dayjs';
-
-interface Patient {
-  id: string;
-  name: string;
-  species?: string;
-  breed?: string;
-  tutor_id?: string | null;
-}
-interface Tutor {
-  id: string;
-  name: string;
-  email?: string;
-  phone?: string;
-}
-interface Vet {
-  id: string;
-  name: string;
-}
-interface MedicalRecord {
-  id: string;
-  patient_id: string;
-  veterinarian_id: string | null;
-  record_type: string;
-  record_date: string;
-  chief_complaint: string | null;
-  diagnosis: string | null;
-  status: string;
-  patient?: Patient;
-  veterinarian?: Vet;
-  createdAt: string;
-}
+import type { MedicalRecord, MedicalRecordPatientRef } from '@/app/types/medical-record';
+import { useCreateMedicalRecordMutation, useMedicalRecordsQuery } from '@/hooks/apiHooks/useMedicalRecords';
+import { usePatientsListQuery, useCreatePatientMutation } from '@/hooks/apiHooks/usePatients';
+import { useTutorsListQuery, useCreateTutorMutation } from '@/hooks/apiHooks/useTutors';
+import { useVeterinariansQuery } from '@/hooks/apiHooks/useUsers';
 
 interface PatientRecordGroup {
-  patient: Patient;
+  patient: MedicalRecordPatientRef;
   records: MedicalRecord[];
 }
 
@@ -81,83 +54,37 @@ const emptyPatient = () => ({
 
 export default function MedicalRecordsListPage() {
   const router = useRouter();
-  const [records, setRecords] = useState<MedicalRecord[]>([]);
-  const [patients, setPatients] = useState<Patient[]>([]);
-  const [tutors, setTutors] = useState<Tutor[]>([]);
-  const [vets, setVets] = useState<Vet[]>([]);
-  const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [filterPatient, setFilterPatient] = useState('');
   const [search, setSearch] = useState('');
   const [listPage, setListPage] = useState(1);
-  const [listTotal, setListTotal] = useState(0);
-  const [listTotalPages, setListTotalPages] = useState(1);
 
   const [form, setForm] = useState(emptyForm());
 
   const [tutorModal, setTutorModal] = useState(false);
   const [tutorForm, setTutorForm] = useState(emptyTutor());
-  const [tutorSaving, setTutorSaving] = useState(false);
 
   const [patientModal, setPatientModal] = useState(false);
   const [patientForm, setPatientForm] = useState(emptyPatient());
-  const [patientSaving, setPatientSaving] = useState(false);
 
-  const fetchRecords = async () => {
-    setLoading(true);
-    try {
-      const params: Record<string, string | number> = {
-        ...listQueryParams(listPage),
-      };
-      if (filterPatient) params.patient_id = filterPatient;
-      const r = await api.get('/medical-records', { params });
-      const p = parseListResponse<MedicalRecord>(r.data, listPage);
-      setRecords(p.items);
-      setListTotal(p.total);
-      setListTotalPages(p.totalPages);
-    } catch {
-      setRecords([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: recordsPage, isLoading: loading } = useMedicalRecordsQuery(listPage, filterPatient || undefined);
+  const records = recordsPage?.items ?? [];
+  const listTotal = recordsPage?.total ?? 0;
+  const listTotalPages = recordsPage?.totalPages ?? 1;
 
-  const fetchPatients = async () => {
-    try {
-      const all = await fetchAllListPages<Patient>('/patients');
-      setPatients(all);
-    } catch {
-      setPatients([]);
-    }
-  };
-  const fetchTutors = async () => {
-    try {
-      const all = await fetchAllListPages<Tutor>('/tutors');
-      setTutors(all);
-    } catch {
-      setTutors([]);
-    }
-  };
-  const fetchVets = async () => {
-    try {
-      const all = await fetchAllListPages<Vet>('/users/veterinarians');
-      setVets(all);
-    } catch {
-      setVets([]);
-    }
-  };
+  const { data: patients = [] } = usePatientsListQuery();
+  const { data: tutors = [] } = useTutorsListQuery();
+  const { data: vets = [] } = useVeterinariansQuery();
 
-  useEffect(() => {
-    fetchPatients();
-    fetchTutors();
-    fetchVets();
-  }, []);
+  const createRecord = useCreateMedicalRecordMutation();
+  const createTutor = useCreateTutorMutation();
+  const createPatient = useCreatePatientMutation();
+  const tutorSaving = createTutor.isPending;
+  const patientSaving = createPatient.isPending;
+
   useEffect(() => {
     setListPage(1);
   }, [filterPatient]);
-  useEffect(() => {
-    fetchRecords();
-  }, [filterPatient, listPage]);
 
   const handleCreate = async () => {
     if (!form.patient_id) {
@@ -165,10 +92,10 @@ export default function MedicalRecordsListPage() {
       return;
     }
     try {
-      const res = await api.post<MedicalRecord>('/medical-records', form);
+      const record = await createRecord.mutateAsync(form);
       toast.success('Prontuário criado');
       setModalVisible(false);
-      router.push(`/medical-records/prontuario/${res.data.patient_id}`);
+      router.push(`/medical-records/prontuario/${record.patient_id}`);
     } catch {
       toast.error('Erro ao criar prontuário');
     }
@@ -179,19 +106,15 @@ export default function MedicalRecordsListPage() {
       toast.error('Preencha nome, CPF, telefone, email e CEP');
       return;
     }
-    setTutorSaving(true);
     try {
-      const res = await api.post<Tutor>('/tutors', tutorForm);
+      const tutor = await createTutor.mutateAsync(tutorForm);
       toast.success('Tutor cadastrado');
-      await fetchTutors();
       setTutorModal(false);
       setTutorForm(emptyTutor());
-      setPatientForm((p) => ({ ...p, tutor_id: res.data.id }));
+      setPatientForm((p) => ({ ...p, tutor_id: tutor.id }));
       if (!patientModal) setPatientModal(true);
     } catch {
       toast.error('Erro ao cadastrar tutor');
-    } finally {
-      setTutorSaving(false);
     }
   };
 
@@ -200,31 +123,24 @@ export default function MedicalRecordsListPage() {
       toast.error('Preencha nome, espécie e raça');
       return;
     }
-    setPatientSaving(true);
     try {
-      const payload: Record<string, unknown> = {
+      const hasTutor = !!patientForm.tutor_id && patientForm.tutor_id !== '_none';
+      const patient = await createPatient.mutateAsync({
         name: patientForm.name,
         species: patientForm.species,
         breed: patientForm.breed,
         sex: patientForm.sex,
         age: Number(patientForm.age) || 0,
         weight: Number(patientForm.weight) || 0,
-      };
-      if (patientForm.tutor_id && patientForm.tutor_id !== '_none') {
-        payload.tutor_id = patientForm.tutor_id;
-      } else {
-        payload.no_tutor_reason = 'EMERGENCIA';
-      }
-      const res = await api.post<Patient>('/patients', payload);
+        tutor_id: hasTutor ? patientForm.tutor_id : null,
+        no_tutor_reason: hasTutor ? null : 'EMERGENCIA',
+      });
       toast.success('Animal cadastrado');
-      await fetchPatients();
-      setForm((p) => ({ ...p, patient_id: res.data.id }));
+      setForm((p) => ({ ...p, patient_id: patient.id }));
       setPatientModal(false);
       setPatientForm(emptyPatient());
     } catch {
       toast.error('Erro ao cadastrar animal');
-    } finally {
-      setPatientSaving(false);
     }
   };
 

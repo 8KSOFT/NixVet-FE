@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useState } from "react";
 import { DashboardCreateFormDialog } from "@/components/dashboard-create-form-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,16 +29,15 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Plus, Eye, Trash2, Loader2 } from "lucide-react";
-import api from "@/lib/axios";
-
-interface ClinicTerm {
-  id: string;
-  name: string;
-  term_type: string;
-  mime_type: string | null;
-  is_active: boolean;
-  display_order: number;
-}
+import {
+  useClinicTermTemplatesQuery,
+  useRequestClinicTermUploadUrlMutation,
+  useCreateClinicTermTemplateMutation,
+  useToggleClinicTermTemplateActiveMutation,
+  useClinicTermDownloadUrlMutation,
+  useDeleteClinicTermTemplateMutation,
+} from "@/hooks/apiHooks/useClinicTermTemplates";
+import type { ClinicTermTemplate as ClinicTerm } from "@/app/types/clinic-term-template";
 
 const TERM_TYPES: Array<{ value: string; label: string }> = [
   { value: "medical_discharge", label: "Alta médica" },
@@ -51,10 +50,7 @@ const TERM_TYPES: Array<{ value: string; label: string }> = [
 const typeLabel = (t: string) => TERM_TYPES.find((x) => x.value === t)?.label ?? t;
 
 export default function ClinicTermsPage() {
-  const [terms, setTerms] = useState<ClinicTerm[]>([]);
-  const [loading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<{ name: string; term_type: string; file: File | null }>({
     name: "",
     term_type: "service_terms",
@@ -65,20 +61,13 @@ export default function ClinicTermsPage() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const r = await api.get<ClinicTerm[]>("/clinic-term-templates");
-      setTerms(Array.isArray(r.data) ? r.data : []);
-    } catch {
-      setTerms([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-  useEffect(() => {
-    load();
-  }, [load]);
+  const { data: terms = [], isLoading: loading } = useClinicTermTemplatesQuery();
+  const requestUploadUrlMutation = useRequestClinicTermUploadUrlMutation();
+  const createMutation = useCreateClinicTermTemplateMutation();
+  const toggleActiveMutation = useToggleClinicTermTemplateActiveMutation();
+  const downloadUrlMutation = useClinicTermDownloadUrlMutation();
+  const deleteMutation = useDeleteClinicTermTemplateMutation();
+  const saving = requestUploadUrlMutation.isPending || createMutation.isPending;
 
   const handleUpload = async () => {
     if (!form.name.trim()) {
@@ -89,13 +78,12 @@ export default function ClinicTermsPage() {
       toast.error("Selecione um arquivo PDF ou DOCX");
       return;
     }
-    setSaving(true);
     try {
       // 1. PAR de upload no OCI
-      const { data: par } = await api.post<{ upload_url: string; storage_path: string }>(
-        "/clinic-term-templates/upload-url",
-        { filename: form.file.name, mime_type: form.file.type },
-      );
+      const par = await requestUploadUrlMutation.mutateAsync({
+        filename: form.file.name,
+        mime_type: form.file.type,
+      });
       // 2. PUT direto no OCI
       const put = await fetch(par.upload_url, {
         method: "PUT",
@@ -104,7 +92,7 @@ export default function ClinicTermsPage() {
       });
       if (!put.ok) throw new Error("Falha no upload para o storage");
       // 3. Persiste metadados
-      await api.post("/clinic-term-templates", {
+      await createMutation.mutateAsync({
         name: form.name,
         term_type: form.term_type,
         storage_path: par.storage_path,
@@ -115,18 +103,14 @@ export default function ClinicTermsPage() {
       toast.success("Termo adicionado");
       setAddOpen(false);
       setForm({ name: "", term_type: "service_terms", file: null });
-      load();
     } catch {
       toast.error("Erro ao adicionar termo");
-    } finally {
-      setSaving(false);
     }
   };
 
   const toggleActive = async (term: ClinicTerm) => {
     try {
-      await api.put(`/clinic-term-templates/${term.id}`, { is_active: !term.is_active });
-      setTerms((prev) => prev.map((t) => (t.id === term.id ? { ...t, is_active: !t.is_active } : t)));
+      await toggleActiveMutation.mutateAsync({ id: term.id, is_active: !term.is_active });
     } catch {
       toast.error("Erro ao atualizar");
     }
@@ -136,8 +120,8 @@ export default function ClinicTermsPage() {
     setPreviewLoading(true);
     setPreviewOpen(true);
     try {
-      const { data } = await api.get<{ download_url: string }>(`/clinic-term-templates/${id}/download-url`);
-      setPreviewUrl(data.download_url);
+      const url = await downloadUrlMutation.mutateAsync(id);
+      setPreviewUrl(url);
     } catch {
       toast.error("Erro ao carregar o arquivo");
       setPreviewOpen(false);
@@ -149,9 +133,8 @@ export default function ClinicTermsPage() {
   const handleDelete = async (id: string) => {
     if (!window.confirm("Excluir este termo?")) return;
     try {
-      await api.delete(`/clinic-term-templates/${id}`);
+      await deleteMutation.mutateAsync(id);
       toast.success("Termo excluído");
-      load();
     } catch {
       toast.error("Erro ao excluir");
     }

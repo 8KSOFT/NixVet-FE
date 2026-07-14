@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Plus, Pencil, PowerOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -23,18 +23,14 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import api from '@/lib/axios';
 import { toast } from 'sonner';
-
-interface HealthPlan {
-  id: string;
-  name: string;
-  document: string | null;
-  contact_phone: string | null;
-  contact_email: string | null;
-  reimbursement_days: number;
-  active: boolean;
-}
+import {
+  useHealthPlansQuery,
+  useCreateHealthPlanMutation,
+  useUpdateHealthPlanMutation,
+  useDeactivateHealthPlanMutation,
+} from '@/hooks/apiHooks/useHealthPlans';
+import type { HealthPlan } from '@/app/types/health-plan';
 
 const EMPTY_FORM = {
   name: '',
@@ -46,26 +42,15 @@ const EMPTY_FORM = {
 };
 
 export default function PlanosSaudePage() {
-  const [plans, setPlans] = useState<HealthPlan[]>([]);
-  const [loading, setLoading] = useState(true);
   const [includeInactive, setIncludeInactive] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<HealthPlan | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
 
-  const fetch = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await api.get<HealthPlan[]>(`/health-plans?includeInactive=${includeInactive}`);
-      setPlans(Array.isArray(res.data) ? res.data : []);
-    } catch {
-      toast.error('Erro ao carregar planos');
-    } finally {
-      setLoading(false);
-    }
-  }, [includeInactive]);
-
-  useEffect(() => { fetch(); }, [fetch]);
+  const { data: plans = [], isLoading: loading } = useHealthPlansQuery(includeInactive);
+  const createMutation = useCreateHealthPlanMutation();
+  const updateMutation = useUpdateHealthPlanMutation();
+  const deactivateMutation = useDeactivateHealthPlanMutation();
 
   const openCreate = () => {
     setEditing(null);
@@ -80,8 +65,8 @@ export default function PlanosSaudePage() {
       document: plan.document ?? '',
       contact_phone: plan.contact_phone ?? '',
       contact_email: plan.contact_email ?? '',
-      reimbursement_days: plan.reimbursement_days,
-      active: plan.active,
+      reimbursement_days: plan.reimbursement_days ?? 30,
+      active: plan.active ?? true,
     });
     setModalOpen(true);
   };
@@ -89,14 +74,13 @@ export default function PlanosSaudePage() {
   const handleSave = async () => {
     try {
       if (editing) {
-        await api.patch(`/health-plans/${editing.id}`, form);
+        await updateMutation.mutateAsync({ id: editing.id, payload: form });
         toast.success('Plano atualizado');
       } else {
-        await api.post('/health-plans', form);
+        await createMutation.mutateAsync(form);
         toast.success('Plano criado');
       }
       setModalOpen(false);
-      fetch();
     } catch {
       toast.error('Erro ao salvar');
     }
@@ -104,9 +88,8 @@ export default function PlanosSaudePage() {
 
   const handleDeactivate = async (id: string) => {
     try {
-      await api.delete(`/health-plans/${id}`);
+      await deactivateMutation.mutateAsync(id);
       toast.success('Plano desativado');
-      fetch();
     } catch {
       toast.error('Erro ao desativar');
     }

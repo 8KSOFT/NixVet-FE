@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import dayjs from 'dayjs';
 import {
@@ -14,10 +14,14 @@ import {
   Wallet,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import api from '@/lib/axios';
 import { getStoredUserRole } from '@/lib/role-permissions';
-import { API_PAGE_SIZE, listQueryParams, parseListResponse } from '@/lib/pagination';
+import { API_PAGE_SIZE } from '@/lib/pagination';
 import { ListPagination } from '@/components/list-pagination';
+import {
+  useSuperadminFinanceDashboardQuery,
+  useSuperadminFinanceTenantsQuery,
+} from '@/hooks/apiHooks/useSuperadminFinance';
+import type { FinanceFilter } from '@/app/types/superadmin-finance';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,63 +35,6 @@ import {
   TableHead,
   TableCell,
 } from '@/components/ui/table';
-
-type FinanceFilter =
-  | 'all'
-  | 'active'
-  | 'overdue'
-  | 'trial'
-  | 'trial_expiring'
-  | 'trial_expired'
-  | 'suspended';
-
-interface DashboardData {
-  period: { from: string; to: string };
-  kpis: {
-    mrr_brl: number;
-    revenue_period_brl: number;
-    ai_cost_usd: number;
-    ai_tokens: number;
-    ai_calls: number;
-    ai_cost_usd_period?: number;
-    ai_calls_period?: number;
-    ai_cost_usd_all_time?: number;
-    ai_calls_all_time?: number;
-    tenants_total: number;
-    active: number;
-    overdue: number;
-    trial: number;
-    trial_expiring: number;
-    trial_expired: number;
-    suspended: number;
-  };
-  monthly_revenue: Array<{ month: string; value_brl: number; payments: number }>;
-  monthly_ai_cost: Array<{ month: string; cost_usd: number; tokens: number; calls: number }>;
-  ai_by_operation: Array<{ operation: string; tokens: number; cost_usd: number; calls: number }>;
-  top_ai_tenants: Array<{
-    tenant_id: string;
-    tenant_name: string;
-    tenant_code: string;
-    cost_usd: number;
-    tokens: number;
-    calls: number;
-  }>;
-}
-
-interface FinanceTenantRow {
-  id: string;
-  name: string;
-  code: string;
-  admin_email: string | null;
-  subscription_status: string | null;
-  billing_plan: string | null;
-  plan_value_brl: number;
-  trial_ends_at: string | null;
-  ai_cost_usd: number;
-  ai_tokens: number;
-  ai_calls: number;
-  access_status: string;
-}
 
 const FILTER_TABS: { key: FinanceFilter; label: string }[] = [
   { key: 'all', label: 'Todas' },
@@ -148,70 +95,42 @@ export default function SuperadminFinancePage() {
   const router = useRouter();
   const [from, setFrom] = useState(() => dayjs().startOf('month').format('YYYY-MM-DD'));
   const [to, setTo] = useState(() => dayjs().endOf('month').format('YYYY-MM-DD'));
-  const [dashboard, setDashboard] = useState<DashboardData | null>(null);
-  const [loadingDash, setLoadingDash] = useState(true);
-
   const [filter, setFilter] = useState<FinanceFilter>('all');
-  const [tenants, setTenants] = useState<FinanceTenantRow[]>([]);
   const [listPage, setListPage] = useState(1);
-  const [listTotal, setListTotal] = useState(0);
-  const [listTotalPages, setListTotalPages] = useState(1);
-  const [loadingTenants, setLoadingTenants] = useState(true);
 
-  const dateParams = {
-    from: `${from}T00:00:00`,
-    to: `${to}T23:59:59`,
-  };
+  const fromParam = `${from}T00:00:00`;
+  const toParam = `${to}T23:59:59`;
 
-  const loadDashboard = useCallback(async () => {
-    setLoadingDash(true);
-    try {
-      const { data } = await api.get<DashboardData>('/superadmin/finance/dashboard', {
-        params: dateParams,
-      });
-      setDashboard(data);
-    } catch {
-      toast.error('Falha ao carregar dashboard financeiro');
-      setDashboard(null);
-    } finally {
-      setLoadingDash(false);
-    }
-  }, [from, to]);
-
-  const loadTenants = useCallback(async () => {
-    setLoadingTenants(true);
-    try {
-      const { data } = await api.get('/superadmin/finance/tenants', {
-        params: listQueryParams(listPage, API_PAGE_SIZE, {
-          filter,
-          ...dateParams,
-        }),
-      });
-      const p = parseListResponse<FinanceTenantRow>(data, listPage);
-      setTenants(p.items);
-      setListTotal(p.total);
-      setListTotalPages(p.totalPages);
-    } catch {
-      toast.error('Falha ao carregar clínicas');
-      setTenants([]);
-    } finally {
-      setLoadingTenants(false);
-    }
-  }, [filter, from, to, listPage]);
+  const {
+    data: dashboard,
+    isLoading: loadingDash,
+    isError: dashboardError,
+    refetch: refetchDashboard,
+  } = useSuperadminFinanceDashboardQuery(fromParam, toParam);
+  const {
+    data: tenantsData,
+    isLoading: loadingTenants,
+    isError: tenantsError,
+    refetch: refetchTenants,
+  } = useSuperadminFinanceTenantsQuery(filter, fromParam, toParam, listPage);
+  const tenants = tenantsData?.items ?? [];
+  const listTotal = tenantsData?.total ?? 0;
+  const listTotalPages = tenantsData?.totalPages ?? 1;
 
   useEffect(() => {
     if (getStoredUserRole() !== 'superadmin') {
       toast.error('Apenas superadmin pode acessar.');
       router.replace('/dashboard');
-      return;
     }
-    loadDashboard();
-  }, [loadDashboard, router]);
+  }, [router]);
 
   useEffect(() => {
-    if (getStoredUserRole() !== 'superadmin') return;
-    loadTenants();
-  }, [loadTenants]);
+    if (dashboardError) toast.error('Falha ao carregar dashboard financeiro');
+  }, [dashboardError]);
+
+  useEffect(() => {
+    if (tenantsError) toast.error('Falha ao carregar clínicas');
+  }, [tenantsError]);
 
   useEffect(() => {
     setListPage(1);
@@ -240,8 +159,8 @@ export default function SuperadminFinancePage() {
           size="sm"
           disabled={refreshing}
           onClick={() => {
-            loadDashboard();
-            loadTenants();
+            void refetchDashboard();
+            void refetchTenants();
           }}
         >
           <RefreshCw className={`size-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />

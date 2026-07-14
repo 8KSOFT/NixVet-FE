@@ -1,10 +1,9 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Plus, Package, ShoppingCart, Trash2, Pencil } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
+import { Plus, Package, ShoppingCart, Trash2, Pencil, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog,
@@ -13,6 +12,17 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import {
   Table,
   TableBody,
@@ -23,49 +33,18 @@ import {
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import api from '@/lib/axios';
+import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
-
-interface Pricing {
-  sale_price: number;
-  cost: number;
-  tax_percentage: number;
-  tax_amount: number;
-  client_total: number;
-  margin_value: number;
-  margin_pct: number;
-  markup_pct: number | null;
-}
-
-interface Product {
-  id: string;
-  name: string;
-  description: string | null;
-  sku: string | null;
-  cost_price: number | null;
-  sale_price: number;
-  tax_percentage: number;
-  stock_quantity: number;
-  active: boolean;
-  pricing?: Pricing;
-}
-
-interface SaleItem {
-  id: string;
-  product_name: string;
-  quantity: number;
-  unit_price: number;
-  line_total: number;
-}
-
-interface Sale {
-  id: string;
-  sold_at: string;
-  total_gross: number;
-  total_tax: number;
-  total_amount: number;
-  items: SaleItem[];
-}
+import type { Product, ProductPayload } from '@/app/types/product';
+import {
+  useCreateProductMutation,
+  useCreateProductSaleMutation,
+  useDeleteProductMutation,
+  useProductsQuery,
+  useProductSalesQuery,
+  useUpdateProductMutation,
+} from '@/hooks/apiHooks/useProducts';
 
 function fmt(n: number | null | undefined) {
   return Number(n ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -75,55 +54,42 @@ function computeMargin(salePrice: number, cost: number, tax: number) {
   const tax_amount = Math.round(((salePrice * tax) / 100) * 100) / 100;
   const client_total = Math.round((salePrice + tax_amount) * 100) / 100;
   const margin_value = Math.round((salePrice - cost) * 100) / 100;
-  const margin_pct = salePrice > 0 ? Math.round((margin_value / salePrice) * 10000) / 100 : 0;
-  return { tax_amount, client_total, margin_value, margin_pct };
+  const margin_percentage = salePrice > 0 ? Math.round((margin_value / salePrice) * 10000) / 100 : 0;
+  return { tax_amount, client_total, margin_value, margin_percentage };
 }
 
 const EMPTY_FORM = {
   name: '',
+  description: '',
   sku: '',
   cost_price: '',
   sale_price: '',
   tax_percentage: '',
   stock_quantity: '',
+  active: true,
 };
 
 export default function ProdutosPage() {
   const [tab, setTab] = useState<'products' | 'sales'>('products');
-  const [products, setProducts] = useState<Product[]>([]);
-  const [sales, setSales] = useState<Sale[]>([]);
-  const [loading, setLoading] = useState(true);
+
+  const { data: products = [], isLoading: loadingProducts } = useProductsQuery(true);
+  const { data: sales = [], isLoading: loadingSales } = useProductSalesQuery();
+
+  const createProduct = useCreateProductMutation();
+  const updateProduct = useUpdateProductMutation();
+  const deleteProduct = useDeleteProductMutation();
+  const createSale = useCreateProductSaleMutation();
+
+  const loading = tab === 'products' ? loadingProducts : loadingSales;
 
   // Dialog produto
   const [editing, setEditing] = useState<Product | null>(null);
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [productDialog, setProductDialog] = useState(false);
-  const [savingProduct, setSavingProduct] = useState(false);
 
   // Dialog venda
   const [saleDialog, setSaleDialog] = useState(false);
   const [cart, setCart] = useState<{ product_id: string; quantity: number }[]>([]);
-  const [savingSale, setSavingSale] = useState(false);
-
-  const fetchAll = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [prodRes, salesRes] = await Promise.all([
-        api.get<Product[]>('/products?include_inactive=true'),
-        api.get<Sale[]>('/products/sales'),
-      ]);
-      setProducts(Array.isArray(prodRes.data) ? prodRes.data : []);
-      setSales(Array.isArray(salesRes.data) ? salesRes.data : []);
-    } catch {
-      toast.error('Erro ao carregar produtos');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchAll();
-  }, [fetchAll]);
 
   const openNewProduct = () => {
     setEditing(null);
@@ -135,11 +101,13 @@ export default function ProdutosPage() {
     setEditing(p);
     setForm({
       name: p.name,
+      description: p.description ?? '',
       sku: p.sku ?? '',
       cost_price: p.cost_price != null ? String(p.cost_price) : '',
       sale_price: String(p.sale_price),
       tax_percentage: String(p.tax_percentage),
       stock_quantity: String(p.stock_quantity),
+      active: p.active,
     });
     setProductDialog(true);
   };
@@ -154,37 +122,36 @@ export default function ProdutosPage() {
       toast.error('Informe nome e preço de venda');
       return;
     }
-    setSavingProduct(true);
-    const payload = {
+    const payload: ProductPayload = {
       name: form.name.trim(),
+      description: form.description.trim() || undefined,
       sku: form.sku.trim() || undefined,
       cost_price: form.cost_price ? Number(form.cost_price) : undefined,
       sale_price: Number(form.sale_price),
       tax_percentage: form.tax_percentage ? Number(form.tax_percentage) : 0,
       stock_quantity: form.stock_quantity ? Number(form.stock_quantity) : 0,
+      active: form.active,
     };
     try {
       if (editing) {
-        await api.patch(`/products/${editing.id}`, payload);
+        await updateProduct.mutateAsync({ id: editing.id, payload });
         toast.success('Produto atualizado');
       } else {
-        await api.post('/products', payload);
+        await createProduct.mutateAsync(payload);
         toast.success('Produto criado');
       }
       setProductDialog(false);
-      fetchAll();
     } catch {
       toast.error('Erro ao salvar produto');
-    } finally {
-      setSavingProduct(false);
     }
   };
 
-  const deleteProduct = async (p: Product) => {
+  const savingProduct = createProduct.isPending || updateProduct.isPending;
+
+  const handleDeleteProduct = async (p: Product) => {
     try {
-      await api.delete(`/products/${p.id}`);
+      await deleteProduct.mutateAsync(p.id);
       toast.success('Produto removido');
-      fetchAll();
     } catch {
       toast.error('Erro ao remover produto');
     }
@@ -232,16 +199,12 @@ export default function ProdutosPage() {
       toast.error('Adicione ao menos um produto');
       return;
     }
-    setSavingSale(true);
     try {
-      await api.post('/products/sales', { items: cart });
+      await createSale.mutateAsync({ items: cart });
       toast.success('Venda registrada — lançamento financeiro gerado');
       setSaleDialog(false);
-      fetchAll();
     } catch {
       toast.error('Erro ao registrar venda');
-    } finally {
-      setSavingSale(false);
     }
   };
 
@@ -305,11 +268,15 @@ export default function ProdutosPage() {
                         {p.name}
                         {p.sku ? <span className="ml-2 text-xs text-muted-foreground">{p.sku}</span> : null}
                       </TableCell>
-                      <TableCell className="text-right tabular-nums">{fmt(p.cost_price)}</TableCell>
-                      <TableCell className="text-right tabular-nums">{fmt(p.sale_price)}</TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {p.cost_price_formatted ?? fmt(p.cost_price)}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {p.sale_price_formatted ?? fmt(p.sale_price)}
+                      </TableCell>
                       <TableCell className="text-right tabular-nums">{Number(p.tax_percentage)}%</TableCell>
                       <TableCell className="text-right tabular-nums">
-                        {p.pricing ? `${p.pricing.margin_pct}%` : '—'}
+                        {p.pricing ? `${p.pricing.margin_percentage}%` : '—'}
                       </TableCell>
                       <TableCell className="text-right tabular-nums">{p.stock_quantity}</TableCell>
                       <TableCell className="text-right">
@@ -317,9 +284,30 @@ export default function ProdutosPage() {
                           <Button size="icon" variant="ghost" onClick={() => openEditProduct(p)}>
                             <Pencil className="size-4" />
                           </Button>
-                          <Button size="icon" variant="ghost" onClick={() => deleteProduct(p)}>
-                            <Trash2 className="size-4" />
-                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button size="icon" variant="ghost">
+                                <Trash2 className="size-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Remover produto</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Tem certeza que deseja remover &quot;{p.name}&quot;? Essa ação não pode ser desfeita.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction
+                                  className="bg-destructive hover:bg-destructive/90"
+                                  onClick={() => handleDeleteProduct(p)}
+                                >
+                                  Remover
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -373,6 +361,14 @@ export default function ProdutosPage() {
               <Input id="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
             </div>
             <div>
+              <Label htmlFor="description">Descrição (opcional)</Label>
+              <Textarea
+                id="description"
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+              />
+            </div>
+            <div>
               <Label htmlFor="sku">SKU / código (opcional)</Label>
               <Input id="sku" value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} />
             </div>
@@ -418,11 +414,22 @@ export default function ProdutosPage() {
               </div>
             </div>
 
+            <div className="flex items-center justify-between rounded-md border border-border p-3">
+              <Label htmlFor="active" className="cursor-pointer">
+                Produto ativo
+              </Label>
+              <Switch
+                id="active"
+                checked={form.active}
+                onCheckedChange={(checked) => setForm({ ...form, active: checked })}
+              />
+            </div>
+
             <div className="rounded-md bg-muted/50 p-3 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Margem (lucro)</span>
                 <span className="font-medium">
-                  {fmt(formPreview.margin_value)} ({formPreview.margin_pct}%)
+                  {fmt(formPreview.margin_value)} ({formPreview.margin_percentage}%)
                 </span>
               </div>
               <div className="flex justify-between">
@@ -440,6 +447,7 @@ export default function ProdutosPage() {
               Cancelar
             </Button>
             <Button onClick={saveProduct} disabled={savingProduct}>
+              {savingProduct && <Loader2 className="mr-2 size-4 animate-spin" />}
               Salvar
             </Button>
           </DialogFooter>
@@ -462,7 +470,7 @@ export default function ProdutosPage() {
                   className="flex w-full items-center justify-between rounded-md border border-border p-2 text-left text-sm hover:bg-muted/50"
                 >
                   <span>{p.name}</span>
-                  <span className="text-muted-foreground">{fmt(p.sale_price)}</span>
+                  <span className="text-muted-foreground">{p.sale_price_formatted ?? fmt(p.sale_price)}</span>
                 </button>
               ))}
             </div>
@@ -506,10 +514,11 @@ export default function ProdutosPage() {
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setSaleDialog(false)} disabled={savingSale}>
+            <Button variant="outline" onClick={() => setSaleDialog(false)} disabled={createSale.isPending}>
               Cancelar
             </Button>
-            <Button onClick={submitSale} disabled={savingSale || cart.length === 0}>
+            <Button onClick={submitSale} disabled={createSale.isPending || cart.length === 0}>
+              {createSale.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
               Registrar venda
             </Button>
           </DialogFooter>

@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useState } from 'react';
 import type { ApiRequestError } from '@/app/types/api-error';
+import type { AlertConversation, Conversation, ThreadStatus, WhatsappMessage } from '@/app/types/whatsapp-conversation';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
@@ -14,7 +15,23 @@ import { Send, Bot, Loader2, MessageSquare, Lightbulb, Clock, AlertTriangle, Use
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import api from '@/lib/axios';
+import {
+  WHATSAPP_REFRESH_MS,
+  useWhatsappConversationsQuery,
+  useConversationMetricsQuery,
+  useConversationAlertsQuery,
+  useWhatsappConversationStatsQuery,
+  useWhatsappMessagesQuery,
+  useSuggestRepliesMutation,
+  useSendWhatsappMessageMutation,
+  useResumeAiMutation,
+  usePauseAiMutation,
+  useArchiveConversationMutation,
+  useUnarchiveConversationMutation,
+  useCloseByPhoneMutation,
+  useClassifyConversationMutation,
+  useCloseConversationMutation,
+} from '@/hooks/apiHooks/useWhatsappConversations';
 import { CLASSIFICATIONS, classificationInfo } from '@/lib/conversation-classifications';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -22,43 +39,6 @@ import 'dayjs/locale/pt-br';
 
 dayjs.extend(relativeTime);
 dayjs.locale('pt-br');
-
-/** Polling enquanto a aba está visível (evita WebSocket no backend). */
-const WHATSAPP_REFRESH_MS = 5000;
-
-interface ConversationMetrics {
-  unanswered_conversations: number;
-  average_response_time: number;
-  conversations_waiting_clinic: number;
-  conversations_waiting_tutor: number;
-}
-
-interface AlertConversation {
-  id: string;
-  tutor_phone: string;
-  status: string;
-  waiting_since: string | null;
-}
-
-type ThreadStatus = 'waiting_clinic' | 'waiting_tutor' | 'resolved' | null;
-
-interface Conversation {
-  id: string;
-  wa_id: string;
-  contact_name: string | null;
-  status: string;
-  ai_paused: boolean;
-  last_message_at: string | null;
-  archived_at?: string | null;
-  archived_reason?: string | null;
-  closed_at?: string | null;
-  closed_by?: string | null;
-  classification?: string | null;
-  classification_note?: string | null;
-  thread_status?: ThreadStatus;
-  thread_waiting_since?: string | null;
-  whatsapp_number?: { display_phone: string };
-}
 
 function ClassificationBadge({ classification }: { classification: string | null | undefined }) {
   const info = classificationInfo(classification);
@@ -83,20 +63,18 @@ function CloseConversationDialog({
 }) {
   const [classification, setClassification] = React.useState('');
   const [note, setNote] = React.useState('');
-  const [loading, setLoading] = React.useState(false);
+  const closeMutation = useCloseConversationMutation();
+  const loading = closeMutation.isPending;
 
   const handleClose = async () => {
     if (!classification) { toast.error('Selecione uma classificação'); return; }
-    setLoading(true);
     try {
-      await api.post(`/whatsapp/conversations/${conversationId}/close`, { classification, note });
+      await closeMutation.mutateAsync({ conversationId, classification, note });
       toast.success('Conversa encerrada');
       onSuccess();
       onOpenChange(false);
     } catch {
       toast.error('Erro ao encerrar conversa');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -176,14 +154,6 @@ function ThreadStatusTag({ status }: { status: ThreadStatus | undefined }) {
   return null;
 }
 
-interface WhatsappMessage {
-  id: string;
-  direction: 'inbound' | 'outbound';
-  body_text: string | null;
-  created_at?: string;
-  createdAt?: string;
-}
-
 function getApiErrorMessage(error: unknown, fallbackMessage: string): string {
   const typedError = error as ApiRequestError;
   const responseMessage = typedError.response?.data?.message;
@@ -196,61 +166,39 @@ function getApiErrorMessage(error: unknown, fallbackMessage: string): string {
 }
 
 export default function WhatsAppPage() {
-  const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [messages, setMessages] = useState<WhatsappMessage[]>([]);
-  const [loadingConv, setLoadingConv] = useState(true);
-  const [loadingMsg, setLoadingMsg] = useState(false);
   const [sendText, setSendText] = useState('');
-  const [sending, setSending] = useState(false);
-  const [metrics, setMetrics] = useState<ConversationMetrics | null>(null);
-  const [alerts, setAlerts] = useState<AlertConversation[]>([]);
-  const [suggestLoading, setSuggestLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [archivedFilter, setArchivedFilter] = useState<'false' | 'true'>('false');
   const [classificationFilter, setClassificationFilter] = useState<string>('');
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
   const [classifyPopover, setClassifyPopover] = useState(false);
-  const [stats, setStats] = useState<{ closed_today: number } | null>(null);
 
-  const selectedIdRef = useRef<string | null>(null);
-  selectedIdRef.current = selectedId;
-  const archivedFilterRef = useRef<'false' | 'true'>('false');
-  archivedFilterRef.current = archivedFilter;
-  const classificationFilterRef = useRef<string>('');
-  classificationFilterRef.current = classificationFilter;
+  const { data: conversations = [], isLoading: loadingConv } = useWhatsappConversationsQuery(
+    archivedFilter,
+    classificationFilter,
+  );
+  const { data: metrics = null } = useConversationMetricsQuery();
+  const { data: alerts = [] } = useConversationAlertsQuery(20);
+  const { data: stats = null } = useWhatsappConversationStatsQuery();
+  const { data: messages = [], isLoading: loadingMsg } = useWhatsappMessagesQuery(selectedId);
 
-  const fetchConversations = useCallback(async (silent = false) => {
-    if (!silent) setLoadingConv(true);
-    try {
-      const params: Record<string, string | number> = { limit: 50, order: 'desc', archived: archivedFilterRef.current };
-      if (classificationFilterRef.current) params.classification = classificationFilterRef.current;
-      const res = await api.get<{ data: Conversation[]; total: number }>('/whatsapp/conversations', { params });
-      setConversations(res.data?.data ?? []);
-    } catch {
-      if (!silent) toast.error('Erro ao carregar conversas');
-    } finally {
-      if (!silent) setLoadingConv(false);
-    }
-  }, []);
+  const suggestRepliesMutation = useSuggestRepliesMutation();
+  const suggestLoading = suggestRepliesMutation.isPending;
+  const sendMessageMutation = useSendWhatsappMessageMutation();
+  const sending = sendMessageMutation.isPending;
+  const resumeAiMutation = useResumeAiMutation();
+  const pauseAiMutation = usePauseAiMutation();
+  const aiActionLoading = resumeAiMutation.isPending || pauseAiMutation.isPending;
+  const archiveMutation = useArchiveConversationMutation();
+  const unarchiveMutation = useUnarchiveConversationMutation();
+  const archiveLoading = archiveMutation.isPending || unarchiveMutation.isPending;
+  const closeByPhoneMutation = useCloseByPhoneMutation();
+  const alertActionLoading = closeByPhoneMutation.isPending;
+  const classifyMutation = useClassifyConversationMutation();
+  const classifyLoading = classifyMutation.isPending;
 
-  const fetchMetricsAndAlerts = useCallback(async (silent = false) => {
-    try {
-      const [metricsRes, alertsRes, statsRes] = await Promise.all([
-        api.get<ConversationMetrics>('/conversations/metrics'),
-        api.get<{ conversations: AlertConversation[] }>('/conversations/alerts', { params: { minutes: 20 } }),
-        api.get<{ open_count: number; closed_today: number; classified_today: number }>('/whatsapp/conversations/stats'),
-      ]);
-      setMetrics(metricsRes.data ?? null);
-      setAlerts(alertsRes.data?.conversations ?? []);
-      setStats(statsRes.data ?? null);
-    } catch {
-      if (!silent) {
-        setMetrics(null);
-        setAlerts([]);
-      }
-    }
-  }, []);
+  const [alertActionPhone, setAlertActionPhone] = useState<string | null>(null);
 
   const handleSuggestReply = async () => {
     if (!messages.length) {
@@ -260,185 +208,89 @@ export default function WhatsAppPage() {
     const lastInbound = [...messages].reverse().find((m) => m.direction === 'inbound');
     const context = messages.slice(-8).map((m) => `${m.direction}: ${m.body_text || ''}`).join('\n');
     const lastMessage = lastInbound?.body_text ?? '';
-    setSuggestLoading(true);
     setSuggestions([]);
     try {
-      const res = await api.post<{ suggested_replies?: string[] }>('/ai/suggest-replies', {
-        context,
-        lastMessage,
-      });
-      const list = res.data?.suggested_replies ?? [];
-      setSuggestions(Array.isArray(list) ? list : []);
+      const list = await suggestRepliesMutation.mutateAsync({ context, lastMessage });
+      setSuggestions(list);
       if (list.length === 0) toast.info('Nenhuma sugestão retornada');
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao obter sugestões'));
-    } finally {
-      setSuggestLoading(false);
     }
   };
-
-  const loadMessages = useCallback(async (conversationId: string, silent = false) => {
-    if (!silent) setLoadingMsg(true);
-    try {
-      const res = await api.get<{ data: WhatsappMessage[]; total: number }>(
-        `/whatsapp/conversations/${conversationId}/messages`,
-        { params: { limit: 100 } },
-      );
-      const list = res.data?.data ?? [];
-      setMessages(list.reverse());
-    } catch {
-      if (!silent) {
-        toast.error('Erro ao carregar mensagens');
-        setMessages([]);
-      }
-    } finally {
-      if (!silent) setLoadingMsg(false);
-    }
-  }, []);
 
   const handleSend = async () => {
     if (!selectedId || !sendText.trim()) return;
-    setSending(true);
     try {
-      await api.post('/whatsapp/send', {
-        conversation_id: selectedId,
-        text: sendText.trim(),
-      });
+      await sendMessageMutation.mutateAsync({ conversationId: selectedId, text: sendText.trim() });
       setSendText('');
-      await Promise.all([loadMessages(selectedId, false), fetchConversations(true)]);
       toast.success('Mensagem enviada');
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao enviar'));
-    } finally {
-      setSending(false);
     }
   };
 
-  const [aiActionLoading, setAiActionLoading] = useState(false);
-
   const handleResumeAi = async () => {
     if (!selectedId) return;
-    setAiActionLoading(true);
     try {
-      await api.post(`/whatsapp/conversations/${selectedId}/resume-ai`);
-      await fetchConversations(true);
+      await resumeAiMutation.mutateAsync(selectedId);
       toast.success('Bot retomado — IA voltará a responder automaticamente.');
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao retomar bot'));
-    } finally {
-      setAiActionLoading(false);
     }
   };
 
   const handlePauseAi = async () => {
     if (!selectedId) return;
-    setAiActionLoading(true);
     try {
-      await api.post(`/whatsapp/conversations/${selectedId}/pause-ai`);
-      await fetchConversations(true);
+      await pauseAiMutation.mutateAsync(selectedId);
       toast.success('Bot pausado — você pode responder manualmente.');
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao pausar bot'));
-    } finally {
-      setAiActionLoading(false);
     }
   };
 
-  const [archiveLoading, setArchiveLoading] = useState(false);
   const handleArchive = async () => {
     if (!selectedId) return;
-    setArchiveLoading(true);
     try {
-      await api.post(`/whatsapp/conversations/${selectedId}/archive`);
+      await archiveMutation.mutateAsync(selectedId);
       toast.success('Conversa arquivada — pode acessá-la em "Arquivadas".');
       setSelectedId(null);
-      setMessages([]);
-      await fetchConversations(false);
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao arquivar conversa'));
-    } finally {
-      setArchiveLoading(false);
     }
   };
 
   const handleUnarchive = async () => {
     if (!selectedId) return;
-    setArchiveLoading(true);
     try {
-      await api.post(`/whatsapp/conversations/${selectedId}/unarchive`);
+      await unarchiveMutation.mutateAsync(selectedId);
       toast.success('Conversa desarquivada.');
       setSelectedId(null);
-      setMessages([]);
-      await fetchConversations(false);
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao desarquivar conversa'));
-    } finally {
-      setArchiveLoading(false);
     }
   };
-
-  const [alertActionPhone, setAlertActionPhone] = useState<string | null>(null);
-  const [alertActionLoading, setAlertActionLoading] = useState(false);
 
   const handleCloseByPhone = async (phone: string, classification: string) => {
-    setAlertActionLoading(true);
     try {
-      await api.post('/whatsapp/conversations/close-by-phone', { phone, classification });
+      await closeByPhoneMutation.mutateAsync({ phone, classification });
       toast.success('Conversa encerrada');
       setAlertActionPhone(null);
-      await Promise.all([fetchConversations(false), fetchMetricsAndAlerts(true)]);
     } catch {
       toast.error('Erro ao encerrar conversa');
-    } finally {
-      setAlertActionLoading(false);
     }
   };
 
-  const [classifyLoading, setClassifyLoading] = useState(false);
   const handleQuickClassify = async (classification: string) => {
     if (!selectedId) return;
-    setClassifyLoading(true);
     setClassifyPopover(false);
     try {
-      await api.post(`/whatsapp/conversations/${selectedId}/classify`, { classification });
+      await classifyMutation.mutateAsync({ conversationId: selectedId, classification });
       toast.success('Classificação salva');
-      await fetchConversations(true);
     } catch {
       toast.error('Erro ao classificar');
-    } finally {
-      setClassifyLoading(false);
     }
   };
-
-  useEffect(() => {
-    fetchConversations(false);
-    fetchMetricsAndAlerts(false);
-  }, [fetchConversations, fetchMetricsAndAlerts, archivedFilter, classificationFilter]);
-
-  useEffect(() => {
-    if (selectedId) loadMessages(selectedId, false);
-  }, [selectedId, loadMessages]);
-
-  useEffect(() => {
-    const refresh = () => {
-      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
-      void fetchConversations(true);
-      void fetchMetricsAndAlerts(true);
-      const sid = selectedIdRef.current;
-      if (sid) void loadMessages(sid, true);
-    };
-
-    const id = window.setInterval(refresh, WHATSAPP_REFRESH_MS);
-    const onVis = () => {
-      if (document.visibilityState === 'visible') refresh();
-    };
-    document.addEventListener('visibilitychange', onVis);
-
-    return () => {
-      window.clearInterval(id);
-      document.removeEventListener('visibilitychange', onVis);
-    };
-  }, [fetchConversations, fetchMetricsAndAlerts, loadMessages]);
 
   const selectedConv = conversations.find((c) => c.id === selectedId);
 
@@ -449,11 +301,8 @@ export default function WhatsAppPage() {
         open={closeDialogOpen}
         onOpenChange={setCloseDialogOpen}
         conversationId={selectedId}
-        onSuccess={async () => {
+        onSuccess={() => {
           setSelectedId(null);
-          setMessages([]);
-          await fetchConversations(false);
-          await fetchMetricsAndAlerts(true);
         }}
       />
     )}

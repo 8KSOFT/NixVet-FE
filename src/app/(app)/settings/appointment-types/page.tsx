@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,17 +13,15 @@ import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
 import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
 import { getApiErrorMessage } from '@/app/utils/api-error-message';
-import api from '@/lib/axios';
-import { API_PAGE_SIZE, listQueryParams, parseListResponse } from '@/lib/pagination';
+import { API_PAGE_SIZE } from '@/lib/pagination';
 import { ListPagination } from '@/components/list-pagination';
-
-interface AppointmentType {
-  id: string;
-  name: string;
-  duration_minutes: number;
-  color: string | null;
-  is_active: boolean;
-}
+import {
+  useAppointmentTypesPagedQuery,
+  useCreateAppointmentTypeMutation,
+  useUpdateAppointmentTypeMutation,
+  useDeleteAppointmentTypeMutation,
+} from '@/hooks/apiHooks/useAppointmentTypes';
+import type { AppointmentType } from '@/app/types/appointment-type';
 
 const PRESET_COLORS = [
   '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6',
@@ -33,35 +31,20 @@ const PRESET_COLORS = [
 type FormValues = { name: string; duration_minutes: number; color?: string };
 
 export default function AppointmentTypesPage() {
-  const [list, setList] = useState<AppointmentType[]>([]);
-  const [loading, setLoading] = useState(false);
   const [listPage, setListPage] = useState(1);
-  const [listTotal, setListTotal] = useState(0);
-  const [listTotalPages, setListTotalPages] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<AppointmentType | null>(null);
   const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<FormValues>({
     defaultValues: { duration_minutes: 30, color: '#3b82f6' },
   });
 
-  const fetchList = async () => {
-    setLoading(true);
-    try {
-      const res = await api.get('/appointment-types', { params: listQueryParams(listPage) });
-      const p = parseListResponse<AppointmentType>(res.data, listPage);
-      setList(p.items);
-      setListTotal(p.total);
-      setListTotalPages(p.totalPages);
-    } catch {
-      toast.error('Erro ao carregar tipos de procedimento');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchList();
-  }, [listPage]);
+  const { data, isLoading: loading } = useAppointmentTypesPagedQuery(listPage);
+  const list = data?.items ?? [];
+  const listTotal = data?.total ?? 0;
+  const listTotalPages = data?.totalPages ?? 1;
+  const createMutation = useCreateAppointmentTypeMutation();
+  const updateMutation = useUpdateAppointmentTypeMutation();
+  const deleteMutation = useDeleteAppointmentTypeMutation();
 
   const openNew = () => {
     setEditing(null);
@@ -78,16 +61,15 @@ export default function AppointmentTypesPage() {
   const onSubmit = async (values: FormValues) => {
     try {
       if (editing) {
-        await api.put(`/appointment-types/${editing.id}`, values);
+        await updateMutation.mutateAsync({ id: editing.id, payload: values });
         toast.success('Atualizado');
       } else {
-        await api.post('/appointment-types', values);
+        await createMutation.mutateAsync(values);
         toast.success('Tipo criado');
       }
       setModalOpen(false);
       reset();
       setEditing(null);
-      fetchList();
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao salvar'));
     }
@@ -95,9 +77,8 @@ export default function AppointmentTypesPage() {
 
   const handleDelete = async (id: string) => {
     try {
-      await api.delete(`/appointment-types/${id}`);
+      await deleteMutation.mutateAsync(id);
       toast.success('Removido');
-      fetchList();
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao remover'));
     }

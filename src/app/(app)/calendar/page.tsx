@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import type { ApiRequestError } from '@/app/types/api-error';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
@@ -35,50 +35,26 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
-import api from '@/lib/axios';
-import { fetchAllListPages } from '@/lib/pagination';
 import { formatTimeBr, formatConsultationWeekdayDate, formatTimeRangeBr } from '@/lib/datetime-br';
 import { useTranslation } from 'react-i18next';
 import { useRouter } from 'next/navigation';
-
-interface Resource {
-  id: string;
-  name: string;
-  type: string;
-}
-interface AppointmentType {
-  id: string;
-  name: string;
-  duration_minutes: number;
-  color: string | null;
-}
-interface AvailabilitySlot {
-  vetId: string;
-  vetName: string;
-  slots: string[];
-}
-interface Consultation {
-  id: string;
-  consultation_date: string;
-  start_time?: string | null;
-  end_time?: string | null;
-  patient?: { id?: string; name: string; species?: string; breed?: string };
-  veterinarian?: { id?: string; name: string };
-  observations?: string | null;
-  status?: string;
-  paid?: boolean;
-  price?: number | null;
-  required_resources?: string[] | null;
-  appointment_type?: {
-    name: string;
-    duration_minutes: number;
-    color?: string | null;
-  } | null;
-}
-interface Patient {
-  id: string;
-  name: string;
-}
+import type { AvailabilitySlot, Consultation } from '@/app/types/consultation';
+import type { GoogleEvent } from '@/app/types/google-integration';
+import {
+  useAvailableSlotsQuery,
+  useConsultationQuery,
+  useConsultationsQuery,
+  useCreateConsultationMutation,
+  useRescheduleConsultationMutation,
+  useUpdateConsultationMutation,
+} from '@/hooks/apiHooks/useConsultations';
+import { usePatientsListQuery, useCreatePatientMutation } from '@/hooks/apiHooks/usePatients';
+import { useTutorsListQuery, useCreateTutorMutation } from '@/hooks/apiHooks/useTutors';
+import { useVeterinariansQuery } from '@/hooks/apiHooks/useUsers';
+import { useResourcesListQuery } from '@/hooks/apiHooks/useResources';
+import { useAppointmentTypesQuery } from '@/hooks/apiHooks/useAppointmentTypes';
+import { useGoogleStatusQuery, useGoogleEventsQuery } from '@/hooks/apiHooks/useGoogleIntegration';
+import { useSummarizeMutation, useStructureObservationsMutation } from '@/hooks/apiHooks/useAi';
 
 function getApiErrorMessage(error: unknown, fallbackMessage: string): string {
   const typedError = error as ApiRequestError;
@@ -89,23 +65,6 @@ function getApiErrorMessage(error: unknown, fallbackMessage: string): string {
   }
 
   return responseMessage ?? typedError.message ?? fallbackMessage;
-}
-interface User {
-  id: string;
-  name: string;
-  role: string;
-}
-interface Tutor {
-  id: string;
-  name: string;
-}
-interface GoogleEvent {
-  id: string;
-  title: string;
-  start: string;
-  end: string;
-  description: string | null;
-  isFromNixVet: boolean;
 }
 
 type ViewMode = 'day' | 'week' | 'month' | 'year';
@@ -197,29 +156,47 @@ function SlotSelect({
 export default function CalendarPage() {
   const { t } = useTranslation('common');
   const router = useRouter();
-  const [consultations, setConsultations] = useState<Consultation[]>([]);
-  const [patients, setPatients] = useState<Patient[]>([]);
-  const [veterinarians, setVeterinarians] = useState<User[]>([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Dayjs>(dayjs());
   const [detailsVisible, setDetailsVisible] = useState(false);
   const [selectedConsultation, setSelectedConsultation] = useState<Consultation | null>(null);
-  const [updating, setUpdating] = useState(false);
-  const [availability, setAvailability] = useState<AvailabilitySlot[]>([]);
-  const [availabilityLoading, setAvailabilityLoading] = useState(false);
+  const [selectedConsultationId, setSelectedConsultationId] = useState<string | null>(null);
   const [rescheduleVisible, setRescheduleVisible] = useState(false);
-  const [rescheduleLoading, setRescheduleLoading] = useState(false);
   const [rescheduleDate, setRescheduleDate] = useState('');
-  const [resources, setResources] = useState<Resource[]>([]);
-  const [appointmentTypes, setAppointmentTypes] = useState<AppointmentType[]>([]);
-  const [googleEvents, setGoogleEvents] = useState<GoogleEvent[]>([]);
-  const [googleConnected, setGoogleConnected] = useState(false);
-  const [googleDiag, setGoogleDiag] = useState<Record<string, unknown> | null>(null);
   const [currentMonth, setCurrentMonth] = useState<Dayjs>(dayjs());
-  const [summarizeLoading, setSummarizeLoading] = useState(false);
-  const [structureLoading, setStructureLoading] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('month');
-  const [detailsLoading, setDetailsLoading] = useState(false);
+
+  const { data: consultations = [] } = useConsultationsQuery();
+  const { data: veterinarians = [] } = useVeterinariansQuery();
+  const { data: resources = [] } = useResourcesListQuery();
+  const { data: appointmentTypes = [] } = useAppointmentTypesQuery();
+
+  const { data: googleStatus } = useGoogleStatusQuery();
+  const googleConnected = !!googleStatus?.connected;
+  const googleDiag = googleStatus ?? null;
+  const monthFrom = useMemo(() => currentMonth.startOf('month').toISOString(), [currentMonth]);
+  const monthTo = useMemo(() => currentMonth.endOf('month').toISOString(), [currentMonth]);
+  const { data: googleEvents = [] } = useGoogleEventsQuery(monthFrom, monthTo, googleConnected);
+
+  const { data: consultationDetail, isFetching: detailsLoading } = useConsultationQuery(
+    detailsVisible ? selectedConsultationId : null,
+  );
+  useEffect(() => {
+    if (consultationDetail) setSelectedConsultation(consultationDetail);
+  }, [consultationDetail]);
+
+  const createConsultation = useCreateConsultationMutation();
+  const updateConsultation = useUpdateConsultationMutation();
+  const rescheduleConsultation = useRescheduleConsultationMutation();
+  const updating = updateConsultation.isPending;
+  const rescheduleLoading = rescheduleConsultation.isPending;
+
+  const createTutor = useCreateTutorMutation();
+  const createPatient = useCreatePatientMutation();
+  const summarizeMutation = useSummarizeMutation();
+  const structureMutation = useStructureObservationsMutation();
+  const summarizeLoading = summarizeMutation.isPending;
+  const structureLoading = structureMutation.isPending;
 
   // Custom overlay scrollbar for week view (visual only; native scrollbar hidden)
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -300,9 +277,10 @@ export default function CalendarPage() {
 
   /** Filtro opcional: `GET /patients?tutor_id=` */
   const [patientFilterTutorId, setPatientFilterTutorId] = useState('');
+  const { data: patients = [] } = usePatientsListQuery(patientFilterTutorId || undefined);
 
   // ── Quick-register new patient/tutor inline ──
-  const [tutors, setTutors] = useState<Tutor[]>([]);
+  const { data: tutors = [] } = useTutorsListQuery();
   const [newPatientMode, setNewPatientMode] = useState(false);
   const [newTutorMode, setNewTutorMode] = useState(false); // false = select existing, true = create new
   const [creatingPatient, setCreatingPatient] = useState(false);
@@ -323,17 +301,10 @@ export default function CalendarPage() {
     cep: '',
   });
 
-  const openDetails = async (c: Consultation) => {
+  const openDetails = (c: Consultation) => {
     setSelectedConsultation(c);
+    setSelectedConsultationId(c.id);
     setDetailsVisible(true);
-    setDetailsLoading(true);
-    try {
-      const res = await api.get<Consultation>(`/consultations/${c.id}`);
-      setSelectedConsultation(res.data);
-    } catch {
-    } finally {
-      setDetailsLoading(false);
-    }
   };
 
   const [formData, setFormData] = useState({
@@ -347,110 +318,6 @@ export default function CalendarPage() {
     observations: '',
   });
 
-  const fetchConsultations = async () => {
-    try {
-      const rows = await fetchAllListPages<Consultation>('/consultations');
-      setConsultations(rows);
-    } catch {
-      setConsultations([]);
-    }
-  };
-  const fetchPatients = useCallback(async (tutorId?: string) => {
-    try {
-      const rows = await fetchAllListPages<Patient>('/patients', tutorId ? { tutor_id: tutorId } : {});
-      setPatients(rows);
-    } catch {
-      setPatients([]);
-    }
-  }, []);
-  const fetchVeterinarians = async () => {
-    try {
-      const rows = await fetchAllListPages<User>('/users/veterinarians');
-      setVeterinarians(rows);
-    } catch {
-      setVeterinarians([]);
-    }
-  };
-  const fetchResources = async () => {
-    try {
-      const rows = await fetchAllListPages<Resource>('/resources');
-      setResources(rows);
-    } catch {
-      setResources([]);
-    }
-  };
-  const fetchAppointmentTypes = async () => {
-    try {
-      const res = await api.get<{ consultation_types?: AppointmentType[] }>('/tenants/me/schedule-config');
-      const ct = res.data?.consultation_types;
-      if (Array.isArray(ct) && ct.length > 0) {
-        setAppointmentTypes(ct);
-        return;
-      }
-    } catch {
-      /* fallback abaixo */
-    }
-    try {
-      const rows = await fetchAllListPages<AppointmentType>('/appointment-types');
-      setAppointmentTypes(rows);
-    } catch {
-      setAppointmentTypes([]);
-    }
-  };
-  const fetchTutors = async () => {
-    try {
-      const rows = await fetchAllListPages<Tutor>('/tutors');
-      setTutors(rows);
-    } catch {
-      setTutors([]);
-    }
-  };
-
-  const fetchGoogleStatus = useCallback(async () => {
-    try {
-      const res = await api.get<Record<string, unknown>>('/integrations/google/status');
-      const connected = res.data?.connected ?? false;
-      setGoogleConnected(Boolean(connected));
-      setGoogleDiag(res.data);
-      if (connected) {
-        const from = currentMonth.startOf('month').toISOString();
-        const to = currentMonth.endOf('month').toISOString();
-        const evRes = await api.get<GoogleEvent[]>('/integrations/google/events', { params: { from, to } });
-        setGoogleEvents(Array.isArray(evRes.data) ? evRes.data : []);
-      }
-    } catch {
-      setGoogleConnected(false);
-    }
-  }, [currentMonth]);
-
-  const fetchGoogleEvents = useCallback(async (month: Dayjs) => {
-    try {
-      const from = month.startOf('month').toISOString();
-      const to = month.endOf('month').toISOString();
-      const res = await api.get<GoogleEvent[]>('/integrations/google/events', {
-        params: { from, to },
-      });
-      setGoogleEvents(Array.isArray(res.data) ? res.data : []);
-    } catch {
-      setGoogleEvents([]);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchConsultations();
-    fetchVeterinarians();
-    fetchResources();
-    fetchAppointmentTypes();
-    fetchGoogleStatus();
-    fetchTutors();
-  }, [fetchGoogleStatus]);
-  useEffect(() => {
-    void fetchPatients(patientFilterTutorId || undefined);
-  }, [patientFilterTutorId, fetchPatients]);
-  useEffect(() => {
-    if (googleConnected) fetchGoogleEvents(currentMonth);
-  }, [currentMonth, googleConnected, fetchGoogleEvents]);
-
   const getListData = (day: Dayjs) => consultations.filter((c) => dayjs(c.consultation_date).isSame(day, 'day'));
   const getGoogleByDay = (day: Dayjs) => googleEvents.filter((e) => e.start && dayjs(e.start).isSame(day, 'day'));
 
@@ -458,42 +325,23 @@ export default function CalendarPage() {
   const statusColor = (s?: string) =>
     s === 'completed' ? 'bg-green-500' : s === 'cancelled' ? 'bg-red-500' : 'bg-primary/100';
 
-  const fetchAvailabilitySlots = useCallback(async (date: Dayjs, veterinarianId: string, appointmentTypeId: string) => {
-    setAvailabilityLoading(true);
-    try {
-      const params: Record<string, string> = {
-        date: date.format('YYYY-MM-DD'),
-      };
-      if (veterinarianId) params.vet_id = veterinarianId;
-      if (appointmentTypeId) params.appointment_type_id = appointmentTypeId;
-      const r = await api.get<AvailabilitySlot[] | { veterinarians?: AvailabilitySlot[] }>(
-        '/consultations/available-slots',
-        { params },
-      );
-      const raw = r.data as unknown;
-      const list = Array.isArray(raw) ? raw : ((raw as { veterinarians?: AvailabilitySlot[] })?.veterinarians ?? []);
-      setAvailability(Array.isArray(list) ? list : []);
-    } catch (e: unknown) {
-      const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      toast.error(typeof msg === 'string' ? msg : 'Erro ao carregar horários');
-      setAvailability([]);
-    } finally {
-      setAvailabilityLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!modalVisible || !formData.consultation_date) return;
+  const availabilityDate = useMemo(() => {
     const d = dayjs(formData.consultation_date);
-    if (!d.isValid()) return;
-    void fetchAvailabilitySlots(d, formData.veterinarian_id, formData.appointment_type_id);
-  }, [
-    modalVisible,
-    formData.consultation_date,
+    return d.isValid() ? d.format('YYYY-MM-DD') : '';
+  }, [formData.consultation_date]);
+  const {
+    data: availability = [],
+    isFetching: availabilityLoading,
+    error: availabilityError,
+  } = useAvailableSlotsQuery(
+    availabilityDate,
     formData.veterinarian_id,
     formData.appointment_type_id,
-    fetchAvailabilitySlots,
-  ]);
+    modalVisible && !!availabilityDate,
+  );
+  useEffect(() => {
+    if (availabilityError) toast.error(getApiErrorMessage(availabilityError, 'Erro ao carregar horários'));
+  }, [availabilityError]);
 
   const handleAdd = () => {
     const maxD = dayjs().add(30, 'day');
@@ -539,7 +387,7 @@ export default function CalendarPage() {
           setCreatingPatient(false);
           return;
         }
-        const tRes = await api.post<{ id: string }>('/tutors', {
+        const createdTutor = await createTutor.mutateAsync({
           name: newTutor.name,
           phone: newTutor.phone,
           email: newTutor.email,
@@ -547,24 +395,23 @@ export default function CalendarPage() {
           cep: newTutor.cep,
           address: '-',
         });
-        tutorId = tRes.data.id;
+        tutorId = createdTutor.id;
         toast.success(`Tutor ${newTutor.name} cadastrado`);
       } else if (newTutorId) {
         tutorId = newTutorId;
       }
-      const pRes = await api.post<{ id: string }>('/patients', {
+      const createdPatient = await createPatient.mutateAsync({
         name: newPet.name,
         species: newPet.species,
         breed: newPet.breed,
         sex: newPet.sex,
         age: Number(newPet.age),
         weight: Number(newPet.weight),
-        tutor_id: tutorId ?? undefined,
-        no_tutor_reason: !tutorId ? 'EMERGENCIA' : undefined,
+        tutor_id: tutorId,
+        no_tutor_reason: !tutorId ? 'EMERGENCIA' : null,
       });
-      const patientId = pRes.data.id;
+      const patientId = createdPatient.id;
       toast.success(`Pet ${newPet.name} cadastrado`);
-      await fetchPatients(patientFilterTutorId || undefined);
       setNewPatientMode(false);
       setFormData((prev) => ({ ...prev, patient_id: patientId }));
     } catch (error: unknown) {
@@ -588,7 +435,7 @@ export default function CalendarPage() {
     }
     const endIso = dayjs(startIso).add(durationMinutes, 'minute').toISOString();
     try {
-      await api.post('/consultations', {
+      await createConsultation.mutateAsync({
         patient_id: formData.patient_id,
         veterinarian_id: formData.veterinarian_id,
         consultation_date: startIso,
@@ -603,90 +450,65 @@ export default function CalendarPage() {
       });
       toast.success('Consulta agendada');
       setModalVisible(false);
-      fetchConsultations();
     } catch (e: unknown) {
-      const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      toast.error(typeof msg === 'string' ? msg : 'Erro ao agendar consulta');
+      toast.error(getApiErrorMessage(e, 'Erro ao agendar consulta'));
     }
   };
 
   const handleMarkCompleted = async () => {
     if (!selectedConsultation) return;
-    setUpdating(true);
     try {
-      await api.put(`/consultations/${selectedConsultation.id}`, {
-        status: 'completed',
-      });
+      await updateConsultation.mutateAsync({ id: selectedConsultation.id, payload: { status: 'completed' } });
       toast.success('Marcada como realizada');
       setDetailsVisible(false);
-      fetchConsultations();
     } catch {
       toast.error('Erro');
-    } finally {
-      setUpdating(false);
     }
   };
   const handleConfirmPayment = async () => {
     if (!selectedConsultation) return;
-    setUpdating(true);
     try {
-      await api.put(`/consultations/${selectedConsultation.id}`, {
-        paid: true,
-      });
+      await updateConsultation.mutateAsync({ id: selectedConsultation.id, payload: { paid: true } });
       toast.success('Pagamento confirmado');
       setDetailsVisible(false);
-      fetchConsultations();
     } catch {
       toast.error('Erro');
-    } finally {
-      setUpdating(false);
     }
   };
   const handleRescheduleSubmit = async () => {
     if (!selectedConsultation || !rescheduleDate) return;
-    setRescheduleLoading(true);
     try {
       const s = new Date(rescheduleDate);
       const e = new Date(s.getTime() + 30 * 60_000);
-      await api.put(`/consultations/${selectedConsultation.id}/reschedule`, {
-        start_time: s.toISOString(),
-        end_time: e.toISOString(),
+      await rescheduleConsultation.mutateAsync({
+        id: selectedConsultation.id,
+        startTime: s.toISOString(),
+        endTime: e.toISOString(),
       });
       toast.success('Reagendada');
       setRescheduleVisible(false);
       setDetailsVisible(false);
-      fetchConsultations();
     } catch {
       toast.error('Erro ao reagendar');
-    } finally {
-      setRescheduleLoading(false);
     }
   };
 
   const handleSummarize = async () => {
     if (!formData.observations?.trim()) return;
-    setSummarizeLoading(true);
     try {
-      const r = await api.post<{ summary?: string }>('/ai/summarize', {
-        notes: formData.observations,
-      });
-      if (r.data?.summary) setFormData((p) => ({ ...p, observations: r.data.summary! }));
+      const r = await summarizeMutation.mutateAsync(formData.observations);
+      if (r?.summary) setFormData((p) => ({ ...p, observations: r.summary! }));
     } catch {
-    } finally {
-      setSummarizeLoading(false);
+      /* silencioso, igual ao comportamento anterior */
     }
   };
   const handleStructure = async () => {
     if (!formData.observations?.trim()) return;
-    setStructureLoading(true);
     try {
-      const r = await api.post<{
-        symptoms?: string[];
-        possible_diagnosis?: string[];
-      }>('/ai/structure-observations', { text: formData.observations });
+      const r = await structureMutation.mutateAsync(formData.observations);
       const s = [
-        ...(r.data?.symptoms ?? []).map((x) => `Sintoma: ${x}`),
-        ...(r.data?.possible_diagnosis ?? []).map((x) => `Diagnóstico: ${x}`),
+        ...(r?.symptoms ?? []).map((x) => `Sintoma: ${x}`),
+        ...(r?.possible_diagnosis ?? []).map((x) => `Diagnóstico: ${x}`),
       ].join('\n');
       if (s)
         setFormData((p) => ({
@@ -694,8 +516,7 @@ export default function CalendarPage() {
           observations: (p.observations + '\n' + s).trim(),
         }));
     } catch {
-    } finally {
-      setStructureLoading(false);
+      /* silencioso, igual ao comportamento anterior */
     }
   };
 

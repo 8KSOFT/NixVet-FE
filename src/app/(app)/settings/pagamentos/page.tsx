@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Save, X, Pencil, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -15,16 +15,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import api from '@/lib/axios';
 import { toast } from 'sonner';
-
-interface PaymentSetting {
-  id: string;
-  method: string;
-  fee_percentage: number;
-  settlement_days: number;
-  active: boolean;
-}
+import { usePaymentSettingsQuery, useUpdatePaymentSettingMutation } from '@/hooks/apiHooks/useFinancialReports';
+import type { PaymentSetting } from '@/app/types/financial-report';
 
 const METHOD_LABELS: Record<string, string> = {
   pix: 'PIX',
@@ -37,24 +30,11 @@ const METHOD_LABELS: Record<string, string> = {
 };
 
 export default function PagamentosSettingsPage() {
-  const [settings, setSettings] = useState<PaymentSetting[]>([]);
-  const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Record<string, { fee_percentage: string; settlement_days: string }>>({});
-  const [saving, setSaving] = useState<string | null>(null);
 
-  const fetchSettings = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await api.get<PaymentSetting[]>('/financial-reports/payment-settings');
-      setSettings(Array.isArray(res.data) ? res.data : []);
-    } catch {
-      toast.error('Erro ao carregar configurações');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => { fetchSettings(); }, [fetchSettings]);
+  const { data: settings = [], isLoading: loading } = usePaymentSettingsQuery();
+  const updateMutation = useUpdatePaymentSettingMutation();
+  const saving = updateMutation.isPending ? (updateMutation.variables?.method ?? null) : null;
 
   const startEdit = (s: PaymentSetting) => {
     setEditing((e) => ({
@@ -73,19 +53,18 @@ export default function PagamentosSettingsPage() {
   const saveEdit = async (method: string) => {
     const data = editing[method];
     if (!data) return;
-    setSaving(method);
     try {
-      await api.patch(`/financial-reports/payment-settings/${method}`, {
-        fee_percentage: Number(data.fee_percentage),
-        settlement_days: Number(data.settlement_days),
+      await updateMutation.mutateAsync({
+        method,
+        payload: {
+          fee_percentage: Number(data.fee_percentage),
+          settlement_days: Number(data.settlement_days),
+        },
       });
       toast.success('Salvo');
       cancelEdit(method);
-      fetchSettings();
     } catch {
       toast.error('Erro ao salvar');
-    } finally {
-      setSaving(null);
     }
   };
 

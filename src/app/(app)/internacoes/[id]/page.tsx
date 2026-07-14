@@ -1,7 +1,7 @@
 'use client';
 
 import { ArrowLeft, LogOut, Download, Plus, Check, X, Sparkles, Loader2, Users, ClipboardList, ChevronDown, FileText } from 'lucide-react';
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -16,82 +16,40 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
-import api from '@/lib/axios';
 import { getStoredUserRole } from '@/lib/role-permissions';
 import { toast } from 'sonner';
+import type { Hospitalization } from '@/app/types/hospitalization';
+import {
+  useAddHospitalizationCostMutation,
+  useAiReviewSbarReportMutation,
+  useConfirmMedicationAdministrationMutation,
+  useCreateHospitalizationEvolutionMutation,
+  useCreateHospitalizationSbarReportMutation,
+  useCreateHospitalizationVisitMutation,
+  useDeleteHospitalizationCostMutation,
+  useDischargeHospitalizationMutation,
+  useDownloadHospitalizationKardexPdfMutation,
+  useDownloadHospitalizationProntuarioPdfMutation,
+  useGenerateHospitalizationInvoiceMutation,
+  useHospitalizationCostSummaryQuery,
+  useHospitalizationCostsQuery,
+  useHospitalizationEvolutionsQuery,
+  useHospitalizationMedicationsQuery,
+  useHospitalizationQuery,
+  useHospitalizationSbarReportsQuery,
+  useHospitalizationVisitsQuery,
+  useLinkMedicalRecordMutation,
+  usePrescribeHospitalizationMedicationMutation,
+} from '@/hooks/apiHooks/useHospitalizations';
+import {
+  useCreateMedicalRecordMutation,
+  useMedicalRecordQuery,
+  useUpdateMedicalRecordMutation,
+} from '@/hooks/apiHooks/useMedicalRecords';
 
 // 3.3 — Visibilidade de valores financeiros por papel do usuário
 const canSeeFinancials = (role: string | null | undefined) =>
   ['admin', 'manager', 'financial'].includes((role || '').toLowerCase());
-
-/* ---- Types ---- */
-interface Hospitalization {
-  id: string;
-  reason: string;
-  diagnosis: string | null;
-  admission_date: string;
-  actual_discharge_date: string | null;
-  status: string;
-  box_number: string | null;
-  payment_source: string;
-  daily_rate: number;
-  notes: string | null;
-  belongings: string | null;
-  medical_record_id: string | null;
-  patient: { id: string; name: string; species: string; breed: string | null; tutor?: { name: string } };
-  veterinarian: { id: string; name: string };
-}
-
-interface Cost {
-  id: string;
-  type: string;
-  date: string;
-  description: string;
-  quantity: number;
-  unit_price: number;
-  total_price: number;
-  covered_by_plan: boolean;
-  plan_coverage_amount: number;
-  patient_responsibility_amount: number;
-}
-
-interface CostSummary {
-  total_gross: number;
-  plan_coverage: number;
-  patient_responsibility: number;
-  breakdown: Record<string, number>;
-}
-
-interface Evolution {
-  id: string;
-  recorded_at: string;
-  evolution_type: string;
-  heart_rate: number | null;
-  temperature_c: number | null;
-  spo2_percent: number | null;
-  respiratory_rate: number | null;
-  subjective: string | null;
-  assessment: string | null;
-  plan: string | null;
-  veterinarian: { name: string };
-}
-
-interface MedSchedule {
-  id: string;
-  medication_name: string;
-  dose: string;
-  route: string;
-  frequency_hours: number;
-  active: boolean;
-  administrations: MedAdmin[];
-}
-
-interface MedAdmin {
-  id: string;
-  scheduled_datetime: string;
-  administered_datetime: string | null;
-  status: string;
-}
 
 function fmt(n: number) {
   return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -148,9 +106,9 @@ function ResumoTab({ h, canSee }: { h: Hospitalization; canSee: boolean }) {
 }
 
 function CustosTab({ hospitalizationId, status }: { hospitalizationId: string; status: string }) {
-  const [costs, setCosts] = useState<Cost[]>([]);
-  const [summary, setSummary] = useState<CostSummary | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data: costs = [], isLoading: loadingCosts } = useHospitalizationCostsQuery(hospitalizationId);
+  const { data: summary } = useHospitalizationCostSummaryQuery(hospitalizationId);
+  const loading = loadingCosts;
   const [openAdd, setOpenAdd] = useState(false);
   const [form, setForm] = useState({
     type: 'procedure',
@@ -162,32 +120,15 @@ function CustosTab({ hospitalizationId, status }: { hospitalizationId: string; s
     plan_coverage_amount: 0,
   });
 
-  const fetch = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [costsRes, summaryRes] = await Promise.all([
-        api.get<Cost[]>(`/hospitalizations/${hospitalizationId}/costs`),
-        api.get<CostSummary>(`/hospitalizations/${hospitalizationId}/costs/summary`),
-      ]);
-      setCosts(Array.isArray(costsRes.data) ? costsRes.data : []);
-      setSummary(summaryRes.data);
-    } catch {
-      toast.error('Erro ao carregar custos');
-    } finally {
-      setLoading(false);
-    }
-  }, [hospitalizationId]);
-
-  useEffect(() => {
-    fetch();
-  }, [fetch]);
+  const addCostMutation = useAddHospitalizationCostMutation();
+  const deleteCostMutation = useDeleteHospitalizationCostMutation();
+  const generateInvoiceMutation = useGenerateHospitalizationInvoiceMutation();
 
   const addCost = async () => {
     try {
-      await api.post(`/hospitalizations/${hospitalizationId}/costs`, form);
+      await addCostMutation.mutateAsync({ hospitalizationId, payload: form });
       toast.success('Custo adicionado');
       setOpenAdd(false);
-      fetch();
     } catch {
       toast.error('Erro ao adicionar');
     }
@@ -195,9 +136,8 @@ function CustosTab({ hospitalizationId, status }: { hospitalizationId: string; s
 
   const deleteCost = async (costId: string) => {
     try {
-      await api.delete(`/hospitalizations/${hospitalizationId}/costs/${costId}`);
+      await deleteCostMutation.mutateAsync({ hospitalizationId, costId });
       toast.success('Removido');
-      fetch();
     } catch {
       toast.error('Erro ao remover');
     }
@@ -205,8 +145,8 @@ function CustosTab({ hospitalizationId, status }: { hospitalizationId: string; s
 
   const generateInvoice = async () => {
     try {
-      const res = await api.post(`/hospitalizations/${hospitalizationId}/costs/invoice`, {}, { responseType: 'blob' });
-      const url = URL.createObjectURL(res.data as Blob);
+      const blob = await generateInvoiceMutation.mutateAsync(hospitalizationId);
+      const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = `fatura-${hospitalizationId}.pdf`;
@@ -360,8 +300,7 @@ function CustosTab({ hospitalizationId, status }: { hospitalizationId: string; s
 }
 
 function OcorrenciasTab({ hospitalizationId }: { hospitalizationId: string }) {
-  const [evolutions, setEvolutions] = useState<Evolution[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: evolutions = [], isLoading: loading } = useHospitalizationEvolutionsQuery(hospitalizationId);
   const [openNew, setOpenNew] = useState(false);
   const [form, setForm] = useState({
     evolution_type: 'clinical',
@@ -374,33 +313,22 @@ function OcorrenciasTab({ hospitalizationId }: { hospitalizationId: string }) {
     spo2_percent: '',
   });
 
-  const fetch = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await api.get<Evolution[]>(`/hospitalizations/${hospitalizationId}/evolutions`);
-      setEvolutions(Array.isArray(res.data) ? res.data : []);
-    } catch {
-      toast.error('Erro ao carregar ocorrências');
-    } finally {
-      setLoading(false);
-    }
-  }, [hospitalizationId]);
-
-  useEffect(() => {
-    fetch();
-  }, [fetch]);
+  const createEvolutionMutation = useCreateHospitalizationEvolutionMutation();
+  const downloadProntuarioMutation = useDownloadHospitalizationProntuarioPdfMutation();
 
   const createOcorrencia = async () => {
     try {
-      await api.post(`/hospitalizations/${hospitalizationId}/evolutions`, {
-        ...form,
-        heart_rate: form.heart_rate ? Number(form.heart_rate) : undefined,
-        temperature_c: form.temperature_c ? Number(form.temperature_c) : undefined,
-        spo2_percent: form.spo2_percent ? Number(form.spo2_percent) : undefined,
+      await createEvolutionMutation.mutateAsync({
+        hospitalizationId,
+        payload: {
+          ...form,
+          heart_rate: form.heart_rate ? Number(form.heart_rate) : undefined,
+          temperature_c: form.temperature_c ? Number(form.temperature_c) : undefined,
+          spo2_percent: form.spo2_percent ? Number(form.spo2_percent) : undefined,
+        },
       });
       toast.success('Ocorrência registrada');
       setOpenNew(false);
-      fetch();
     } catch {
       toast.error('Erro ao registrar');
     }
@@ -408,10 +336,8 @@ function OcorrenciasTab({ hospitalizationId }: { hospitalizationId: string }) {
 
   const downloadPdf = async () => {
     try {
-      const res = await api.get(`/hospitalizations/${hospitalizationId}/evolutions/prontuario/pdf`, {
-        responseType: 'blob',
-      });
-      const url = URL.createObjectURL(res.data as Blob);
+      const blob = await downloadProntuarioMutation.mutateAsync(hospitalizationId);
+      const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = `prontuario-${hospitalizationId}.pdf`;
@@ -579,8 +505,7 @@ function OcorrenciasTab({ hospitalizationId }: { hospitalizationId: string }) {
 }
 
 function MedicacoesTab({ hospitalizationId }: { hospitalizationId: string }) {
-  const [schedules, setSchedules] = useState<MedSchedule[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: schedules = [], isLoading: loading } = useHospitalizationMedicationsQuery(hospitalizationId);
   const [openNew, setOpenNew] = useState(false);
   const [form, setForm] = useState({
     medication_name: '',
@@ -591,28 +516,15 @@ function MedicacoesTab({ hospitalizationId }: { hospitalizationId: string }) {
     instructions: '',
   });
 
-  const fetch = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await api.get<MedSchedule[]>(`/hospitalizations/${hospitalizationId}/medications`);
-      setSchedules(Array.isArray(res.data) ? res.data : []);
-    } catch {
-      toast.error('Erro ao carregar medicações');
-    } finally {
-      setLoading(false);
-    }
-  }, [hospitalizationId]);
-
-  useEffect(() => {
-    fetch();
-  }, [fetch]);
+  const prescribeMutation = usePrescribeHospitalizationMedicationMutation();
+  const confirmAdminMutation = useConfirmMedicationAdministrationMutation();
+  const downloadKardexMutation = useDownloadHospitalizationKardexPdfMutation();
 
   const prescribe = async () => {
     try {
-      await api.post(`/hospitalizations/${hospitalizationId}/medications`, form);
+      await prescribeMutation.mutateAsync({ hospitalizationId, payload: form });
       toast.success('Medicação prescrita');
       setOpenNew(false);
-      fetch();
     } catch {
       toast.error('Erro ao prescrever');
     }
@@ -620,9 +532,8 @@ function MedicacoesTab({ hospitalizationId }: { hospitalizationId: string }) {
 
   const confirm = async (adminId: string) => {
     try {
-      await api.patch(`/hospitalizations/${hospitalizationId}/medications/administrations/${adminId}/confirm`, {});
+      await confirmAdminMutation.mutateAsync({ hospitalizationId, adminId });
       toast.success('Administração confirmada');
-      fetch();
     } catch {
       toast.error('Erro ao confirmar');
     }
@@ -630,10 +541,8 @@ function MedicacoesTab({ hospitalizationId }: { hospitalizationId: string }) {
 
   const downloadKardex = async () => {
     try {
-      const res = await api.get(`/hospitalizations/${hospitalizationId}/medications/kardex/pdf`, {
-        responseType: 'blob',
-      });
-      const url = URL.createObjectURL(res.data as Blob);
+      const blob = await downloadKardexMutation.mutateAsync(hospitalizationId);
+      const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = `kardex-${hospitalizationId}.pdf`;
@@ -774,56 +683,35 @@ function MedicacoesTab({ hospitalizationId }: { hospitalizationId: string }) {
 
 /* ---- Main Page ---- */
 /* ---- SBAR (3.1) ---- */
-interface SbarReport {
-  id: string;
-  report_date: string;
-  suspicion: string | null;
-  brief_history: string | null;
-  assessment: string | null;
-  recommendations: string | null;
-  ai_reviewed: boolean;
-  ai_reviewed_at: string | null;
-  author?: { id: string; name: string };
-}
 
 function SbarTab({ hospitalizationId, status }: { hospitalizationId: string; status: string }) {
-  const [reports, setReports] = useState<SbarReport[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const { data: reports = [], isLoading: loading } = useHospitalizationSbarReportsQuery(hospitalizationId);
   const [reviewingId, setReviewingId] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const emptyForm = () => ({ report_date: new Date().toISOString().slice(0, 10), suspicion: '', brief_history: '', assessment: '', recommendations: '' });
   const [form, setForm] = useState(emptyForm());
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const r = await api.get<SbarReport[]>(`/hospitalizations/${hospitalizationId}/reports`);
-      setReports(Array.isArray(r.data) ? r.data : []);
-    } catch { setReports([]); } finally { setLoading(false); }
-  }, [hospitalizationId]);
-  useEffect(() => { load(); }, [load]);
+  const createReportMutation = useCreateHospitalizationSbarReportMutation();
+  const aiReviewMutation = useAiReviewSbarReportMutation();
+  const saving = createReportMutation.isPending;
 
   const handleCreate = async () => {
     if (!form.suspicion && !form.brief_history && !form.assessment && !form.recommendations) {
       toast.error('Preencha ao menos um campo do SBAR');
       return;
     }
-    setSaving(true);
     try {
-      await api.post(`/hospitalizations/${hospitalizationId}/reports`, form);
+      await createReportMutation.mutateAsync({ hospitalizationId, payload: form });
       toast.success('Relatório SBAR salvo');
       setForm(emptyForm());
-      load();
-    } catch { toast.error('Erro ao salvar relatório'); } finally { setSaving(false); }
+    } catch { toast.error('Erro ao salvar relatório'); }
   };
 
   const handleAiReview = async (id: string) => {
     setReviewingId(id);
     try {
-      await api.post(`/hospitalizations/${hospitalizationId}/reports/${id}/ai-review`);
+      await aiReviewMutation.mutateAsync({ hospitalizationId, reportId: id });
       toast.success('Relatório revisado com IA');
-      load();
     } catch { toast.error('Erro ao revisar com IA'); } finally { setReviewingId(null); }
   };
 
@@ -913,39 +801,22 @@ function SbarTab({ hospitalizationId, status }: { hospitalizationId: string; sta
 }
 
 /* ---- Visitas (3.2) ---- */
-interface Visit {
-  id: string;
-  visited_at: string;
-  visitor_name: string | null;
-  notes: string | null;
-  registrar?: { id: string; name: string };
-}
 
 function VisitasTab({ hospitalizationId, status }: { hospitalizationId: string; status: string }) {
-  const [visits, setVisits] = useState<Visit[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const { data: visits = [], isLoading: loading } = useHospitalizationVisitsQuery(hospitalizationId);
   const emptyForm = () => ({ visited_at: new Date().toISOString().slice(0, 16), visitor_name: '', notes: '' });
   const [form, setForm] = useState(emptyForm());
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const r = await api.get<Visit[]>(`/hospitalizations/${hospitalizationId}/visits`);
-      setVisits(Array.isArray(r.data) ? r.data : []);
-    } catch { setVisits([]); } finally { setLoading(false); }
-  }, [hospitalizationId]);
-  useEffect(() => { load(); }, [load]);
+  const createVisitMutation = useCreateHospitalizationVisitMutation();
+  const saving = createVisitMutation.isPending;
 
   const handleCreate = async () => {
     if (!form.visitor_name && !form.notes) { toast.error('Informe o visitante ou uma observação'); return; }
-    setSaving(true);
     try {
-      await api.post(`/hospitalizations/${hospitalizationId}/visits`, form);
+      await createVisitMutation.mutateAsync({ hospitalizationId, payload: form });
       toast.success('Visita registrada');
       setForm(emptyForm());
-      load();
-    } catch { toast.error('Erro ao registrar visita'); } finally { setSaving(false); }
+    } catch { toast.error('Erro ao registrar visita'); }
   };
 
   return (
@@ -1005,14 +876,6 @@ function VisitasTab({ hospitalizationId, status }: { hospitalizationId: string; 
 }
 
 /* ---- Relatório Médico / Ficha vinculada (Grupo 6) ---- */
-interface LinkedRecord {
-  id: string;
-  chief_complaint: string | null;
-  anamnesis: string | null;
-  diagnosis: string | null;
-  observations: string | null;
-  status: string;
-}
 
 function RelatorioMedicoTab({
   hospitalizationId,
@@ -1027,50 +890,44 @@ function RelatorioMedicoTab({
   veterinarianId: string;
   onLinked: () => void;
 }) {
-  const [record, setRecord] = useState<LinkedRecord | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [creating, setCreating] = useState(false);
+  const { data: record, isLoading: loading } = useMedicalRecordQuery(medicalRecordId);
   const [form, setForm] = useState({ chief_complaint: '', anamnesis: '', diagnosis: '', observations: '' });
 
-  const load = useCallback(async () => {
-    if (!medicalRecordId) { setRecord(null); return; }
-    setLoading(true);
-    try {
-      const r = await api.get<LinkedRecord>(`/medical-records/${medicalRecordId}`);
-      setRecord(r.data);
-      setForm({
-        chief_complaint: r.data.chief_complaint || '',
-        anamnesis: r.data.anamnesis || '',
-        diagnosis: r.data.diagnosis || '',
-        observations: r.data.observations || '',
-      });
-    } catch { setRecord(null); } finally { setLoading(false); }
-  }, [medicalRecordId]);
-  useEffect(() => { load(); }, [load]);
+  const createRecordMutation = useCreateMedicalRecordMutation();
+  const updateRecordMutation = useUpdateMedicalRecordMutation();
+  const linkRecordMutation = useLinkMedicalRecordMutation();
+  const creating = createRecordMutation.isPending || linkRecordMutation.isPending;
+  const saving = updateRecordMutation.isPending;
+
+  useEffect(() => {
+    if (!record) return;
+    setForm({
+      chief_complaint: record.chief_complaint || '',
+      anamnesis: record.anamnesis || '',
+      diagnosis: record.diagnosis || '',
+      observations: record.observations || '',
+    });
+  }, [record]);
 
   const handleCreate = async () => {
-    setCreating(true);
     try {
-      const created = await api.post<{ id: string }>('/medical-records', {
+      const created = await createRecordMutation.mutateAsync({
         patient_id: patientId,
         veterinarian_id: veterinarianId,
         record_type: 'internacao',
       });
-      await api.patch(`/hospitalizations/${hospitalizationId}`, { medical_record_id: created.data.id });
+      await linkRecordMutation.mutateAsync({ id: hospitalizationId, medicalRecordId: created.id });
       toast.success('Ficha de internação criada');
       onLinked();
-    } catch { toast.error('Erro ao criar ficha de internação'); } finally { setCreating(false); }
+    } catch { toast.error('Erro ao criar ficha de internação'); }
   };
 
   const handleSave = async () => {
     if (!medicalRecordId) return;
-    setSaving(true);
     try {
-      await api.put(`/medical-records/${medicalRecordId}`, form);
+      await updateRecordMutation.mutateAsync({ id: medicalRecordId, payload: form });
       toast.success('Ficha salva');
-      load();
-    } catch { toast.error('Erro ao salvar ficha'); } finally { setSaving(false); }
+    } catch { toast.error('Erro ao salvar ficha'); }
   };
 
   if (!medicalRecordId) {
@@ -1130,8 +987,7 @@ function RelatorioMedicoTab({
 export default function HospitalizationDetailPage() {
   const params = useParams<{ id: string }>();
   const hospitalizationId = typeof params?.id === 'string' ? params.id : '';
-  const [h, setH] = useState<Hospitalization | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data: h, isLoading: loading } = useHospitalizationQuery(hospitalizationId);
   const [openDischarge, setOpenDischarge] = useState(false);
   const [dischargeForm, setDischargeForm] = useState({
     actual_discharge_date: new Date().toISOString().slice(0, 16),
@@ -1139,36 +995,19 @@ export default function HospitalizationDetailPage() {
     discharge_instructions: '',
   });
 
-  const fetch = useCallback(async () => {
-    if (!hospitalizationId) {
-      setLoading(false);
-      toast.error('Internação inválida');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const res = await api.get<Hospitalization>(`/hospitalizations/${hospitalizationId}`);
-      setH(res.data);
-    } catch {
-      toast.error('Erro ao carregar internação');
-    } finally {
-      setLoading(false);
-    }
-  }, [hospitalizationId]);
+  const dischargeMutation = useDischargeHospitalizationMutation();
 
   useEffect(() => {
-    fetch();
-  }, [fetch]);
+    if (!hospitalizationId) toast.error('Internação inválida');
+  }, [hospitalizationId]);
 
   const handleDischarge = async () => {
     if (!hospitalizationId) return;
 
     try {
-      await api.patch(`/hospitalizations/${hospitalizationId}/discharge`, dischargeForm);
+      await dischargeMutation.mutateAsync({ id: hospitalizationId, payload: dischargeForm });
       toast.success('Alta registrada');
       setOpenDischarge(false);
-      fetch();
     } catch {
       toast.error('Erro ao registrar alta');
     }
@@ -1238,10 +1077,10 @@ export default function HospitalizationDetailPage() {
         <TabsContent value="relatorio-medico" className="mt-4">
           <RelatorioMedicoTab
             hospitalizationId={hospitalizationId}
-            medicalRecordId={h.medical_record_id}
+            medicalRecordId={h.medical_record_id ?? null}
             patientId={h.patient?.id}
             veterinarianId={h.veterinarian?.id}
-            onLinked={fetch}
+            onLinked={() => {}}
           />
         </TabsContent>
 

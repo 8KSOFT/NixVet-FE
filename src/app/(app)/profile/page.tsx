@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,16 +10,7 @@ import { useForm } from 'react-hook-form';
 import { Loader2, User } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { getApiErrorMessage } from '@/app/utils/api-error-message';
-import api from '@/lib/axios';
-
-interface ProfileData {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  crmv?: string | null;
-  specialty?: string | null;
-}
+import { useProfileQuery, useUpdateProfileMutation } from '@/hooks/apiHooks/useUsers';
 
 interface ProfileFormValues {
   name: string;
@@ -31,36 +22,31 @@ interface ProfileFormValues {
 
 export default function ProfilePage() {
   const { t } = useTranslation('common');
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const { register, handleSubmit, reset, setValue } = useForm<ProfileFormValues>();
 
-  const load = async () => {
-    setLoading(true);
-    try {
-      const res = await api.get<ProfileData>('/users/profile');
-      reset({
-        name: res.data.name,
-        email: res.data.email,
-        crmv: res.data.crmv ?? '',
-        specialty: res.data.specialty ?? '',
-        password: '',
-      });
-    } catch {
-      toast.error(t('profile.loadError'));
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: profile, isLoading: loading, isError } = useProfileQuery();
+  const updateMutation = useUpdateProfileMutation();
+  const saving = updateMutation.isPending;
 
   useEffect(() => {
-    load();
-  }, []);
+    if (isError) {
+      toast.error(t('profile.loadError'));
+      return;
+    }
+    if (!profile) return;
+    reset({
+      name: profile.name,
+      email: profile.email,
+      crmv: profile.crmv ?? '',
+      specialty: profile.specialty ?? '',
+      password: '',
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile, isError]);
 
   const onSubmit = async (values: ProfileFormValues) => {
-    setSaving(true);
     try {
-      const payload: Record<string, string> = {
+      const payload: { name: string; email: string; crmv: string; specialty: string; password?: string } = {
         name: values.name,
         email: values.email,
         crmv: values.crmv,
@@ -69,7 +55,7 @@ export default function ProfilePage() {
       if (values.password?.trim()) {
         payload.password = values.password;
       }
-      const res = await api.put<ProfileData>('/users/profile', payload);
+      const updated = await updateMutation.mutateAsync(payload);
       toast.success(t('profile.saved'));
       const raw = localStorage.getItem('user');
       const prev = raw ? JSON.parse(raw) : {};
@@ -77,15 +63,13 @@ export default function ProfilePage() {
         'user',
         JSON.stringify({
           ...prev,
-          name: res.data.name,
-          email: res.data.email,
+          name: updated.name,
+          email: updated.email,
         }),
       );
       setValue('password', '');
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, t('profile.saveError')));
-    } finally {
-      setSaving(false);
     }
   };
 

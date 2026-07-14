@@ -13,14 +13,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import api from '@/lib/axios';
 import { toast } from 'sonner';
 import { getApiErrorMessage } from '@/app/utils/api-error-message';
-
-interface PaymentMethodData {
-  volume: number;
-  fee_total: number;
-}
+import { useCustosPagamentoQuery } from '@/hooks/apiHooks/useFinancialReports';
 
 function fmt(n: number) {
   return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -49,17 +44,11 @@ function formatPieLabel(payload: PieLabelPayload): string {
 export default function CustosPagamentoPage() {
   const now = new Date();
   const [period, setPeriod] = useState(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`);
-  const [data, setData] = useState<Record<string, PaymentMethodData>>({});
-  const [loading, setLoading] = useState(true);
+  const { data = {}, isLoading: loading, error } = useCustosPagamentoQuery(period);
 
   useEffect(() => {
-    setLoading(true);
-    api
-      .get<Record<string, PaymentMethodData>>(`/financial-reports/custos-pagamento?period=${period}`)
-      .then((r) => setData(r.data))
-      .catch((error: unknown) => toast.error(getApiErrorMessage(error, 'Erro ao carregar dados')))
-      .finally(() => setLoading(false));
-  }, [period]);
+    if (error) toast.error(getApiErrorMessage(error, 'Erro ao carregar dados'));
+  }, [error]);
 
   const methods = Object.entries(data);
   const totalVolume = methods.reduce((s, [, v]) => s + v.volume, 0);

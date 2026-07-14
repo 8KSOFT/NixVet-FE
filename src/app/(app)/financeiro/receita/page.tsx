@@ -11,42 +11,8 @@ import { Loader2, TrendingUp, DollarSign, TrendingDown, Percent } from 'lucide-r
 import { toast } from 'sonner';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { getApiErrorMessage } from '@/app/utils/api-error-message';
-import api from '@/lib/axios';
-
-interface Summary {
-  gross_revenue: number;
-  total_cost: number;
-  net_revenue: number;
-  margin_pct: number;
-}
-
-interface PeriodItem {
-  date: string;
-  gross: number;
-  net: number;
-}
-
-interface RevenueItem {
-  description: string | null;
-  item_type: string;
-  quantity: number;
-  charged_amount: number;
-  cost_amount: number;
-  net_amount: number;
-  payment_source: 'particular' | 'health_plan';
-  health_plan_name: string | null;
-}
-
-interface AnalysisData {
-  summary: Summary;
-  by_period: PeriodItem[];
-  items: RevenueItem[];
-}
-
-interface HealthPlan {
-  id: string;
-  name: string;
-}
+import { useRevenueAnalysisQuery } from '@/hooks/apiHooks/useFinancialReports';
+import { useHealthPlansListQuery } from '@/hooks/apiHooks/useHealthPlans';
 
 function fmtBRL(v: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
@@ -65,38 +31,23 @@ export default function ReceitaLiquidaPage() {
   const [from, setFrom] = useState(firstOfMonth());
   const [to, setTo] = useState(today());
   const [healthPlanId, setHealthPlanId] = useState('all');
-  const [loading, setLoading] = useState(false);
-  const [data, setData] = useState<AnalysisData | null>(null);
-  const [plans, setPlans] = useState<HealthPlan[]>([]);
+  const [appliedFilters, setAppliedFilters] = useState({ from: firstOfMonth(), to: today(), healthPlanId: 'all' });
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
-  useEffect(() => {
-    api
-      .get('/health-plans', { params: { limit: 200 } })
-      .then((res) => {
-        const d = res.data?.items ?? res.data?.data ?? res.data ?? [];
-        setPlans(Array.isArray(d) ? d : []);
-      })
-      .catch(() => {});
-  }, []);
+  const { data: plans = [] } = useHealthPlansListQuery();
+  const {
+    data,
+    isLoading: loading,
+    error,
+  } = useRevenueAnalysisQuery(appliedFilters.from, appliedFilters.to, appliedFilters.healthPlanId);
 
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const params: Record<string, string> = { from, to };
-      if (healthPlanId !== 'all') params.health_plan_id = healthPlanId;
-      const res = await api.get('/financial-reports/revenue-analysis', { params });
-      setData(res.data);
-    } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, 'Erro ao carregar análise'));
-    } finally {
-      setLoading(false);
-    }
+  useEffect(() => {
+    if (error) toast.error(getApiErrorMessage(error, 'Erro ao carregar análise'));
+  }, [error]);
+
+  const fetchData = () => {
+    setAppliedFilters({ from, to, healthPlanId });
   };
-
-  useEffect(() => {
-    void fetchData();
-  }, []);
 
   const sortedItems = data
     ? [...data.items].sort((a, b) => (sortDir === 'desc' ? b.net_amount - a.net_amount : a.net_amount - b.net_amount))

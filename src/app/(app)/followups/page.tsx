@@ -1,13 +1,8 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import type { ApiRequestError } from '@/app/types/api-error';
-import type {
-  ExamFollowup,
-  FollowupExamRequestOption,
-  FollowupFormValues,
-  FollowupPatientOption,
-} from '@/app/types/exam-followup';
+import type { FollowupFormValues } from '@/app/types/exam-followup';
 import { Button } from '@/components/ui/button';
 import { DashboardCreateFormDialog } from '@/components/dashboard-create-form-dialog';
 import { Input } from '@/components/ui/input';
@@ -18,9 +13,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { useForm, Controller } from 'react-hook-form';
 import { Loader2, Plus, CheckCircle2, XCircle } from 'lucide-react';
-import api from '@/lib/axios';
-import { API_PAGE_SIZE, fetchAllListPages, listQueryParams, parseListResponse } from '@/lib/pagination';
+import { API_PAGE_SIZE } from '@/lib/pagination';
 import { ListPagination } from '@/components/list-pagination';
+import {
+  useAwaitingFollowupsQuery,
+  useCreateFollowupMutation,
+  useFollowupsQuery,
+  useMarkFollowupResultAvailableMutation,
+  useUpdateFollowupStatusMutation,
+} from '@/hooks/apiHooks/useExamFollowups';
+import { useExamRequestsListQuery } from '@/hooks/apiHooks/useExamRequests';
+import { usePatientsListQuery } from '@/hooks/apiHooks/usePatients';
 
 function getApiErrorMessage(error: unknown, fallbackMessage: string): string {
   const typedError = error as ApiRequestError;
@@ -34,59 +37,34 @@ function getApiErrorMessage(error: unknown, fallbackMessage: string): string {
 }
 
 export default function FollowupsPage() {
-  const [awaiting, setAwaiting] = useState<ExamFollowup[]>([]);
-  const [all, setAll] = useState<ExamFollowup[]>([]);
   const [awaitingPage, setAwaitingPage] = useState(1);
-  const [awaitingTotal, setAwaitingTotal] = useState(0);
-  const [awaitingTotalPages, setAwaitingTotalPages] = useState(1);
   const [allPage, setAllPage] = useState(1);
-  const [allTotal, setAllTotal] = useState(0);
-  const [allTotalPages, setAllTotalPages] = useState(1);
-  const [examRequests, setExamRequests] = useState<FollowupExamRequestOption[]>([]);
-  const [patients, setPatients] = useState<FollowupPatientOption[]>([]);
-  const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const { register, handleSubmit, reset, control } = useForm<FollowupFormValues>();
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [awaitRes, allRes, exams, patients] = await Promise.all([
-        api.get('/exam-followups/awaiting-followup', {
-          params: listQueryParams(awaitingPage),
-        }),
-        api.get('/exam-followups', { params: listQueryParams(allPage) }),
-        fetchAllListPages<{ id: string }>('/exam-requests'),
-        fetchAllListPages<{ id: string; name: string }>('/patients'),
-      ]);
-      const a = parseListResponse<ExamFollowup>(awaitRes.data, awaitingPage);
-      setAwaiting(a.items);
-      setAwaitingTotal(a.total);
-      setAwaitingTotalPages(a.totalPages);
-      const t = parseListResponse<ExamFollowup>(allRes.data, allPage);
-      setAll(t.items);
-      setAllTotal(t.total);
-      setAllTotalPages(t.totalPages);
-      setExamRequests(exams);
-      setPatients(patients);
-    } catch {
-      toast.error('Erro ao carregar');
-    } finally {
-      setLoading(false);
-    }
-  }, [allPage, awaitingPage]);
+  const { data: awaitingPageData, isLoading: loadingAwaiting } = useAwaitingFollowupsQuery(awaitingPage);
+  const { data: allPageData, isLoading: loadingAll } = useFollowupsQuery(allPage);
+  const { data: examRequests = [] } = useExamRequestsListQuery();
+  const { data: patients = [] } = usePatientsListQuery();
+  const loading = loadingAwaiting || loadingAll;
 
-  useEffect(() => {
-    void fetchData();
-  }, [fetchData]);
+  const awaiting = awaitingPageData?.items ?? [];
+  const awaitingTotal = awaitingPageData?.total ?? 0;
+  const awaitingTotalPages = awaitingPageData?.totalPages ?? 1;
+  const all = allPageData?.items ?? [];
+  const allTotal = allPageData?.total ?? 0;
+  const allTotalPages = allPageData?.totalPages ?? 1;
+
+  const createFollowup = useCreateFollowupMutation();
+  const updateStatusMutation = useUpdateFollowupStatusMutation();
+  const markResultAvailableMutation = useMarkFollowupResultAvailableMutation();
 
   const onSubmit = async (values: FollowupFormValues) => {
     try {
-      await api.post('/exam-followups', values);
+      await createFollowup.mutateAsync(values);
       toast.success('Acompanhamento criado');
       setModalOpen(false);
       reset();
-      void fetchData();
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao criar'));
     }
@@ -94,9 +72,8 @@ export default function FollowupsPage() {
 
   const updateStatus = async (id: string, followup_status: string) => {
     try {
-      await api.put(`/exam-followups/${id}`, { followup_status });
+      await updateStatusMutation.mutateAsync({ id, followupStatus: followup_status });
       toast.success('Atualizado');
-      void fetchData();
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro'));
     }
@@ -104,9 +81,8 @@ export default function FollowupsPage() {
 
   const markResultAvailable = async (id: string) => {
     try {
-      await api.put(`/exam-followups/${id}/result-available`);
+      await markResultAvailableMutation.mutateAsync(id);
       toast.success('Tutor notificado sobre resultado disponível');
-      void fetchData();
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao notificar'));
     }

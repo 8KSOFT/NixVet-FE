@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import type { StoredUser } from '@/app/types/exam-request';
 import { Button } from '@/components/ui/button';
 import { DashboardCreateFormDialog } from '@/components/dashboard-create-form-dialog';
@@ -14,11 +14,22 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { useForm, Controller, useFieldArray } from 'react-hook-form';
 import { Plus, BookOpen, Loader2, X, Info, Search, FileText, Mail, FlaskConical, Eye } from 'lucide-react';
-import api from '@/lib/axios';
-import { API_PAGE_SIZE, fetchAllListPages, listQueryParams, parseListResponse } from '@/lib/pagination';
+import { API_PAGE_SIZE } from '@/lib/pagination';
 import { ListPagination } from '@/components/list-pagination';
 import dayjs from 'dayjs';
 import { useRouter } from 'next/navigation';
+import type { CreatePrescriptionPayload, Prescription } from '@/app/types/prescription';
+import type { BularioItem } from '@/app/types/bulario';
+import {
+  useCreatePrescriptionMutation,
+  useDownloadPrescriptionPdfMutation,
+  usePrescriptionsQuery,
+  useSendPrescriptionEmailMutation,
+} from '@/hooks/apiHooks/usePrescriptions';
+import { useBularioItemQuery, useBularioSearchMutation } from '@/hooks/apiHooks/useBulario';
+import { useSurgicalProceduresListQuery } from '@/hooks/apiHooks/useSurgicalProcedures';
+import { usePatientsListQuery } from '@/hooks/apiHooks/usePatients';
+import { useConsultationsQuery } from '@/hooks/apiHooks/useConsultations';
 
 const FORM_ADMIN_OPTIONS = [
   { value: 'oral', label: 'Oral' },
@@ -59,48 +70,6 @@ const COMMON_VACCINES = [
   { group: 'Outros', items: ['Raiva (Outros)', 'Leptospirose'] },
 ];
 
-interface Prescription {
-  id: string;
-  createdAt: string;
-  consultation?: {
-    patient?: { id: string; name: string; tutor?: { name: string } };
-  };
-  patient?: { id: string; name: string; tutor?: { name: string } };
-  patient_id?: string;
-  veterinarian: { name: string };
-  prescription_type?: string;
-}
-
-interface BularioItem {
-  id: string;
-  title: string;
-  subtitle?: string | null;
-  details?: Array<{
-    title: string;
-    data: Array<{ title: string | null; data: string }>;
-  }> | null;
-  link_details?: string | null;
-}
-
-interface PatientOption {
-  id: string;
-  name: string;
-  species: string;
-  tutor?: { name: string };
-}
-
-interface ConsultationOption {
-  id: string;
-  consultation_date: string;
-  patient?: { name: string };
-  veterinarian?: { name: string };
-}
-
-interface SurgicalProcedureOption {
-  id: number;
-  name: string;
-}
-
 type MedicationField = {
   name: string;
   bulario_item_id?: string;
@@ -126,36 +95,27 @@ type FormValues = {
   observations?: string;
 };
 
-type CreatePrescriptionPayload = {
-  veterinarian_id: string;
-  prescription_type: string;
-  observations?: string;
-  consultation_id?: string;
-  patient_id?: string;
-  prescription_date?: string | null;
-  medications?: Array<Record<string, unknown>>;
-  surgical_procedure_ids?: number[];
-};
-
 export default function PrescriptionsPage() {
   const router = useRouter();
-  const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
-  const [loading, setLoading] = useState(false);
   const [pdfPreviewOpen, setPdfPreviewOpen] = useState(false);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
-  const [pdfPreviewLoading, setPdfPreviewLoading] = useState(false);
   const [listPage, setListPage] = useState(1);
-  const [listTotal, setListTotal] = useState(0);
-  const [listTotalPages, setListTotalPages] = useState(1);
   const [modalVisible, setModalVisible] = useState(false);
-  const [patients, setPatients] = useState<PatientOption[]>([]);
-  const [consultationsByPatient, setConsultationsByPatient] = useState<ConsultationOption[]>([]);
-  const [surgicalProcedures, setSurgicalProcedures] = useState<SurgicalProcedureOption[]>([]);
+
+  const { data: prescriptionsPage, isLoading: loading } = usePrescriptionsQuery(listPage);
+  const prescriptions = prescriptionsPage?.items ?? [];
+  const listTotal = prescriptionsPage?.total ?? 0;
+  const listTotalPages = prescriptionsPage?.totalPages ?? 1;
+
+  const { data: patients = [] } = usePatientsListQuery();
+  const { data: allConsultations = [] } = useConsultationsQuery();
+  const { data: surgicalProcedures = [] } = useSurgicalProceduresListQuery();
   const [selectedProcedureIds, setSelectedProcedureIds] = useState<number[]>([]);
   const [procedureSearch, setProcedureSearch] = useState('');
 
   const [bularioOptions, setBularioOptions] = useState<BularioItem[]>([]);
-  const [searchingBulario, setSearchingBulario] = useState(false);
+  const bularioSearch = useBularioSearchMutation();
+  const searchingBulario = bularioSearch.isPending;
   const [activeMedIndex, setActiveMedIndex] = useState<number | null>(null);
   const [medInputValues, setMedInputValues] = useState<Record<number, string>>({});
 
@@ -163,6 +123,11 @@ export default function PrescriptionsPage() {
   const [vaccineInput, setVaccineInput] = useState('');
   const [selectedVaccines, setSelectedVaccines] = useState<string[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
+
+  const createPrescription = useCreatePrescriptionMutation();
+  const downloadPdf = useDownloadPrescriptionPdfMutation();
+  const sendEmailMutation = useSendPrescriptionEmailMutation();
+  const pdfPreviewLoading = downloadPdf.isPending;
 
   const { control, register, handleSubmit, reset, setValue, watch } = useForm<FormValues>({
     defaultValues: {
@@ -177,81 +142,23 @@ export default function PrescriptionsPage() {
   });
 
   const watchPatientId = watch('patient_id');
+  const consultationsByPatient = useMemo(
+    () => (watchPatientId ? allConsultations.filter((c) => c.patient?.id === watchPatientId) : []),
+    [allConsultations, watchPatientId],
+  );
 
   const searchBulario = async (value: string) => {
     if (!value || value.length < 2) {
       setBularioOptions([]);
       return;
     }
-    setSearchingBulario(true);
     try {
-      const response = await api.get('/bulario', {
-        params: { q: value, ...listQueryParams(1, 20) },
-      });
-      const p = parseListResponse<BularioItem>(response.data, 1, 20);
-      setBularioOptions(p.items);
+      const items = await bularioSearch.mutateAsync(value);
+      setBularioOptions(items);
     } catch {
       toast.error('Erro ao buscar no bulário');
-    } finally {
-      setSearchingBulario(false);
     }
   };
-
-  const fetchPrescriptions = async () => {
-    setLoading(true);
-    try {
-      const response = await api.get('/prescriptions', {
-        params: listQueryParams(listPage),
-      });
-      const p = parseListResponse<Prescription>(response.data, listPage);
-      setPrescriptions(p.items);
-      setListTotal(p.total);
-      setListTotalPages(p.totalPages);
-    } catch {
-      toast.error('Erro ao carregar prescrições');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchPatients = async () => {
-    try {
-      const all = await fetchAllListPages<PatientOption>('/patients');
-      setPatients(all);
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  const fetchConsultationsForPatient = async (patientId: string) => {
-    try {
-      const raw = await fetchAllListPages<ConsultationOption & { patient_id?: string }>('/consultations');
-      const all = raw.filter(
-        (c) => c.patient_id === patientId || (c as { patient?: { id?: string } }).patient?.id === patientId,
-      );
-      setConsultationsByPatient(all);
-    } catch {
-      setConsultationsByPatient([]);
-    }
-  };
-
-  const fetchSurgicalProcedures = async () => {
-    try {
-      const all = await fetchAllListPages<SurgicalProcedureOption>('/catalog/surgical-procedures');
-      setSurgicalProcedures(all);
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  useEffect(() => {
-    fetchPatients();
-    fetchSurgicalProcedures();
-  }, []);
-
-  useEffect(() => {
-    fetchPrescriptions();
-  }, [listPage]);
 
   const handleAdd = () => {
     reset({ prescription_type: 'receita', medications: [] });
@@ -259,7 +166,6 @@ export default function PrescriptionsPage() {
     setSelectedPatientId(null);
     setSelectedProcedureIds([]);
     setProcedureSearch('');
-    setConsultationsByPatient([]);
     setMedInputValues({});
     setBularioOptions([]);
     setSelectedVaccines([]);
@@ -271,16 +177,12 @@ export default function PrescriptionsPage() {
     setSelectedPatientId(patientId || null);
     setValue('consultation_id', undefined);
     setValue('prescription_date', undefined);
-    if (patientId) fetchConsultationsForPatient(patientId);
-    else setConsultationsByPatient([]);
   };
 
   const handleDownloadPdf = async (id: string) => {
     try {
-      const response = await api.get(`/prescriptions/${id}/pdf`, {
-        responseType: 'blob',
-      });
-      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const blob = await downloadPdf.mutateAsync(id);
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
       link.setAttribute('download', `prescricao-${id}.pdf`);
@@ -294,24 +196,17 @@ export default function PrescriptionsPage() {
 
   // GRUPO 4 — preview do PDF sem download
   const handlePreviewPdf = async (id: string) => {
-    setPdfPreviewLoading(true);
     setPdfPreviewOpen(true);
     try {
-      const response = await api.get(`/prescriptions/${id}/pdf`, {
-        responseType: "blob",
-      });
-      const url = window.URL.createObjectURL(
-        new Blob([response.data], { type: "application/pdf" }),
-      );
+      const blob = await downloadPdf.mutateAsync(id);
+      const url = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
       setPdfPreviewUrl((prev) => {
         if (prev) window.URL.revokeObjectURL(prev);
         return url;
       });
     } catch {
-      toast.error("Erro ao carregar PDF");
+      toast.error('Erro ao carregar PDF');
       setPdfPreviewOpen(false);
-    } finally {
-      setPdfPreviewLoading(false);
     }
   };
 
@@ -384,10 +279,9 @@ export default function PrescriptionsPage() {
         }
       }
 
-      await api.post('/prescriptions', payload);
+      await createPrescription.mutateAsync(payload);
       toast.success('Prescrição gerada com sucesso');
       setModalVisible(false);
-      fetchPrescriptions();
     } catch {
       toast.error('Erro ao gerar prescrição');
     }
@@ -399,21 +293,20 @@ export default function PrescriptionsPage() {
   const [emailModalVisible, setEmailModalVisible] = useState(false);
   const [selectedPrescription, setSelectedPrescription] = useState<Prescription | null>(null);
   const [bularioDetailVisible, setBularioDetailVisible] = useState(false);
-  const [bularioDetail, setBularioDetail] = useState<BularioItem | null>(null);
-  const [bularioDetailLoading, setBularioDetailLoading] = useState(false);
+  const [bularioDetailId, setBularioDetailId] = useState<string | null>(null);
+  const {
+    data: bularioDetail,
+    isFetching: bularioDetailLoading,
+    error: bularioDetailError,
+  } = useBularioItemQuery(bularioDetailVisible ? bularioDetailId : null);
 
-  const openBularioDetail = async (id: string) => {
+  useEffect(() => {
+    if (bularioDetailError) toast.error('Erro ao carregar detalhes do medicamento');
+  }, [bularioDetailError]);
+
+  const openBularioDetail = (id: string) => {
+    setBularioDetailId(id);
     setBularioDetailVisible(true);
-    setBularioDetailLoading(true);
-    setBularioDetail(null);
-    try {
-      const response = await api.get<BularioItem>(`/bulario/${id}`);
-      setBularioDetail(response.data);
-    } catch {
-      toast.error('Erro ao carregar detalhes do medicamento');
-    } finally {
-      setBularioDetailLoading(false);
-    }
   };
 
   const handleOpenEmailModal = (prescription: Prescription) => {
@@ -424,7 +317,7 @@ export default function PrescriptionsPage() {
   const handleSendEmail = async () => {
     if (!selectedPrescription) return;
     try {
-      await api.post(`/prescriptions/${selectedPrescription.id}/email`);
+      await sendEmailMutation.mutateAsync(selectedPrescription.id);
       toast.success('Email enviado com sucesso');
       setEmailModalVisible(false);
     } catch {

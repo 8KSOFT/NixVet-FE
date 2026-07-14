@@ -5,10 +5,10 @@ import type { ApiRequestError } from '@/app/types/api-error';
 import type {
   BackendEdge,
   BackendNode,
-  WorkflowData,
   WorkflowNodeConfig,
   WorkflowNodeData,
 } from '@/app/types/chatbot-workflow';
+import { useChatbotWorkflowQuery, useSaveChatbotWorkflowMutation } from '@/hooks/apiHooks/useChatbotWorkflows';
 import { useParams, useRouter } from 'next/navigation';
 import {
   ReactFlow,
@@ -38,7 +38,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { toast } from 'sonner';
 import { Loader2, Save, ArrowLeft, Trash2, Play, Square, GitBranch, Zap, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import api from '@/lib/axios';
 
 // Brand-aligned node colors (using CSS variables where possible)
 const NODE_COLORS: Record<string, string> = {
@@ -245,35 +244,34 @@ export default function WorkflowEditorPage() {
 
   const [workflowName, setWorkflowName] = useState('');
   const [isActive, setIsActive] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [selectedNode, setSelectedNode] = useState<WorkflowFlowNode | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
 
   const [nodes, setNodes, onNodesChange] = useNodesState<WorkflowFlowNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 
+  const { data: workflowData, isLoading: loading, isError } = useChatbotWorkflowQuery(workflowId);
+  const saveMutation = useSaveChatbotWorkflowMutation(workflowId);
+  const saving = saveMutation.isPending;
+
   useEffect(() => {
     if (!workflowId) {
-      setLoading(false);
       toast.error('Workflow inválido');
-      return;
     }
+  }, [workflowId]);
 
-    (async () => {
-      try {
-        const res = await api.get<WorkflowData>(`/chatbot-workflows/${workflowId}`);
-        setWorkflowName(res.data.name);
-        setIsActive(res.data.is_active);
-        setNodes(toReactFlowNodes(res.data.nodes ?? []));
-        setEdges(toReactFlowEdges(res.data.edges ?? []));
-      } catch {
-        toast.error('Erro ao carregar workflow');
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [setEdges, setNodes, workflowId]);
+  useEffect(() => {
+    if (isError) toast.error('Erro ao carregar workflow');
+  }, [isError]);
+
+  useEffect(() => {
+    if (!workflowData) return;
+    setWorkflowName(workflowData.name);
+    setIsActive(workflowData.is_active);
+    setNodes(toReactFlowNodes(workflowData.nodes ?? []));
+    setEdges(toReactFlowEdges(workflowData.edges ?? []));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workflowData]);
 
   const onConnect = useCallback(
     (connection: Connection) => {
@@ -297,9 +295,8 @@ export default function WorkflowEditorPage() {
   }, []);
 
   const handleSave = async () => {
-    setSaving(true);
     try {
-      await api.put(`/chatbot-workflows/${workflowId}`, {
+      await saveMutation.mutateAsync({
         name: workflowName,
         is_active: isActive,
         nodes: toBackendNodes(nodes),
@@ -308,8 +305,6 @@ export default function WorkflowEditorPage() {
       toast.success('Workflow salvo');
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao salvar'));
-    } finally {
-      setSaving(false);
     }
   };
 

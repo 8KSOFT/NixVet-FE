@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -19,75 +18,34 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Search, Info, Loader2 } from "lucide-react";
-import api from "@/lib/axios";
-import {
-  API_PAGE_SIZE,
-  listQueryParams,
-  parseListResponse,
-} from "@/lib/pagination";
+import { API_PAGE_SIZE } from "@/lib/pagination";
 import { ListPagination } from "@/components/list-pagination";
-
-interface BularioItem {
-  id: string;
-  title: string;
-  subtitle: string | null;
-  origin: string | null;
-  link_details: string | null;
-  details: Array<{
-    title: string;
-    data: Array<{ title: string | null; data: string }>;
-  }> | null;
-  // GRUPO 5 — dose estruturada (VetAlpha)
-  dose_min_mg_kg?: number | null;
-  dose_max_mg_kg?: number | null;
-  dose_unit?: string | null;
-  administration_routes?: string[] | null;
-  frequency?: string | null;
-  species?: string[] | null;
-  toxicity_notes?: string | null;
-  contraindications?: string | null;
-  vetalpha_validated?: boolean;
-  vetalpha_updated_at?: string | null;
-}
+import { useBularioItemQuery, useBularioSearchQuery } from "@/hooks/apiHooks/useBulario";
 
 export default function BularioPage() {
-  const [loading, setLoading] = useState(false);
-  const [dataSource, setDataSource] = useState<BularioItem[]>([]);
   const [listPage, setListPage] = useState(1);
-  const [listTotal, setListTotal] = useState(0);
-  const [listTotalPages, setListTotalPages] = useState(1);
   const [query, setQuery] = useState("");
   const [activeQuery, setActiveQuery] = useState("");
   const [detailVisible, setDetailVisible] = useState(false);
-  const [detailItem, setDetailItem] = useState<BularioItem | null>(null);
-  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailId, setDetailId] = useState<string | null>(null);
 
-  const runSearch = useCallback(async (q: string, page: number) => {
-    setLoading(true);
-    try {
-      const response = await api.get("/bulario", {
-        params: { q: q || undefined, ...listQueryParams(page) },
-      });
-      const p = parseListResponse<BularioItem>(response.data, page);
-      setDataSource(p.items);
-      setListTotal(p.total);
-      setListTotalPages(p.totalPages);
-    } catch (error) {
-      console.error("Error searching bulario:", error);
-      setDataSource([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const { data: searchPage, isLoading: loading } = useBularioSearchQuery(activeQuery, listPage);
+  const dataSource = searchPage?.items ?? [];
+  const listTotal = searchPage?.total ?? 0;
+  const listTotalPages = searchPage?.totalPages ?? 1;
+
+  const { data: detailItem, isFetching: detailLoading } = useBularioItemQuery(
+    detailVisible ? detailId : null,
+  );
 
   useEffect(() => {
-    if (query.length < 2) return;
-    setTimeout(async () => {
-      if (query.trim() !== "") {
-        void runSearch(query, listPage);
-      }
+    if (query.trim().length < 2) return;
+    const timer = setTimeout(() => {
+      setActiveQuery(query.trim());
+      setListPage(1);
     }, 2000);
-  }, [query, activeQuery, listPage, runSearch]);
+    return () => clearTimeout(timer);
+  }, [query]);
 
   const handleSearch = () => {
     if (!query || query.trim().length < 2) {
@@ -97,18 +55,9 @@ export default function BularioPage() {
     setActiveQuery(query.trim());
   };
 
-  const openDetail = async (id: string) => {
+  const openDetail = (id: string) => {
+    setDetailId(id);
     setDetailVisible(true);
-    setDetailLoading(true);
-    setDetailItem(null);
-    try {
-      const response = await api.get<BularioItem>(`/bulario/${id}`);
-      setDetailItem(response.data);
-    } catch (error) {
-      console.error("Error loading bulario detail:", error);
-    } finally {
-      setDetailLoading(false);
-    }
   };
 
   return (
@@ -139,9 +88,6 @@ export default function BularioPage() {
                 setQuery("");
                 setActiveQuery("");
                 setListPage(1);
-                setDataSource([]);
-                setListTotal(0);
-                setListTotalPages(1);
               }}
             >
               Limpar lista

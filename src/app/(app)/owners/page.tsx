@@ -26,20 +26,16 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
-import api from '@/lib/axios';
 import { formatCepMask } from '@/lib/format-cep';
-import { API_PAGE_SIZE, listQueryParams, parseListResponse } from '@/lib/pagination';
+import { API_PAGE_SIZE } from '@/lib/pagination';
 import { ListPagination } from '@/components/list-pagination';
-
-interface Tutor {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  cpf: string;
-  address: string;
-  cep: string;
-}
+import type { Tutor, TutorPayload } from '@/app/types/tutor';
+import {
+  useCreateTutorMutation,
+  useDeleteTutorMutation,
+  useTutorsQuery,
+  useUpdateTutorMutation,
+} from '@/hooks/apiHooks/useTutors';
 
 const tutorSchema = z.object({
   name: z.string().min(1, 'Obrigatório'),
@@ -97,11 +93,7 @@ const formatCpfDisplay = (text: string) => {
 
 export default function OwnersPage() {
   const { t } = useTranslation('common');
-  const [tutors, setTutors] = useState<Tutor[]>([]);
-  const [loading, setLoading] = useState(false);
   const [listPage, setListPage] = useState(1);
-  const [listTotal, setListTotal] = useState(0);
-  const [listTotalPages, setListTotalPages] = useState(1);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingRecord, setEditingRecord] = useState<Tutor | null>(null);
@@ -118,27 +110,14 @@ export default function OwnersPage() {
     resolver: zodResolver(tutorSchema),
   });
 
-  const fetchTutors = async () => {
-    setLoading(true);
-    try {
-      const response = await api.get('/tutors', {
-        params: listQueryParams(listPage),
-      });
-      const p = parseListResponse<Tutor>(response.data, listPage);
-      setTutors(p.items);
-      setListTotal(p.total);
-      setListTotalPages(p.totalPages);
-    } catch (error) {
-      console.error('Error fetching tutors:', error);
-      toast.error('Erro ao carregar responsáveis');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: tutorsPage, isLoading: loading } = useTutorsQuery(listPage);
+  const tutors = tutorsPage?.items ?? [];
+  const listTotal = tutorsPage?.total ?? 0;
+  const listTotalPages = tutorsPage?.totalPages ?? 1;
 
-  useEffect(() => {
-    fetchTutors();
-  }, [listPage]);
+  const createTutor = useCreateTutorMutation();
+  const updateTutor = useUpdateTutorMutation();
+  const deleteTutor = useDeleteTutorMutation();
 
   useEffect(() => {
     if (!modalVisible) return;
@@ -212,9 +191,8 @@ export default function OwnersPage() {
 
   const handleDelete = async (id: string) => {
     try {
-      await api.delete(`/tutors/${id}`);
+      await deleteTutor.mutateAsync(id);
       toast.success('Responsável removido com sucesso');
-      fetchTutors();
     } catch (error) {
       console.error('Error deleting tutor:', error);
       toast.error('Erro ao remover responsável');
@@ -259,7 +237,7 @@ export default function OwnersPage() {
   const onSubmit = async (values: TutorFormValues) => {
     try {
       const fullAddress = `${values.street}, ${values.number}${values.complement ? ` - ${values.complement}` : ''} - ${values.neighborhood} - ${values.city}/${values.state}`;
-      const payload = {
+      const payload: TutorPayload = {
         name: values.name,
         cpf: values.cpf,
         email: values.email,
@@ -269,16 +247,15 @@ export default function OwnersPage() {
       };
 
       if (editingId) {
-        await api.put(`/tutors/${editingId}`, payload);
+        await updateTutor.mutateAsync({ id: editingId, payload });
         toast.success('Responsável atualizado com sucesso');
       } else {
-        await api.post('/tutors', payload);
+        await createTutor.mutateAsync(payload);
         toast.success('Responsável criado com sucesso');
       }
       setModalVisible(false);
       setEditingId(null);
       setEditingRecord(null);
-      fetchTutors();
     } catch (error) {
       console.error('Error saving tutor:', error);
       toast.error('Erro ao salvar responsável');

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { CheckCircle2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getApiErrorMessage } from '@/app/utils/api-error-message';
-import api from '@/lib/axios';
+import { useActivateBillingMutation } from '@/hooks/apiHooks/useBilling';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {
@@ -84,7 +84,8 @@ export default function BillingUpgradePage() {
   const [selectedPlan, setSelectedPlan] = useState<PlanName | null>(null);
   const [billingType, setBillingType] = useState<BillingType>('PIX');
   const [cpfCnpj, setCpfCnpj] = useState('');
-  const [loading, setLoading] = useState(false);
+  const activateMutation = useActivateBillingMutation();
+  const loading = activateMutation.isPending;
 
   const handleActivate = async () => {
     if (!selectedPlan) { toast.error('Selecione um plano para continuar.'); return; }
@@ -92,14 +93,13 @@ export default function BillingUpgradePage() {
       toast.error('Informe seu CPF ou CNPJ para continuar.');
       return;
     }
-    setLoading(true);
     try {
-      const res = await api.post('/billing/activate', {
+      const data = await activateMutation.mutateAsync({
         plan: selectedPlan,
         billingType,
         cpfCnpj: cpfCnpj.replace(/\D/g, ''),
       });
-      const paymentUrl: string | null = res.data?.paymentUrl ?? null;
+      const paymentUrl = data?.paymentUrl ?? null;
       if (paymentUrl) {
         // Redireciona para o checkout seguro da Asaas (PIX, boleto ou cartão).
         toast.success('Assinatura criada! Redirecionando para o pagamento...');
@@ -110,8 +110,6 @@ export default function BillingUpgradePage() {
       router.push('/dashboard');
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao ativar plano. Tente novamente.'));
-    } finally {
-      setLoading(false);
     }
   };
 

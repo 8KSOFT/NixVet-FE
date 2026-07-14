@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -25,29 +25,23 @@ import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { Plus, Trash2, Loader2, Sparkles, CalendarOff } from 'lucide-react';
 import { getApiErrorMessage } from '@/app/utils/api-error-message';
-import api from '@/lib/axios';
-
-interface Holiday {
-  id: string;
-  date: string;
-  name: string;
-  is_recurring: boolean;
-  is_regional: boolean;
-  city: string | null;
-  state: string | null;
-}
-
-interface AiSuggestion {
-  date: string;
-  name: string;
-  is_recurring?: boolean;
-  is_regional?: boolean;
-}
+import {
+  useHolidaysQuery,
+  useCreateHolidayMutation,
+  useDeleteHolidayMutation,
+  useAiSuggestHolidaysMutation,
+  useSaveHolidaySuggestionsMutation,
+} from '@/hooks/apiHooks/useHolidays';
+import type { AiHolidaySuggestion as AiSuggestion } from '@/app/types/holiday';
 
 export default function HolidaysPage() {
-  const [holidays, setHolidays] = useState<Holiday[]>([]);
-  const [loading, setLoading] = useState(false);
   const [year, setYear] = useState(new Date().getFullYear());
+
+  const { data: holidays = [], isLoading: loading } = useHolidaysQuery(year);
+  const createMutation = useCreateHolidayMutation(year);
+  const deleteMutation = useDeleteHolidayMutation(year);
+  const aiSuggestMutation = useAiSuggestHolidaysMutation();
+  const saveSuggestionsMutation = useSaveHolidaySuggestionsMutation(year);
 
   // Add form
   const [addOpen, setAddOpen] = useState(false);
@@ -57,41 +51,24 @@ export default function HolidaysPage() {
   const [formRegional, setFormRegional] = useState(false);
   const [formCity, setFormCity] = useState('');
   const [formState, setFormState] = useState('');
-  const [saving, setSaving] = useState(false);
+  const saving = createMutation.isPending;
 
   // AI suggestions
   const [aiOpen, setAiOpen] = useState(false);
   const [aiCity, setAiCity] = useState('');
   const [aiState, setAiState] = useState('');
-  const [aiLoading, setAiLoading] = useState(false);
+  const aiLoading = aiSuggestMutation.isPending;
   const [suggestions, setSuggestions] = useState<AiSuggestion[]>([]);
   const [selectedSuggestions, setSelectedSuggestions] = useState<Set<number>>(new Set());
-  const [aiSaving, setAiSaving] = useState(false);
-
-  const fetchHolidays = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await api.get(`/availability/config/holidays?year=${year}`);
-      setHolidays(res.data ?? []);
-    } catch {
-      toast.error('Erro ao carregar feriados');
-    } finally {
-      setLoading(false);
-    }
-  }, [year]);
-
-  useEffect(() => {
-    fetchHolidays();
-  }, [fetchHolidays]);
+  const aiSaving = saveSuggestionsMutation.isPending;
 
   const handleAdd = async () => {
     if (!formDate || !formName) {
       toast.error('Preencha data e nome');
       return;
     }
-    setSaving(true);
     try {
-      await api.post('/availability/config/holidays', {
+      await createMutation.mutateAsync({
         date: formDate,
         name: formName,
         is_recurring: formRecurring,
@@ -102,19 +79,15 @@ export default function HolidaysPage() {
       toast.success('Feriado adicionado');
       setAddOpen(false);
       resetAddForm();
-      fetchHolidays();
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao salvar'));
-    } finally {
-      setSaving(false);
     }
   };
 
   const handleDelete = async (id: string) => {
     try {
-      await api.delete(`/availability/config/holidays/${id}`);
+      await deleteMutation.mutateAsync(id);
       toast.success('Feriado removido');
-      fetchHolidays();
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao remover'));
     }
@@ -135,23 +108,15 @@ export default function HolidaysPage() {
       toast.error('Informe cidade e estado');
       return;
     }
-    setAiLoading(true);
     setSuggestions([]);
     setSelectedSuggestions(new Set());
     try {
-      const res = await api.post('/availability/config/holidays/ai-suggest', {
-        city: aiCity,
-        state: aiState,
-        year,
-      });
-      const list: AiSuggestion[] = res.data?.holidays ?? [];
+      const list = await aiSuggestMutation.mutateAsync({ city: aiCity, state: aiState, year });
       setSuggestions(list);
       setSelectedSuggestions(new Set(list.map((_, i) => i)));
       if (list.length === 0) toast.info('Nenhum feriado sugerido pela IA');
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro na consulta à IA'));
-    } finally {
-      setAiLoading(false);
     }
   };
 
@@ -170,9 +135,8 @@ export default function HolidaysPage() {
       toast.error('Selecione ao menos um feriado');
       return;
     }
-    setAiSaving(true);
     try {
-      await api.post('/availability/config/holidays/batch', {
+      await saveSuggestionsMutation.mutateAsync({
         holidays: selected.map((s) => ({
           date: s.date,
           name: s.name,
@@ -185,11 +149,8 @@ export default function HolidaysPage() {
       toast.success(`${selected.length} feriados salvos`);
       setAiOpen(false);
       setSuggestions([]);
-      fetchHolidays();
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao salvar feriados'));
-    } finally {
-      setAiSaving(false);
     }
   };
 

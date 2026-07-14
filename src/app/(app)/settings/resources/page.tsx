@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,15 +12,9 @@ import { toast } from 'sonner';
 import { useForm, Controller } from 'react-hook-form';
 import { Plus, Loader2 } from 'lucide-react';
 import { getApiErrorMessage } from '@/app/utils/api-error-message';
-import api from '@/lib/axios';
-import { API_PAGE_SIZE, listQueryParams, parseListResponse } from '@/lib/pagination';
+import { API_PAGE_SIZE } from '@/lib/pagination';
 import { ListPagination } from '@/components/list-pagination';
-
-interface Resource {
-  id: string;
-  name: string;
-  type: string;
-}
+import { useResourcesPagedQuery, useCreateResourceMutation } from '@/hooks/apiHooks/useResources';
 
 interface ResourceFormValues {
   name: string;
@@ -34,40 +28,22 @@ const TYPES = [
 ];
 
 export default function SettingsResourcesPage() {
-  const [list, setList] = useState<Resource[]>([]);
-  const [loading, setLoading] = useState(false);
   const [listPage, setListPage] = useState(1);
-  const [listTotal, setListTotal] = useState(0);
-  const [listTotalPages, setListTotalPages] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const form = useForm<ResourceFormValues>();
 
-  const fetchList = async () => {
-    setLoading(true);
-    try {
-      const res = await api.get('/resources', { params: listQueryParams(listPage) });
-      const p = parseListResponse<Resource>(res.data, listPage);
-      setList(p.items);
-      setListTotal(p.total);
-      setListTotalPages(p.totalPages);
-    } catch {
-      toast.error('Erro ao carregar recursos');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchList();
-  }, [listPage]);
+  const { data, isLoading: loading } = useResourcesPagedQuery(listPage);
+  const list = data?.items ?? [];
+  const listTotal = data?.total ?? 0;
+  const listTotalPages = data?.totalPages ?? 1;
+  const createMutation = useCreateResourceMutation();
 
   const onFinish = async (values: ResourceFormValues) => {
     try {
-      await api.post('/resources', values);
+      await createMutation.mutateAsync(values);
       toast.success('Recurso cadastrado');
       setModalOpen(false);
       form.reset();
-      fetchList();
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao salvar'));
     }

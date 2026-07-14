@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import {
   CreditCard,
@@ -16,22 +16,12 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { getApiErrorMessage } from '@/app/utils/api-error-message';
-import api from '@/lib/axios';
-
-interface BillingStatus {
-  status: string;
-  trialEndsAt: string | null;
-  billingPlan: string | null;
-  cancelAt?: string | null;
-}
-
-interface Invoice {
-  date: string;
-  value: number;
-  invoiceUrl: string | null;
-  pdfUrl: string | null;
-  status: string;
-}
+import {
+  useBillingStatusQuery,
+  useBillingInvoicesQuery,
+  usePaymentLinkMutation,
+  useCancelBillingMutation,
+} from '@/hooks/apiHooks/useBilling';
 
 const PLAN_LABELS: Record<string, string> = {
   essencial: 'Essencial — R$179/mês',
@@ -50,18 +40,18 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.
 };
 
 export default function BillingSettingsPage() {
-  const [billing, setBilling] = useState<BillingStatus | null>(null);
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [loadingStatus, setLoadingStatus] = useState(true);
-  const [loadingInvoices, setLoadingInvoices] = useState(true);
-  const [cancelling, setCancelling] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
-  const [paying, setPaying] = useState(false);
+
+  const { data: billing, isLoading: loadingStatus } = useBillingStatusQuery();
+  const { data: invoices = [], isLoading: loadingInvoices } = useBillingInvoicesQuery();
+  const paymentLinkMutation = usePaymentLinkMutation();
+  const cancelMutation = useCancelBillingMutation();
+  const paying = paymentLinkMutation.isPending;
+  const cancelling = cancelMutation.isPending;
 
   const handlePayPending = async () => {
-    setPaying(true);
     try {
-      const { data } = await api.get('/billing/payment-link');
+      const data = await paymentLinkMutation.mutateAsync();
       if (data?.paymentUrl) {
         window.location.href = data.paymentUrl;
       } else {
@@ -69,35 +59,17 @@ export default function BillingSettingsPage() {
       }
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao obter a cobrança.'));
-    } finally {
-      setPaying(false);
     }
   };
 
-  useEffect(() => {
-    api.get('/billing/status')
-      .then((r) => setBilling(r.data))
-      .catch(() => toast.error('Erro ao carregar status do plano.'))
-      .finally(() => setLoadingStatus(false));
-
-    api.get('/billing/invoices')
-      .then((r) => setInvoices(r.data ?? []))
-      .catch(() => {})
-      .finally(() => setLoadingInvoices(false));
-  }, []);
-
   const handleCancel = async () => {
     if (!confirmCancel) { setConfirmCancel(true); return; }
-    setCancelling(true);
     try {
-      const { data } = await api.post('/billing/cancel');
+      const data = await cancelMutation.mutateAsync();
       toast.success(data.message ?? 'Plano cancelado com sucesso.');
-      setBilling((prev) => prev ? { ...prev, cancelAt: data.cancelAt } : prev);
       setConfirmCancel(false);
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao cancelar plano.'));
-    } finally {
-      setCancelling(false);
     }
   };
 

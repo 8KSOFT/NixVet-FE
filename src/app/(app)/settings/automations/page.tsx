@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -14,20 +14,13 @@ import { toast } from 'sonner';
 import { useForm, Controller } from 'react-hook-form';
 import { Plus, Trash2, Loader2 } from 'lucide-react';
 import { getApiErrorMessage } from '@/app/utils/api-error-message';
-import api from '@/lib/axios';
-import { API_PAGE_SIZE, listQueryParams, parseListResponse } from '@/lib/pagination';
+import { API_PAGE_SIZE } from '@/lib/pagination';
 import { ListPagination } from '@/components/list-pagination';
-
-interface WorkflowConfig {
-  id: string;
-  event_name: string;
-  action_type: string;
-  delay_minutes: number;
-  channel: string | null;
-  template_message: string | null;
-  description: string | null;
-  is_active: boolean;
-}
+import {
+  useWorkflowConfigsPagedQuery,
+  useCreateWorkflowConfigMutation,
+  useDeleteWorkflowConfigMutation,
+} from '@/hooks/apiHooks/useWorkflowConfigs';
 
 const ACTION_TYPES = [
   { value: 'send_whatsapp', label: 'Enviar WhatsApp' },
@@ -47,38 +40,22 @@ type FormValues = {
 };
 
 export default function SettingsAutomationsPage() {
-  const [list, setList] = useState<WorkflowConfig[]>([]);
-  const [loading, setLoading] = useState(false);
   const [listPage, setListPage] = useState(1);
-  const [listTotal, setListTotal] = useState(0);
-  const [listTotalPages, setListTotalPages] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const { register, handleSubmit, reset, control, formState: { errors } } = useForm<FormValues>({
     defaultValues: { delay_minutes: 0, is_active: true },
   });
 
-  const fetchList = async () => {
-    setLoading(true);
-    try {
-      const res = await api.get('/workflow-configs', { params: listQueryParams(listPage) });
-      const p = parseListResponse<WorkflowConfig>(res.data, listPage);
-      setList(p.items);
-      setListTotal(p.total);
-      setListTotalPages(p.totalPages);
-    } catch {
-      toast.error('Erro ao carregar automações');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchList();
-  }, [listPage]);
+  const { data, isLoading: loading } = useWorkflowConfigsPagedQuery(listPage);
+  const list = data?.items ?? [];
+  const listTotal = data?.total ?? 0;
+  const listTotalPages = data?.totalPages ?? 1;
+  const createMutation = useCreateWorkflowConfigMutation();
+  const deleteMutation = useDeleteWorkflowConfigMutation();
 
   const onSubmit = async (values: FormValues) => {
     try {
-      await api.post('/workflow-configs', {
+      await createMutation.mutateAsync({
         event_name: values.event_name,
         action_type: values.action_type,
         delay_minutes: Number(values.delay_minutes) || 0,
@@ -90,7 +67,6 @@ export default function SettingsAutomationsPage() {
       toast.success('Regra salva');
       setModalOpen(false);
       reset();
-      fetchList();
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao salvar'));
     }
@@ -98,9 +74,8 @@ export default function SettingsAutomationsPage() {
 
   const handleDelete = async (id: string) => {
     try {
-      await api.delete(`/workflow-configs/${id}`);
+      await deleteMutation.mutateAsync(id);
       toast.success('Removido');
-      fetchList();
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao remover'));
     }

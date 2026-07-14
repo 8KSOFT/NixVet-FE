@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { CheckCircle, XCircle, Clock, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -23,37 +23,16 @@ import {
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import api from '@/lib/axios';
 import { toast } from 'sonner';
+import type { FinancialEntry, FinancialEntryStatus, PaymentOption } from '@/app/types/financial-report';
+import {
+  useCancelEntryMutation,
+  useConfirmEntryMutation,
+  useFinancialEntriesQuery,
+  usePaymentOptionsMutation,
+} from '@/hooks/apiHooks/useFinancialReports';
 
-type Status = 'suggested' | 'confirmed' | 'cancelled';
-
-interface FinancialEntry {
-  id: string;
-  entry_date: string;
-  type: string;
-  category: string;
-  payment_source: string;
-  payment_method: string;
-  status: Status;
-  base_amount: number | null;
-  gross_amount: number;
-  net_amount: number;
-  fee_amount: number;
-  discount_amount: number;
-  reference_type: string | null;
-  description: string | null;
-}
-
-interface PaymentOption {
-  method: string;
-  fee_percentage: number;
-  settlement_days: number;
-  modality: 'a_vista' | 'a_prazo';
-  client_pays: number;
-  fee_amount: number;
-  clinic_receives: number;
-}
+type Status = FinancialEntryStatus;
 
 const CATEGORY_LABELS: Record<string, string> = {
   consultation: 'Consulta',
@@ -94,31 +73,18 @@ const STATUS_TABS: { key: Status; label: string }[] = [
 
 export default function LancamentosPage() {
   const [status, setStatus] = useState<Status>('suggested');
-  const [entries, setEntries] = useState<FinancialEntry[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: entries = [], isLoading: loading } = useFinancialEntriesQuery(status);
 
   // Dialog de confirmação
   const [confirmEntry, setConfirmEntry] = useState<FinancialEntry | null>(null);
   const [options, setOptions] = useState<PaymentOption[]>([]);
   const [selectedMethod, setSelectedMethod] = useState<string>('');
   const [discount, setDiscount] = useState<string>('');
-  const [submitting, setSubmitting] = useState(false);
 
-  const fetchEntries = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await api.get<FinancialEntry[]>(`/financial-reports/entries?status=${status}`);
-      setEntries(Array.isArray(res.data) ? res.data : []);
-    } catch {
-      toast.error('Erro ao carregar lançamentos');
-    } finally {
-      setLoading(false);
-    }
-  }, [status]);
-
-  useEffect(() => {
-    fetchEntries();
-  }, [fetchEntries]);
+  const paymentOptions = usePaymentOptionsMutation();
+  const confirmEntryMutation = useConfirmEntryMutation();
+  const cancelEntryMutation = useCancelEntryMutation();
+  const submitting = confirmEntryMutation.isPending;
 
   const openConfirm = async (entry: FinancialEntry) => {
     setConfirmEntry(entry);
@@ -127,10 +93,8 @@ export default function LancamentosPage() {
     setOptions([]);
     try {
       const base = Number(entry.base_amount ?? entry.gross_amount);
-      const res = await api.get<PaymentOption[]>(
-        `/financial-reports/entries/payment-options?amount=${base}`,
-      );
-      setOptions(Array.isArray(res.data) ? res.data : []);
+      const result = await paymentOptions.mutateAsync(base);
+      setOptions(result);
     } catch {
       toast.error('Erro ao carregar formas de pagamento');
     }
@@ -159,27 +123,23 @@ export default function LancamentosPage() {
       toast.error('Selecione a forma de pagamento');
       return;
     }
-    setSubmitting(true);
     try {
-      await api.patch(`/financial-reports/entries/${confirmEntry.id}/confirm`, {
-        payment_method: selectedMethod,
-        discount_amount: discountNum,
+      await confirmEntryMutation.mutateAsync({
+        id: confirmEntry.id,
+        paymentMethod: selectedMethod,
+        discountAmount: discountNum,
       });
       toast.success('Lançamento confirmado');
       setConfirmEntry(null);
-      fetchEntries();
     } catch {
       toast.error('Erro ao confirmar lançamento');
-    } finally {
-      setSubmitting(false);
     }
   };
 
   const cancelEntry = async (entry: FinancialEntry) => {
     try {
-      await api.patch(`/financial-reports/entries/${entry.id}/cancel`, {});
+      await cancelEntryMutation.mutateAsync(entry.id);
       toast.success('Lançamento cancelado');
-      fetchEntries();
     } catch {
       toast.error('Erro ao cancelar lançamento');
     }

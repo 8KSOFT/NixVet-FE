@@ -24,6 +24,7 @@ const MENU_BY_ROLE: Record<string, readonly string[]> = {
     'financeiro-receitas',
     'financeiro-custos',
     'budgets',
+    'financeiro-produtos',
     'settings',
   ],
   admin: [
@@ -46,6 +47,7 @@ const MENU_BY_ROLE: Record<string, readonly string[]> = {
     'financeiro-receitas',
     'financeiro-custos',
     'budgets',
+    'financeiro-produtos',
     'settings',
   ],
   manager: [
@@ -68,6 +70,7 @@ const MENU_BY_ROLE: Record<string, readonly string[]> = {
     'financeiro-receitas',
     'financeiro-custos',
     'budgets',
+    'financeiro-produtos',
     'settings',
   ],
   reception: [

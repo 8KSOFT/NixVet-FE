@@ -1,14 +1,7 @@
 'use client';
 
 import type { ApiRequestError } from '@/app/types/api-error';
-import type {
-  PatientFormValues,
-  PatientRow,
-  PatientTutor,
-  SupportOption,
-  SupportOptionsEnvelope,
-  SupportOptionsListEnvelope,
-} from '@/app/types/patient';
+import type { PatientFormValues, PatientRow } from '@/app/types/patient';
 import { useForm, Controller } from 'react-hook-form';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -17,8 +10,20 @@ import Link from 'next/link';
 import { Plus, Pencil, Trash2, History } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { API_PAGE_SIZE, fetchAllListPages, listQueryParams, parseListResponse } from '@/lib/pagination';
-import api from '@/lib/axios';
+import { API_PAGE_SIZE } from '@/lib/pagination';
+import {
+  useCreatePatientMutation,
+  useDeletePatientMutation,
+  usePatientsQuery,
+  useUpdatePatientMutation,
+  type PatientPayload,
+} from '@/hooks/apiHooks/usePatients';
+import { useTutorsListQuery } from '@/hooks/apiHooks/useTutors';
+import {
+  useCreateSupportOptionMutation,
+  usePagedSupportOptionsQuery,
+  useSupportOptionsQuery,
+} from '@/hooks/apiHooks/useCatalogSupport';
 
 import { ListPagination } from '@/components/list-pagination';
 
@@ -46,6 +51,27 @@ const NO_TUTOR_REASON_LABELS: Record<string, string> = {
   ABANDONO: 'Abandono',
 };
 
+const BREED_DISCRIMINATOR: Record<string, string> = {
+  CANINO: 'ANIMAL_RACA_CAO',
+  FELINO: 'ANIMAL_RACA_GATO',
+  BOVINO: 'ANIMAL_RACA_BOVINO',
+  EQUINO: 'ANIMAL_RACA_EQUINO',
+  OUTRO: 'ANIMAL_RACA_OUTRO',
+};
+
+/** Alinha valor salvo / legado ao código usado no catálogo support */
+function normalizeSpeciesCode(species: string) {
+  const s = (species || '').trim().toUpperCase();
+  if (s === 'CÃO' || s === 'CAO' || s === 'CACHORRO') return 'CANINO';
+  if (s === 'GATO') return 'FELINO';
+  return s;
+}
+
+function getBreedDiscriminator(species: string) {
+  const code = normalizeSpeciesCode(species);
+  return BREED_DISCRIMINATOR[code] ?? 'ANIMAL_RACA_OUTRO';
+}
+
 function getApiErrorMessage(error: unknown, fallbackMessage: string): string {
   const typedError = error as ApiRequestError;
   const responseMessage = typedError.response?.data?.message;
@@ -57,44 +83,11 @@ function getApiErrorMessage(error: unknown, fallbackMessage: string): string {
   return responseMessage ?? typedError.message ?? fallbackMessage;
 }
 
-function normalizeSupportOptions(responseData: unknown): SupportOption[] {
-  if (Array.isArray(responseData)) {
-    return responseData as SupportOption[];
-  }
-
-  const responseEnvelope = responseData as SupportOptionsEnvelope;
-  const firstLevelData = responseEnvelope.data;
-
-  if (Array.isArray(firstLevelData)) {
-    return firstLevelData;
-  }
-
-  const listEnvelope = firstLevelData as SupportOptionsListEnvelope | undefined;
-
-  if (Array.isArray(listEnvelope?.items)) {
-    return listEnvelope.items;
-  }
-
-  if (Array.isArray(listEnvelope?.content)) {
-    return listEnvelope.content;
-  }
-
-  return [];
-}
-
 export default function PatientsPage() {
-  const [patients, setPatients] = useState<PatientRow[]>([]);
-  const [tutors, setTutors] = useState<PatientTutor[]>([]);
-  const [speciesOptions, setSpeciesOptions] = useState<SupportOption[]>([]);
-  const [breedOptions, setBreedOptions] = useState<SupportOption[]>([]);
   const [breedSearchValue, setBreedSearchValue] = useState('');
   const [breedOpen, setBreedOpen] = useState(false);
-  const [sexOptions, setSexOptions] = useState<SupportOption[]>([]);
-  const [loading, setLoading] = useState(false);
   const [listPage, setListPage] = useState(1);
   const [listTutorFilter, setListTutorFilter] = useState('');
-  const [listTotal, setListTotal] = useState(0);
-  const [listTotalPages, setListTotalPages] = useState(1);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const { t } = useTranslation('common');
@@ -110,87 +103,22 @@ export default function PatientsPage() {
 
   const watchedSpecies = watch('species');
   const watchedTutorChoice = watch('tutor_choice');
+  const breedDiscriminator = watchedSpecies ? getBreedDiscriminator(watchedSpecies) : null;
 
-  const fetchPatients = async () => {
-    setLoading(true);
-    try {
-      const response = await api.get('/patients', {
-        params: listQueryParams(listPage, API_PAGE_SIZE, {
-          tutor_id: listTutorFilter || undefined,
-        }),
-      });
-      const p = parseListResponse<PatientRow>(response.data, listPage);
-      setPatients(p.items);
-      setListTotal(p.total);
-      setListTotalPages(p.totalPages);
-    } catch (error) {
-      console.error('Error fetching patients:', error);
-      toast.error('Erro ao carregar pacientes');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: patientsPage, isLoading: loading } = usePatientsQuery(listPage, listTutorFilter || undefined);
+  const patients = patientsPage?.items ?? [];
+  const listTotal = patientsPage?.total ?? 0;
+  const listTotalPages = patientsPage?.totalPages ?? 1;
 
-  const fetchTutors = async () => {
-    try {
-      const all = await fetchAllListPages<PatientTutor>('/tutors');
-      setTutors(all);
-    } catch (error) {
-      console.error('Error fetching tutors:', error);
-    }
-  };
+  const { data: tutors = [] } = useTutorsListQuery();
+  const { data: speciesOptions = [] } = useSupportOptionsQuery('ANIMAL_ESPECIE');
+  const { data: sexOptions = [] } = useSupportOptionsQuery('ANIMAL_GENERO');
+  const { data: breedOptions = [] } = usePagedSupportOptionsQuery(breedDiscriminator);
 
-  const BREED_DISCRIMINATOR: Record<string, string> = {
-    CANINO: 'ANIMAL_RACA_CAO',
-    FELINO: 'ANIMAL_RACA_GATO',
-    BOVINO: 'ANIMAL_RACA_BOVINO',
-    EQUINO: 'ANIMAL_RACA_EQUINO',
-    OUTRO: 'ANIMAL_RACA_OUTRO',
-  };
-
-  /** Alinha valor salvo / legado ao código usado no catálogo support */
-  const normalizeSpeciesCode = (species: string) => {
-    const s = (species || '').trim().toUpperCase();
-    if (s === 'CÃO' || s === 'CAO' || s === 'CACHORRO') return 'CANINO';
-    if (s === 'GATO') return 'FELINO';
-    return s;
-  };
-
-  const getBreedDiscriminator = (species: string) => {
-    const code = normalizeSpeciesCode(species);
-    return BREED_DISCRIMINATOR[code] ?? 'ANIMAL_RACA_OUTRO';
-  };
-
-  const fetchSupportOptions = async () => {
-    try {
-      const [speciesRes, sexRes] = await Promise.all([
-        api.get('/catalog/support', {
-          params: { discriminator: 'ANIMAL_ESPECIE' },
-        }),
-        api.get('/catalog/support', {
-          params: { discriminator: 'ANIMAL_GENERO' },
-        }),
-      ]);
-      setSpeciesOptions(normalizeSupportOptions(speciesRes.data));
-      setSexOptions(normalizeSupportOptions(sexRes.data));
-    } catch (error) {
-      console.error('Error fetching support options:', error);
-    }
-  };
-
-  const fetchBreedOptions = async (species: string) => {
-    const disc = getBreedDiscriminator(species);
-    try {
-      // Busca TODAS as páginas — o catálogo de raças passou de ~500 itens e o
-      // endpoint pagina de 50 em 50; sem isso, raças no fim do alfabeto
-      // (ex.: Pastor de Shetland) não apareciam no autocomplete.
-      const all = await fetchAllListPages<SupportOption>('/catalog/support', { discriminator: disc });
-      setBreedOptions(all);
-    } catch (error) {
-      console.error('Error fetching breed options:', error);
-      setBreedOptions([]);
-    }
-  };
+  const createPatient = useCreatePatientMutation();
+  const updatePatient = useUpdatePatientMutation();
+  const deletePatient = useDeletePatientMutation();
+  const createSupportOption = useCreateSupportOptionMutation();
 
   const handleAddBreed = async (breedName?: string) => {
     const species = getValues('species');
@@ -198,12 +126,8 @@ export default function PatientsPage() {
     const newBreed = (breedName ?? breedSearchValue)?.trim();
     if (!newBreed) return;
     try {
-      await api.post('/catalog/support', {
-        discriminator: disc,
-        description: newBreed,
-      });
+      await createSupportOption.mutateAsync({ discriminator: disc, description: newBreed });
       toast.success(`Raça "${newBreed}" cadastrada`);
-      await fetchBreedOptions(species);
       setValue('breed', newBreed);
       setBreedSearchValue(newBreed);
       setBreedOpen(false);
@@ -213,15 +137,6 @@ export default function PatientsPage() {
   };
 
   useEffect(() => {
-    fetchTutors();
-    fetchSupportOptions();
-  }, []);
-
-  useEffect(() => {
-    fetchPatients();
-  }, [listPage, listTutorFilter]);
-
-  useEffect(() => {
     setListPage(1);
   }, [listTutorFilter]);
 
@@ -229,7 +144,6 @@ export default function PatientsPage() {
     setEditingId(null);
     reset();
     setBreedSearchValue('');
-    setBreedOptions([]);
     setModalVisible(true);
   };
 
@@ -249,15 +163,13 @@ export default function PatientsPage() {
       no_tutor_reason: record.no_tutor_reason ?? undefined,
     });
     setBreedSearchValue(record.breed ?? '');
-    fetchBreedOptions(record.species);
     setModalVisible(true);
   };
 
   const handleDelete = async (id: string) => {
     try {
-      await api.delete(`/patients/${id}`);
+      await deletePatient.mutateAsync(id);
       toast.success('Paciente removido com sucesso');
-      fetchPatients();
     } catch (error) {
       console.error('Error deleting patient:', error);
       toast.error('Erro ao remover paciente');
@@ -266,7 +178,7 @@ export default function PatientsPage() {
 
   const onSubmit = async (values: PatientFormValues) => {
     const { tutor_choice, ...rest } = values;
-    const payload =
+    const payload: PatientPayload =
       tutor_choice === 'yes'
         ? { ...rest, tutor_id: rest.tutor_id || null, no_tutor_reason: null }
         : {
@@ -276,14 +188,13 @@ export default function PatientsPage() {
           };
     try {
       if (editingId) {
-        await api.put(`/patients/${editingId}`, payload);
+        await updatePatient.mutateAsync({ id: editingId, payload });
         toast.success('Paciente atualizado com sucesso');
       } else {
-        await api.post('/patients', payload);
+        await createPatient.mutateAsync(payload);
         toast.success('Paciente criado com sucesso');
       }
       setModalVisible(false);
-      fetchPatients();
     } catch (error) {
       console.error('Error saving patient:', error);
       toast.error('Erro ao salvar paciente');
@@ -591,9 +502,7 @@ export default function PatientsPage() {
                     onValueChange={(value) => {
                       field.onChange(value);
                       setValue('breed', '');
-                      setBreedOptions([]);
                       setBreedSearchValue('');
-                      fetchBreedOptions(value);
                     }}
                   >
                     <SelectTrigger>

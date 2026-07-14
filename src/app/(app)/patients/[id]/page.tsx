@@ -1,8 +1,7 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import type {
-  PatientDetail,
   PatientTimelineEvent,
   TimelineConsultationData,
   TimelineExamRequestData,
@@ -15,7 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Loader2, ChevronLeft, BookOpen, FlaskConical, ClipboardList, Clock, FileText } from 'lucide-react';
 import Link from 'next/link';
-import api from '@/lib/axios';
+import { usePatientQuery, usePatientTimelineQuery } from '@/hooks/apiHooks/usePatients';
 
 const typeConfig: Record<string, { label: string; colorClass: string; dotClass: string; icon: React.ReactNode }> = {
   consultation: {
@@ -64,30 +63,9 @@ export default function PatientDetailPage() {
   const params = useParams();
   const router = useRouter();
   const id = typeof params?.id === 'string' ? params.id : '';
-  const [patient, setPatient] = useState<PatientDetail | null>(null);
-  const [events, setEvents] = useState<PatientTimelineEvent[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!id) return;
-    const load = async () => {
-      setLoading(true);
-      try {
-        const [patientRes, timelineRes] = await Promise.all([
-          api.get<PatientDetail>(`/patients/${id}`),
-          api.get<PatientTimelineEvent[]>(`/patients/${id}/timeline`),
-        ]);
-        setPatient(patientRes.data);
-        setEvents(Array.isArray(timelineRes.data) ? timelineRes.data : []);
-      } catch {
-        setPatient(null);
-        setEvents([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-  }, [id]);
+  const { data: patient, isLoading: loadingPatient } = usePatientQuery(id);
+  const { data: events = [] } = usePatientTimelineQuery(id);
+  const loading = loadingPatient;
 
   if (loading) {
     return (

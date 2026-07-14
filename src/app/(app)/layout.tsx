@@ -44,7 +44,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
-import api from "@/lib/axios";
 import { fetchPublicBranding } from "@/lib/branding";
 import {
   getStoredMenuKeys,
@@ -54,21 +53,12 @@ import {
 import { useBillingStatus } from "@/hooks/useBillingStatus";
 import { TrialBanner } from "@/components/billing/TrialBanner";
 import { LogoCompactoDynamic } from "@/components/shared/componentizedImages/LogoCompactoDynamic";
-
-interface ClinicNotification {
-  id: string;
-  type: string;
-  message: string;
-  is_read: boolean;
-  createdAt?: string;
-}
-
-type NotificationsPaged = {
-  data: ClinicNotification[];
-  total: number;
-  page: number;
-  totalPages: number;
-};
+import {
+  useUnreadNotificationsCountQuery,
+  useNotificationsListQuery,
+  useMarkNotificationReadMutation,
+  useMarkAllNotificationsReadMutation,
+} from "@/hooks/apiHooks/useNotifications";
 
 function notificationTypeLabel(type: string): string {
   if (type === "emergency") return "Emergência";
@@ -84,64 +74,22 @@ function NotificationsBell() {
     type === "conversation_alert";
 
   const { t } = useTranslation("common");
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [list, setList] = useState<ClinicNotification[]>([]);
-  const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
 
-  const fetchUnread = () => {
-    api
-      .get<number>("/notifications/unread-count", {
-        params: { attention_only: true },
-      })
-      .then((r) => setUnreadCount(Number(r.data ?? 0)))
-      .catch(() => {});
-  };
-
-  const fetchList = () => {
-    setLoading(true);
-    api
-      .get<NotificationsPaged | ClinicNotification[]>("/notifications", {
-        params: { attention_only: true, limit: 50, page: 1 },
-      })
-      .then((r) => {
-        const body = r.data;
-        if (Array.isArray(body)) setList(body);
-        else if (body && Array.isArray(body.data)) setList(body.data);
-        else setList([]);
-      })
-      .catch(() => setList([]))
-      .finally(() => setLoading(false));
-  };
-
-  useEffect(() => {
-    fetchUnread();
-    const tick = setInterval(fetchUnread, 60000);
-    return () => clearInterval(tick);
-  }, []);
-
-  useEffect(() => {
-    if (open) {
-      fetchList();
-      fetchUnread();
-    }
-  }, [open]);
+  const { data: unreadCount = 0 } = useUnreadNotificationsCountQuery();
+  const { data: list = [], isLoading: loading } = useNotificationsListQuery(open);
+  const markReadMutation = useMarkNotificationReadMutation();
+  const markAllReadMutation = useMarkAllNotificationsReadMutation();
 
   const markRead = async (id: string) => {
     try {
-      await api.post(`/notifications/${id}/read`);
-      fetchUnread();
-      setList((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)),
-      );
+      await markReadMutation.mutateAsync(id);
     } catch {}
   };
 
   const markAllRead = async () => {
     try {
-      await api.post("/notifications/read-all");
-      setUnreadCount(0);
-      setList((prev) => prev.map((n) => ({ ...n, is_read: true })));
+      await markAllReadMutation.mutateAsync();
     } catch {}
   };
 
@@ -499,6 +447,7 @@ function getActiveKey(pathname: string): string {
   if (pathname.includes("/followups")) return "followups";
   if (pathname.includes("/internacoes")) return "hospitalizations";
   if (pathname.includes("/financeiro/orcamentos")) return "budgets";
+  if (pathname.includes("/financeiro/produtos")) return "financeiro-produtos";
   if (pathname.includes("/financeiro/receitas"))
     return "financeiro-receitas";
   if (pathname.includes("/financeiro/custos-pagamento"))

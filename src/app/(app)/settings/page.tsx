@@ -11,10 +11,22 @@ import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
 import { Settings, Save, Search, Plus, Loader2, Bell } from 'lucide-react';
-import api from '@/lib/axios';
 import axios from 'axios';
 import { formatCepMask } from '@/lib/format-cep';
 import Link from 'next/link';
+import {
+  useTenantMeQuery,
+  useUpdateTenantMeMutation,
+  useCreateTenantMutation,
+} from '@/hooks/apiHooks/useTenantSettings';
+import {
+  useGoogleStatusQuery,
+  useGoogleCalendarsQuery,
+  useGoogleConnectMutation,
+  useGoogleDisconnectMutation,
+  useSaveGoogleCalendarSettingsMutation,
+  useGoogleForceSyncMutation,
+} from '@/hooks/apiHooks/useGoogleIntegration';
 
 function getCurrentUserRole(): string | null {
   if (typeof window === 'undefined') return null;
@@ -72,60 +84,43 @@ export default function SettingsPage() {
     reset: resetTenant,
   } = useForm<TenantFormValues>();
 
-  const [loading, setLoading] = React.useState(false);
   const [loadingCep, setLoadingCep] = React.useState(false);
-  const [creatingTenant, setCreatingTenant] = React.useState(false);
-  const [googleStatus, setGoogleStatus] = React.useState<{
-    connected: boolean;
-    accountEmail?: string;
-    calendarId?: string;
-    syncDirection?: string;
-    lastSyncAt?: string | null;
-  }>({ connected: false });
-  const [googleCalendars, setGoogleCalendars] = React.useState<
-    Array<{ id: string; summary: string; primary: boolean }>
-  >([]);
-  const [selectedCalendarId, setSelectedCalendarId] = React.useState<string>('primary');
-  const [googleLoading, setGoogleLoading] = React.useState(false);
   const currentRole = getCurrentUserRole();
   const isSuperAdmin = currentRole === 'superadmin';
   const canManageChatbot = currentRole === 'admin' || currentRole === 'manager' || isSuperAdmin;
-  const [chatbotEnabled, setChatbotEnabled] = React.useState(false);
-  const [chatbotSaving, setChatbotSaving] = React.useState(false);
+
+  const { data: tenantMe, isLoading: loading } = useTenantMeQuery();
+  const updateTenantMutation = useUpdateTenantMeMutation();
+  const createTenantMutation = useCreateTenantMutation();
+  const creatingTenant = createTenantMutation.isPending;
+  const chatbotEnabled = Boolean(tenantMe?.whatsapp_ai_chatbot_enabled);
+  const chatbotSaving = updateTenantMutation.isPending;
+
+  const { data: googleStatus = { connected: false }, refetch: refetchGoogleStatus } = useGoogleStatusQuery();
+  const { data: googleCalendars = [], refetch: refetchGoogleCalendars } = useGoogleCalendarsQuery(googleStatus.connected);
+  const googleConnectMutation = useGoogleConnectMutation();
+  const googleDisconnectMutation = useGoogleDisconnectMutation();
+  const saveGoogleCalendarMutation = useSaveGoogleCalendarSettingsMutation();
+  const googleForceSyncMutation = useGoogleForceSyncMutation();
+  const googleLoading =
+    googleConnectMutation.isPending || googleDisconnectMutation.isPending || saveGoogleCalendarMutation.isPending;
+  const forceSyncing = googleForceSyncMutation.isPending;
+
+  const [selectedCalendarId, setSelectedCalendarId] = React.useState<string>('primary');
+  const [syncDirection, setSyncDirection] = React.useState('both');
 
   React.useEffect(() => {
-    fetchSettings();
-    fetchGoogleStatus();
-  }, []);
-
-  const fetchGoogleStatus = async () => {
-    try {
-      const statusRes = await api.get('/integrations/google/status');
-      const status = statusRes.data || { connected: false };
-      setGoogleStatus(status);
-      if (status.connected) {
-        const calendarsRes = await api.get('/integrations/google/calendars');
-        const calendars = Array.isArray(calendarsRes.data) ? calendarsRes.data : [];
-        setGoogleCalendars(calendars);
-        const savedId = status.calendarId || 'primary';
-        const validIds = calendars.map((c: { id: string }) => c.id);
-        const resolvedId = validIds.includes(savedId) ? savedId : (calendars.find((c: { primary?: boolean }) => c.primary)?.id || 'primary');
-        setSelectedCalendarId(resolvedId);
-        setSyncDirection(status.syncDirection || 'both');
-      } else {
-        setGoogleCalendars([]);
-      }
-    } catch {
-      setGoogleStatus({ connected: false });
-      setGoogleCalendars([]);
-    }
-  };
+    if (!googleStatus.connected) return;
+    const savedId = googleStatus.calendarId || 'primary';
+    const validIds = googleCalendars.map((c) => c.id);
+    const resolvedId = validIds.includes(savedId) ? savedId : (googleCalendars.find((c) => c.primary)?.id || 'primary');
+    setSelectedCalendarId(resolvedId);
+    setSyncDirection(googleStatus.syncDirection || 'both');
+  }, [googleStatus, googleCalendars]);
 
   const handleGoogleConnect = async () => {
     try {
-      setGoogleLoading(true);
-      const response = await api.get('/integrations/google/connect');
-      const url = response.data?.url;
+      const url = await googleConnectMutation.mutateAsync();
       if (!url) {
         toast.error('Não foi possível iniciar conexão Google');
         return;
@@ -134,113 +129,85 @@ export default function SettingsPage() {
       toast.info('Após autorizar no Google, clique em "Atualizar Status".');
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao conectar Google'));
-    } finally {
-      setGoogleLoading(false);
     }
   };
 
   const handleGoogleDisconnect = async () => {
     try {
-      setGoogleLoading(true);
-      await api.post('/integrations/google/disconnect');
+      await googleDisconnectMutation.mutateAsync();
       toast.success('Integração Google desconectada');
-      await fetchGoogleStatus();
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao desconectar Google'));
-    } finally {
-      setGoogleLoading(false);
     }
   };
 
-  const [syncDirection, setSyncDirection] = React.useState('both');
-  const [forceSyncing, setForceSyncing] = React.useState(false);
-
   const handleGoogleSaveCalendar = async () => {
     try {
-      setGoogleLoading(true);
-      await api.put('/integrations/google/settings', {
-        calendarId: selectedCalendarId,
-        syncDirection,
-      });
+      await saveGoogleCalendarMutation.mutateAsync({ calendarId: selectedCalendarId, syncDirection });
       toast.success('Configurações do Google atualizadas');
-      await fetchGoogleStatus();
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao salvar'));
-    } finally {
-      setGoogleLoading(false);
     }
   };
 
   const handleForceSync = async () => {
-    setForceSyncing(true);
     try {
-      await api.post('/integrations/google/force-sync');
+      await googleForceSyncMutation.mutateAsync();
       toast.success('Sincronização executada');
-      await fetchGoogleStatus();
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao sincronizar'));
-    } finally {
-      setForceSyncing(false);
     }
   };
 
-  const fetchSettings = async () => {
-    try {
-      setLoading(true);
-      const response = await api.get('/tenants/me');
-      const data = response.data;
+  React.useEffect(() => {
+    if (!tenantMe) return;
+    const data = tenantMe;
 
-      let street = '';
-      let number = '';
-      let complement = '';
-      let neighborhood = '';
-      let city = '';
-      let state = '';
+    let street = '';
+    let number = '';
+    let complement = '';
+    let neighborhood = '';
+    let city = '';
+    let state = '';
 
-      if (data.address) {
-        const parts = data.address.split(' - ');
-        if (parts.length >= 3) {
-          const firstPart = parts[0].split(',');
-          street = firstPart[0];
-          number = firstPart[1] ? firstPart[1].trim() : '';
-          if (parts.length >= 4) {
-            complement = parts[1];
-            neighborhood = parts[2];
-            const cityState = parts[3].split('/');
-            city = cityState[0];
-            state = cityState[1] || '';
-          } else {
-            neighborhood = parts[1];
-            const cityState = parts[2].split('/');
-            city = cityState[0];
-            state = cityState[1] || '';
-          }
+    if (data.address) {
+      const parts = data.address.split(' - ');
+      if (parts.length >= 3) {
+        const firstPart = parts[0].split(',');
+        street = firstPart[0];
+        number = firstPart[1] ? firstPart[1].trim() : '';
+        if (parts.length >= 4) {
+          complement = parts[1];
+          neighborhood = parts[2];
+          const cityState = parts[3].split('/');
+          city = cityState[0];
+          state = cityState[1] || '';
+        } else {
+          neighborhood = parts[1];
+          const cityState = parts[2].split('/');
+          city = cityState[0];
+          state = cityState[1] || '';
         }
       }
-
-      setValue('clinicName', data.name ?? '');
-      setValue('email', data.email ?? '');
-      setValue('phone', data.phone ?? '');
-      setValue('brandName', data.brand_name ?? '');
-      setValue('logoUrl', data.logo_url ?? '');
-      setValue('primaryColor', data.primary_color ?? '');
-      setValue('subdomain', data.subdomain ?? '');
-      setValue('customDomain', data.custom_domain ?? '');
-      setValue('cep', formatCepMask(data.cep) ?? '');
-      setValue('street', street);
-      setValue('number', number);
-      setValue('complement', complement);
-      setValue('neighborhood', neighborhood);
-      setValue('city', city);
-      setValue('state', state);
-      setChatbotEnabled(Boolean(data.whatsapp_ai_chatbot_enabled));
-    } catch (error) {
-      console.error('Error fetching settings:', error);
-      toast.error('Erro ao carregar configurações');
-    } finally {
-      setLoading(false);
     }
-  };
+
+    setValue('clinicName', data.name ?? '');
+    setValue('email', data.email ?? '');
+    setValue('phone', data.phone ?? '');
+    setValue('brandName', data.brand_name ?? '');
+    setValue('logoUrl', data.logo_url ?? '');
+    setValue('primaryColor', data.primary_color ?? '');
+    setValue('subdomain', data.subdomain ?? '');
+    setValue('customDomain', data.custom_domain ?? '');
+    setValue('cep', formatCepMask(data.cep) ?? '');
+    setValue('street', street);
+    setValue('number', number);
+    setValue('complement', complement);
+    setValue('neighborhood', neighborhood);
+    setValue('city', city);
+    setValue('state', state);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tenantMe]);
 
   const handleCepSearch = async () => {
     const cepValue = getValues('cep');
@@ -283,7 +250,7 @@ export default function SettingsPage() {
       const fullAddress = values.street
         ? `${values.street}, ${values.number}${values.complement ? ` - ${values.complement}` : ''} - ${values.neighborhood} - ${values.city}/${values.state}`
         : '';
-      const payload: Record<string, unknown> = {
+      await updateTenantMutation.mutateAsync({
         name: values.clinicName,
         email: values.email,
         phone: values.phone,
@@ -294,8 +261,7 @@ export default function SettingsPage() {
         custom_domain: values.customDomain,
         address: fullAddress,
         cep: values.cep,
-      };
-      await api.put('/tenants/me', payload);
+      });
       toast.success('Configurações salvas com sucesso!', { id: 'saving' });
     } catch (error) {
       console.error('Error saving settings:', error);
@@ -308,7 +274,6 @@ export default function SettingsPage() {
       toast.warning('Preencha nome e código');
       return;
     }
-    setCreatingTenant(true);
     try {
       const payload: { name: string; code: string; initialUser?: { name: string; email: string; password: string } } = {
         name: values.name.trim(),
@@ -321,7 +286,7 @@ export default function SettingsPage() {
           password: values.initialUserPassword,
         };
       }
-      await api.post('/tenants', payload);
+      await createTenantMutation.mutateAsync(payload);
       toast.success(
         payload.initialUser
           ? `Clínica "${values.name}" e usuário criados. Código: ${payload.code}`
@@ -330,21 +295,15 @@ export default function SettingsPage() {
       resetTenant();
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao criar clínica'));
-    } finally {
-      setCreatingTenant(false);
     }
   };
 
   const saveChatbotToggle = async (enabled: boolean) => {
-    setChatbotSaving(true);
     try {
-      await api.put('/tenants/me', { whatsapp_ai_chatbot_enabled: enabled });
-      setChatbotEnabled(enabled);
+      await updateTenantMutation.mutateAsync({ whatsapp_ai_chatbot_enabled: enabled });
       toast.success(enabled ? 'Chatbot de IA ativado' : 'Chatbot de IA desativado');
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao salvar'));
-    } finally {
-      setChatbotSaving(false);
     }
   };
 
@@ -538,7 +497,11 @@ export default function SettingsPage() {
                   {googleLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                   Conectar Google
                 </Button>
-                <Button variant="outline" onClick={fetchGoogleStatus} disabled={googleLoading}>
+                <Button
+                  variant="outline"
+                  onClick={() => { void refetchGoogleStatus(); void refetchGoogleCalendars(); }}
+                  disabled={googleLoading}
+                >
                   {googleLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                   Atualizar Status
                 </Button>

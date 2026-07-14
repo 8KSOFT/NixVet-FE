@@ -13,38 +13,20 @@ import { toast } from 'sonner';
 import { useForm, Controller } from 'react-hook-form';
 import { Plus, Pencil, Trash2, Loader2, DollarSign, X, Check } from 'lucide-react';
 import { getApiErrorMessage } from '@/app/utils/api-error-message';
-import api from '@/lib/axios';
-import { API_PAGE_SIZE, fetchAllListPages, listQueryParams, parseListResponse } from '@/lib/pagination';
+import { API_PAGE_SIZE } from '@/lib/pagination';
 import { ListPagination } from '@/components/list-pagination';
-
-interface Area {
-  id: number;
-  name: string;
-}
-
-interface Exam {
-  id: number;
-  name: string;
-  exam_area_id?: number;
-  exam_area?: Area;
-  private_price?: number | null;
-  lab_cost?: number | null;
-  tax_percentage?: number | null;
-  is_third_party?: boolean;
-}
-
-interface HealthPlan {
-  id: string;
-  name: string;
-}
-
-interface PlanPrice {
-  id: string;
-  health_plan_id: string;
-  health_plan_name: string | null;
-  plan_price: number;
-  reimbursement: number;
-}
+import {
+  useExamAreasQuery,
+  useExamsPagedQuery,
+  useCreateExamMutation,
+  useUpdateExamMutation,
+  useDeleteExamMutation,
+  useExamPlanPricesQuery,
+  useSaveExamPlanPriceMutation,
+  useDeleteExamPlanPriceMutation,
+} from '@/hooks/apiHooks/useExamCatalog';
+import { useHealthPlansListQuery } from '@/hooks/apiHooks/useHealthPlans';
+import type { Exam } from '@/app/types/exam-request';
 
 type FormValues = {
   name: string;
@@ -69,44 +51,27 @@ function PlanPricesDialog({
   open: boolean;
   onClose: () => void;
 }) {
-  const [prices, setPrices] = useState<PlanPrice[]>([]);
-  const [plans, setPlans] = useState<HealthPlan[]>([]);
-  const [loading, setLoading] = useState(false);
   const [addMode, setAddMode] = useState(false);
   const [newPlanId, setNewPlanId] = useState('');
   const [newPlanPrice, setNewPlanPrice] = useState('');
   const [newReimbursement, setNewReimbursement] = useState('');
-  const [saving, setSaving] = useState(false);
 
-  const load = async () => {
-    setLoading(true);
-    try {
-      const [priceRes, planRes] = await Promise.all([
-        api.get(`/catalog/exams/${exam.id}/plan-prices`),
-        api.get('/health-plans', { params: { limit: 200 } }),
-      ]);
-      setPrices(priceRes.data);
-      const planData = planRes.data?.items ?? planRes.data?.data ?? planRes.data ?? [];
-      setPlans(Array.isArray(planData) ? planData : []);
-    } catch {
-      toast.error('Erro ao carregar preços por convênio');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: prices = [], isLoading: loading } = useExamPlanPricesQuery(exam.id, open);
+  const { data: plans = [] } = useHealthPlansListQuery();
+  const saveMutation = useSaveExamPlanPriceMutation(exam.id);
+  const deleteMutation = useDeleteExamPlanPriceMutation(exam.id);
+  const saving = saveMutation.isPending;
 
   useEffect(() => {
     if (open) {
-      void load();
       setAddMode(false);
     }
   }, [open]);
 
   const handleSaveNew = async () => {
     if (!newPlanId || !newPlanPrice) return;
-    setSaving(true);
     try {
-      await api.put(`/catalog/exams/${exam.id}/plan-prices`, {
+      await saveMutation.mutateAsync({
         health_plan_id: newPlanId,
         plan_price: parseFloat(newPlanPrice),
         reimbursement: newReimbursement ? parseFloat(newReimbursement) : 0,
@@ -116,19 +81,15 @@ function PlanPricesDialog({
       setNewPlanId('');
       setNewPlanPrice('');
       setNewReimbursement('');
-      void load();
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao salvar'));
-    } finally {
-      setSaving(false);
     }
   };
 
   const handleDelete = async (healthPlanId: string) => {
     try {
-      await api.delete(`/catalog/exams/${exam.id}/plan-prices/${healthPlanId}`);
+      await deleteMutation.mutateAsync(healthPlanId);
       toast.success('Removido');
-      void load();
     } catch {
       toast.error('Erro ao remover');
     }
@@ -253,48 +214,20 @@ function PlanPricesDialog({
 }
 
 export default function SettingsExamsPage() {
-  const [areas, setAreas] = useState<Area[]>([]);
-  const [list, setList] = useState<Exam[]>([]);
-  const [loading, setLoading] = useState(false);
   const [listPage, setListPage] = useState(1);
-  const [listTotal, setListTotal] = useState(0);
-  const [listTotalPages, setListTotalPages] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [planPricesFor, setPlanPricesFor] = useState<Exam | null>(null);
   const { register, handleSubmit, reset, control, formState: { errors } } = useForm<FormValues>();
 
-  const fetchAreas = async () => {
-    try {
-      const rows = await fetchAllListPages<Area>('/catalog/exam-areas');
-      setAreas(rows);
-    } catch {
-      toast.error('Erro ao carregar áreas');
-    }
-  };
-
-  const fetchExams = async () => {
-    setLoading(true);
-    try {
-      const res = await api.get('/catalog/exams', { params: listQueryParams(listPage) });
-      const p = parseListResponse<Exam>(res.data, listPage);
-      setList(p.items);
-      setListTotal(p.total);
-      setListTotalPages(p.totalPages);
-    } catch {
-      toast.error('Erro ao carregar exames');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    void fetchAreas();
-  }, []);
-
-  useEffect(() => {
-    void fetchExams();
-  }, [listPage]);
+  const { data: areas = [] } = useExamAreasQuery();
+  const { data, isLoading: loading } = useExamsPagedQuery(listPage);
+  const list = data?.items ?? [];
+  const listTotal = data?.total ?? 0;
+  const listTotalPages = data?.totalPages ?? 1;
+  const createMutation = useCreateExamMutation();
+  const updateMutation = useUpdateExamMutation();
+  const deleteMutation = useDeleteExamMutation();
 
   const openCreate = () => {
     setEditingId(null);
@@ -318,9 +251,8 @@ export default function SettingsExamsPage() {
 
   const handleDelete = async (id: number) => {
     try {
-      await api.delete(`/catalog/exams/${id}`);
+      await deleteMutation.mutateAsync(id);
       toast.success('Removido');
-      void fetchExams();
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao remover'));
     }
@@ -337,14 +269,13 @@ export default function SettingsExamsPage() {
     };
     try {
       if (editingId) {
-        await api.put(`/catalog/exams/${editingId}`, payload);
+        await updateMutation.mutateAsync({ id: editingId, payload });
         toast.success('Atualizado');
       } else {
-        await api.post('/catalog/exams', payload);
+        await createMutation.mutateAsync(payload);
         toast.success('Criado');
       }
       setModalOpen(false);
-      void fetchExams();
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao salvar'));
     }

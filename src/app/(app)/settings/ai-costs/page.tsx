@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import { DollarSign, Cpu, MessageSquare, TrendingUp, RefreshCw } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,42 +14,8 @@ import {
   TableHead,
   TableCell,
 } from '@/components/ui/table';
-import api from '@/lib/axios';
 import dayjs from 'dayjs';
-
-interface UsageSummary {
-  total_prompt_tokens: number;
-  total_completion_tokens: number;
-  total_tokens: number;
-  total_cost_usd: number;
-  total_calls: number;
-}
-
-interface ByOperation {
-  operation: string;
-  tokens: number;
-  cost_usd: number;
-  calls: number;
-}
-
-interface RecentLog {
-  id: string;
-  operation: string;
-  model: string;
-  prompt_tokens: number;
-  completion_tokens: number;
-  total_tokens: number;
-  estimated_cost_usd: number;
-  conversation_id: string | null;
-  created_at: string;
-}
-
-interface UsageResponse {
-  summary: UsageSummary;
-  by_operation: ByOperation[];
-  daily: Array<{ date: string; tokens: number; cost_usd: number; calls: number }>;
-  recent: RecentLog[];
-}
+import { useAiUsageQuery } from '@/hooks/apiHooks/useAi';
 
 const OP_LABELS: Record<string, string> = {
   'classify-intent': 'Classificação de intenção',
@@ -71,28 +37,10 @@ function formatTokens(n: number): string {
 }
 
 export default function AiCostsPage() {
-  const [data, setData] = useState<UsageResponse | null>(null);
-  const [loading, setLoading] = useState(true);
   const [from, setFrom] = useState(() => dayjs().startOf('month').format('YYYY-MM-DD'));
   const [to, setTo] = useState(() => dayjs().endOf('month').format('YYYY-MM-DD'));
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await api.get<UsageResponse>('/ai/usage', {
-        params: { from: `${from}T00:00:00`, to: `${to}T23:59:59`, group_by: 'day' },
-      });
-      setData(res.data);
-    } catch {
-      setData(null);
-    } finally {
-      setLoading(false);
-    }
-  }, [from, to]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  const { data, isLoading: loading, refetch } = useAiUsageQuery(from, to);
 
   const summary = data?.summary;
   const totalCost = Number(summary?.total_cost_usd ?? 0);
@@ -108,7 +56,7 @@ export default function AiCostsPage() {
             Acompanhe o consumo de tokens e custos estimados da OpenAI
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={fetchData} disabled={loading}>
+        <Button variant="outline" size="sm" onClick={() => refetch()} disabled={loading}>
           <RefreshCw className={`size-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
           Atualizar
         </Button>
