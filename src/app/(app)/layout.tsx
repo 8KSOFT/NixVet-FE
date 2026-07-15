@@ -233,6 +233,12 @@ const NAV_SECTIONS: NavSection[] = [
         href: "/dashboard",
         labelKey: "nav.dashboard",
       },
+      {
+        key: "financeiro-produtos",
+        icon: Package,
+        href: "/produtos",
+        labelKey: "nav.financeiroProdutos",
+      },
     ],
   },
   {
@@ -367,12 +373,6 @@ const NAV_SECTIONS: NavSection[] = [
             labelKey: "nav.budgets",
           },
           {
-            key: "financeiro-produtos",
-            icon: Package,
-            href: "/financeiro/produtos",
-            labelKey: "nav.financeiroProdutos",
-          },
-          {
             key: "financeiro-receita",
             icon: BarChart2,
             href: "/financeiro/receita",
@@ -446,8 +446,8 @@ function getActiveKey(pathname: string): string {
   if (pathname.includes("/exams")) return "exams";
   if (pathname.includes("/followups")) return "followups";
   if (pathname.includes("/internacoes")) return "hospitalizations";
+  if (pathname.includes("/produtos")) return "financeiro-produtos";
   if (pathname.includes("/financeiro/orcamentos")) return "budgets";
-  if (pathname.includes("/financeiro/produtos")) return "financeiro-produtos";
   if (pathname.includes("/financeiro/receitas"))
     return "financeiro-receitas";
   if (pathname.includes("/financeiro/custos-pagamento"))
@@ -723,12 +723,11 @@ export default function DashboardLayout({
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [brandName, setBrandName] = useState("NixVet");
   const [brandLogo, setBrandLogo] = useState<string | null>(null);
-  const [menuAllow, setMenuAllow] = useState<Set<string>>(
-    () => new Set(getStoredMenuKeys()),
-  );
-  const [headerRole, setHeaderRole] = useState<string>(
-    () => getStoredUserRole() || "",
-  );
+  // inicia vazio (igual no server e no primeiro paint do client) e só lê
+  // localStorage no useEffect abaixo — ler localStorage no initializer do
+  // useState quebra a hidratação, pois o server nunca tem acesso a ele.
+  const [menuAllow, setMenuAllow] = useState<Set<string>>(() => new Set());
+  const [headerRole, setHeaderRole] = useState<string>("");
   const router = useRouter();
   const pathname = usePathname();
   const currentPathname = pathname ?? "";

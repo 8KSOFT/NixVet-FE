@@ -4,9 +4,9 @@ import React, { useState } from 'react';
 import { Plus, FileText, CheckCircle, Eye, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { DashboardCreateFormDialog } from '@/components/dashboard-create-form-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
@@ -315,13 +315,24 @@ export default function OrcamentosPage() {
       </div>
 
       {/* Modal Novo Orçamento */}
-      <Dialog open={openNew} onOpenChange={setOpenNew}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Novo Orçamento</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+      <DashboardCreateFormDialog
+        open={openNew}
+        onOpenChange={setOpenNew}
+        title="Novo Orçamento"
+        contentClassName="modal-responsive sm:max-w-3xl"
+        footer={
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button type="button" variant="outline" className="border border-gray-300" onClick={() => setOpenNew(false)}>
+              Cancelar
+            </Button>
+            <Button type="button" onClick={handleCreate}>
+              Criar Orçamento
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-4 md:space-y-6">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-1">
                 <Label>Paciente</Label>
                 <Select value={form.patient_id} onValueChange={(v) => setForm((f) => ({ ...f, patient_id: v }))}>
@@ -388,11 +399,18 @@ export default function OrcamentosPage() {
                   + Adicionar Item
                 </Button>
               </div>
+              <div className="hidden gap-2 px-3 text-xs font-medium text-muted-foreground sm:grid sm:grid-cols-12">
+                <span className="col-span-3">Tipo</span>
+                <span className="col-span-4">Produto / Descrição</span>
+                <span className="col-span-2">Qtd</span>
+                <span className="col-span-2">Valor unit.</span>
+                <span className="col-span-1" />
+              </div>
               <div className="space-y-2">
                 {form.items.map((item, i) => (
-                  <div key={i} className="grid grid-cols-12 gap-2 rounded-lg border p-3">
+                  <div key={i} className="grid grid-cols-2 gap-2 rounded-lg border p-3 sm:grid-cols-12">
                     <Select value={item.item_type} onValueChange={(v: BudgetItemType) => setItemType(i, v)}>
-                      <SelectTrigger className="col-span-3 h-9">
+                      <SelectTrigger className="col-span-2 h-9 sm:col-span-3">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -403,7 +421,7 @@ export default function OrcamentosPage() {
 
                     {item.item_type === 'product' ? (
                       <Select value={item.reference_id} onValueChange={(v) => selectItemProduct(i, v)}>
-                        <SelectTrigger className="col-span-5 h-9">
+                        <SelectTrigger className="col-span-2 h-9 sm:col-span-4">
                           <SelectValue placeholder="Selecione o produto" />
                         </SelectTrigger>
                         <SelectContent>
@@ -419,7 +437,7 @@ export default function OrcamentosPage() {
                         placeholder="Descrição"
                         value={item.description}
                         onChange={(e) => updateItem(i, 'description', e.target.value)}
-                        className="col-span-5 h-9"
+                        className="col-span-2 h-9 sm:col-span-4"
                       />
                     )}
 
@@ -429,7 +447,7 @@ export default function OrcamentosPage() {
                       placeholder="Qtd"
                       value={item.quantity}
                       onChange={(e) => updateItem(i, 'quantity', Number(e.target.value))}
-                      className="col-span-1 h-9"
+                      className="col-span-1 h-9 sm:col-span-2"
                     />
                     <Input
                       type="number"
@@ -437,13 +455,13 @@ export default function OrcamentosPage() {
                       value={item.unit_price}
                       disabled={item.item_type === 'product'}
                       onChange={(e) => updateItem(i, 'unit_price', Number(e.target.value))}
-                      className="col-span-2 h-9 disabled:opacity-70"
+                      className="col-span-1 h-9 disabled:opacity-70 sm:col-span-2"
                     />
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="col-span-1 h-9 text-muted-foreground hover:text-destructive"
+                      className="col-span-2 h-9 justify-self-end text-muted-foreground hover:text-destructive sm:col-span-1"
                       onClick={() => removeItem(i)}
                       disabled={form.items.length === 1}
                       title="Remover item"
@@ -454,21 +472,13 @@ export default function OrcamentosPage() {
                 ))}
               </div>
             </div>
-
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setOpenNew(false)}>
-                Cancelar
-              </Button>
-              <Button onClick={handleCreate}>Criar Orçamento</Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      </DashboardCreateFormDialog>
 
       {/* Modal Detalhe */}
       {selected && (
         <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-[calc(100%-2rem)] sm:max-w-2xl">
             <DialogHeader>
               <DialogTitle>Orçamento #{selected.id.substring(0, 8).toUpperCase()}</DialogTitle>
             </DialogHeader>
