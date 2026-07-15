@@ -68,14 +68,14 @@ export default function ReceitasPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold">Receitas — Particular vs Plano</h1>
           <p className="text-sm text-muted-foreground">Comparativo de fontes de receita</p>
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" className="w-full sm:w-auto">
               {period} <ChevronDown className="ml-2 size-3" />
             </Button>
           </DropdownMenuTrigger>
@@ -114,7 +114,7 @@ export default function ReceitasPage() {
           ) : (
             <ResponsiveContainer width="100%" height={280}>
               <PieChart>
-                <Pie data={chartData} cx="50%" cy="50%" outerRadius={100} dataKey="value" label={formatPieLabel}>
+                <Pie data={chartData} cx="50%" cy="50%" outerRadius="70%" dataKey="value" label={formatPieLabel}>
                   {chartData.map((_, index) => (
                     <Cell key={index} fill={COLORS[index % COLORS.length]} />
                   ))}

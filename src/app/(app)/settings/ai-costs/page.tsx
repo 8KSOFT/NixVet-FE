@@ -49,20 +49,20 @@ export default function AiCostsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-xl font-heading font-bold text-foreground">Custos de IA</h1>
           <p className="text-sm text-muted-foreground mt-1">
             Acompanhe o consumo de tokens e custos estimados da OpenAI
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={() => refetch()} disabled={loading}>
+        <Button variant="outline" size="sm" onClick={() => refetch()} disabled={loading} className="w-full sm:w-auto">
           <RefreshCw className={`size-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
           Atualizar
         </Button>
       </div>
 
-      <div className="flex items-end gap-4">
+      <div className="flex flex-wrap items-end gap-4">
         <div className="space-y-1">
           <Label className="text-xs text-muted-foreground">De</Label>
           <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="w-40" />
@@ -178,7 +178,8 @@ export default function AiCostsPage() {
         <Card>
           <CardContent className="p-5">
             <h2 className="text-sm font-semibold text-foreground mb-3">Últimas chamadas</h2>
-            <div className="overflow-x-auto">
+            {/* Desktop / tablet: tabela */}
+            <div className="hidden overflow-x-auto md:block">
               <Table className="min-w-full border-collapse bg-white text-sm">
                 <TableHeader>
                   <TableRow className="border-b border-gray-300 h-15">
@@ -209,6 +210,25 @@ export default function AiCostsPage() {
                   ))}
                 </TableBody>
               </Table>
+            </div>
+
+            {/* Mobile: cards */}
+            <div className="space-y-2 md:hidden">
+              {data!.recent.map((log) => (
+                <div key={log.id} className="rounded-lg border border-gray-300 p-3 text-xs">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-medium">{OP_LABELS[log.operation] || log.operation}</span>
+                    <span className="text-muted-foreground">{dayjs(log.created_at).format('DD/MM HH:mm')}</span>
+                  </div>
+                  <p className="mt-0.5 font-mono text-muted-foreground">{log.model}</p>
+                  <div className="mt-2 flex justify-between text-muted-foreground">
+                    <span>Prompt: {log.prompt_tokens}</span>
+                    <span>Resposta: {log.completion_tokens}</span>
+                    <span className="font-medium text-foreground">Total: {log.total_tokens}</span>
+                    <span>{formatCost(Number(log.estimated_cost_usd))}</span>
+                  </div>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>

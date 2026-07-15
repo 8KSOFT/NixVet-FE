@@ -114,36 +114,64 @@ export default function BularioPage() {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto border border-gray-300 rounded-lg">
-            <Table className="min-w-full border-collapse bg-white text-sm">
-              <TableHeader>
-                <TableRow className="border-b border-gray-300 h-15">
-                  <TableHead>Medicamento</TableHead>
-                  <TableHead>Subtítulo</TableHead>
-                  <TableHead className="w-30">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {dataSource.map((item) => (
-                  <TableRow className="border-b border-gray-300 h-15" key={item.id}>
-                    <TableCell className="font-medium">{item.title}</TableCell>
-                    <TableCell>{item.subtitle ?? "—"}</TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="p-0"
-                        title="Ver detalhes"
-                        aria-label="Ver detalhes"
-                        onClick={() => openDetail(item.id)}
-                      >
-                        <Info className="w-4 h-4" />
-                      </Button>
-                    </TableCell>
+          <div>
+            {/* Desktop / tablet: tabela */}
+            <div className="hidden overflow-x-auto rounded-lg border border-gray-300 md:block">
+              <Table className="min-w-full border-collapse bg-white text-sm">
+                <TableHeader>
+                  <TableRow className="border-b border-gray-300 h-15">
+                    <TableHead>Medicamento</TableHead>
+                    <TableHead>Subtítulo</TableHead>
+                    <TableHead className="w-30">Ações</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {dataSource.map((item) => (
+                    <TableRow className="border-b border-gray-300 h-15" key={item.id}>
+                      <TableCell className="font-medium">{item.title}</TableCell>
+                      <TableCell>{item.subtitle ?? "—"}</TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="p-0"
+                          title="Ver detalhes"
+                          aria-label="Ver detalhes"
+                          onClick={() => openDetail(item.id)}
+                        >
+                          <Info className="w-4 h-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Mobile: cards */}
+            <div className="space-y-3 md:hidden">
+              {dataSource.map((item) => (
+                <div key={item.id} className="rounded-lg border border-gray-300 bg-white p-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="truncate font-medium">{item.title}</p>
+                      <p className="truncate text-xs text-muted-foreground">{item.subtitle ?? "—"}</p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="p-0 shrink-0"
+                      title="Ver detalhes"
+                      aria-label="Ver detalhes"
+                      onClick={() => openDetail(item.id)}
+                    >
+                      <Info className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
             {activeQuery ? (
               <ListPagination
                 page={listPage}
@@ -159,7 +187,7 @@ export default function BularioPage() {
       </div>
 
       <Dialog open={detailVisible} onOpenChange={setDetailVisible}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-[calc(100%-2rem)] sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>
               {detailItem?.title ?? "Detalhes do medicamento"}
@@ -196,7 +224,7 @@ export default function BularioPage() {
                   </div>
                   <div className="border rounded divide-y text-sm">
                     {(detailItem.dose_min_mg_kg != null || detailItem.dose_max_mg_kg != null) && (
-                      <div className="grid grid-cols-3 px-3 py-2">
+                      <div className="grid grid-cols-1 gap-0.5 px-3 py-2 sm:grid-cols-3 sm:gap-0">
                         <span className="col-span-1 font-medium text-muted-foreground">Dose</span>
                         <span className="col-span-2">
                           {[detailItem.dose_min_mg_kg, detailItem.dose_max_mg_kg]
@@ -207,31 +235,31 @@ export default function BularioPage() {
                       </div>
                     )}
                     {detailItem.frequency && (
-                      <div className="grid grid-cols-3 px-3 py-2">
+                      <div className="grid grid-cols-1 gap-0.5 px-3 py-2 sm:grid-cols-3 sm:gap-0">
                         <span className="col-span-1 font-medium text-muted-foreground">Frequência</span>
                         <span className="col-span-2">{detailItem.frequency}</span>
                       </div>
                     )}
                     {(detailItem.administration_routes?.length ?? 0) > 0 && (
-                      <div className="grid grid-cols-3 px-3 py-2">
+                      <div className="grid grid-cols-1 gap-0.5 px-3 py-2 sm:grid-cols-3 sm:gap-0">
                         <span className="col-span-1 font-medium text-muted-foreground">Vias</span>
                         <span className="col-span-2">{detailItem.administration_routes?.join(", ")}</span>
                       </div>
                     )}
                     {(detailItem.species?.length ?? 0) > 0 && (
-                      <div className="grid grid-cols-3 px-3 py-2">
+                      <div className="grid grid-cols-1 gap-0.5 px-3 py-2 sm:grid-cols-3 sm:gap-0">
                         <span className="col-span-1 font-medium text-muted-foreground">Espécies</span>
                         <span className="col-span-2">{detailItem.species?.join(", ")}</span>
                       </div>
                     )}
                     {detailItem.toxicity_notes && (
-                      <div className="grid grid-cols-3 px-3 py-2">
+                      <div className="grid grid-cols-1 gap-0.5 px-3 py-2 sm:grid-cols-3 sm:gap-0">
                         <span className="col-span-1 font-medium text-muted-foreground">Toxicidade</span>
                         <span className="col-span-2 whitespace-pre-wrap">{detailItem.toxicity_notes}</span>
                       </div>
                     )}
                     {detailItem.contraindications && (
-                      <div className="grid grid-cols-3 px-3 py-2">
+                      <div className="grid grid-cols-1 gap-0.5 px-3 py-2 sm:grid-cols-3 sm:gap-0">
                         <span className="col-span-1 font-medium text-muted-foreground">Contraindicações</span>
                         <span className="col-span-2 whitespace-pre-wrap">{detailItem.contraindications}</span>
                       </div>
@@ -281,7 +309,7 @@ export default function BularioPage() {
                           }`}
                         >
                           {section.data?.map((entry, i) => (
-                            <div key={i} className="grid grid-cols-3 px-3 py-2">
+                            <div key={i} className="grid grid-cols-1 gap-0.5 px-3 py-2 sm:grid-cols-3 sm:gap-0">
                               <span className="font-medium text-muted-foreground col-span-1">
                                 {entry.title ?? "—"}
                               </span>

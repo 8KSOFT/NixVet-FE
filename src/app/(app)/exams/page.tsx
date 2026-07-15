@@ -223,11 +223,11 @@ function ExamRequestsContent() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-8">
         <h1 className="text-2xl font-extrabold font-['interDoFigma'] flex items-center gap-2">
           Solicitações de Exames
         </h1>
-        <Button onClick={handleAdd} className="bg-primary hover:bg-primary/70 text-white">
+        <Button onClick={handleAdd} className="w-full bg-primary hover:bg-primary/70 text-white sm:w-auto">
           <Plus className="w-4 h-4 mr-1" /> Nova Solicitação
         </Button>
       </div>
@@ -236,9 +236,14 @@ function ExamRequestsContent() {
         <div className="flex justify-center py-8">
           <Loader2 className="animate-spin w-6 h-6" />
         </div>
+      ) : examRequests.length === 0 ? (
+        <div className="rounded-lg border border-gray-300 bg-white py-8 text-center text-sm text-slate-500">
+          Nenhuma solicitação encontrada.
+        </div>
       ) : (
         <div>
-          <div className="overflow-x-auto border border-gray-300 rounded-lg">
+          {/* Desktop / tablet: tabela */}
+          <div className="hidden overflow-x-auto rounded-lg border border-gray-300 md:block">
             <Table className="min-w-full border-collapse bg-white text-sm">
               <TableHeader>
                 <TableRow className="border-b border-gray-300 h-15">
@@ -298,6 +303,72 @@ function ExamRequestsContent() {
               </TableBody>
             </Table>
           </div>
+
+          {/* Mobile: cards */}
+          <div className="space-y-3 md:hidden">
+            {examRequests.map((record) => (
+              <div key={record.id} className="rounded-lg border border-gray-300 bg-white p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{getPatient(record)?.name ?? '—'}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(record.createdAt).toLocaleDateString('pt-BR')}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Tutor</p>
+                    <p className="truncate">{getPatient(record)?.tutor?.name ?? '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Veterinário</p>
+                    <p className="truncate">{record.veterinarian?.name ?? '—'}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-xs text-muted-foreground">Exames</p>
+                    <p className="truncate">
+                      {record.requested_exams?.length
+                        ? record.requested_exams
+                            .map((name) => {
+                              const catalog = examsFromCatalog.find((e) => e.name === name);
+                              return catalog?.area?.name ? `${catalog.area.name} - ${name}` : name;
+                            })
+                            .join(', ')
+                        : '—'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-3 flex items-center justify-end gap-1 border-t border-gray-200 pt-2">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="p-0"
+                    title="Baixar PDF"
+                    aria-label="Baixar PDF"
+                    onClick={() => handleDownloadPdf(record.id)}
+                  >
+                    <FileText className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="p-0"
+                    title="Enviar por e-mail"
+                    aria-label="Enviar por e-mail"
+                    onClick={() => handleOpenEmailModal(record)}
+                  >
+                    <Mail className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+
           <ListPagination
             page={listPage}
             totalPages={listTotalPages}

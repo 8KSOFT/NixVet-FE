@@ -282,7 +282,7 @@ export default function MedicalRecordDetailPage() {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Badge className={isClosed ? 'bg-green-500 text-white' : 'bg-primary/100 text-white'}>{isClosed ? 'Fechado' : 'Aberto'}</Badge>
           {!isClosed && (
             <>
@@ -446,9 +446,9 @@ export default function MedicalRecordDetailPage() {
         {/* Prescriptions */}
         <TabsContent value="prescriptions">
           <Card>
-            <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-col items-start gap-2 space-y-0 pb-2 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle className="text-base">Prescrições do paciente</CardTitle>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 {!isClosed && (
                   <Button
                     size="sm"
@@ -464,18 +464,36 @@ export default function MedicalRecordDetailPage() {
               {prescriptions.length === 0 ? (
                 <p className="text-sm text-muted-foreground py-4">Nenhuma prescrição registrada.</p>
               ) : (
-                <Table>
-                  <TableHeader><TableRow><TableHead>Data</TableHead><TableHead>Tipo</TableHead><TableHead>Medicamentos</TableHead></TableRow></TableHeader>
-                  <TableBody>
+                <>
+                  {/* Desktop / tablet: tabela */}
+                  <div className="hidden md:block">
+                    <Table>
+                      <TableHeader><TableRow><TableHead>Data</TableHead><TableHead>Tipo</TableHead><TableHead>Medicamentos</TableHead></TableRow></TableHeader>
+                      <TableBody>
+                        {prescriptions.map(p => (
+                          <TableRow key={p.id}>
+                            <TableCell>{dayjs(p.prescription_date).format('DD/MM/YYYY')}</TableCell>
+                            <TableCell><Badge variant="outline">{p.prescription_type}</Badge></TableCell>
+                            <TableCell className="max-w-[300px] truncate">{p.medications || '—'}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {/* Mobile: cards */}
+                  <div className="space-y-2 md:hidden">
                     {prescriptions.map(p => (
-                      <TableRow key={p.id}>
-                        <TableCell>{dayjs(p.prescription_date).format('DD/MM/YYYY')}</TableCell>
-                        <TableCell><Badge variant="outline">{p.prescription_type}</Badge></TableCell>
-                        <TableCell className="max-w-[300px] truncate">{p.medications || '—'}</TableCell>
-                      </TableRow>
+                      <div key={p.id} className="rounded-lg border border-slate-200 p-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-sm font-medium">{dayjs(p.prescription_date).format('DD/MM/YYYY')}</span>
+                          <Badge variant="outline">{p.prescription_type}</Badge>
+                        </div>
+                        <p className="mt-1 truncate text-sm text-muted-foreground">{p.medications || '—'}</p>
+                      </div>
                     ))}
-                  </TableBody>
-                </Table>
+                  </div>
+                </>
               )}
             </CardContent>
           </Card>
@@ -484,25 +502,43 @@ export default function MedicalRecordDetailPage() {
         {/* Exams */}
         <TabsContent value="exams">
           <Card>
-            <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="pb-2">
               <CardTitle className="text-base">Exames solicitados</CardTitle>
             </CardHeader>
             <CardContent>
               {examRequests.length === 0 ? (
                 <p className="text-sm text-muted-foreground py-4">Nenhum exame solicitado.</p>
               ) : (
-                <Table>
-                  <TableHeader><TableRow><TableHead>Data</TableHead><TableHead>Tipo</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
-                  <TableBody>
+                <>
+                  {/* Desktop / tablet: tabela */}
+                  <div className="hidden md:block">
+                    <Table>
+                      <TableHeader><TableRow><TableHead>Data</TableHead><TableHead>Tipo</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
+                      <TableBody>
+                        {examRequests.map(e => (
+                          <TableRow key={e.id}>
+                            <TableCell>{dayjs(e.request_date).format('DD/MM/YYYY')}</TableCell>
+                            <TableCell>{e.exam_type}</TableCell>
+                            <TableCell><Badge variant="outline">{e.status}</Badge></TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {/* Mobile: cards */}
+                  <div className="space-y-2 md:hidden">
                     {examRequests.map(e => (
-                      <TableRow key={e.id}>
-                        <TableCell>{dayjs(e.request_date).format('DD/MM/YYYY')}</TableCell>
-                        <TableCell>{e.exam_type}</TableCell>
-                        <TableCell><Badge variant="outline">{e.status}</Badge></TableCell>
-                      </TableRow>
+                      <div key={e.id} className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 p-3">
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium">{dayjs(e.request_date).format('DD/MM/YYYY')}</p>
+                          <p className="truncate text-xs text-muted-foreground">{e.exam_type}</p>
+                        </div>
+                        <Badge variant="outline" className="shrink-0">{e.status}</Badge>
+                      </div>
                     ))}
-                  </TableBody>
-                </Table>
+                  </div>
+                </>
               )}
             </CardContent>
           </Card>
@@ -511,7 +547,7 @@ export default function MedicalRecordDetailPage() {
         {/* Vaccines */}
         <TabsContent value="vaccines">
           <Card>
-            <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-col items-start gap-2 space-y-0 pb-2 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle className="text-base">Vacinas</CardTitle>
               {!isClosed && (
                 <Button size="sm" onClick={() => { setVaccineForm({ name: '', date: dayjs().format('YYYY-MM-DD'), batch: '', next_dose: '' }); setVaccineModal(true); }}>
@@ -524,38 +560,74 @@ export default function MedicalRecordDetailPage() {
               {(record.vaccines ?? []).length > 0 && (
                 <div className="mb-4">
                   <h4 className="text-sm font-semibold mb-2 text-foreground">Nesta ficha</h4>
-                  <Table>
-                    <TableHeader><TableRow><TableHead>Vacina</TableHead><TableHead>Data</TableHead><TableHead>Lote</TableHead><TableHead>Próxima dose</TableHead></TableRow></TableHeader>
-                    <TableBody>
-                      {(record.vaccines ?? []).map((v, i) => (
-                        <TableRow key={i}>
-                          <TableCell className="font-medium">{v.name}</TableCell>
-                          <TableCell>{dayjs(v.date).format('DD/MM/YYYY')}</TableCell>
-                          <TableCell>{v.batch || '—'}</TableCell>
-                          <TableCell>{v.next_dose ? dayjs(v.next_dose).format('DD/MM/YYYY') : '—'}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                  {/* Desktop / tablet: tabela */}
+                  <div className="hidden md:block">
+                    <Table>
+                      <TableHeader><TableRow><TableHead>Vacina</TableHead><TableHead>Data</TableHead><TableHead>Lote</TableHead><TableHead>Próxima dose</TableHead></TableRow></TableHeader>
+                      <TableBody>
+                        {(record.vaccines ?? []).map((v, i) => (
+                          <TableRow key={i}>
+                            <TableCell className="font-medium">{v.name}</TableCell>
+                            <TableCell>{dayjs(v.date).format('DD/MM/YYYY')}</TableCell>
+                            <TableCell>{v.batch || '—'}</TableCell>
+                            <TableCell>{v.next_dose ? dayjs(v.next_dose).format('DD/MM/YYYY') : '—'}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                  {/* Mobile: cards */}
+                  <div className="space-y-2 md:hidden">
+                    {(record.vaccines ?? []).map((v, i) => (
+                      <div key={i} className="rounded-lg border border-slate-200 p-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-sm font-medium">{v.name}</span>
+                          <span className="text-xs text-muted-foreground">{dayjs(v.date).format('DD/MM/YYYY')}</span>
+                        </div>
+                        <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
+                          <span>Lote: {v.batch || '—'}</span>
+                          <span>Próxima: {v.next_dose ? dayjs(v.next_dose).format('DD/MM/YYYY') : '—'}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
               {/* All vaccines from patient */}
               {vaccineRecords.length > 0 && (
                 <div>
                   <h4 className="text-sm font-semibold mb-2 text-foreground">Histórico geral</h4>
-                  <Table>
-                    <TableHeader><TableRow><TableHead>Vacina</TableHead><TableHead>Data</TableHead><TableHead>Lote</TableHead><TableHead>Próxima dose</TableHead></TableRow></TableHeader>
-                    <TableBody>
-                      {vaccineRecords.map(v => (
-                        <TableRow key={v.id}>
-                          <TableCell className="font-medium">{v.vaccine_name}</TableCell>
-                          <TableCell>{dayjs(v.application_date).format('DD/MM/YYYY')}</TableCell>
-                          <TableCell>{v.batch_number || '—'}</TableCell>
-                          <TableCell>{v.next_due_date ? dayjs(v.next_due_date).format('DD/MM/YYYY') : '—'}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                  {/* Desktop / tablet: tabela */}
+                  <div className="hidden md:block">
+                    <Table>
+                      <TableHeader><TableRow><TableHead>Vacina</TableHead><TableHead>Data</TableHead><TableHead>Lote</TableHead><TableHead>Próxima dose</TableHead></TableRow></TableHeader>
+                      <TableBody>
+                        {vaccineRecords.map(v => (
+                          <TableRow key={v.id}>
+                            <TableCell className="font-medium">{v.vaccine_name}</TableCell>
+                            <TableCell>{dayjs(v.application_date).format('DD/MM/YYYY')}</TableCell>
+                            <TableCell>{v.batch_number || '—'}</TableCell>
+                            <TableCell>{v.next_due_date ? dayjs(v.next_due_date).format('DD/MM/YYYY') : '—'}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                  {/* Mobile: cards */}
+                  <div className="space-y-2 md:hidden">
+                    {vaccineRecords.map(v => (
+                      <div key={v.id} className="rounded-lg border border-slate-200 p-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-sm font-medium">{v.vaccine_name}</span>
+                          <span className="text-xs text-muted-foreground">{dayjs(v.application_date).format('DD/MM/YYYY')}</span>
+                        </div>
+                        <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
+                          <span>Lote: {v.batch_number || '—'}</span>
+                          <span>Próxima: {v.next_due_date ? dayjs(v.next_due_date).format('DD/MM/YYYY') : '—'}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
               {(record.vaccines ?? []).length === 0 && vaccineRecords.length === 0 && (
@@ -568,7 +640,7 @@ export default function MedicalRecordDetailPage() {
         {/* Attachments */}
         <TabsContent value="attachments">
           <Card>
-            <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
+            <CardHeader className="flex flex-col items-start gap-2 space-y-0 pb-2 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle className="text-base">Anexos (imagens de exames, vacinas...)</CardTitle>
               {!isClosed && (
                 <Button size="sm" onClick={() => { setAttachForm({ name: '', category: 'exame', file: null }); setAttachModal(true); }}>
@@ -603,7 +675,7 @@ export default function MedicalRecordDetailPage() {
 
       {/* Vaccine modal */}
       <Dialog open={vaccineModal} onOpenChange={setVaccineModal}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-[calc(100%-2rem)] sm:max-w-sm">
           <DialogHeader><DialogTitle>Adicionar Vacina</DialogTitle></DialogHeader>
           <div className="space-y-3 py-2">
             <div className="space-y-1"><Label>Nome *</Label><Input value={vaccineForm.name} onChange={e => setVaccineForm(p => ({ ...p, name: e.target.value }))} /></div>
@@ -620,7 +692,7 @@ export default function MedicalRecordDetailPage() {
 
       {/* Attachment modal */}
       <Dialog open={attachModal} onOpenChange={setAttachModal}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-[calc(100%-2rem)] sm:max-w-sm">
           <DialogHeader><DialogTitle>Anexar Arquivo</DialogTitle></DialogHeader>
           <div className="space-y-3 py-2">
             <div className="space-y-1"><Label>Descrição</Label><Input value={attachForm.name} onChange={e => setAttachForm(p => ({ ...p, name: e.target.value }))} placeholder="Ex: Hemograma 25/03 (opcional)" /></div>
@@ -649,7 +721,7 @@ export default function MedicalRecordDetailPage() {
 
       {/* Nova prescrição inline (2.3) */}
       <Dialog open={presModal} onOpenChange={setPresModal}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-h-[85vh] max-w-[calc(100%-2rem)] overflow-y-auto sm:max-w-2xl">
           <DialogHeader><DialogTitle>Nova prescrição</DialogTitle></DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1">
@@ -681,15 +753,15 @@ export default function MedicalRecordDetailPage() {
                       </Button>
                     )}
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                     <Input placeholder="Via (VO, IV, IM...)" value={m.via} onChange={e => updateMed(i, { via: e.target.value })} />
                     <Input placeholder="Dose (ex.: 10 mg/kg)" value={m.dosage} onChange={e => updateMed(i, { dosage: e.target.value })} />
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                     <div className="flex gap-1">
                       <Input type="number" placeholder="Freq." value={m.frequency_value} onChange={e => updateMed(i, { frequency_value: e.target.value })} />
                       <Select value={m.frequency_unit} onValueChange={v => updateMed(i, { frequency_unit: v })}>
-                        <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
+                        <SelectTrigger className="w-28 shrink-0"><SelectValue /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="minutos">minutos</SelectItem>
                           <SelectItem value="horas">horas</SelectItem>
@@ -700,7 +772,7 @@ export default function MedicalRecordDetailPage() {
                     <div className="flex gap-1">
                       <Input type="number" placeholder="Duração" value={m.duration_value} onChange={e => updateMed(i, { duration_value: e.target.value })} />
                       <Select value={m.duration_unit} onValueChange={v => updateMed(i, { duration_unit: v })}>
-                        <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
+                        <SelectTrigger className="w-28 shrink-0"><SelectValue /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="dias">dias</SelectItem>
                           <SelectItem value="semanas">semanas</SelectItem>

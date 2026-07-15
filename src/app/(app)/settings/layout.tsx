@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   Settings,
@@ -79,6 +79,7 @@ const navSections: NavSection[] = [
 
 export default function SettingsLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const currentPathname = pathname ?? '';
   const role = (getStoredUserRole() || '').toLowerCase();
   const isSuperAdmin = role === 'superadmin';
@@ -107,8 +108,37 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
     : [];
 
   return (
-    <div className="flex gap-6">
-      <div className="w-56 shrink-0">
+    <div className="flex flex-col gap-4 lg:flex-row lg:gap-6">
+      {/* Mobile / tablet: dropdown de navegação */}
+      <div className="lg:hidden">
+        <select
+          value={currentPathname}
+          onChange={(e) => router.push(e.target.value)}
+          className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700"
+        >
+          {platformItems.length > 0 && (
+            <optgroup label="Plataforma">
+              {platformItems.map((item) => (
+                <option key={item.key} value={item.key}>
+                  {item.label}
+                </option>
+              ))}
+            </optgroup>
+          )}
+          {sections.map((section) => (
+            <optgroup key={section.label} label={section.label}>
+              {section.items.map((item) => (
+                <option key={item.key} value={item.key}>
+                  {item.label}
+                </option>
+              ))}
+            </optgroup>
+          ))}
+        </select>
+      </div>
+
+      {/* Desktop: sidebar completa */}
+      <div className="hidden w-56 shrink-0 lg:block">
         <nav className="flex flex-col gap-0.5 rounded-lg border border-slate-200 bg-white p-1.5">
           {platformItems.length > 0 && (
             <>

@@ -68,14 +68,14 @@ export default function CustosPagamentoPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold">Custos por Forma de Pagamento</h1>
           <p className="text-sm text-muted-foreground">Análise de taxas e volume transacionado</p>
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" className="w-full sm:w-auto">
               {period} <ChevronDown className="ml-2 size-3" />
             </Button>
           </DropdownMenuTrigger>
@@ -121,7 +121,7 @@ export default function CustosPagamentoPage() {
             ) : (
               <ResponsiveContainer width="100%" height={250}>
                 <PieChart>
-                  <Pie data={chartData} cx="50%" cy="50%" outerRadius={90} dataKey="value" label={formatPieLabel}>
+                  <Pie data={chartData} cx="50%" cy="50%" outerRadius="70%" dataKey="value" label={formatPieLabel}>
                     {chartData.map((_, i) => (
                       <Cell key={i} fill={COLORS[i % COLORS.length]} />
                     ))}
@@ -142,24 +142,26 @@ export default function CustosPagamentoPage() {
             {loading ? (
               <Skeleton className="h-60 w-full" />
             ) : (
-              <Table className="min-w-full border-collapse bg-white text-sm">
-                <TableHeader>
-                  <TableRow className="border-b border-gray-300 h-15">
-                    <TableHead>Forma</TableHead>
-                    <TableHead className="text-right">Volume</TableHead>
-                    <TableHead className="text-right">Custo Total</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {methods.map(([method, v]) => (
-                    <TableRow className="cursor-pointer hover:bg-muted/50 border-b border-gray-300 h-15" key={method}>
-                      <TableCell>{METHOD_LABELS[method] ?? method}</TableCell>
-                      <TableCell className="text-right tabular-nums">{fmt(v.volume)}</TableCell>
-                      <TableCell className="text-right tabular-nums text-orange-500">{fmt(v.fee_total)}</TableCell>
+              <div className="overflow-x-auto">
+                <Table className="min-w-full border-collapse bg-white text-sm">
+                  <TableHeader>
+                    <TableRow className="border-b border-gray-300 h-15">
+                      <TableHead>Forma</TableHead>
+                      <TableHead className="text-right">Volume</TableHead>
+                      <TableHead className="text-right">Custo Total</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {methods.map(([method, v]) => (
+                      <TableRow className="cursor-pointer hover:bg-muted/50 border-b border-gray-300 h-15" key={method}>
+                        <TableCell>{METHOD_LABELS[method] ?? method}</TableCell>
+                        <TableCell className="text-right tabular-nums">{fmt(v.volume)}</TableCell>
+                        <TableCell className="text-right tabular-nums text-orange-500">{fmt(v.fee_total)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
           </CardContent>
         </Card>

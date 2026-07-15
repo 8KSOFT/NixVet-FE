@@ -138,7 +138,7 @@ export default function ChatbotWorkflowsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-heading font-semibold text-foreground flex items-center gap-2">
             <Bot className="w-6 h-6 text-primary" /> Chatbot / IA
@@ -148,7 +148,7 @@ export default function ChatbotWorkflowsPage() {
           </p>
         </div>
         <Link href="/settings/chatbot">
-          <Button variant="outline" size="sm" className="gap-1.5">
+          <Button variant="outline" size="sm" className="w-full gap-1.5 sm:w-auto">
             <Settings className="w-4 h-4" /> Persona & Mensagens
           </Button>
         </Link>
@@ -195,7 +195,7 @@ export default function ChatbotWorkflowsPage() {
       {activeWorkflow && (
         <Card className="border-primary/25 bg-primary/[0.03]">
           <CardContent className="p-5">
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10">
                   <Workflow className="w-5 h-5 text-primary" />
@@ -223,9 +223,9 @@ export default function ChatbotWorkflowsPage() {
       {/* Workflows list */}
       <Card>
         <CardHeader className="pb-4">
-          <div className="flex items-center justify-between gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle className="text-base font-semibold text-foreground">Workflows</CardTitle>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {workflows.length === 0 && (
                 <Button variant="outline" size="sm" onClick={handleSeedDefault} className="gap-1.5">
                   <Zap className="w-3.5 h-3.5" /> Criar padrão
@@ -252,76 +252,139 @@ export default function ChatbotWorkflowsPage() {
               </Button>
             </div>
           ) : (
-            <div className="overflow-x-auto border border-gray-300 rounded-lg">
-              <Table className="min-w-full border-collapse bg-white text-sm">
-                <TableHeader>
-                  <TableRow className="border-b border-gray-300 h-15">
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Criado em</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {workflows.map((wf) => (
-                    <TableRow className="border-b border-gray-300 h-15" key={wf.id}>
-                      <TableCell>
-                        <span className="font-medium text-foreground">{wf.name}</span>
-                      </TableCell>
-                      <TableCell>
-                        {wf.is_active ? (
-                          <Badge className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/10">
-                            <CheckCircle2 className="w-3 h-3 mr-1" /> Ativo
-                          </Badge>
-                        ) : (
-                          <Badge variant="secondary" className="text-muted-foreground">
-                            Inativo
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">
-                        {wf.createdAt ? new Date(wf.createdAt).toLocaleDateString('pt-BR') : '—'}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="p-0"
-                            title="Editar"
-                            aria-label="Editar"
-                            onClick={() => router.push(`/chatbot-workflows/${wf.id}`)}
-                          >
-                            <Pencil className="w-4 h-4" />
-                          </Button>
-                          {!wf.is_active && (
+            <div>
+              {/* Desktop / tablet: tabela */}
+              <div className="hidden overflow-x-auto rounded-lg border border-gray-300 md:block">
+                <Table className="min-w-full border-collapse bg-white text-sm">
+                  <TableHeader>
+                    <TableRow className="border-b border-gray-300 h-15">
+                      <TableHead>Nome</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Criado em</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {workflows.map((wf) => (
+                      <TableRow className="border-b border-gray-300 h-15" key={wf.id}>
+                        <TableCell>
+                          <span className="font-medium text-foreground">{wf.name}</span>
+                        </TableCell>
+                        <TableCell>
+                          {wf.is_active ? (
+                            <Badge className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/10">
+                              <CheckCircle2 className="w-3 h-3 mr-1" /> Ativo
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-muted-foreground">
+                              Inativo
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {wf.createdAt ? new Date(wf.createdAt).toLocaleDateString('pt-BR') : '—'}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-1">
                             <Button
                               variant="ghost"
                               size="icon"
                               className="p-0"
-                              title="Ativar"
-                              aria-label="Ativar"
-                              onClick={() => handleActivate(wf.id)}
+                              title="Editar"
+                              aria-label="Editar"
+                              onClick={() => router.push(`/chatbot-workflows/${wf.id}`)}
                             >
-                              <Zap className="w-4 h-4 text-primary" />
+                              <Pencil className="w-4 h-4" />
                             </Button>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="p-0"
-                            title="Excluir"
-                            aria-label="Excluir"
-                            onClick={() => handleDelete(wf.id)}
-                          >
-                            <Trash2 className="w-4 h-4 text-destructive" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                            {!wf.is_active && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="p-0"
+                                title="Ativar"
+                                aria-label="Ativar"
+                                onClick={() => handleActivate(wf.id)}
+                              >
+                                <Zap className="w-4 h-4 text-primary" />
+                              </Button>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="p-0"
+                              title="Excluir"
+                              aria-label="Excluir"
+                              onClick={() => handleDelete(wf.id)}
+                            >
+                              <Trash2 className="w-4 h-4 text-destructive" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Mobile: cards */}
+              <div className="space-y-3 md:hidden">
+                {workflows.map((wf) => (
+                  <div key={wf.id} className="rounded-lg border border-gray-300 p-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="truncate font-medium text-foreground">{wf.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {wf.createdAt ? new Date(wf.createdAt).toLocaleDateString('pt-BR') : '—'}
+                        </p>
+                      </div>
+                      {wf.is_active ? (
+                        <Badge className="shrink-0 bg-primary/10 text-primary border-primary/20 hover:bg-primary/10">
+                          <CheckCircle2 className="w-3 h-3 mr-1" /> Ativo
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary" className="shrink-0 text-muted-foreground">
+                          Inativo
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="mt-3 flex items-center justify-end gap-1 border-t border-gray-200 pt-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="p-0"
+                        title="Editar"
+                        aria-label="Editar"
+                        onClick={() => router.push(`/chatbot-workflows/${wf.id}`)}
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                      {!wf.is_active && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="p-0"
+                          title="Ativar"
+                          aria-label="Ativar"
+                          onClick={() => handleActivate(wf.id)}
+                        >
+                          <Zap className="w-4 h-4 text-primary" />
+                        </Button>
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="p-0"
+                        title="Excluir"
+                        aria-label="Excluir"
+                        onClick={() => handleDelete(wf.id)}
+                      >
+                        <Trash2 className="w-4 h-4 text-destructive" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
               <ListPagination
                 page={listPage}
                 totalPages={listTotalPages}

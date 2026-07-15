@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
 import axios from 'axios';
-import { Plus, Pencil, Trash2, Users, Search, Loader2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Loader2 } from 'lucide-react';
 
 import { DashboardCreateFormDialog } from '@/components/dashboard-create-form-dialog';
 import { Button } from '@/components/ui/button';
@@ -279,82 +279,137 @@ export default function OwnersPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center mb-8">
         <h1 className="text-2xl font-extrabold font-['InterDoFigma'] flex items-center gap-2">{t('owners.title')}</h1>
         <div className="flex flex-wrap items-center gap-2">
-          <Button onClick={handleAdd} className="bg-primary hover:bg-brand-deep/80">
+          <Button onClick={handleAdd} className="w-full bg-primary hover:bg-brand-deep/80 sm:w-auto">
             <Plus className="w-4 h-4 mr-2" /> {t('owners.createButton')}
           </Button>
         </div>
       </div>
 
-      <div className="overflow-x-auto border border-gray-300 rounded-lg">
-        <Table className="min-w-full border-collapse bg-white text-sm">
-          <TableHeader>
-            <TableRow className="border-b border-gray-300 h-15">
-              <TableHead>{t('owners.table.name')}</TableHead>
-              <TableHead>{t('owners.table.email')}</TableHead>
-              <TableHead>{t('owners.table.phone')}</TableHead>
-              <TableHead>{t('owners.table.cpf')}</TableHead>
-              <TableHead>{t('owners.table.actions')}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-              <TableRow>
-                <TableCell colSpan={5} className="border-t border-slate-200 py-8 text-center text-sm text-slate-500">
-                  <Loader2 className="w-6 h-6 animate-spin mx-auto text-muted-foreground" />
-                </TableCell>
-              </TableRow>
-            ) : tutors.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="border-t border-slate-200 py-8 text-center text-sm text-slate-500">
-                  {t('owners.empty')}
-                </TableCell>
-              </TableRow>
-            ) : (
-              tutors.map((tutor) => (
-                <TableRow className="border-b border-gray-300 h-15" key={tutor.id}>
-                  <TableCell>{tutor.name}</TableCell>
-                  <TableCell>{tutor.email}</TableCell>
-                  <TableCell>{formatPhoneDisplay(tutor.phone)}</TableCell>
-                  <TableCell>{formatCpfDisplay(tutor.cpf)}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1">
-                      <Button variant="ghost" size="icon" className="p-0" onClick={() => handleEdit(tutor)}>
-                        <Pencil className="w-4 h-4" />
-                      </Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="ghost" size="icon" className="p-0">
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>{t('owners.confirmDeleteTitle')}</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              {t('owners.confirmDeleteDescription', {
-                                name: tutor.name,
-                              })}
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>{t('owners.cancel')}</AlertDialogCancel>
-                            <AlertDialogAction
-                              className="bg-destructive hover:bg-destructive/90"
-                              onClick={() => handleDelete(tutor.id)}
-                            >
-                              {t('owners.remove')}
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                  </TableCell>
+      {loading ? (
+        <div className="rounded-lg border border-gray-300 bg-white py-8 text-center">
+          <Loader2 className="mx-auto h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      ) : tutors.length === 0 ? (
+        <div className="rounded-lg border border-gray-300 bg-white py-8 text-center text-sm text-slate-500">
+          {t('owners.empty')}
+        </div>
+      ) : (
+        <>
+          {/* Desktop / tablet: tabela */}
+          <div className="hidden overflow-x-auto rounded-lg border border-gray-300 md:block">
+            <Table className="min-w-full border-collapse bg-white text-sm">
+              <TableHeader>
+                <TableRow className="border-b border-gray-300 h-15">
+                  <TableHead>{t('owners.table.name')}</TableHead>
+                  <TableHead>{t('owners.table.email')}</TableHead>
+                  <TableHead>{t('owners.table.phone')}</TableHead>
+                  <TableHead>{t('owners.table.cpf')}</TableHead>
+                  <TableHead>{t('owners.table.actions')}</TableHead>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              </TableHeader>
+              <TableBody>
+                {tutors.map((tutor) => (
+                  <TableRow className="border-b border-gray-300 h-15" key={tutor.id}>
+                    <TableCell>{tutor.name}</TableCell>
+                    <TableCell>{tutor.email}</TableCell>
+                    <TableCell>{formatPhoneDisplay(tutor.phone)}</TableCell>
+                    <TableCell>{formatCpfDisplay(tutor.cpf)}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <Button variant="ghost" size="icon" className="p-0" onClick={() => handleEdit(tutor)}>
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="ghost" size="icon" className="p-0">
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>{t('owners.confirmDeleteTitle')}</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                {t('owners.confirmDeleteDescription', {
+                                  name: tutor.name,
+                                })}
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>{t('owners.cancel')}</AlertDialogCancel>
+                              <AlertDialogAction
+                                className="bg-destructive hover:bg-destructive/90"
+                                onClick={() => handleDelete(tutor.id)}
+                              >
+                                {t('owners.remove')}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Mobile: cards */}
+          <div className="space-y-3 md:hidden">
+            {tutors.map((tutor) => (
+              <div key={tutor.id} className="rounded-lg border border-gray-300 bg-white p-4">
+                <p className="truncate font-medium">{tutor.name}</p>
+
+                <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                  <div className="col-span-2">
+                    <p className="text-xs text-muted-foreground">{t('owners.table.email')}</p>
+                    <p className="truncate">{tutor.email}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">{t('owners.table.phone')}</p>
+                    <p>{formatPhoneDisplay(tutor.phone)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">{t('owners.table.cpf')}</p>
+                    <p>{formatCpfDisplay(tutor.cpf)}</p>
+                  </div>
+                </div>
+
+                <div className="mt-3 flex items-center justify-end gap-1 border-t border-gray-200 pt-2">
+                  <Button variant="ghost" size="icon" className="p-0" onClick={() => handleEdit(tutor)}>
+                    <Pencil className="w-4 h-4" />
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="ghost" size="icon" className="p-0">
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>{t('owners.confirmDeleteTitle')}</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          {t('owners.confirmDeleteDescription', {
+                            name: tutor.name,
+                          })}
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>{t('owners.cancel')}</AlertDialogCancel>
+                        <AlertDialogAction
+                          className="bg-destructive hover:bg-destructive/90"
+                          onClick={() => handleDelete(tutor.id)}
+                        >
+                          {t('owners.remove')}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
       <ListPagination
         page={listPage}
         totalPages={listTotalPages}

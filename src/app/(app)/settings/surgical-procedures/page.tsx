@@ -115,7 +115,7 @@ function PlanPricesDialog({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-[calc(100%-2rem)] sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Preços por convênio — {procedure.name}</DialogTitle>
         </DialogHeader>
@@ -311,7 +311,9 @@ export default function SettingsSurgicalProceduresPage() {
               <Loader2 className="w-6 h-6 animate-spin text-primary" />
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div>
+              {/* Desktop / tablet: tabela */}
+              <div className="hidden overflow-x-auto md:block">
               <Table className="min-w-full border-collapse bg-white text-sm">
                 <TableHeader>
                   <TableRow className="border-b border-gray-300 h-15">
@@ -394,6 +396,86 @@ export default function SettingsSurgicalProceduresPage() {
                   })}
                 </TableBody>
               </Table>
+              </div>
+
+              {/* Mobile: cards */}
+              <div className="space-y-3 md:hidden">
+                {list.map((r) => {
+                  const margin =
+                    r.private_price && r.cost_price && r.private_price > 0
+                      ? ((r.private_price - r.cost_price) / r.private_price * 100).toFixed(0) + '%'
+                      : '—';
+                  const isBase = isBaseProcedure(r);
+                  return (
+                    <div key={r.id} className="rounded-lg border border-gray-300 p-4">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="truncate font-medium">{r.name}</p>
+                          <p className="text-xs text-muted-foreground">{r.category?.name ?? r.category_id ?? '—'}</p>
+                        </div>
+                        <Badge variant={isBase ? 'outline' : 'secondary'} className="shrink-0">
+                          {isBase ? 'Base' : 'Personalizado'}
+                        </Badge>
+                      </div>
+                      <div className="mt-3 grid grid-cols-3 gap-x-3 gap-y-2 text-sm">
+                        <div>
+                          <p className="text-xs text-muted-foreground">Particular</p>
+                          <p className="tabular-nums">{fmtBRL(r.private_price)}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Custo</p>
+                          <p className="tabular-nums">{fmtBRL(r.cost_price)}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Margem</p>
+                          <p>{margin !== '—' ? <Badge variant="secondary">{margin}</Badge> : '—'}</p>
+                        </div>
+                      </div>
+                      <div className="mt-3 flex items-center justify-end gap-1 border-t border-gray-200 pt-2">
+                        {!isBase && (
+                          <Button variant="ghost" size="sm" onClick={() => openEdit(r)} title="Editar">
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                        )}
+                        <Button variant="ghost" size="sm" onClick={() => setPlanPricesFor(r)} title="Preços por convênio">
+                          <DollarSign className="w-4 h-4 text-blue-500" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-red-600 hover:text-red-700"
+                              title={isBase ? 'Ocultar para minha clínica' : 'Remover'}
+                            >
+                              {isBase ? <EyeOff className="w-4 h-4" /> : <Trash2 className="w-4 h-4" />}
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>
+                                {isBase ? 'Ocultar este procedimento base?' : 'Remover este procedimento?'}
+                              </AlertDialogTitle>
+                              <AlertDialogDescription>
+                                {isBase
+                                  ? 'O item continua disponível para as demais clínicas — apenas deixa de aparecer para a sua.'
+                                  : 'Esta ação não pode ser desfeita.'}
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDelete(r.id)}>
+                                {isBase ? 'Ocultar' : 'Remover'}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
               <ListPagination
                 page={listPage}
                 totalPages={listTotalPages}
@@ -439,7 +521,7 @@ export default function SettingsSurgicalProceduresPage() {
             </div>
             <div className="border-t pt-4">
               <p className="text-sm font-medium text-muted-foreground mb-3">Precificação</p>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div>
                   <Label htmlFor="private_price">Preço Particular (R$)</Label>
                   <Input

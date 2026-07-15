@@ -177,7 +177,7 @@ export default function HolidaysPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center gap-3 mb-4">
+          <div className="flex flex-wrap items-center gap-3 mb-4">
             <div className="flex items-center gap-2">
               <Label>Ano</Label>
               <Input
@@ -293,7 +293,7 @@ export default function HolidaysPage() {
               <Label htmlFor="h_regional">Feriado regional/municipal</Label>
             </div>
             {formRegional && (
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="flex flex-col gap-1.5">
                   <Label>Cidade</Label>
                   <Input value={formCity} onChange={(e) => setFormCity(e.target.value)} placeholder="Ex: São Paulo" />
@@ -314,7 +314,7 @@ export default function HolidaysPage() {
 
       {/* ── Dialog IA buscar feriados ── */}
       <Dialog open={aiOpen} onOpenChange={setAiOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-h-[80vh] max-w-[calc(100%-2rem)] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-primary" />
@@ -325,7 +325,7 @@ export default function HolidaysPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-4 mt-2">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="flex flex-col gap-1.5">
                 <Label>Cidade</Label>
                 <Input value={aiCity} onChange={(e) => setAiCity(e.target.value)} placeholder="Ex: São Paulo" />
@@ -343,7 +343,7 @@ export default function HolidaysPage() {
             {suggestions.length > 0 && (
               <>
                 <Separator />
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-sm text-muted-foreground">{suggestions.length} feriados encontrados. Selecione os que deseja salvar:</p>
                   <div className="flex gap-2">
                     <Button

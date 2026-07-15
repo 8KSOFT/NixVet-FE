@@ -7,6 +7,7 @@ import { DashboardCreateFormDialog } from '@/components/dashboard-create-form-di
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
@@ -47,29 +48,63 @@ function ReminderTable({ data, loading }: { data: VaccineReminder[]; loading: bo
       </div>
     );
   }
+  if (data.length === 0) {
+    return (
+      <div className="rounded-lg border border-gray-300 bg-white py-8 text-center text-sm text-slate-500">
+        Nenhum lembrete encontrado.
+      </div>
+    );
+  }
   return (
-    <div className="overflow-x-auto border border-gray-300 rounded-lg">
-      <Table className="min-w-full border-collapse bg-white text-sm">
-        <TableHeader>
-          <TableRow className="border-b border-gray-300 h-15">
-            <TableHead>Paciente</TableHead>
-            <TableHead>Vacina</TableHead>
-            <TableHead>Próxima dose</TableHead>
-            <TableHead>Status</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {data.map((r) => (
-            <TableRow className="border-b border-gray-300 h-15" key={r.id}>
-              <TableCell>{r.patient?.name}</TableCell>
-              <TableCell>{r.vaccine_name}</TableCell>
-              <TableCell>{r.next_due_date}</TableCell>
-              <TableCell>{r.reminder_status}</TableCell>
+    <>
+      {/* Desktop / tablet: tabela */}
+      <div className="hidden overflow-x-auto rounded-lg border border-gray-300 md:block">
+        <Table className="min-w-full border-collapse bg-white text-sm">
+          <TableHeader>
+            <TableRow className="border-b border-gray-300 h-15">
+              <TableHead>Paciente</TableHead>
+              <TableHead>Vacina</TableHead>
+              <TableHead>Próxima dose</TableHead>
+              <TableHead>Status</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+          </TableHeader>
+          <TableBody>
+            {data.map((r) => (
+              <TableRow className="border-b border-gray-300 h-15" key={r.id}>
+                <TableCell>{r.patient?.name}</TableCell>
+                <TableCell>{r.vaccine_name}</TableCell>
+                <TableCell>{r.next_due_date}</TableCell>
+                <TableCell>{r.reminder_status}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Mobile: cards */}
+      <div className="space-y-3 md:hidden">
+        {data.map((r) => (
+          <div key={r.id} className="rounded-lg border border-gray-300 bg-white p-4">
+            <div className="flex items-start justify-between gap-2">
+              <p className="truncate font-medium">{r.patient?.name}</p>
+              <Badge variant="secondary" className="shrink-0">
+                {r.reminder_status}
+              </Badge>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+              <div>
+                <p className="text-xs text-muted-foreground">Vacina</p>
+                <p className="truncate">{r.vaccine_name}</p>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">Próxima dose</p>
+                <p>{r.next_due_date}</p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
   );
 }
 
@@ -107,9 +142,9 @@ export default function VaccinesPage() {
 
   return (
     <div>
-      <div className="flex flex-wrap justify-between items-center mb-8">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-8">
         <h1 className="text-2xl font-extrabold font-['InterDoFigma']">Vacinas</h1>
-        <Button onClick={() => setModalOpen(true)} className="bg-primary">
+        <Button onClick={() => setModalOpen(true)} className="w-full bg-primary sm:w-auto">
           <Plus className="w-4 h-4 mr-2" /> Novo lembrete
         </Button>
       </div>

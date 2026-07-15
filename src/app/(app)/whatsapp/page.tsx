@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import type { ApiRequestError } from '@/app/types/api-error';
-import type { AlertConversation, Conversation, ThreadStatus, WhatsappMessage } from '@/app/types/whatsapp-conversation';
+import type { ThreadStatus } from '@/app/types/whatsapp-conversation';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
@@ -11,7 +11,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { Send, Bot, Loader2, MessageSquare, Lightbulb, Clock, AlertTriangle, User, Archive, ArchiveRestore, CheckCheck, Tag, X, ChevronDown } from 'lucide-react';
+import { Send, Bot, Loader2, MessageSquare, Lightbulb, Clock, AlertTriangle, User, Archive, ArchiveRestore, CheckCheck, Tag, X, MessageSquareText } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -28,7 +28,6 @@ import {
   usePauseAiMutation,
   useArchiveConversationMutation,
   useUnarchiveConversationMutation,
-  useCloseByPhoneMutation,
   useClassifyConversationMutation,
   useCloseConversationMutation,
 } from '@/hooks/apiHooks/useWhatsappConversations';
@@ -193,12 +192,10 @@ export default function WhatsAppPage() {
   const archiveMutation = useArchiveConversationMutation();
   const unarchiveMutation = useUnarchiveConversationMutation();
   const archiveLoading = archiveMutation.isPending || unarchiveMutation.isPending;
-  const closeByPhoneMutation = useCloseByPhoneMutation();
-  const alertActionLoading = closeByPhoneMutation.isPending;
   const classifyMutation = useClassifyConversationMutation();
   const classifyLoading = classifyMutation.isPending;
-
-  const [alertActionPhone, setAlertActionPhone] = useState<string | null>(null);
+  const closeQuickMutation = useCloseConversationMutation();
+  const closeQuickLoading = closeQuickMutation.isPending;
 
   const handleSuggestReply = async () => {
     if (!messages.length) {
@@ -271,11 +268,12 @@ export default function WhatsAppPage() {
     }
   };
 
-  const handleCloseByPhone = async (phone: string, classification: string) => {
+  const handleQuickClose = async (classification: string) => {
+    if (!selectedId) return;
     try {
-      await closeByPhoneMutation.mutateAsync({ phone, classification });
+      await closeQuickMutation.mutateAsync({ conversationId: selectedId, classification, note: '' });
       toast.success('Conversa encerrada');
-      setAlertActionPhone(null);
+      setSelectedId(null);
     } catch {
       toast.error('Erro ao encerrar conversa');
     }
@@ -293,6 +291,13 @@ export default function WhatsAppPage() {
   };
 
   const selectedConv = conversations.find((c) => c.id === selectedId);
+
+  // Não respondidos (aguardando a clínica) sobem para o topo da lista.
+  const sortedConversations = [...conversations].sort((a, b) => {
+    const pa = a.thread_status === 'waiting_clinic' ? 0 : 1;
+    const pb = b.thread_status === 'waiting_clinic' ? 0 : 1;
+    return pa - pb;
+  });
 
   return (
     <>
@@ -350,82 +355,8 @@ export default function WhatsAppPage() {
       </div>
 
       <div className="flex flex-1 min-h-0 flex-col gap-4 lg:flex-row">
-        {/* Coluna esquerda: conversas aguardando + lista de conversas */}
+        {/* Coluna esquerda: lista de conversas (não respondidas aparecem primeiro) */}
         <div className="flex flex-col gap-4 min-h-0 shrink-0 lg:w-80 lg:self-stretch">
-          {alerts.length > 0 && (
-            <div className="rounded-lg border border-amber-200 bg-amber-50/60 shadow-sm shrink-0 max-h-64 overflow-y-auto">
-              <div className="flex items-center gap-1.5 px-3 pt-3 pb-2">
-                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-                <span className="text-sm font-semibold text-amber-800 truncate">Aguardando +20min</span>
-                <Badge className="ml-auto shrink-0 bg-amber-200 text-amber-800 hover:bg-amber-200 m-0 text-[10px]">
-                  {alerts.length}
-                </Badge>
-              </div>
-              <div className="grid grid-cols-[1fr_auto_1.25rem] gap-2 px-3 pb-1 text-[10px] font-medium uppercase tracking-wide text-amber-700/70">
-                <span>Número</span>
-                <span>Aguard.</span>
-                <span aria-hidden />
-              </div>
-              <div className="space-y-1 px-2 pb-2">
-                {alerts.map((a) => {
-                  const minutesAgo = a.waiting_since ? Math.max(0, dayjs().diff(dayjs(a.waiting_since), 'minute')) : null;
-                  const expanded = alertActionPhone === a.tutor_phone;
-                  return (
-                    <div key={a.id} className="rounded-lg border border-amber-200 bg-white overflow-hidden">
-                      <button
-                        type="button"
-                        className="grid w-full grid-cols-[1fr_auto_1.25rem] items-center gap-2 px-2 py-1.5 text-left hover:bg-amber-50/80 transition-colors"
-                        onClick={() => setAlertActionPhone(expanded ? null : a.tutor_phone)}
-                      >
-                        <span className="font-mono text-xs truncate">{a.tutor_phone}</span>
-                        <span className="text-muted-foreground text-[11px] whitespace-nowrap">
-                          {minutesAgo != null ? `${minutesAgo}min` : '—'}
-                        </span>
-                        <ChevronDown
-                          className={cn('w-3.5 h-3.5 text-amber-600 transition-transform shrink-0', expanded && 'rotate-180')}
-                        />
-                      </button>
-
-                      {/* Ações rápidas inline */}
-                      {expanded && (
-                        <div className="border-t border-amber-100 px-2 py-2 bg-amber-50/40 space-y-1.5">
-                          <p className="text-[11px] text-muted-foreground font-medium">Encerrar com classificação:</p>
-                          <div className="grid grid-cols-1 gap-1">
-                            {CLASSIFICATIONS.map((c) => (
-                              <button
-                                key={c.value}
-                                type="button"
-                                disabled={alertActionLoading}
-                                onClick={() => handleCloseByPhone(a.tutor_phone, c.value)}
-                                className={cn(
-                                  'flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-medium transition-all hover:ring-2 hover:ring-offset-1 hover:ring-current disabled:opacity-50',
-                                  c.badgeClass,
-                                )}
-                              >
-                                {alertActionLoading ? (
-                                  <Loader2 className="w-3 h-3 animate-spin shrink-0" />
-                                ) : (
-                                  <CheckCheck className="w-3 h-3 shrink-0" />
-                                )}
-                                <span className="truncate">{c.label}</span>
-                              </button>
-                            ))}
-                          </div>
-                          <button
-                            type="button"
-                            className="text-[11px] text-muted-foreground hover:text-foreground"
-                            onClick={() => setAlertActionPhone(null)}
-                          >
-                            Cancelar
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
 
           {/* Lista de conversas */}
           <div className="rounded-lg border bg-card shadow-sm flex flex-col min-h-0 flex-1 max-h-[min(40vh,320px)] lg:max-h-none">
@@ -475,11 +406,11 @@ export default function WhatsAppPage() {
                     <Skeleton key={i} className="h-14 w-full rounded" />
                   ))}
                 </div>
-              ) : conversations.length === 0 ? (
+              ) : sortedConversations.length === 0 ? (
                 <div className="py-8 text-center text-muted-foreground/60 text-sm">Nenhuma conversa</div>
               ) : (
                 <div>
-                  {conversations.map((c) => (
+                  {sortedConversations.map((c) => (
                     <div
                       key={c.id}
                       className={cn(
@@ -524,7 +455,7 @@ export default function WhatsAppPage() {
 
         {/* Painel de mensagens */}
         <div className="rounded-lg border bg-card shadow-sm flex-1 min-w-0 min-h-0 flex flex-col">
-          <div className="px-4 py-3 border-b flex items-center justify-between shrink-0">
+          <div className="px-4 py-3 border-b flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between shrink-0">
             <div className="flex items-center gap-2 flex-wrap min-w-0">
               {selectedConv ? (
                 <>
@@ -609,16 +540,41 @@ export default function WhatsAppPage() {
                   </div>
                 )}
 
-                {/* Encerrar (com dialog) */}
+                {/* Encerrar: escolher classificação já encerra na hora */}
                 {!selectedConv.archived_at && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button size="sm" variant="outline" className="text-green-700 border-green-300 hover:bg-green-50" onClick={() => setCloseDialogOpen(true)}>
-                        <CheckCheck className="w-4 h-4 mr-1" /> Encerrar
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Encerrar conversa com classificação</TooltipContent>
-                  </Tooltip>
+                  <div className="flex items-center gap-1">
+                    <Select value="" onValueChange={handleQuickClose} disabled={closeQuickLoading}>
+                      <SelectTrigger
+                        size="sm"
+                        className="w-auto border-green-300 text-green-700 hover:bg-green-50 data-[placeholder]:text-green-700 [&_svg]:text-green-700"
+                      >
+                        {closeQuickLoading ? (
+                          <Loader2 className="w-4 h-4 animate-spin mr-1" />
+                        ) : (
+                          <CheckCheck className="w-4 h-4 mr-1" />
+                        )}
+                        <SelectValue placeholder="Encerrar..." />
+                      </SelectTrigger>
+                      <SelectContent align="end">
+                        {CLASSIFICATIONS.map((c) => (
+                          <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="shrink-0 text-muted-foreground"
+                          onClick={() => setCloseDialogOpen(true)}
+                        >
+                          <MessageSquareText className="w-4 h-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Encerrar com observação</TooltipContent>
+                    </Tooltip>
+                  </div>
                 )}
 
                 {/* Arquivar / Desarquivar */}

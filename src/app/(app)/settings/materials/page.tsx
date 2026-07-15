@@ -163,7 +163,7 @@ export default function SettingsMaterialsPage() {
               <Input id="name" placeholder="Nome do material" {...register('name', { required: true })} />
               {errors.name && <p className="text-red-500 text-xs mt-1">Campo obrigatório</p>}
             </div>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <div>
                 <Label htmlFor="cost_price">Custo (R$)</Label>
                 <Input id="cost_price" type="number" step="0.01" min="0" placeholder="0,00" {...register('cost_price')} />

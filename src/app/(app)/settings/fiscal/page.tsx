@@ -19,18 +19,18 @@ export default function ConfiguracoesFiscaisPage() {
 
       {/* Status do módulo */}
       <Card className="border-amber-200 bg-amber-50">
-        <CardContent className="flex items-center gap-4 pt-6">
+        <CardContent className="flex flex-wrap items-center gap-4 pt-6">
           <div className="p-3 bg-amber-100 rounded-full">
             <Clock className="w-6 h-6 text-amber-600" />
           </div>
-          <div>
+          <div className="min-w-0 flex-1">
             <p className="font-semibold text-amber-800">Módulo em implementação</p>
             <p className="text-sm text-amber-700 mt-0.5">
               A emissão de NFS-e para serviços da clínica (consultas, cirurgias, exames) está sendo desenvolvida.
               Entre em contato com o suporte para habilitar quando disponível.
             </p>
           </div>
-          <Badge variant="outline" className="ml-auto border-amber-400 text-amber-700 shrink-0">Em breve</Badge>
+          <Badge variant="outline" className="border-amber-400 text-amber-700 shrink-0 sm:ml-auto">Em breve</Badge>
         </CardContent>
       </Card>
 
@@ -68,7 +68,7 @@ export default function ConfiguracoesFiscaisPage() {
           <CardTitle className="text-base">Dados Fiscais da Clínica</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <Label>CNPJ da clínica</Label>
               <Input placeholder="00.000.000/0001-00" disabled />
@@ -78,7 +78,7 @@ export default function ConfiguracoesFiscaisPage() {
               <Input placeholder="000000-0" disabled />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <Label>Código de Serviço Municipal</Label>
               <Input placeholder="Ex: 8.01 — Medicina Veterinária" disabled />
@@ -102,14 +102,14 @@ export default function ConfiguracoesFiscaisPage() {
 
       {/* CTA */}
       <Card>
-        <CardContent className="flex items-center justify-between pt-6">
+        <CardContent className="flex flex-col gap-3 pt-6 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="font-medium">Quer habilitar a emissão de NFS-e?</p>
             <p className="text-sm text-muted-foreground mt-0.5">
               Fale com nosso suporte — configuramos o módulo fiscal para sua clínica.
             </p>
           </div>
-          <Button variant="outline" className="gap-2" asChild>
+          <Button variant="outline" className="w-full gap-2 sm:w-auto" asChild>
             <a href="https://wa.me/5500000000000" target="_blank" rel="noopener noreferrer">
               <ExternalLink className="w-4 h-4" /> Falar com suporte
             </a>

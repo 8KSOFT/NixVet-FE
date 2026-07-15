@@ -108,9 +108,9 @@ export default function PatientDetailPage() {
       </div>
 
       <Card className="mb-6">
-        <CardHeader className="flex-row items-center justify-between space-y-0">
+        <CardHeader className="flex flex-col items-start gap-2 space-y-0 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle className="text-foreground">{patient.name}</CardTitle>
-          <Button asChild size="sm" className="bg-primary hover:bg-blue-700">
+          <Button asChild size="sm" className="w-full bg-primary hover:bg-blue-700 sm:w-auto">
             <Link href={`/medical-records?patient=${id}`}>
               <FileText className="w-4 h-4 mr-1" /> Fichas
             </Link>

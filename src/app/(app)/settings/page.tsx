@@ -401,7 +401,7 @@ export default function SettingsPage() {
                 <Label>URL do logo</Label>
                 <Input {...register('logoUrl')} placeholder="https://cdn.empresa.com/logo.png" />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="flex flex-col gap-1.5">
                   <Label>Cor principal</Label>
                   <Input {...register('primaryColor')} placeholder="#2563eb" />
@@ -416,8 +416,8 @@ export default function SettingsPage() {
                 <Input {...register('customDomain')} placeholder="app.empresa.com.br" />
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
-                <div className="col-span-1 flex flex-col gap-1.5">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div className="sm:col-span-1 flex flex-col gap-1.5">
                   <Label>CEP</Label>
                   <div className="flex gap-2">
                     <Input {...register('cep')} disabled={loadingCep} placeholder="00000-000" className="flex-1" />
@@ -432,7 +432,7 @@ export default function SettingsPage() {
                     </Button>
                   </div>
                 </div>
-                <div className="col-span-2">
+                <div className="sm:col-span-2">
                   <div className="grid grid-cols-3 gap-2">
                     <div className="col-span-2 flex flex-col gap-1.5">
                       <Label>Logradouro</Label>
@@ -446,7 +446,7 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div className="flex flex-col gap-1.5">
                   <Label>Complemento</Label>
                   <Input {...register('complement')} placeholder="Apto 101" />

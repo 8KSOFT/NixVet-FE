@@ -179,14 +179,14 @@ export default function MedicalRecordsListPage() {
 
   return (
     <div>
-      <div className="flex flex-wrap justify-between items-center gap-3 mb-8">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-8">
         <h1 className="text-2xl font-extrabold font-['InterDoFigma'] flex items-center gap-2">Prontuários</h1>
         <Button
           onClick={() => {
             setForm(emptyForm());
             setModalVisible(true);
           }}
-          className="bg-primary hover:bg-primary/70"
+          className="w-full bg-primary hover:bg-primary/70 sm:w-auto"
         >
           <Plus className="h-4 w-4 mr-1" /> Novo Prontuário
         </Button>

@@ -162,9 +162,9 @@ export default function TeamPage() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-8">
         <h1 className="text-2xl font-extrabold font-['InterDoFigma'] flex items-center gap-2">{t('team.title')}</h1>
-        <Button onClick={handleAdd} className="bg-primary">
+        <Button onClick={handleAdd} className="w-full bg-primary sm:w-auto">
           <Plus className="w-4 h-4 mr-2" /> {t('team.newMember')}
         </Button>
       </div>
@@ -173,9 +173,14 @@ export default function TeamPage() {
         <div className="flex justify-center py-8">
           <Loader2 className="w-6 h-6 animate-spin text-primary" />
         </div>
+      ) : users.length === 0 ? (
+        <div className="rounded-lg border border-gray-300 bg-white py-8 text-center text-sm text-slate-500">
+          Nenhum membro cadastrado.
+        </div>
       ) : (
         <div>
-          <div className="overflow-x-auto border border-gray-300 rounded-lg">
+          {/* Desktop / tablet: tabela */}
+          <div className="hidden overflow-x-auto rounded-lg border border-gray-300 md:block">
             <Table className="min-w-full border-collapse bg-white text-sm">
               <TableHeader>
                 <TableRow className="border-b border-gray-300 h-15">
@@ -228,6 +233,58 @@ export default function TeamPage() {
               </TableBody>
             </Table>
           </div>
+
+          {/* Mobile: cards */}
+          <div className="space-y-3 md:hidden">
+            {users.map((user) => (
+              <div key={user.id} className="rounded-lg border border-gray-300 bg-white p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{user.name}</p>
+                    <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+                  </div>
+                  <Badge variant={roleBadgeVariant(user.role)} className="shrink-0">
+                    {t(`roles.${user.role}`, { defaultValue: user.role })}
+                  </Badge>
+                </div>
+
+                <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                  <div>
+                    <p className="text-xs text-muted-foreground">{t('team.colCrmv')}</p>
+                    <p>{user.crmv || '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">{t('team.colSpecialty')}</p>
+                    <p className="truncate">{user.specialty || '—'}</p>
+                  </div>
+                </div>
+
+                <div className="mt-3 flex items-center justify-end gap-1 border-t border-gray-200 pt-2">
+                  <Button variant="ghost" size="icon" className="p-0" onClick={() => handleEdit(user)}>
+                    <Pencil className="w-4 h-4" />
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="ghost" size="icon" className="p-0">
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>{t('team.confirmRemove')}</AlertDialogTitle>
+                        <AlertDialogDescription>{user.name}</AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => handleDelete(user.id)}>Confirmar</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </div>
+            ))}
+          </div>
+
           <ListPagination
             page={listPage}
             totalPages={listTotalPages}

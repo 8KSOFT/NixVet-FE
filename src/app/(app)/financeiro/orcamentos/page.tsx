@@ -228,48 +228,47 @@ export default function OrcamentosPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold">Orçamentos</h1>
           <p className="text-sm text-muted-foreground">Gerencie orçamentos para procedimentos e internações</p>
         </div>
-        <Button onClick={() => setOpenNew(true)}>
+        <Button onClick={() => setOpenNew(true)} className="w-full sm:w-auto">
           <Plus className="mr-2 size-4" />
           Novo Orçamento
         </Button>
       </div>
 
-      <div className="overflow-x-auto border border-gray-300 rounded-lg">
-        {loading ? (
-          <div className="p-6 space-y-2">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-12 w-full" />
-            ))}
-          </div>
-        ) : (
-          <Table className="min-w-full border-collapse bg-white text-sm">
-            <TableHeader>
-              <TableRow className="border-b border-gray-300 h-15">
-                <TableHead>Nº</TableHead>
-                <TableHead>Paciente</TableHead>
-                <TableHead>Tipo</TableHead>
-                <TableHead className="text-right">Total</TableHead>
-                <TableHead className="text-right">Plano Cobre</TableHead>
-                <TableHead className="text-right">Tutor Paga</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Validade</TableHead>
-                <TableHead>Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {budgets.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={9} className="border-t border-slate-200 py-8 text-center text-sm text-slate-500">
-                    Nenhum orçamento encontrado
-                  </TableCell>
+      {loading ? (
+        <div className="space-y-2 rounded-lg border border-gray-300 bg-white p-6">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-12 w-full" />
+          ))}
+        </div>
+      ) : budgets.length === 0 ? (
+        <div className="rounded-lg border border-gray-300 bg-white py-8 text-center text-sm text-slate-500">
+          Nenhum orçamento encontrado
+        </div>
+      ) : (
+        <>
+          {/* Desktop / tablet: tabela */}
+          <div className="hidden overflow-x-auto rounded-lg border border-gray-300 md:block">
+            <Table className="min-w-full border-collapse bg-white text-sm">
+              <TableHeader>
+                <TableRow className="border-b border-gray-300 h-15">
+                  <TableHead>Nº</TableHead>
+                  <TableHead>Paciente</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
+                  <TableHead className="text-right">Plano Cobre</TableHead>
+                  <TableHead className="text-right">Tutor Paga</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Validade</TableHead>
+                  <TableHead>Ações</TableHead>
                 </TableRow>
-              ) : (
-                budgets.map((b) => {
+              </TableHeader>
+              <TableBody>
+                {budgets.map((b) => {
                   const totals = computeTotals(b.items ?? []);
                   const totalFmt = b.summary?.total_formatted ?? fmt(totals.total);
                   const planFmt = b.summary?.plan_coverage_formatted ?? fmt(totals.plan);
@@ -307,12 +306,70 @@ export default function OrcamentosPage() {
                       </TableCell>
                     </TableRow>
                   );
-                })
-              )}
-            </TableBody>
-          </Table>
-        )}
-      </div>
+                })}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Mobile: cards */}
+          <div className="space-y-3 md:hidden">
+            {budgets.map((b) => {
+              const totals = computeTotals(b.items ?? []);
+              const totalFmt = b.summary?.total_formatted ?? fmt(totals.total);
+              const planFmt = b.summary?.plan_coverage_formatted ?? fmt(totals.plan);
+              const tutorFmt = b.summary?.tutor_responsibility_formatted ?? fmt(totals.tutor);
+              return (
+                <div key={b.id} className="rounded-lg border border-gray-300 bg-white p-4">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="truncate font-medium">{b.patient?.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        #{b.id.substring(0, 8).toUpperCase()} · {b.type === 'procedure' ? 'Procedimento' : 'Internação'}
+                      </p>
+                    </div>
+                    <Badge variant={STATUS_COLORS[b.status] ?? 'secondary'} className="shrink-0">
+                      {STATUS_LABELS[b.status] ?? b.status}
+                    </Badge>
+                  </div>
+
+                  <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Total</p>
+                      <p className="tabular-nums">{totalFmt}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Validade</p>
+                      <p>{b.valid_until ? new Date(b.valid_until).toLocaleDateString('pt-BR') : '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Plano Cobre</p>
+                      <p className="tabular-nums text-green-600">{planFmt}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Tutor Paga</p>
+                      <p className="tabular-nums text-blue-600">{tutorFmt}</p>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 flex items-center justify-end gap-1 border-t border-gray-200 pt-2">
+                    <Button variant="ghost" size="icon" onClick={() => setSelected(b)} title="Visualizar">
+                      <Eye className="size-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => handleDownloadPdf(b.id)} title="PDF">
+                      <FileText className="size-4" />
+                    </Button>
+                    {b.status === 'draft' || b.status === 'sent' ? (
+                      <Button variant="ghost" size="icon" onClick={() => handleApprove(b.id)} title="Aprovar">
+                        <CheckCircle className="size-4 text-green-600" />
+                      </Button>
+                    ) : null}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
 
       {/* Modal Novo Orçamento */}
       <DashboardCreateFormDialog
@@ -483,7 +540,7 @@ export default function OrcamentosPage() {
               <DialogTitle>Orçamento #{selected.id.substring(0, 8).toUpperCase()}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-2 text-sm">
+              <div className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
                 <div>
                   <span className="font-medium">Paciente:</span> {selected.patient?.name}
                 </div>
@@ -497,39 +554,41 @@ export default function OrcamentosPage() {
                   <span className="font-medium">Status:</span> {STATUS_LABELS[selected.status]}
                 </div>
               </div>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Descrição</TableHead>
-                    <TableHead className="text-right">Qtd</TableHead>
-                    <TableHead className="text-right">Unit.</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {(selected.items ?? []).map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {item.description}
-                          {item.reference_type === 'product' && (
-                            <Badge variant="secondary" className="text-[10px]">
-                              Produto
-                            </Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">{item.quantity}</TableCell>
-                      <TableCell className="text-right">
-                        {item.unit_price_formatted ?? fmt(Number(item.unit_price))}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {item.total_price_formatted ?? fmt(Number(item.total_price))}
-                      </TableCell>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Descrição</TableHead>
+                      <TableHead className="text-right">Qtd</TableHead>
+                      <TableHead className="text-right">Unit.</TableHead>
+                      <TableHead className="text-right">Total</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {(selected.items ?? []).map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {item.description}
+                            {item.reference_type === 'product' && (
+                              <Badge variant="secondary" className="text-[10px]">
+                                Produto
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">{item.quantity}</TableCell>
+                        <TableCell className="text-right">
+                          {item.unit_price_formatted ?? fmt(Number(item.unit_price))}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {item.total_price_formatted ?? fmt(Number(item.total_price))}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
               {(() => {
                 const t = computeTotals(selected.items ?? []);
                 const totalFmt = selected.summary?.total_formatted ?? fmt(t.total);

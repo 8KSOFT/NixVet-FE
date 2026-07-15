@@ -83,7 +83,7 @@ export default function ChatbotSettingsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <Link href="/chatbot-workflows">
             <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
@@ -100,7 +100,7 @@ export default function ChatbotSettingsPage() {
           </div>
         </div>
         <Link href="/chatbot-workflows">
-          <Button variant="outline" size="sm" className="gap-1.5 text-muted-foreground">
+          <Button variant="outline" size="sm" className="w-full gap-1.5 text-muted-foreground sm:w-auto">
             <Workflow className="w-4 h-4" /> Ver Workflows
           </Button>
         </Link>
@@ -113,7 +113,7 @@ export default function ChatbotSettingsPage() {
       ) : (
         <form onSubmit={handleSubmit(onSubmit)}>
           <Tabs defaultValue="persona">
-            <TabsList className="mb-4">
+            <TabsList className="mb-4 h-auto w-full flex-wrap justify-start">
               <TabsTrigger value="persona">Persona & Mensagens</TabsTrigger>
               <TabsTrigger value="advanced">Prompt Avançado</TabsTrigger>
             </TabsList>

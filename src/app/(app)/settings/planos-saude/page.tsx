@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { Plus, Pencil, PowerOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog,
@@ -97,12 +97,12 @@ export default function PlanosSaudePage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-xl font-semibold">Planos de Saúde</h2>
           <p className="text-sm text-muted-foreground">Convênios e planos veterinários cadastrados</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <label className="flex items-center gap-2 text-sm text-muted-foreground">
             <Switch checked={includeInactive} onCheckedChange={setIncludeInactive} />
             Mostrar inativos
@@ -120,28 +120,25 @@ export default function PlanosSaudePage() {
             <div className="p-6 space-y-2">
               {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
             </div>
+          ) : plans.length === 0 ? (
+            <div className="p-6 text-center text-sm text-slate-500">Nenhum plano cadastrado</div>
           ) : (
-            <div className="overflow-x-auto">
-            <Table className="min-w-full border-collapse bg-white text-sm">
-              <TableHeader>
-                <TableRow className="border-b border-gray-300 h-15">
-                  <TableHead>Nome</TableHead>
-                  <TableHead>CNPJ</TableHead>
-                  <TableHead>Contato</TableHead>
-                  <TableHead className="text-right">Prazo Repasse</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {plans.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="border-t border-slate-200 py-8 text-center text-sm text-slate-500">
-                      Nenhum plano cadastrado
-                    </TableCell>
+            <>
+              {/* Desktop / tablet: tabela */}
+              <div className="hidden overflow-x-auto md:block">
+              <Table className="min-w-full border-collapse bg-white text-sm">
+                <TableHeader>
+                  <TableRow className="border-b border-gray-300 h-15">
+                    <TableHead>Nome</TableHead>
+                    <TableHead>CNPJ</TableHead>
+                    <TableHead>Contato</TableHead>
+                    <TableHead className="text-right">Prazo Repasse</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Ações</TableHead>
                   </TableRow>
-                ) : (
-                  plans.map((p) => (
+                </TableHeader>
+                <TableBody>
+                  {plans.map((p) => (
                     <TableRow className="border-b border-gray-300 h-15" key={p.id}>
                       <TableCell className="font-medium">{p.name}</TableCell>
                       <TableCell>{p.document ?? '—'}</TableCell>
@@ -165,11 +162,48 @@ export default function PlanosSaudePage() {
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-            </div>
+                  ))}
+                </TableBody>
+              </Table>
+              </div>
+
+              {/* Mobile: cards */}
+              <div className="space-y-3 p-4 md:hidden">
+                {plans.map((p) => (
+                  <div key={p.id} className="rounded-lg border border-gray-300 p-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="truncate font-medium">{p.name}</p>
+                        <p className="text-xs text-muted-foreground">{p.document ?? '—'}</p>
+                      </div>
+                      <Badge variant={p.active ? 'default' : 'secondary'} className="shrink-0">
+                        {p.active ? 'Ativo' : 'Inativo'}
+                      </Badge>
+                    </div>
+                    <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                      <div>
+                        <p className="text-xs text-muted-foreground">Contato</p>
+                        <p className="truncate">{p.contact_phone ?? p.contact_email ?? '—'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Prazo Repasse</p>
+                        <p>{p.reimbursement_days}d</p>
+                      </div>
+                    </div>
+                    <div className="mt-3 flex items-center justify-end gap-1 border-t border-gray-200 pt-2">
+                      <Button variant="ghost" size="icon" onClick={() => openEdit(p)}>
+                        <Pencil className="size-4" />
+                      </Button>
+                      {p.active && (
+                        <Button variant="ghost" size="icon" onClick={() => handleDeactivate(p.id)}>
+                          <PowerOff className="size-4 text-orange-500" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
@@ -184,7 +218,7 @@ export default function PlanosSaudePage() {
               <Label>Nome *</Label>
               <Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="Ex: Petlove Saúde" />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-1">
                 <Label>CNPJ</Label>
                 <Input value={form.document} onChange={(e) => setForm((f) => ({ ...f, document: e.target.value }))} placeholder="00.000.000/0001-00" />

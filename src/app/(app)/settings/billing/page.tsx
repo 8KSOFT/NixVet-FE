@@ -205,7 +205,7 @@ export default function BillingSettingsPage() {
             {invoices.map((inv, i) => {
               const hasNfse = inv.status === 'DONE' && (inv.pdfUrl || inv.invoiceUrl);
               return (
-                <div key={i} className="flex items-center justify-between px-5 py-3">
+                <div key={i} className="flex flex-col gap-2 px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <p className="text-sm font-medium text-slate-800">
                       {new Date(inv.date).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
@@ -214,7 +214,7 @@ export default function BillingSettingsPage() {
                       {inv.status === 'DONE' ? '✅ NFS-e emitida' : inv.status === 'PENDING' ? '⏳ Nota pendente' : inv.status}
                     </p>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-wrap items-center gap-3">
                     <span className="text-sm font-semibold text-slate-700">
                       R${inv.value.toFixed(2).replace('.', ',')}
                     </span>

@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
   Loader2,
@@ -129,7 +128,6 @@ const emptyCreate = () => ({
 });
 
 export default function SuperadminClinicsPage() {
-  const { t } = useTranslation("common");
   const router = useRouter();
   const [listPage, setListPage] = useState(1);
 
@@ -320,6 +318,146 @@ export default function SuperadminClinicsPage() {
     }
   };
 
+  const renderRowActions = (row: ClinicRow) => (
+    <div className="flex flex-wrap items-center justify-end gap-1">
+      {row.subscription_status !== "active" &&
+        row.subscription_status !== "exempt" && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="p-0"
+            title="Liberar"
+            aria-label="Liberar"
+            onClick={() =>
+              void quickPatch(row.id, {
+                subscription_status: "active",
+              })
+            }
+          >
+            <ShieldCheck className="size-4 text-emerald-700" />
+          </Button>
+        )}
+      {(row.subscription_status === "active" ||
+        row.subscription_status === "exempt") && (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="p-0"
+          title="Suspender"
+          aria-label="Suspender"
+          onClick={() =>
+            void quickPatch(row.id, {
+              subscription_status: "suspended",
+            })
+          }
+        >
+          <ShieldOff className="size-4 text-red-600" />
+        </Button>
+      )}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="p-0"
+        title="Editar"
+        aria-label="Editar"
+        onClick={() => openEdit(row)}
+      >
+        <Settings2 className="size-4" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="p-0"
+        title="Redefinir senha"
+        aria-label="Redefinir senha"
+        onClick={() => openReset(row)}
+        disabled={!row.admin_email}
+      >
+        <KeyRound className="size-4" />
+      </Button>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="p-0"
+        title="WhatsApp"
+        aria-label="WhatsApp"
+        onClick={() => {
+          setWhatsappTenantId(row.id);
+          setWhatsappClinicName(row.name);
+        }}
+      >
+        <MessageCircle className="size-4 text-green-700" />
+      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="p-0"
+            title="Mais ações"
+            aria-label="Mais ações"
+          >
+            <MoreHorizontal className="size-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuItem
+            onClick={() =>
+              void quickPatch(row.id, {
+                subscription_status: "trial",
+                trial_ends_at: addDays(14),
+              })
+            }
+          >
+            Trial 14 dias
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() =>
+              void quickPatch(row.id, {
+                subscription_status: "trial",
+                trial_ends_at: addDays(30),
+              })
+            }
+          >
+            Trial 30 dias
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() =>
+              void quickPatch(row.id, {
+                subscription_status: "exempt",
+                trial_ends_at: addMonths(3),
+              })
+            }
+          >
+            Isentar 3 meses
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() =>
+              void quickPatch(row.id, {
+                subscription_status: "exempt",
+                trial_ends_at: addMonths(6),
+              })
+            }
+          >
+            Isentar 6 meses
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            onClick={() =>
+              router.push(`/superadmin/clinics/${row.id}`)
+            }
+          >
+            <ExternalLink className="size-3.5 mr-2" /> Ver detalhes
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -332,7 +470,7 @@ export default function SuperadminClinicsPage() {
           </p>
         </div>
         <Button
-          className="bg-primary"
+          className="w-full bg-primary sm:w-auto"
           onClick={() => {
             setCreateForm(emptyCreate());
             setCreateOpen(true);
@@ -349,7 +487,8 @@ export default function SuperadminClinicsPage() {
           </div>
         ) : (
           <>
-            <div className="overflow-x-auto border border-gray-300 rounded-lg">
+            {/* Desktop / tablet: tabela */}
+            <div className="hidden overflow-x-auto rounded-lg border border-gray-300 md:block">
               <Table className="min-w-full border-collapse bg-white text-sm">
                 <TableHeader>
                   <TableRow className="border-b border-gray-300 h-15">
@@ -447,146 +586,7 @@ export default function SuperadminClinicsPage() {
                           </div>
                         </TableCell>
                         <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1 flex-wrap">
-                            {row.subscription_status !== "active" &&
-                              row.subscription_status !== "exempt" && (
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon"
-                                  className="p-0"
-                                  title="Liberar"
-                                  aria-label="Liberar"
-                                  onClick={() =>
-                                    void quickPatch(row.id, {
-                                      subscription_status: "active",
-                                    })
-                                  }
-                                >
-                                  <ShieldCheck className="size-4 text-emerald-700" />
-                                </Button>
-                              )}
-                            {(row.subscription_status === "active" ||
-                              row.subscription_status === "exempt") && (
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon"
-                                className="p-0"
-                                title="Suspender"
-                                aria-label="Suspender"
-                                onClick={() =>
-                                  void quickPatch(row.id, {
-                                    subscription_status: "suspended",
-                                  })
-                                }
-                              >
-                                <ShieldOff className="size-4 text-red-600" />
-                              </Button>
-                            )}
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="p-0"
-                              title="Editar"
-                              aria-label="Editar"
-                              onClick={() => openEdit(row)}
-                            >
-                              <Settings2 className="size-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="p-0"
-                              title="Redefinir senha"
-                              aria-label="Redefinir senha"
-                              onClick={() => openReset(row)}
-                              disabled={!row.admin_email}
-                            >
-                              <KeyRound className="size-4" />
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              className="p-0"
-                              title="WhatsApp"
-                              aria-label="WhatsApp"
-                              onClick={() => {
-                                setWhatsappTenantId(row.id);
-                                setWhatsappClinicName(row.name);
-                              }}
-                            >
-                              <MessageCircle className="size-4 text-green-700" />
-                            </Button>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon"
-                                  className="p-0"
-                                  title="Mais ações"
-                                  aria-label="Mais ações"
-                                >
-                                  <MoreHorizontal className="size-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-48">
-                                <DropdownMenuItem
-                                  onClick={() =>
-                                    void quickPatch(row.id, {
-                                      subscription_status: "trial",
-                                      trial_ends_at: addDays(14),
-                                    })
-                                  }
-                                >
-                                  Trial 14 dias
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() =>
-                                    void quickPatch(row.id, {
-                                      subscription_status: "trial",
-                                      trial_ends_at: addDays(30),
-                                    })
-                                  }
-                                >
-                                  Trial 30 dias
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() =>
-                                    void quickPatch(row.id, {
-                                      subscription_status: "exempt",
-                                      trial_ends_at: addMonths(3),
-                                    })
-                                  }
-                                >
-                                  Isentar 3 meses
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() =>
-                                    void quickPatch(row.id, {
-                                      subscription_status: "exempt",
-                                      trial_ends_at: addMonths(6),
-                                    })
-                                  }
-                                >
-                                  Isentar 6 meses
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  onClick={() =>
-                                    router.push(
-                                      `/superadmin/clinics/${row.id}`,
-                                    )
-                                  }
-                                >
-                                  <ExternalLink className="size-3.5 mr-2" /> Ver
-                                  detalhes
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </div>
+                          {renderRowActions(row)}
                         </TableCell>
                       </TableRow>
                     ))
@@ -594,6 +594,85 @@ export default function SuperadminClinicsPage() {
                 </TableBody>
               </Table>
             </div>
+
+            {/* Mobile: cards */}
+            <div className="space-y-3 md:hidden">
+              {rows.length === 0 ? (
+                <div className="rounded-lg border border-gray-300 bg-white py-8 text-center text-sm text-slate-500">
+                  Nenhuma clínica cadastrada.
+                </div>
+              ) : (
+                rows.map((row) => (
+                  <div key={row.id} className="rounded-lg border border-gray-300 bg-white p-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="truncate font-medium">{row.name}</p>
+                        <p className="truncate text-xs text-muted-foreground">
+                          {row.email ?? ""}{row.phone ? ` · ${row.phone}` : ""}
+                        </p>
+                        <p className="mt-0.5 font-mono text-xs text-muted-foreground">{row.code}</p>
+                      </div>
+                      <div className="flex shrink-0 flex-col items-end gap-1">
+                        <Badge
+                          variant={statusBadgeVariant(row.subscription_status)}
+                          className={`capitalize text-xs ${statusBadgeClass(row.subscription_status)}`}
+                        >
+                          {statusLabel(row.subscription_status)}
+                        </Badge>
+                        <Badge variant="outline" className="capitalize">
+                          {row.billing_plan?.trim() || "—"}
+                        </Badge>
+                      </div>
+                    </div>
+
+                    {(row.trial_ends_at &&
+                      (row.subscription_status === "trial" || row.subscription_status === "exempt")) ||
+                    row.cancel_at ? (
+                      <div className="mt-1 text-xs">
+                        {row.trial_ends_at &&
+                          (row.subscription_status === "trial" || row.subscription_status === "exempt") && (
+                            <span className="text-muted-foreground">
+                              até {new Date(row.trial_ends_at).toLocaleDateString("pt-BR")}
+                            </span>
+                          )}
+                        {row.cancel_at && (
+                          <span className="ml-2 text-orange-600">
+                            ⚠️ cancel. {new Date(row.cancel_at).toLocaleDateString("pt-BR")}
+                          </span>
+                        )}
+                      </div>
+                    ) : null}
+
+                    <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                      <div className="col-span-2">
+                        <p className="text-xs text-muted-foreground">Admin</p>
+                        <p className="truncate">{row.admin_name ?? "—"}</p>
+                        <p className="truncate text-xs text-muted-foreground">{row.admin_email ?? ""}</p>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">Chatbot WhatsApp</span>
+                        <Switch
+                          checked={row.whatsapp_ai_chatbot_enabled}
+                          onCheckedChange={(v) => quickToggle(row, "whatsapp_ai_chatbot_enabled", v)}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">Plataforma IA</span>
+                        <Switch
+                          checked={row.ai_platform_enabled}
+                          onCheckedChange={(v) => quickToggle(row, "ai_platform_enabled", v)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="mt-3 border-t border-gray-200 pt-2">
+                      {renderRowActions(row)}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
             <ListPagination
               page={listPage}
               totalPages={listTotalPages}
@@ -658,7 +737,7 @@ export default function SuperadminClinicsPage() {
               Cria o tenant e, opcionalmente, o primeiro administrador.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid grid-cols-2 gap-3 py-2">
+          <div className="grid grid-cols-1 gap-3 py-2 sm:grid-cols-2">
             <div className="space-y-1">
               <Label>Nome *</Label>
               <Input
@@ -794,7 +873,7 @@ export default function SuperadminClinicsPage() {
               <span className="font-mono text-xs">{editRow?.code}</span>
             </DialogDescription>
           </DialogHeader>
-          <div className="grid grid-cols-2 gap-3 py-2">
+          <div className="grid grid-cols-1 gap-3 py-2 sm:grid-cols-2">
             <div className="space-y-1 col-span-2">
               <Label>Nome</Label>
               <Input

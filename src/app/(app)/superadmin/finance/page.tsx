@@ -372,76 +372,129 @@ export default function SuperadminFinancePage() {
             ))}
           </div>
 
-          <div className="overflow-x-auto">
-            <Table className="min-w-full border-collapse bg-white text-sm">
-              <TableHeader>
-                <TableRow className="border-b border-gray-300 h-15">
-                  <TableHead>Clínica</TableHead>
-                  <TableHead>Admin</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Plano</TableHead>
-                  <TableHead>Trial até</TableHead>
-                  <TableHead className="text-right">Chamadas IA</TableHead>
-                  <TableHead className="text-right">Custo IA</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {loadingTenants ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="border-t border-slate-200 py-8 text-center text-sm text-slate-500">
-                      Carregando...
-                    </TableCell>
-                  </TableRow>
-                ) : tenants.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="border-t border-slate-200 py-8 text-center text-sm text-slate-500">
-                      Nenhuma clínica neste filtro.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  tenants.map((row) => {
-                    const st = STATUS_LABELS[row.access_status] ?? {
-                      label: row.access_status,
-                      variant: 'outline' as const,
-                    };
-                    return (
-                      <TableRow className="border-b border-gray-300 h-15" key={row.id}>
-                        <TableCell>
-                          <div className="font-medium">{row.name}</div>
-                          <div className="text-xs text-muted-foreground">{row.code}</div>
-                        </TableCell>
-                        <TableCell className="text-xs">{row.admin_email ?? '—'}</TableCell>
-                        <TableCell>
-                          <Badge variant={st.variant}>{st.label}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          {row.billing_plan ? (
-                            <span>
-                              {PLAN_LABELS[row.billing_plan] || row.billing_plan}
-                              {row.plan_value_brl > 0 && (
-                                <span className="text-xs text-muted-foreground ml-1">
-                                  ({formatBrl(row.plan_value_brl)}/mês)
-                                </span>
-                              )}
-                            </span>
-                          ) : (
-                            '—'
-                          )}
-                        </TableCell>
-                        <TableCell className="text-xs whitespace-nowrap">
-                          {row.trial_ends_at
-                            ? dayjs(row.trial_ends_at).format('DD/MM/YYYY')
-                            : '—'}
-                        </TableCell>
-                        <TableCell className="text-right">{row.ai_calls}</TableCell>
-                        <TableCell className="text-right">{formatUsd(row.ai_cost_usd)}</TableCell>
-                      </TableRow>
-                    );
-                  })
-                )}
-              </TableBody>
-            </Table>
-          </div>
+          {loadingTenants ? (
+            <div className="rounded-lg border border-gray-300 bg-white py-8 text-center text-sm text-slate-500">
+              Carregando...
+            </div>
+          ) : tenants.length === 0 ? (
+            <div className="rounded-lg border border-gray-300 bg-white py-8 text-center text-sm text-slate-500">
+              Nenhuma clínica neste filtro.
+            </div>
+          ) : (
+            <>
+              {/* Desktop / tablet: tabela */}
+              <div className="hidden overflow-x-auto md:block">
+                <Table className="min-w-full border-collapse bg-white text-sm">
+                  <TableHeader>
+                    <TableRow className="border-b border-gray-300 h-15">
+                      <TableHead>Clínica</TableHead>
+                      <TableHead>Admin</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Plano</TableHead>
+                      <TableHead>Trial até</TableHead>
+                      <TableHead className="text-right">Chamadas IA</TableHead>
+                      <TableHead className="text-right">Custo IA</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {tenants.map((row) => {
+                      const st = STATUS_LABELS[row.access_status] ?? {
+                        label: row.access_status,
+                        variant: 'outline' as const,
+                      };
+                      return (
+                        <TableRow className="border-b border-gray-300 h-15" key={row.id}>
+                          <TableCell>
+                            <div className="font-medium">{row.name}</div>
+                            <div className="text-xs text-muted-foreground">{row.code}</div>
+                          </TableCell>
+                          <TableCell className="text-xs">{row.admin_email ?? '—'}</TableCell>
+                          <TableCell>
+                            <Badge variant={st.variant}>{st.label}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            {row.billing_plan ? (
+                              <span>
+                                {PLAN_LABELS[row.billing_plan] || row.billing_plan}
+                                {row.plan_value_brl > 0 && (
+                                  <span className="text-xs text-muted-foreground ml-1">
+                                    ({formatBrl(row.plan_value_brl)}/mês)
+                                  </span>
+                                )}
+                              </span>
+                            ) : (
+                              '—'
+                            )}
+                          </TableCell>
+                          <TableCell className="text-xs whitespace-nowrap">
+                            {row.trial_ends_at
+                              ? dayjs(row.trial_ends_at).format('DD/MM/YYYY')
+                              : '—'}
+                          </TableCell>
+                          <TableCell className="text-right">{row.ai_calls}</TableCell>
+                          <TableCell className="text-right">{formatUsd(row.ai_cost_usd)}</TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Mobile: cards */}
+              <div className="space-y-3 md:hidden">
+                {tenants.map((row) => {
+                  const st = STATUS_LABELS[row.access_status] ?? {
+                    label: row.access_status,
+                    variant: 'outline' as const,
+                  };
+                  return (
+                    <div key={row.id} className="rounded-lg border border-gray-300 bg-white p-4">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="truncate font-medium">{row.name}</p>
+                          <p className="text-xs text-muted-foreground">{row.code}</p>
+                        </div>
+                        <Badge variant={st.variant} className="shrink-0">{st.label}</Badge>
+                      </div>
+                      <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                        <div className="col-span-2">
+                          <p className="text-xs text-muted-foreground">Admin</p>
+                          <p className="truncate">{row.admin_email ?? '—'}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Plano</p>
+                          <p>
+                            {row.billing_plan ? (
+                              <>
+                                {PLAN_LABELS[row.billing_plan] || row.billing_plan}
+                                {row.plan_value_brl > 0 && (
+                                  <span className="text-xs text-muted-foreground"> ({formatBrl(row.plan_value_brl)}/mês)</span>
+                                )}
+                              </>
+                            ) : (
+                              '—'
+                            )}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Trial até</p>
+                          <p>{row.trial_ends_at ? dayjs(row.trial_ends_at).format('DD/MM/YYYY') : '—'}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Chamadas IA</p>
+                          <p>{row.ai_calls}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Custo IA</p>
+                          <p>{formatUsd(row.ai_cost_usd)}</p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
 
           <ListPagination
             page={listPage}

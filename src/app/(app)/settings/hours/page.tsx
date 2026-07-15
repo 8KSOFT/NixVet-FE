@@ -263,7 +263,7 @@ export default function SettingsHoursPage() {
         <Card>
           <CardContent className="pt-6">
             <Tabs defaultValue="business">
-              <TabsList className="mb-4">
+              <TabsList className="mb-4 h-auto w-full flex-wrap justify-start">
                 <TabsTrigger value="business">Horário de funcionamento</TabsTrigger>
                 <TabsTrigger value="emergency">Plantão / Emergência</TabsTrigger>
                 <TabsTrigger value="vet">Agenda por veterinário</TabsTrigger>
@@ -390,7 +390,8 @@ export default function SettingsHoursPage() {
                 >
                   <Plus className="w-4 h-4 mr-2" /> Adicionar horário
                 </Button>
-                <div className="overflow-x-auto">
+                {/* Desktop / tablet: tabela */}
+                <div className="hidden overflow-x-auto md:block">
                 <Table className="min-w-full border-collapse bg-white text-sm">
                   <TableHeader>
                     <TableRow className="border-b border-gray-300 h-15">
@@ -446,6 +447,50 @@ export default function SettingsHoursPage() {
                   </TableBody>
                 </Table>
                 </div>
+
+                {/* Mobile: cards */}
+                <div className="space-y-2 md:hidden">
+                  {vetSchedules.map((r) => (
+                    <div key={r.id} className="rounded-lg border border-gray-300 p-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="truncate font-medium">
+                            {r.user?.name ?? veterinarians.find((v) => v.id === r.user_id)?.name ?? r.user_id}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {DAYS.find((x) => x.value === r.day_of_week)?.label ?? r.day_of_week} · {r.start_time}–{r.end_time} · slot {r.slot_duration_minutes}min
+                          </p>
+                        </div>
+                        {r.schedule_type === 'on_call' ? (
+                          <Badge className="shrink-0 bg-orange-500">Plantão</Badge>
+                        ) : (
+                          <Badge className="shrink-0 bg-primary/100">Regular</Badge>
+                        )}
+                      </div>
+                      <div className="mt-2 flex justify-end border-t border-gray-200 pt-2">
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="destructive" size="icon" className="h-7 w-7">
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Remover este horário?</AlertDialogTitle>
+                              <AlertDialogDescription>Esta ação não pode ser desfeita.</AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDeleteVetSchedule(r.id)}>
+                                Remover
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </TabsContent>
             </Tabs>
           </CardContent>
@@ -500,7 +545,7 @@ export default function SettingsHoursPage() {
                 </div>
 
                 {!bhIs24h && (
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div className="flex flex-col gap-1.5">
                       <Label>Abertura</Label>
                       <Input type="time" value={bhOpenTime} onChange={(e) => setBhOpenTime(e.target.value)} />
@@ -555,7 +600,7 @@ export default function SettingsHoursPage() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="flex flex-col gap-1.5">
                 <Label>Início</Label>
                 <Input type="time" value={ehStartTime} onChange={(e) => setEhStartTime(e.target.value)} />
@@ -617,7 +662,7 @@ export default function SettingsHoursPage() {
                 }
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="flex flex-col gap-1.5">
                 <Label>Início</Label>
                 <Input type="time" {...vetForm.register('start_time', { required: true })} />

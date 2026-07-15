@@ -94,7 +94,7 @@ export default function FollowupsPage() {
         <h1 className="text-2xl font-extrabold font-['interDoFigma'] flex items-center gap-2">
           Acompanhamento de exames
         </h1>
-        <Button onClick={() => setModalOpen(true)} className="bg-primary">
+        <Button onClick={() => setModalOpen(true)} className="w-full bg-primary sm:w-auto">
           <Plus className="w-4 h-4 mr-2" /> Novo acompanhamento
         </Button>
       </div>
@@ -104,9 +104,14 @@ export default function FollowupsPage() {
         <div className="flex justify-center py-8">
           <Loader2 className="w-6 h-6 animate-spin text-primary" />
         </div>
+      ) : awaiting.length === 0 ? (
+        <div className="rounded-lg border border-gray-300 bg-white py-8 text-center text-sm text-slate-500">
+          Nenhum acompanhamento aguardando retorno.
+        </div>
       ) : (
         <div>
-          <div className="overflow-x-auto border border-gray-300 rounded-lg">
+          {/* Desktop / tablet: tabela */}
+          <div className="hidden overflow-x-auto rounded-lg border border-gray-300 md:block">
             <Table className="min-w-full border-collapse bg-white text-sm">
               <TableHeader>
                 <TableRow className="border-b border-gray-300 h-15">
@@ -156,6 +161,46 @@ export default function FollowupsPage() {
               </TableBody>
             </Table>
           </div>
+
+          {/* Mobile: cards */}
+          <div className="space-y-3 md:hidden">
+            {awaiting.map((item) => (
+              <div key={item.id} className="rounded-lg border border-gray-300 bg-white p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{item.Patient?.name}</p>
+                    <p className="text-xs text-muted-foreground">Previsão: {item.expected_result_date || '—'}</p>
+                  </div>
+                  <Badge variant="secondary" className="shrink-0">{item.followup_status}</Badge>
+                </div>
+                <div className="mt-3 flex items-center justify-end gap-1 border-t border-gray-200 pt-2">
+                  {item.followup_status === 'pending_result' && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="p-0"
+                      title="Resultado Disponível"
+                      aria-label="Resultado Disponível"
+                      onClick={() => markResultAvailable(item.id)}
+                    >
+                      <CheckCircle2 className="w-4 h-4 text-green-600" />
+                    </Button>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="p-0"
+                    title="Fechar"
+                    aria-label="Fechar"
+                    onClick={() => updateStatus(item.id, 'closed')}
+                  >
+                    <XCircle className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+
           <ListPagination
             page={awaitingPage}
             totalPages={awaitingTotalPages}
@@ -168,25 +213,75 @@ export default function FollowupsPage() {
       )}
 
       <h3 className="font-medium text-foreground mt-6 mb-2">Todos</h3>
-      <div className="overflow-x-auto border border-gray-300 rounded-lg">
-        <Table className="min-w-full border-collapse bg-white text-sm">
-          <TableHeader>
-            <TableRow className="border-b border-gray-300 h-15">
-              <TableHead>Paciente</TableHead>
-              <TableHead>Previsão</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+      {all.length === 0 ? (
+        <div className="rounded-lg border border-gray-300 bg-white py-8 text-center text-sm text-slate-500">
+          Nenhum acompanhamento cadastrado.
+        </div>
+      ) : (
+        <>
+          {/* Desktop / tablet: tabela */}
+          <div className="hidden overflow-x-auto rounded-lg border border-gray-300 md:block">
+            <Table className="min-w-full border-collapse bg-white text-sm">
+              <TableHeader>
+                <TableRow className="border-b border-gray-300 h-15">
+                  <TableHead>Paciente</TableHead>
+                  <TableHead>Previsão</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {all.map((item) => (
+                  <TableRow className="cursor-pointer hover:bg-muted/50 border-b border-gray-300 h-15" key={item.id}>
+                    <TableCell>{item.Patient?.name}</TableCell>
+                    <TableCell>{item.expected_result_date}</TableCell>
+                    <TableCell>
+                      <Badge variant="secondary">{item.followup_status}</Badge>
+                    </TableCell>
+                    <TableCell className="space-x-1">
+                      {item.followup_status === 'pending_result' && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="p-0"
+                          title="Resultado Disponível"
+                          aria-label="Resultado Disponível"
+                          onClick={() => markResultAvailable(item.id)}
+                        >
+                          <CheckCircle2 className="w-4 h-4 text-green-600" />
+                        </Button>
+                      )}
+                      {item.followup_status !== 'closed' && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="p-0"
+                          title="Fechar"
+                          aria-label="Fechar"
+                          onClick={() => updateStatus(item.id, 'closed')}
+                        >
+                          <XCircle className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Mobile: cards */}
+          <div className="space-y-3 md:hidden">
             {all.map((item) => (
-              <TableRow className="cursor-pointer hover:bg-muted/50 border-b border-gray-300 h-15" key={item.id}>
-                <TableCell>{item.Patient?.name}</TableCell>
-                <TableCell>{item.expected_result_date}</TableCell>
-                <TableCell>
-                  <Badge variant="secondary">{item.followup_status}</Badge>
-                </TableCell>
-                <TableCell className="space-x-1">
+              <div key={item.id} className="rounded-lg border border-gray-300 bg-white p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{item.Patient?.name}</p>
+                    <p className="text-xs text-muted-foreground">Previsão: {item.expected_result_date || '—'}</p>
+                  </div>
+                  <Badge variant="secondary" className="shrink-0">{item.followup_status}</Badge>
+                </div>
+                <div className="mt-3 flex items-center justify-end gap-1 border-t border-gray-200 pt-2">
                   {item.followup_status === 'pending_result' && (
                     <Button
                       variant="ghost"
@@ -211,12 +306,12 @@ export default function FollowupsPage() {
                       <XCircle className="w-4 h-4" />
                     </Button>
                   )}
-                </TableCell>
-              </TableRow>
+                </div>
+              </div>
             ))}
-          </TableBody>
-        </Table>
-      </div>
+          </div>
+        </>
+      )}
       <ListPagination
         page={allPage}
         totalPages={allTotalPages}

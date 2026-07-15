@@ -194,23 +194,25 @@ export default function ProntuarioDetailPage() {
                   key={r.id}
                   type="button"
                   onClick={() => router.push(`/medical-records/${r.id}`)}
-                  className="group flex w-full items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3 text-left transition hover:border-primary/50 hover:shadow-sm"
+                  className="group flex w-full flex-col gap-2 rounded-lg border border-slate-200 bg-white px-4 py-3 text-left transition hover:border-primary/50 hover:shadow-sm sm:flex-row sm:items-center sm:gap-3"
                 >
-                  <span className="text-sm font-medium text-slate-900 whitespace-nowrap">
-                    {dayjs(r.record_date).format("DD/MM/YYYY")}
-                  </span>
-                  <Badge variant="outline">{recordTypeLabel(r.record_type)}</Badge>
-                  <span className="truncate text-sm text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-slate-900 whitespace-nowrap">
+                      {dayjs(r.record_date).format("DD/MM/YYYY")}
+                    </span>
+                    <Badge variant="outline">{recordTypeLabel(r.record_type)}</Badge>
+                  </div>
+                  <span className="truncate text-sm text-muted-foreground sm:flex-1">
                     {r.chief_complaint || r.veterinarian?.name || "Sem queixa registrada"}
                   </span>
-                  <span className="ml-auto flex shrink-0 items-center gap-2">
+                  <div className="flex shrink-0 items-center justify-between gap-2 sm:ml-auto sm:justify-end">
                     {r.status === "closed" ? (
                       <Badge className="bg-green-500 text-white">Fechado</Badge>
                     ) : (
                       <Badge className="bg-primary text-white">Aberto</Badge>
                     )}
                     <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
-                  </span>
+                  </div>
                 </button>
               ))}
             </div>

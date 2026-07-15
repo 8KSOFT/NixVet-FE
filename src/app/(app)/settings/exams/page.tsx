@@ -100,7 +100,7 @@ function PlanPricesDialog({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-[calc(100%-2rem)] sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Preços por convênio — {exam.name}</DialogTitle>
         </DialogHeader>
@@ -295,7 +295,8 @@ export default function SettingsExamsPage() {
             </div>
           ) : (
             <div>
-              <div className="overflow-x-auto">
+              {/* Desktop / tablet: tabela */}
+              <div className="hidden overflow-x-auto md:block">
               <Table className="min-w-full border-collapse bg-white text-sm">
                 <TableHeader>
                   <TableRow className="border-b border-gray-300 h-15">
@@ -343,6 +344,49 @@ export default function SettingsExamsPage() {
                 </TableBody>
               </Table>
               </div>
+
+              {/* Mobile: cards */}
+              <div className="space-y-3 md:hidden">
+                {list.map((r) => {
+                  const margin =
+                    r.private_price && r.lab_cost && r.private_price > 0
+                      ? ((r.private_price - r.lab_cost) / r.private_price * 100).toFixed(0) + '%'
+                      : '—';
+                  return (
+                    <div key={r.id} className="rounded-lg border border-gray-300 p-4">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="truncate font-medium">{r.name}</p>
+                          <p className="text-xs text-muted-foreground">{r.exam_area?.name ?? r.exam_area_id ?? '—'}</p>
+                        </div>
+                        {margin !== '—' && <Badge variant="secondary" className="shrink-0">{margin}</Badge>}
+                      </div>
+                      <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                        <div>
+                          <p className="text-xs text-muted-foreground">Particular</p>
+                          <p className="tabular-nums">{fmtBRL(r.private_price)}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Custo Lab</p>
+                          <p className="tabular-nums">{fmtBRL(r.lab_cost)}</p>
+                        </div>
+                      </div>
+                      <div className="mt-3 flex items-center justify-end gap-1 border-t border-gray-200 pt-2">
+                        <Button variant="ghost" size="sm" onClick={() => openEdit(r)} title="Editar">
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <Button variant="ghost" size="sm" onClick={() => setPlanPricesFor(r)} title="Preços por convênio">
+                          <DollarSign className="w-4 h-4 text-blue-500" />
+                        </Button>
+                        <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" onClick={() => handleDelete(r.id)}>
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
               <ListPagination
                 page={listPage}
                 totalPages={listTotalPages}
@@ -388,7 +432,7 @@ export default function SettingsExamsPage() {
             </div>
             <div className="border-t pt-4">
               <p className="text-sm font-medium text-muted-foreground mb-3">Precificação</p>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <Label htmlFor="private_price">Preço Particular (R$)</Label>
                   <Input

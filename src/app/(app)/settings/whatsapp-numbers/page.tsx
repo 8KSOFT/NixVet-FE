@@ -347,7 +347,7 @@ export default function SettingsWhatsappNumbersPage() {
 
       {/* QR Code Modal */}
       <Dialog open={!!qrNumberId} onOpenChange={(open) => { if (!open) closeQrModal(); }}>
-        <DialogContent className="max-w-sm">
+        <DialogContent className="max-w-[calc(100%-2rem)] sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>Escanear QR Code</DialogTitle>
           </DialogHeader>

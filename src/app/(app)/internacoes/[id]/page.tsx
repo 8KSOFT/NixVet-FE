@@ -178,7 +178,7 @@ function CustosTab({ hospitalizationId, status }: { hospitalizationId: string; s
         </div>
       )}
 
-      <div className="flex justify-between">
+      <div className="flex flex-wrap gap-2 sm:justify-between">
         <Button size="sm" variant="outline" onClick={() => setOpenAdd(true)}>
           <Plus className="mr-2 size-4" />
           Adicionar Item
@@ -191,44 +191,94 @@ function CustosTab({ hospitalizationId, status }: { hospitalizationId: string; s
         )}
       </div>
 
-      <Table>
-        <TableHeader>
-          <TableRow className="border-b border-gray-300 h-15">
-            <TableHead>Tipo</TableHead>
-            <TableHead>Data</TableHead>
-            <TableHead>Descrição</TableHead>
-            <TableHead className="text-right">Qtd</TableHead>
-            <TableHead className="text-right">Unit.</TableHead>
-            <TableHead className="text-right">Total</TableHead>
-            <TableHead className="text-right">Plano</TableHead>
-            <TableHead></TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {costs.map((c) => (
-            <TableRow className="cursor-pointer hover:bg-muted/50 border-b border-gray-300 h-15" key={c.id}>
-              <TableCell>
-                <Badge variant="outline">{COST_TYPE_LABELS[c.type] ?? c.type}</Badge>
-              </TableCell>
-              <TableCell className="text-sm text-muted-foreground">
-                {new Date(c.date).toLocaleDateString('pt-BR')}
-              </TableCell>
-              <TableCell>{c.description}</TableCell>
-              <TableCell className="text-right">{c.quantity}</TableCell>
-              <TableCell className="text-right tabular-nums">{fmt(Number(c.unit_price))}</TableCell>
-              <TableCell className="text-right tabular-nums font-medium">{fmt(Number(c.total_price))}</TableCell>
-              <TableCell className="text-right tabular-nums text-green-600">
-                {c.covered_by_plan ? fmt(Number(c.plan_coverage_amount)) : '—'}
-              </TableCell>
-              <TableCell>
-                <Button variant="ghost" size="icon" onClick={() => deleteCost(c.id)}>
-                  <X className="size-4 text-muted-foreground" />
-                </Button>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+      {costs.length === 0 ? (
+        <p className="py-8 text-center text-sm text-muted-foreground">Nenhum item de custo registrado.</p>
+      ) : (
+        <>
+          {/* Desktop / tablet: tabela */}
+          <div className="hidden overflow-x-auto md:block">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-b border-gray-300 h-15">
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Data</TableHead>
+                  <TableHead>Descrição</TableHead>
+                  <TableHead className="text-right">Qtd</TableHead>
+                  <TableHead className="text-right">Unit.</TableHead>
+                  <TableHead className="text-right">Total</TableHead>
+                  <TableHead className="text-right">Plano</TableHead>
+                  <TableHead></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {costs.map((c) => (
+                  <TableRow className="cursor-pointer hover:bg-muted/50 border-b border-gray-300 h-15" key={c.id}>
+                    <TableCell>
+                      <Badge variant="outline">{COST_TYPE_LABELS[c.type] ?? c.type}</Badge>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {new Date(c.date).toLocaleDateString('pt-BR')}
+                    </TableCell>
+                    <TableCell>{c.description}</TableCell>
+                    <TableCell className="text-right">{c.quantity}</TableCell>
+                    <TableCell className="text-right tabular-nums">{fmt(Number(c.unit_price))}</TableCell>
+                    <TableCell className="text-right tabular-nums font-medium">{fmt(Number(c.total_price))}</TableCell>
+                    <TableCell className="text-right tabular-nums text-green-600">
+                      {c.covered_by_plan ? fmt(Number(c.plan_coverage_amount)) : '—'}
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="icon" onClick={() => deleteCost(c.id)}>
+                        <X className="size-4 text-muted-foreground" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Mobile: cards */}
+          <div className="space-y-2 md:hidden">
+            {costs.map((c) => (
+              <div key={c.id} className="rounded-lg border border-gray-300 p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <Badge variant="outline">{COST_TYPE_LABELS[c.type] ?? c.type}</Badge>
+                    <p className="mt-1 truncate text-sm">{c.description}</p>
+                  </div>
+                  <Button variant="ghost" size="icon" className="shrink-0" onClick={() => deleteCost(c.id)}>
+                    <X className="size-4 text-muted-foreground" />
+                  </Button>
+                </div>
+                <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Data</p>
+                    <p>{new Date(c.date).toLocaleDateString('pt-BR')}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Qtd</p>
+                    <p>{c.quantity}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Unit.</p>
+                    <p className="tabular-nums">{fmt(Number(c.unit_price))}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Total</p>
+                    <p className="font-medium tabular-nums">{fmt(Number(c.total_price))}</p>
+                  </div>
+                  {c.covered_by_plan && (
+                    <div className="col-span-2">
+                      <p className="text-xs text-muted-foreground">Plano</p>
+                      <p className="tabular-nums text-green-600">{fmt(Number(c.plan_coverage_amount))}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
 
       <Dialog open={openAdd} onOpenChange={setOpenAdd}>
         <DialogContent>
@@ -236,7 +286,7 @@ function CustosTab({ hospitalizationId, status }: { hospitalizationId: string; s
             <DialogTitle>Adicionar Item de Custo</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-1">
                 <Label>Tipo</Label>
                 <Select value={form.type} onValueChange={(v) => setForm((f) => ({ ...f, type: v }))}>
@@ -352,7 +402,7 @@ function OcorrenciasTab({ hospitalizationId }: { hospitalizationId: string }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between">
+      <div className="flex flex-wrap gap-2 sm:justify-between">
         <Button size="sm" variant="outline" onClick={() => setOpenNew(true)}>
           <Plus className="mr-2 size-4" />
           Nova Ocorrência
@@ -446,7 +496,7 @@ function OcorrenciasTab({ hospitalizationId }: { hospitalizationId: string }) {
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
               <div className="space-y-1">
                 <Label>FC (bpm)</Label>
                 <Input
@@ -557,7 +607,7 @@ function MedicacoesTab({ hospitalizationId }: { hospitalizationId: string }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between">
+      <div className="flex flex-wrap gap-2 sm:justify-between">
         <Button size="sm" variant="outline" onClick={() => setOpenNew(true)}>
           <Plus className="mr-2 size-4" />
           Prescrever Medicação
@@ -578,7 +628,7 @@ function MedicacoesTab({ hospitalizationId }: { hospitalizationId: string }) {
             return (
               <Card key={s.id}>
                 <CardHeader className="py-3 pb-1">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
                     <p className="font-medium">{s.medication_name}</p>
                     {overdue.length > 0 && (
                       <Badge variant="destructive">
@@ -620,8 +670,8 @@ function MedicacoesTab({ hospitalizationId }: { hospitalizationId: string }) {
             <DialogTitle>Prescrever Medicação</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="col-span-2 space-y-1">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="sm:col-span-2 space-y-1">
                 <Label>Medicamento *</Label>
                 <Input
                   value={form.medication_name}
@@ -771,7 +821,7 @@ function SbarTab({ hospitalizationId, status }: { hospitalizationId: string; sta
             const open = expanded.has(r.id);
             return (
               <div key={r.id} className="overflow-hidden rounded-lg border border-slate-200 bg-white">
-                <button type="button" onClick={() => toggle(r.id)} className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-slate-50">
+                <button type="button" onClick={() => toggle(r.id)} className="flex w-full flex-wrap items-center gap-3 px-4 py-3 text-left hover:bg-slate-50">
                   <span className="text-sm font-medium">{new Date(r.report_date).toLocaleDateString('pt-BR')}</span>
                   {r.author?.name && <span className="text-sm text-muted-foreground">{r.author.name}</span>}
                   {r.ai_reviewed && <Badge variant="secondary" className="gap-1"><Sparkles className="size-3" /> IA</Badge>}
@@ -860,7 +910,7 @@ function VisitasTab({ hospitalizationId, status }: { hospitalizationId: string; 
           <div className="space-y-2">
             {visits.map((v) => (
               <div key={v.id} className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <span className="font-medium">{new Date(v.visited_at).toLocaleString('pt-BR')}</span>
                   {v.visitor_name && <span className="text-muted-foreground">· {v.visitor_name}</span>}
                   {v.registrar?.name && <span className="ml-auto text-xs text-muted-foreground">registrado por {v.registrar.name}</span>}
@@ -949,7 +999,7 @@ function RelatorioMedicoTab({
 
   return (
     <Card>
-      <CardHeader className="flex-row items-center justify-between pb-2">
+      <CardHeader className="flex flex-col items-start gap-2 pb-2 sm:flex-row sm:items-center sm:justify-between">
         <h3 className="text-sm font-semibold">Ficha vinculada</h3>
         <Button asChild size="sm" variant="outline">
           <Link href={`/medical-records/${medicalRecordId}`}>Abrir ficha completa</Link>
@@ -1028,15 +1078,15 @@ export default function HospitalizationDetailPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap items-center gap-3">
           <Button variant="ghost" size="icon" asChild>
             <Link href="/internacoes">
               <ArrowLeft className="size-4" />
             </Link>
           </Button>
-          <div>
-            <h1 className="text-xl font-bold">{h.patient?.name}</h1>
+          <div className="min-w-0">
+            <h1 className="text-xl font-bold truncate">{h.patient?.name}</h1>
             <p className="text-sm text-muted-foreground">
               {h.patient?.species} · Admissão: {new Date(h.admission_date).toLocaleDateString('pt-BR')}
             </p>
@@ -1044,7 +1094,7 @@ export default function HospitalizationDetailPage() {
           <Badge variant={h.status === 'active' ? 'default' : 'secondary'}>{h.status}</Badge>
         </div>
         {h.status === 'active' && (
-          <Button variant="destructive" onClick={() => setOpenDischarge(true)}>
+          <Button variant="destructive" onClick={() => setOpenDischarge(true)} className="w-full sm:w-auto">
             <LogOut className="mr-2 size-4" />
             Registrar Alta
           </Button>
@@ -1052,7 +1102,7 @@ export default function HospitalizationDetailPage() {
       </div>
 
       <Tabs defaultValue="resumo">
-        <TabsList>
+        <TabsList className="w-full flex-wrap justify-start">
           <TabsTrigger value="resumo">Resumo</TabsTrigger>
           <TabsTrigger value="ocorrencias">Ocorrências</TabsTrigger>
           <TabsTrigger value="relatorio-medico"><FileText className="mr-1 size-4" /> Relatório Médico</TabsTrigger>

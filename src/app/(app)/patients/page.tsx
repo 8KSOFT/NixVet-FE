@@ -72,6 +72,14 @@ function getBreedDiscriminator(species: string) {
   return BREED_DISCRIMINATOR[code] ?? 'ANIMAL_RACA_OUTRO';
 }
 
+function guardianLabel(record: PatientRow): string {
+  if (record.tutor?.name) return record.tutor.name;
+  if (record.no_tutor_reason) {
+    return `Sem responsável (${NO_TUTOR_REASON_LABELS[record.no_tutor_reason] ?? record.no_tutor_reason})`;
+  }
+  return '—';
+}
+
 function getApiErrorMessage(error: unknown, fallbackMessage: string): string {
   const typedError = error as ApiRequestError;
   const responseMessage = typedError.response?.data?.message;
@@ -216,13 +224,13 @@ export default function PatientsPage() {
     <div>
       <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center mb-8">
         <h1 className="text-2xl font-extrabold font-['InterDoFigma'] flex items-center gap-2">{t('patients.title')}</h1>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-2 min-w-50">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+          <div className="flex items-center gap-2 sm:min-w-50">
             <Label className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
               {t('patients.dropdownLabel')}
             </Label>
             <Select value={listTutorFilter || '_all'} onValueChange={(v) => setListTutorFilter(v === '_all' ? '' : v)}>
-              <SelectTrigger className="h-9 w-60">
+              <SelectTrigger className="h-9 w-full sm:w-60">
                 <SelectValue placeholder={t('patients.dropdownStandardOption')} />
               </SelectTrigger>
               <SelectContent>
@@ -235,7 +243,7 @@ export default function PatientsPage() {
               </SelectContent>
             </Select>
           </div>
-          <Button onClick={handleAdd} className="bg-primary hover:bg-brand-deep/80">
+          <Button onClick={handleAdd} className="w-full bg-primary hover:bg-brand-deep/80 sm:w-auto">
             <Plus className="w-4 h-4 mr-2" /> {t('patients.createButton')}
           </Button>
         </div>
@@ -245,75 +253,123 @@ export default function PatientsPage() {
         <div className="text-center py-8 text-muted-foreground">Carregando...</div>
       ) : (
         <div>
-          <div className="overflow-x-auto border border-gray-300 rounded-lg">
-            <Table className="min-w-full border-collapse bg-white text-sm">
-              <TableHeader>
-                {/* Borda ou fundo customizado para o cabeçalho se desejar */}
-                <TableRow className="border-b border-gray-300 h-15">
-                  <TableHead>{t('patients.table.name')}</TableHead>
-                  <TableHead>{t('patients.table.species')}</TableHead>
-                  <TableHead>{t('patients.table.breed')}</TableHead>
-                  <TableHead>{t('patients.table.guardian')}</TableHead>
-                  <TableHead>{t('patients.table.actions')}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {patients.map((record) => (
-                  /* Aplica a cor gray-300 na borda inferior da linha */
-                  <TableRow className="border-b border-gray-300 h-15" key={record.id}>
-                    <TableCell>{record.name}</TableCell>
-                    <TableCell>{record.species}</TableCell>
-                    <TableCell>{record.breed}</TableCell>
-                    <TableCell>
-                      {record.tutor?.name ??
-                        (record.no_tutor_reason
-                          ? `Sem responsável (${NO_TUTOR_REASON_LABELS[record.no_tutor_reason] ?? record.no_tutor_reason})`
-                          : '—')}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <Button asChild variant="ghost" size="icon" className="p-0" title="Ver timeline">
-                          <Link href={`/patients/${record.id}`}>
-                            <History className="w-4 h-4" />
-                          </Link>
-                        </Button>
-                        <Button variant="ghost" size="icon" className="p-0" onClick={() => handleEdit(record)}>
-                          <Pencil className="w-4 h-4" />
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="p-0">
-                              <Trash2 className="w-4 h-4" />
+          {patients.length === 0 ? (
+            <div className="rounded-lg border border-gray-300 bg-white py-8 text-center text-sm text-slate-500">
+              Nenhum paciente cadastrado.
+            </div>
+          ) : (
+            <>
+              {/* Desktop / tablet: tabela */}
+              <div className="hidden overflow-x-auto rounded-lg border border-gray-300 md:block">
+                <Table className="min-w-full border-collapse bg-white text-sm">
+                  <TableHeader>
+                    {/* Borda ou fundo customizado para o cabeçalho se desejar */}
+                    <TableRow className="border-b border-gray-300 h-15">
+                      <TableHead>{t('patients.table.name')}</TableHead>
+                      <TableHead>{t('patients.table.species')}</TableHead>
+                      <TableHead>{t('patients.table.breed')}</TableHead>
+                      <TableHead>{t('patients.table.guardian')}</TableHead>
+                      <TableHead>{t('patients.table.actions')}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {patients.map((record) => (
+                      /* Aplica a cor gray-300 na borda inferior da linha */
+                      <TableRow className="border-b border-gray-300 h-15" key={record.id}>
+                        <TableCell>{record.name}</TableCell>
+                        <TableCell>{record.species}</TableCell>
+                        <TableCell>{record.breed}</TableCell>
+                        <TableCell>{guardianLabel(record)}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <Button asChild variant="ghost" size="icon" className="p-0" title="Ver timeline">
+                              <Link href={`/patients/${record.id}`}>
+                                <History className="w-4 h-4" />
+                              </Link>
                             </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Esta ação não pode ser desfeita. O paciente será removido permanentemente.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleDelete(record.id)}>Confirmar</AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                            <Button variant="ghost" size="icon" className="p-0" onClick={() => handleEdit(record)}>
+                              <Pencil className="w-4 h-4" />
+                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="p-0">
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Esta ação não pode ser desfeita. O paciente será removido permanentemente.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDelete(record.id)}>Confirmar</AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Mobile: cards */}
+              <div className="space-y-3 md:hidden">
+                {patients.map((record) => (
+                  <div key={record.id} className="rounded-lg border border-gray-300 bg-white p-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="truncate font-medium">{record.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {record.species}
+                          {record.breed ? ` · ${record.breed}` : ''}
+                        </p>
                       </div>
-                    </TableCell>
-                  </TableRow>
+                    </div>
+
+                    <div className="mt-3 text-sm">
+                      <p className="text-xs text-muted-foreground">{t('patients.table.guardian')}</p>
+                      <p className="truncate">{guardianLabel(record)}</p>
+                    </div>
+
+                    <div className="mt-3 flex items-center justify-end gap-1 border-t border-gray-200 pt-2">
+                      <Button asChild variant="ghost" size="icon" className="p-0" title="Ver timeline">
+                        <Link href={`/patients/${record.id}`}>
+                          <History className="w-4 h-4" />
+                        </Link>
+                      </Button>
+                      <Button variant="ghost" size="icon" className="p-0" onClick={() => handleEdit(record)}>
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="icon" className="p-0">
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Esta ação não pode ser desfeita. O paciente será removido permanentemente.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDelete(record.id)}>Confirmar</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </div>
                 ))}
-                {patients.length === 0 && (
-                  /* Mantém o padrão visual mesmo se a tabela estiver vazia */
-                  <TableRow>
-                    <TableCell colSpan={5} className="border-t border-slate-200 py-8 text-center text-sm text-slate-500">
-                      Nenhum paciente cadastrado.
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </div>
+              </div>
+            </>
+          )}
           <ListPagination
             page={listPage}
             totalPages={listTotalPages}

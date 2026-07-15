@@ -279,7 +279,7 @@ export default function ClinicTermsPage() {
           }
         }}
       >
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-[calc(100%-2rem)] sm:max-w-4xl">
           <DialogHeader>
             <DialogTitle>Visualizar termo</DialogTitle>
           </DialogHeader>

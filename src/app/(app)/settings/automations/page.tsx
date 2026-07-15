@@ -96,7 +96,8 @@ export default function SettingsAutomationsPage() {
             </div>
           ) : (
             <div>
-            <div className="overflow-x-auto">
+            {/* Desktop / tablet: tabela */}
+            <div className="hidden overflow-x-auto md:block">
             <Table className="min-w-full border-collapse bg-white text-sm">
               <TableHeader>
                 <TableRow className="border-b border-gray-300 h-15">
@@ -125,6 +126,27 @@ export default function SettingsAutomationsPage() {
                 ))}
               </TableBody>
             </Table>
+            </div>
+
+            {/* Mobile: cards */}
+            <div className="space-y-2 md:hidden">
+              {list.map((r) => (
+                <div key={r.id} className="rounded-lg border border-gray-300 p-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="truncate font-medium">{r.event_name}</p>
+                      <p className="text-xs text-muted-foreground">{r.action_type} · {r.channel}</p>
+                    </div>
+                    <Button variant="ghost" size="sm" className="shrink-0 text-red-600 hover:text-red-700" onClick={() => handleDelete(r.id)}>
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  <div className="mt-2 flex justify-between text-xs text-muted-foreground">
+                    <span>Atraso: {r.delay_minutes}min</span>
+                    <span>{r.is_active ? 'Ativo' : 'Inativo'}</span>
+                  </div>
+                </div>
+              ))}
             </div>
             <ListPagination
               page={listPage}
