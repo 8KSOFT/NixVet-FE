@@ -1102,15 +1102,17 @@ export default function HospitalizationDetailPage() {
       </div>
 
       <Tabs defaultValue="resumo">
-        <TabsList className="w-full flex-wrap justify-start">
-          <TabsTrigger value="resumo">Resumo</TabsTrigger>
-          <TabsTrigger value="ocorrencias">Ocorrências</TabsTrigger>
-          <TabsTrigger value="relatorio-medico"><FileText className="mr-1 size-4" /> Relatório Médico</TabsTrigger>
-          <TabsTrigger value="sbar"><ClipboardList className="mr-1 size-4" /> Relatório SBAR</TabsTrigger>
-          <TabsTrigger value="visitas"><Users className="mr-1 size-4" /> Visitas</TabsTrigger>
-          <TabsTrigger value="medicacoes">Medicações</TabsTrigger>
-          {canSee && <TabsTrigger value="custos">Custos</TabsTrigger>}
-        </TabsList>
+        <div className="overflow-x-auto">
+          <TabsList className="w-full justify-start gap-1">
+            <TabsTrigger value="resumo" className="shrink-0">Resumo</TabsTrigger>
+            <TabsTrigger value="ocorrencias" className="shrink-0">Ocorrências</TabsTrigger>
+            <TabsTrigger value="relatorio-medico" className="shrink-0"><FileText className="mr-1 size-4" /> Relatório Médico</TabsTrigger>
+            <TabsTrigger value="sbar" className="shrink-0"><ClipboardList className="mr-1 size-4" /> Relatório SBAR</TabsTrigger>
+            <TabsTrigger value="visitas" className="shrink-0"><Users className="mr-1 size-4" /> Visitas</TabsTrigger>
+            <TabsTrigger value="medicacoes" className="shrink-0">Medicações</TabsTrigger>
+            {canSee && <TabsTrigger value="custos" className="shrink-0">Custos</TabsTrigger>}
+          </TabsList>
+        </div>
 
         <TabsContent value="resumo" className="mt-4">
           <Card>

@@ -263,11 +263,13 @@ export default function SettingsHoursPage() {
         <Card>
           <CardContent className="pt-6">
             <Tabs defaultValue="business">
-              <TabsList className="mb-4 h-auto w-full flex-wrap justify-start">
-                <TabsTrigger value="business">Horário de funcionamento</TabsTrigger>
-                <TabsTrigger value="emergency">Plantão / Emergência</TabsTrigger>
-                <TabsTrigger value="vet">Agenda por veterinário</TabsTrigger>
-              </TabsList>
+              <div className="mb-4 overflow-x-auto">
+                <TabsList className="w-full justify-start gap-1">
+                  <TabsTrigger value="business" className="shrink-0">Horário de funcionamento</TabsTrigger>
+                  <TabsTrigger value="emergency" className="shrink-0">Plantão / Emergência</TabsTrigger>
+                  <TabsTrigger value="vet" className="shrink-0">Agenda por veterinário</TabsTrigger>
+                </TabsList>
+              </div>
 
               {/* ── Business Hours ── */}
               <TabsContent value="business">

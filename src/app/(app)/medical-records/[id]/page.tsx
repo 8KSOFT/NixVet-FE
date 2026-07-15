@@ -43,6 +43,19 @@ import {
 import { useFormatTextMutation } from '@/hooks/apiHooks/useAi';
 import { useCreatePrescriptionMutation } from '@/hooks/apiHooks/usePrescriptions';
 
+/** A API retorna `medications` ora como string formatada, ora como array de objetos ({ name, ... }) — nunca renderizar direto. */
+function formatMedicationsSummary(medications: unknown): string {
+  if (!medications) return '—';
+  if (typeof medications === 'string') return medications;
+  if (Array.isArray(medications)) {
+    const names = medications
+      .map((m) => (m && typeof m === 'object' && 'name' in m ? String((m as { name?: unknown }).name ?? '') : String(m)))
+      .filter(Boolean);
+    return names.length > 0 ? names.join(', ') : '—';
+  }
+  return '—';
+}
+
 export default function MedicalRecordDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -270,53 +283,47 @@ export default function MedicalRecordDetailPage() {
       )}
 
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <Button asChild variant="ghost" size="sm"><Link href="/medical-records"><ChevronLeft className="w-4 h-4" /></Link></Button>
-          <div>
-            <h1 className="text-xl font-bold text-primary flex items-center gap-2">
-              <FileText className="w-5 h-5" /> Ficha #{id.substring(0, 8)}
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex items-start gap-3">
+          <Button asChild variant="ghost" size="sm" className="mt-0.5 shrink-0"><Link href="/medical-records"><ChevronLeft className="w-4 h-4" /></Link></Button>
+          <div className="min-w-0">
+            <h1 className="flex items-center gap-1.5 text-lg font-bold text-primary sm:text-xl">
+              <FileText className="h-4 w-4 shrink-0 sm:h-5 sm:w-5" /> {record.patient?.name || `Ficha #${id.substring(0, 8)}`}
             </h1>
-            <p className="text-sm text-muted-foreground">
-              {record.patient?.name} — {dayjs(record.record_date).format('DD/MM/YYYY')} — {record.veterinarian?.name || 'Sem veterinário'}
+            <p className="text-xs text-muted-foreground sm:text-sm">
+              {record.patient?.species || '—'}
+              {record.patient?.breed ? ` · ${record.patient.breed}` : ''} · {dayjs(record.record_date).format('DD/MM/YYYY')} · {record.veterinarian?.name || 'Sem veterinário'}
             </p>
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge className={isClosed ? 'bg-green-500 text-white' : 'bg-primary/100 text-white'}>{isClosed ? 'Fechado' : 'Aberto'}</Badge>
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="text-xs">{record.record_type}</Badge>
+            <Badge className={isClosed ? 'bg-green-500 text-white' : 'bg-primary text-white'}>{isClosed ? 'Fechado' : 'Aberto'}</Badge>
+          </div>
           {!isClosed && (
-            <>
-              <Button onClick={handleSave} disabled={saving} className="bg-primary hover:bg-blue-700">
+            <div className="flex gap-2 sm:ml-auto">
+              <Button size="sm" onClick={handleSave} disabled={saving} className="flex-1 bg-primary hover:bg-blue-700 sm:flex-none">
                 {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Save className="h-4 w-4 mr-1" />} Salvar
               </Button>
-              <Button onClick={handleClose} disabled={saving} variant="outline" className="border-green-500 text-green-600 hover:bg-green-50">
+              <Button size="sm" onClick={handleClose} disabled={saving} variant="outline" className="flex-1 border-green-500 text-green-600 hover:bg-green-50 sm:flex-none">
                 <Lock className="h-4 w-4 mr-1" /> Fechar ficha
               </Button>
-            </>
+            </div>
           )}
         </div>
       </div>
 
-      {/* Patient info card */}
-      <Card>
-        <CardContent className="pt-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-            <div><span className="text-muted-foreground">Paciente:</span> <span className="font-medium">{record.patient?.name}</span></div>
-            <div><span className="text-muted-foreground">Espécie:</span> <span className="font-medium">{record.patient?.species || '—'}</span></div>
-            <div><span className="text-muted-foreground">Raça:</span> <span className="font-medium">{record.patient?.breed || '—'}</span></div>
-            <div><span className="text-muted-foreground">Tipo:</span> <Badge variant="outline">{record.record_type}</Badge></div>
-          </div>
-        </CardContent>
-      </Card>
-
       <Tabs defaultValue="clinical">
-        <TabsList className="w-full justify-start flex-wrap">
-          <TabsTrigger value="clinical"><Activity className="w-4 h-4 mr-1" /> Clínico</TabsTrigger>
-          <TabsTrigger value="prescriptions"><Pill className="w-4 h-4 mr-1" /> Prescrições</TabsTrigger>
-          <TabsTrigger value="exams"><FlaskConical className="w-4 h-4 mr-1" /> Exames</TabsTrigger>
-          <TabsTrigger value="vaccines"><Syringe className="w-4 h-4 mr-1" /> Vacinas</TabsTrigger>
-          <TabsTrigger value="attachments"><ImageIcon className="w-4 h-4 mr-1" /> Anexos</TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto">
+          <TabsList className="w-full justify-start gap-1">
+            <TabsTrigger value="clinical" className="shrink-0"><Activity className="w-4 h-4 mr-1" /> Clínico</TabsTrigger>
+            <TabsTrigger value="prescriptions" className="shrink-0"><Pill className="w-4 h-4 mr-1" /> Prescrições</TabsTrigger>
+            <TabsTrigger value="exams" className="shrink-0"><FlaskConical className="w-4 h-4 mr-1" /> Exames</TabsTrigger>
+            <TabsTrigger value="vaccines" className="shrink-0"><Syringe className="w-4 h-4 mr-1" /> Vacinas</TabsTrigger>
+            <TabsTrigger value="attachments" className="shrink-0"><ImageIcon className="w-4 h-4 mr-1" /> Anexos</TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* Clinical */}
         <TabsContent value="clinical">
@@ -353,7 +360,7 @@ export default function MedicalRecordDetailPage() {
               </div>
 
               {/* Exame Físico estruturado, colapsável (2.4) */}
-              <div className="rounded-lg border border-slate-200">
+              <div className="rounded-lg bg-muted/40">
                 <button
                   type="button"
                   onClick={() => setExamOpen(o => !o)}
@@ -362,21 +369,30 @@ export default function MedicalRecordDetailPage() {
                   <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
                     <Stethoscope className="h-4 w-4" /> Exame Físico
                   </span>
-                  <ChevronDown className={`h-4 w-4 transition-transform ${examOpen ? 'rotate-180' : ''}`} />
+                  <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${examOpen ? 'rotate-180' : ''}`} />
                 </button>
                 {examOpen && (
-                  <div className="grid grid-cols-1 gap-4 border-t border-slate-200 px-4 py-4 md:grid-cols-2">
+                  <div className="grid grid-cols-2 gap-3 px-4 pb-4 sm:gap-4 lg:grid-cols-4">
+                    {/* Vitais — campos curtos, 2 por linha em mobile */}
                     <div className="space-y-1">
                       <Label>Peso (kg)</Label>
                       <Input type="number" step="0.01" value={form.weight_kg} onChange={e => setForm(p => ({ ...p, weight_kg: e.target.value }))} disabled={isClosed} />
                     </div>
                     <div className="space-y-1">
-                      <Label>Temperatura (°C)</Label>
+                      <Label>Temp. (°C)</Label>
                       <Input type="number" step="0.1" value={form.temperature_c} onChange={e => setForm(p => ({ ...p, temperature_c: e.target.value }))} disabled={isClosed} />
                     </div>
                     <div className="space-y-1">
-                      <Label>Linfonodos</Label>
-                      <Input value={form.lymph_nodes} onChange={e => setForm(p => ({ ...p, lymph_nodes: e.target.value }))} disabled={isClosed} />
+                      <Label>FC (bpm)</Label>
+                      <Input type="number" value={form.heart_rate} onChange={e => setForm(p => ({ ...p, heart_rate: e.target.value }))} disabled={isClosed} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label>FR (mpm)</Label>
+                      <Input type="number" value={form.respiratory_rate} onChange={e => setForm(p => ({ ...p, respiratory_rate: e.target.value }))} disabled={isClosed} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label>TPC (s)</Label>
+                      <Input type="number" step="0.1" value={form.capillary_refill_time} onChange={e => setForm(p => ({ ...p, capillary_refill_time: e.target.value }))} disabled={isClosed} />
                     </div>
                     <div className="space-y-1">
                       <Label>Hidratação</Label>
@@ -391,21 +407,15 @@ export default function MedicalRecordDetailPage() {
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="space-y-1">
+
+                    {/* Descritivos — precisam de mais espaço, linha inteira */}
+                    <div className="col-span-2 space-y-1">
+                      <Label>Linfonodos</Label>
+                      <Input value={form.lymph_nodes} onChange={e => setForm(p => ({ ...p, lymph_nodes: e.target.value }))} disabled={isClosed} />
+                    </div>
+                    <div className="col-span-2 space-y-1">
                       <Label>Mucosas</Label>
                       <Input value={form.mucous_membranes} onChange={e => setForm(p => ({ ...p, mucous_membranes: e.target.value }))} disabled={isClosed} placeholder="ex.: róseas, pálidas" />
-                    </div>
-                    <div className="space-y-1">
-                      <Label>Frequência Cardíaca (bpm)</Label>
-                      <Input type="number" value={form.heart_rate} onChange={e => setForm(p => ({ ...p, heart_rate: e.target.value }))} disabled={isClosed} />
-                    </div>
-                    <div className="space-y-1">
-                      <Label>Frequência Respiratória (mpm)</Label>
-                      <Input type="number" value={form.respiratory_rate} onChange={e => setForm(p => ({ ...p, respiratory_rate: e.target.value }))} disabled={isClosed} />
-                    </div>
-                    <div className="space-y-1">
-                      <Label>TPC (segundos)</Label>
-                      <Input type="number" step="0.1" value={form.capillary_refill_time} onChange={e => setForm(p => ({ ...p, capillary_refill_time: e.target.value }))} disabled={isClosed} />
                     </div>
                   </div>
                 )}
@@ -416,28 +426,30 @@ export default function MedicalRecordDetailPage() {
                 <Textarea rows={2} value={form.diagnosis} onChange={e => setForm(p => ({ ...p, diagnosis: e.target.value }))} disabled={isClosed} />
               </div>
 
-              {/* Notas da Equipe (2.7) */}
-              <div className="space-y-1">
-                <div className="flex items-center gap-1">
-                  <Label>Notas da Equipe</Label>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
-                      </TooltipTrigger>
-                      <TooltipContent className="max-w-xs">
-                        Espaço para registrar observações internas importantes, recomendações operacionais
-                        ou informações úteis para a equipe clínica.
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                {/* Notas da Equipe (2.7) */}
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1">
+                    <Label>Notas da Equipe</Label>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent className="max-w-xs">
+                          Espaço para registrar observações internas importantes, recomendações operacionais
+                          ou informações úteis para a equipe clínica.
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                  <Textarea rows={3} value={form.team_notes} onChange={e => setForm(p => ({ ...p, team_notes: e.target.value }))} disabled={isClosed} />
                 </div>
-                <Textarea rows={3} value={form.team_notes} onChange={e => setForm(p => ({ ...p, team_notes: e.target.value }))} disabled={isClosed} />
-              </div>
 
-              <div className="space-y-1">
-                <Label>Observações</Label>
-                <Textarea rows={2} value={form.observations} onChange={e => setForm(p => ({ ...p, observations: e.target.value }))} disabled={isClosed} />
+                <div className="space-y-1">
+                  <Label>Observações</Label>
+                  <Textarea rows={3} value={form.observations} onChange={e => setForm(p => ({ ...p, observations: e.target.value }))} disabled={isClosed} />
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -474,7 +486,7 @@ export default function MedicalRecordDetailPage() {
                           <TableRow key={p.id}>
                             <TableCell>{dayjs(p.prescription_date).format('DD/MM/YYYY')}</TableCell>
                             <TableCell><Badge variant="outline">{p.prescription_type}</Badge></TableCell>
-                            <TableCell className="max-w-[300px] truncate">{p.medications || '—'}</TableCell>
+                            <TableCell className="max-w-[300px] truncate">{formatMedicationsSummary(p.medications)}</TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -484,12 +496,12 @@ export default function MedicalRecordDetailPage() {
                   {/* Mobile: cards */}
                   <div className="space-y-2 md:hidden">
                     {prescriptions.map(p => (
-                      <div key={p.id} className="rounded-lg border border-slate-200 p-3">
+                      <div key={p.id} className="rounded-lg bg-muted/40 p-3">
                         <div className="flex items-center justify-between gap-2">
                           <span className="text-sm font-medium">{dayjs(p.prescription_date).format('DD/MM/YYYY')}</span>
                           <Badge variant="outline">{p.prescription_type}</Badge>
                         </div>
-                        <p className="mt-1 truncate text-sm text-muted-foreground">{p.medications || '—'}</p>
+                        <p className="mt-1 truncate text-sm text-muted-foreground">{formatMedicationsSummary(p.medications)}</p>
                       </div>
                     ))}
                   </div>
@@ -529,7 +541,7 @@ export default function MedicalRecordDetailPage() {
                   {/* Mobile: cards */}
                   <div className="space-y-2 md:hidden">
                     {examRequests.map(e => (
-                      <div key={e.id} className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 p-3">
+                      <div key={e.id} className="flex items-center justify-between gap-2 rounded-lg bg-muted/40 p-3">
                         <div className="min-w-0">
                           <p className="text-sm font-medium">{dayjs(e.request_date).format('DD/MM/YYYY')}</p>
                           <p className="truncate text-xs text-muted-foreground">{e.exam_type}</p>
@@ -579,7 +591,7 @@ export default function MedicalRecordDetailPage() {
                   {/* Mobile: cards */}
                   <div className="space-y-2 md:hidden">
                     {(record.vaccines ?? []).map((v, i) => (
-                      <div key={i} className="rounded-lg border border-slate-200 p-3">
+                      <div key={i} className="rounded-lg bg-muted/40 p-3">
                         <div className="flex items-center justify-between gap-2">
                           <span className="text-sm font-medium">{v.name}</span>
                           <span className="text-xs text-muted-foreground">{dayjs(v.date).format('DD/MM/YYYY')}</span>
@@ -616,7 +628,7 @@ export default function MedicalRecordDetailPage() {
                   {/* Mobile: cards */}
                   <div className="space-y-2 md:hidden">
                     {vaccineRecords.map(v => (
-                      <div key={v.id} className="rounded-lg border border-slate-200 p-3">
+                      <div key={v.id} className="rounded-lg bg-muted/40 p-3">
                         <div className="flex items-center justify-between gap-2">
                           <span className="text-sm font-medium">{v.vaccine_name}</span>
                           <span className="text-xs text-muted-foreground">{dayjs(v.application_date).format('DD/MM/YYYY')}</span>

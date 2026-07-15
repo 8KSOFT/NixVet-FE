@@ -113,10 +113,12 @@ export default function ChatbotSettingsPage() {
       ) : (
         <form onSubmit={handleSubmit(onSubmit)}>
           <Tabs defaultValue="persona">
-            <TabsList className="mb-4 h-auto w-full flex-wrap justify-start">
-              <TabsTrigger value="persona">Persona & Mensagens</TabsTrigger>
-              <TabsTrigger value="advanced">Prompt Avançado</TabsTrigger>
-            </TabsList>
+            <div className="mb-4 overflow-x-auto">
+              <TabsList className="w-full justify-start gap-1">
+                <TabsTrigger value="persona" className="shrink-0">Persona & Mensagens</TabsTrigger>
+                <TabsTrigger value="advanced" className="shrink-0">Prompt Avançado</TabsTrigger>
+              </TabsList>
+            </div>
 
             <TabsContent value="persona" className="space-y-5 mt-0">
               <Card>

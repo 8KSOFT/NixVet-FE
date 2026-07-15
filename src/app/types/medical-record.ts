@@ -89,7 +89,8 @@ export interface AddVaccinePayload {
 export interface RecordPrescriptionSummary {
   id: string;
   prescription_date: string;
-  medications: string;
+  /** A API retorna ora uma string formatada, ora um array de objetos de medicamento — nunca renderizar direto. */
+  medications: string | Array<{ name: string; [key: string]: unknown }>;
   prescription_type: string;
 }
 
