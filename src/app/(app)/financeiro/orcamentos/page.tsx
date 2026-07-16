@@ -10,6 +10,7 @@ import { DashboardCreateFormDialog } from '@/components/dashboard-create-form-di
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import { CurrencyInput } from '@/components/ui/currency-input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { useProductsQuery } from '@/hooks/apiHooks/useProducts';
@@ -506,13 +507,13 @@ export default function OrcamentosPage() {
                       onChange={(e) => updateItem(i, 'quantity', Number(e.target.value))}
                       className="col-span-1 h-9 sm:col-span-2"
                     />
-                    <Input
-                      type="number"
+                    <CurrencyInput
                       placeholder="Valor unit."
                       value={item.unit_price}
                       disabled={item.item_type === 'product'}
-                      onChange={(e) => updateItem(i, 'unit_price', Number(e.target.value))}
-                      className="col-span-1 h-9 disabled:opacity-70 sm:col-span-2"
+                      onValueChange={(v) => updateItem(i, 'unit_price', Number(v))}
+                      wrapperClassName="col-span-1 sm:col-span-2"
+                      className="h-9 disabled:opacity-70"
                     />
                     <Button
                       type="button"

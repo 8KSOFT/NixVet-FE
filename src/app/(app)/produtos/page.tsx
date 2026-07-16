@@ -6,13 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog';
+import { DashboardCreateFormDialog } from '@/components/dashboard-create-form-dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,6 +27,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
+import { CurrencyInput } from '@/components/ui/currency-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
@@ -91,6 +86,7 @@ export default function ProdutosPage() {
   // Dialog venda
   const [saleDialog, setSaleDialog] = useState(false);
   const [cart, setCart] = useState<{ product_id: string; quantity: number }[]>([]);
+  const [productSearch, setProductSearch] = useState('');
 
   const openNewProduct = () => {
     setEditing(null);
@@ -160,6 +156,12 @@ export default function ProdutosPage() {
 
   // ----- Venda -----
   const productById = useMemo(() => new Map(products.map((p) => [p.id, p])), [products]);
+  const filteredProducts = useMemo(() => {
+    const query = productSearch.trim().toLowerCase();
+    const active = products.filter((p) => p.active);
+    if (!query) return active;
+    return active.filter((p) => p.name.toLowerCase().includes(query) || p.sku?.toLowerCase().includes(query));
+  }, [products, productSearch]);
 
   const addToCart = (productId: string) => {
     setCart((prev) => {
@@ -192,6 +194,7 @@ export default function ProdutosPage() {
 
   const openSale = () => {
     setCart([]);
+    setProductSearch('');
     setSaleDialog(true);
   };
 
@@ -451,180 +454,212 @@ export default function ProdutosPage() {
       </Card>
 
       {/* Dialog produto */}
-      <Dialog open={productDialog} onOpenChange={setProductDialog}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>{editing ? 'Editar produto' : 'Novo produto'}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div>
-              <Label htmlFor="name">Nome</Label>
-              <Input id="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
-            </div>
-            <div>
-              <Label htmlFor="description">Descrição (opcional)</Label>
-              <Textarea
-                id="description"
-                value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
-              />
-            </div>
-            <div>
-              <Label htmlFor="sku">SKU / código (opcional)</Label>
-              <Input id="sku" value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label htmlFor="cost">Custo (R$)</Label>
-                <Input
-                  id="cost"
-                  type="number"
-                  step="0.01"
-                  value={form.cost_price}
-                  onChange={(e) => setForm({ ...form, cost_price: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="sale">Preço de venda (R$)</Label>
-                <Input
-                  id="sale"
-                  type="number"
-                  step="0.01"
-                  value={form.sale_price}
-                  onChange={(e) => setForm({ ...form, sale_price: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="tax">Imposto (%)</Label>
-                <Input
-                  id="tax"
-                  type="number"
-                  step="0.01"
-                  value={form.tax_percentage}
-                  onChange={(e) => setForm({ ...form, tax_percentage: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="stock">Estoque</Label>
-                <Input
-                  id="stock"
-                  type="number"
-                  value={form.stock_quantity}
-                  onChange={(e) => setForm({ ...form, stock_quantity: e.target.value })}
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between rounded-md border border-border p-3">
-              <Label htmlFor="active" className="cursor-pointer">
-                Produto ativo
-              </Label>
-              <Switch
-                id="active"
-                checked={form.active}
-                onCheckedChange={(checked) => setForm({ ...form, active: checked })}
-              />
-            </div>
-
-            <div className="rounded-md bg-muted/50 p-3 text-sm">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Margem (lucro)</span>
-                <span className="font-medium">
-                  {fmt(formPreview.margin_value)} ({formPreview.margin_percentage}%)
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Imposto por cima</span>
-                <span>{fmt(formPreview.tax_amount)}</span>
-              </div>
-              <div className="flex justify-between font-semibold">
-                <span>Total ao cliente (à vista)</span>
-                <span>{fmt(formPreview.client_total)}</span>
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setProductDialog(false)} disabled={savingProduct}>
+      <DashboardCreateFormDialog
+        open={productDialog}
+        onOpenChange={setProductDialog}
+        title={editing ? 'Editar produto' : 'Novo produto'}
+        footer={
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button type="button" variant="outline" onClick={() => setProductDialog(false)} disabled={savingProduct}>
               Cancelar
             </Button>
-            <Button onClick={saveProduct} disabled={savingProduct}>
+            <Button type="submit" form="product-create-form" className="bg-primary" disabled={savingProduct}>
               {savingProduct && <Loader2 className="mr-2 size-4 animate-spin" />}
               Salvar
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        }
+      >
+        <form
+          id="product-create-form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            saveProduct();
+          }}
+          className="space-y-4 md:space-y-6"
+        >
+          <div className="space-y-2">
+            <Label htmlFor="name">Nome</Label>
+            <Input id="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="description">Descrição (opcional)</Label>
+            <Textarea
+              id="description"
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="sku">SKU / código (opcional)</Label>
+            <Input id="sku" value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} />
+          </div>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="cost">Custo</Label>
+              <CurrencyInput
+                id="cost"
+                value={form.cost_price}
+                onValueChange={(v) => setForm({ ...form, cost_price: v })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="sale">Preço de venda</Label>
+              <CurrencyInput
+                id="sale"
+                value={form.sale_price}
+                onValueChange={(v) => setForm({ ...form, sale_price: v })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="tax">Imposto (%)</Label>
+              <Input
+                id="tax"
+                type="number"
+                step="0.01"
+                value={form.tax_percentage}
+                onChange={(e) => setForm({ ...form, tax_percentage: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="stock">Estoque</Label>
+              <Input
+                id="stock"
+                type="number"
+                value={form.stock_quantity}
+                onChange={(e) => setForm({ ...form, stock_quantity: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between rounded-md border border-gray-300 p-3">
+            <Label htmlFor="active" className="cursor-pointer">
+              Produto ativo
+            </Label>
+            <Switch
+              id="active"
+              checked={form.active}
+              onCheckedChange={(checked) => setForm({ ...form, active: checked })}
+            />
+          </div>
+
+          <div className="rounded-md bg-muted/50 p-3 text-sm">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Margem (lucro)</span>
+              <span className="font-medium">
+                {fmt(formPreview.margin_value)} ({formPreview.margin_percentage}%)
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Imposto por cima</span>
+              <span>{fmt(formPreview.tax_amount)}</span>
+            </div>
+            <div className="flex justify-between font-semibold">
+              <span>Total ao cliente (à vista)</span>
+              <span>{fmt(formPreview.client_total)}</span>
+            </div>
+          </div>
+        </form>
+      </DashboardCreateFormDialog>
 
       {/* Dialog venda */}
-      <Dialog open={saleDialog} onOpenChange={setSaleDialog}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Nova venda</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="max-h-48 space-y-1 overflow-y-auto">
-              {products.filter((p) => p.active).map((p) => (
-                <button
-                  type="button"
-                  key={p.id}
-                  onClick={() => addToCart(p.id)}
-                  className="flex w-full items-center justify-between rounded-md border border-border p-2 text-left text-sm hover:bg-muted/50"
-                >
-                  <span>{p.name}</span>
-                  <span className="text-muted-foreground">{p.sale_price_formatted ?? fmt(p.sale_price)}</span>
-                </button>
-              ))}
-            </div>
-
-            {cart.length > 0 && (
-              <div className="space-y-2 border-t pt-3">
-                {cart.map((item) => {
-                  const p = productById.get(item.product_id);
-                  if (!p) return null;
-                  return (
-                    <div key={item.product_id} className="flex items-center gap-2 text-sm">
-                      <span className="flex-1 truncate">{p.name}</span>
-                      <Input
-                        type="number"
-                        min={1}
-                        value={item.quantity}
-                        onChange={(e) => setQty(item.product_id, Number(e.target.value))}
-                        className="w-16"
-                      />
-                      <span className="w-24 text-right tabular-nums">
-                        {fmt(Number(p.sale_price) * item.quantity)}
-                      </span>
-                    </div>
-                  );
-                })}
-                <div className="border-t pt-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Bruto</span>
-                    <span>{fmt(cartTotals.gross)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Imposto</span>
-                    <span>{fmt(cartTotals.tax)}</span>
-                  </div>
-                  <div className="flex justify-between font-semibold">
-                    <span>Total</span>
-                    <span>{fmt(cartTotals.total)}</span>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setSaleDialog(false)} disabled={createSale.isPending}>
+      <DashboardCreateFormDialog
+        open={saleDialog}
+        onOpenChange={setSaleDialog}
+        title="Nova venda"
+        footer={
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button type="button" variant="outline" onClick={() => setSaleDialog(false)} disabled={createSale.isPending}>
               Cancelar
             </Button>
-            <Button onClick={submitSale} disabled={createSale.isPending || cart.length === 0}>
+            <Button
+              type="submit"
+              form="sale-create-form"
+              className="bg-primary"
+              disabled={createSale.isPending || cart.length === 0}
+            >
               {createSale.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
               Registrar venda
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        }
+      >
+        <form
+          id="sale-create-form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            submitSale();
+          }}
+          className="space-y-4 md:space-y-6"
+        >
+          <div className="space-y-2">
+            <Label htmlFor="product-search">Produtos</Label>
+            <Input
+              id="product-search"
+              type="text"
+              placeholder="Buscar produto por nome..."
+              value={productSearch}
+              onChange={(e) => setProductSearch(e.target.value)}
+              autoComplete="off"
+            />
+            <div className="max-h-48 space-y-1 overflow-y-auto rounded-md border border-gray-300 p-1">
+              {filteredProducts.length === 0 ? (
+                <p className="p-2 text-center text-sm text-muted-foreground">Nenhum produto encontrado.</p>
+              ) : (
+                filteredProducts.map((p) => (
+                  <button
+                    type="button"
+                    key={p.id}
+                    onClick={() => addToCart(p.id)}
+                    className="flex w-full items-center justify-between rounded-md border border-transparent p-2 text-left text-sm hover:border-gray-300 hover:bg-muted/50"
+                  >
+                    <span>{p.name}</span>
+                    <span className="text-muted-foreground">{p.sale_price_formatted ?? fmt(p.sale_price)}</span>
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+
+          {cart.length > 0 && (
+            <div className="space-y-2 border-t border-gray-300 pt-3">
+              {cart.map((item) => {
+                const p = productById.get(item.product_id);
+                if (!p) return null;
+                return (
+                  <div key={item.product_id} className="flex items-center gap-2 text-sm">
+                    <span className="flex-1 truncate">{p.name}</span>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={item.quantity}
+                      onChange={(e) => setQty(item.product_id, Number(e.target.value))}
+                      className="w-16"
+                    />
+                    <span className="w-24 text-right tabular-nums">
+                      {fmt(Number(p.sale_price) * item.quantity)}
+                    </span>
+                  </div>
+                );
+              })}
+              <div className="rounded-md bg-muted/50 p-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Bruto</span>
+                  <span>{fmt(cartTotals.gross)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Imposto</span>
+                  <span>{fmt(cartTotals.tax)}</span>
+                </div>
+                <div className="flex justify-between font-semibold">
+                  <span>Total</span>
+                  <span>{fmt(cartTotals.total)}</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </form>
+      </DashboardCreateFormDialog>
     </div>
   );
 }
