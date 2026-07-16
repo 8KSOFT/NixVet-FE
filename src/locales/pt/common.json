@@ -79,7 +79,10 @@
     "passwordPlaceholder": "Deixe em branco para não alterar",
     "passwordMin": "Mínimo 6 caracteres",
     "formCrmv": "CRMV",
-    "formSpecialty": "Especialidade"
+    "formSpecialty": "Especialidade",
+    "formAccessProfiles": "Perfis de acesso",
+    "formAccessProfilesHint": "Define quais permissões o usuário tem, além do papel selecionado acima.",
+    "formAccessProfilesEmpty": "Nenhum perfil de acesso cadastrado ainda."
   },
   "userMenu": {
     "profile": "Meu Perfil",

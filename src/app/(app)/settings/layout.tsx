@@ -23,6 +23,7 @@ import {
   HeartHandshake,
   BadgeDollarSign,
   FileText,
+  ShieldCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getStoredUserRole } from '@/lib/role-permissions';
@@ -86,7 +87,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
   const canManageTerms = ['admin', 'manager', 'superadmin'].includes(role);
 
   // GRUPO 7 — "Termos da Clínica" visível só para admin/manager
-  const sections = canManageTerms
+  let sections = canManageTerms
     ? navSections.map((s) =>
         s.label === 'Geral'
           ? {
@@ -100,10 +101,23 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
       )
     : navSections;
 
+  // "Perfis de Acesso" (RBAC) visível para admin/manager — o catálogo de permissões em si
+  // é restrito a superadmin no backend, então fica em "Plataforma" (ver platformItems).
+  if (canManageTerms) {
+    sections = [
+      ...sections,
+      {
+        label: 'Acesso',
+        items: [{ key: '/settings/access-control/profiles', icon: ShieldCheck, label: 'Perfis de Acesso' }],
+      },
+    ];
+  }
+
   const platformItems = isSuperAdmin
     ? [
         { key: '/superadmin/clinics', icon: Landmark, label: 'Clínicas (global)' },
         { key: '/superadmin/finance', icon: Wallet, label: 'Financeiro (global)' },
+        { key: '/superadmin/access-control/permissions', icon: ShieldCheck, label: 'Permissões (catálogo)' },
       ]
     : [];
 

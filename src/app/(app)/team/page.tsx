@@ -30,8 +30,12 @@ import {
   useDeleteUserMutation,
   useStaffUsersQuery,
   useUpdateUserMutation,
+  useUserAccessProfilesQuery,
+  useSyncUserAccessProfilesMutation,
   type UserPayload,
 } from '@/hooks/apiHooks/useUsers';
+import { useAccessProfilesListQuery } from '@/hooks/apiHooks/useAccessProfiles';
+import { CheckboxMultiSelect } from '@/components/checkbox-multi-select';
 import { ListPagination } from '@/components/list-pagination';
 import { getStoredUserRole } from '@/lib/role-permissions';
 import { useTranslation } from 'react-i18next';
@@ -61,7 +65,7 @@ export default function TeamPage() {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  const { register, handleSubmit, reset, control } = useForm<TeamUserFormValues>();
+  const { register, handleSubmit, reset, control, setValue } = useForm<TeamUserFormValues>();
 
   const currentRole = getStoredUserRole();
   const canAssignAdmin = currentRole === 'admin' || currentRole === 'superadmin';
@@ -79,6 +83,24 @@ export default function TeamPage() {
   const createUser = useCreateUserMutation();
   const updateUser = useUpdateUserMutation();
   const deleteUser = useDeleteUserMutation();
+  const syncAccessProfiles = useSyncUserAccessProfilesMutation();
+
+  const { data: accessProfiles, isLoading: accessProfilesLoading } = useAccessProfilesListQuery(modalVisible);
+  const accessProfileOptions = (accessProfiles ?? []).map((profile) => ({
+    value: profile.id,
+    label: profile.name,
+    description: profile.description,
+  }));
+
+  const { data: editingUserAccessProfiles } = useUserAccessProfilesQuery(editingId, modalVisible && !!editingId);
+  useEffect(() => {
+    if (editingId && editingUserAccessProfiles) {
+      setValue(
+        'accessProfileIds',
+        editingUserAccessProfiles.profiles.map((p) => p.id),
+      );
+    }
+  }, [editingId, editingUserAccessProfiles, setValue]);
 
   useEffect(() => {
     if (usersError && (usersError as ApiRequestError).response?.status !== 403) {
@@ -96,6 +118,7 @@ export default function TeamPage() {
       password: '',
       crmv: '',
       specialty: '',
+      accessProfileIds: [],
     });
     setModalVisible(true);
   };
@@ -109,6 +132,7 @@ export default function TeamPage() {
       password: '',
       crmv: record.crmv ?? '',
       specialty: record.specialty ?? '',
+      accessProfileIds: [],
     });
     setModalVisible(true);
   };
@@ -124,15 +148,21 @@ export default function TeamPage() {
   };
 
   const onSubmit = async (values: TeamUserFormValues) => {
+    const { accessProfileIds, ...userValues } = values;
     try {
-      const payload: UserPayload = { ...values };
+      const payload: UserPayload = { ...userValues };
+      let userId = editingId;
       if (editingId) {
         if (!payload.password?.trim()) delete payload.password;
         await updateUser.mutateAsync({ id: editingId, payload });
         toast.success(t('team.updated'));
       } else {
-        await createUser.mutateAsync(payload);
+        const created = await createUser.mutateAsync(payload);
+        userId = created?.id ?? null;
         toast.success(t('team.created'));
+      }
+      if (userId) {
+        await syncAccessProfiles.mutateAsync({ id: userId, profileIds: accessProfileIds ?? [] });
       }
       setModalVisible(false);
     } catch (error: unknown) {
@@ -362,6 +392,28 @@ export default function TeamPage() {
           <div className="space-y-1">
             <Label>{t('team.formSpecialty')}</Label>
             <Input {...register('specialty')} />
+          </div>
+          <div className="space-y-2">
+            <Label>{t('team.formAccessProfiles')}</Label>
+            <p className="text-xs text-muted-foreground">{t('team.formAccessProfilesHint')}</p>
+            {accessProfilesLoading ? (
+              <div className="flex justify-center py-4">
+                <Loader2 className="w-5 h-5 animate-spin text-primary" />
+              </div>
+            ) : (
+              <Controller
+                name="accessProfileIds"
+                control={control}
+                render={({ field }) => (
+                  <CheckboxMultiSelect
+                    options={accessProfileOptions}
+                    selected={field.value ?? []}
+                    onChange={field.onChange}
+                    emptyMessage={t('team.formAccessProfilesEmpty')}
+                  />
+                )}
+              />
+            )}
           </div>
         </form>
       </DashboardCreateFormDialog>

@@ -234,7 +234,7 @@ const NAV_SECTIONS: NavSection[] = [
         labelKey: "nav.dashboard",
       },
       {
-        key: "financeiro-produtos",
+        key: "products",
         icon: Package,
         href: "/produtos",
         labelKey: "nav.financeiroProdutos",
@@ -446,7 +446,7 @@ function getActiveKey(pathname: string): string {
   if (pathname.includes("/exams")) return "exams";
   if (pathname.includes("/followups")) return "followups";
   if (pathname.includes("/internacoes")) return "hospitalizations";
-  if (pathname.includes("/produtos")) return "financeiro-produtos";
+  if (pathname.includes("/produtos")) return "products";
   if (pathname.includes("/financeiro/orcamentos")) return "budgets";
   if (pathname.includes("/financeiro/receitas"))
     return "financeiro-receitas";

@@ -79,7 +79,10 @@
     "passwordPlaceholder": "Leave blank to keep current password",
     "passwordMin": "At least 6 characters",
     "formCrmv": "License (CRMV)",
-    "formSpecialty": "Specialty"
+    "formSpecialty": "Specialty",
+    "formAccessProfiles": "Access profiles",
+    "formAccessProfilesHint": "Defines what permissions the user has, in addition to the role selected above.",
+    "formAccessProfilesEmpty": "No access profiles created yet."
   },
   "userMenu": {
     "profile": "My profile",

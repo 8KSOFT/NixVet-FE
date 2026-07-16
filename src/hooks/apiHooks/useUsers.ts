@@ -4,6 +4,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import api from '@/lib/axios';
 import { API_PAGE_SIZE, fetchAllListPages, listQueryParams, parseListResponse } from '@/lib/pagination';
 import type { ProfilePayload, TeamUserRow } from '@/app/types/team-user';
+import type { UserAccessProfiles } from '@/app/types/access-profile';
 
 export const userKeys = {
   all: ['users'] as const,
@@ -12,6 +13,7 @@ export const userKeys = {
   staffListAll: () => [...userKeys.all, 'staff-list-all'] as const,
   veterinarians: () => [...userKeys.all, 'veterinarians'] as const,
   profile: () => [...userKeys.all, 'profile'] as const,
+  accessProfiles: (userId: string) => [...userKeys.all, 'access-profiles', userId] as const,
 };
 
 /** Perfil do usuário logado — usado na tela Meu Perfil. */
@@ -108,6 +110,33 @@ export function useDeleteUserMutation() {
       await api.delete(`/users/${id}`);
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: userKeys.all });
+    },
+  });
+}
+
+/** Perfis de acesso vinculados a um usuário. */
+export function useUserAccessProfilesQuery(userId: string | null, enabled = true) {
+  return useQuery({
+    queryKey: userKeys.accessProfiles(userId ?? ''),
+    queryFn: async () => {
+      const { data } = await api.get<UserAccessProfiles>(`/users/${userId}/access-profiles`);
+      return data;
+    },
+    enabled: enabled && !!userId,
+  });
+}
+
+/** Substitui completamente os perfis de acesso de um usuário (sincronização). */
+export function useSyncUserAccessProfilesMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, profileIds }: { id: string; profileIds: string[] }) => {
+      const { data } = await api.put<UserAccessProfiles>(`/users/${id}/access-profiles`, { profileIds });
+      return data;
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: userKeys.accessProfiles(variables.id) });
       queryClient.invalidateQueries({ queryKey: userKeys.all });
     },
   });
