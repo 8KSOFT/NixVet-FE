@@ -19,18 +19,22 @@ export default function ConfiguracoesFiscaisPage() {
 
       {/* Status do módulo */}
       <Card className="border-amber-200 bg-amber-50">
-        <CardContent className="flex flex-wrap items-center gap-4 pt-6">
-          <div className="p-3 bg-amber-100 rounded-full">
-            <Clock className="w-6 h-6 text-amber-600" />
+        <CardContent className="flex flex-col gap-3 pt-6 sm:flex-row sm:items-center sm:gap-4">
+          <div className="flex items-start gap-3 sm:items-center">
+            <div className="p-3 bg-amber-100 rounded-full shrink-0">
+              <Clock className="w-6 h-6 text-amber-600" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="font-semibold text-amber-800">Módulo em implementação</p>
+              <p className="text-sm text-amber-700 mt-0.5">
+                A emissão de NFS-e para serviços da clínica (consultas, cirurgias, exames) está sendo desenvolvida.
+                Entre em contato com o suporte para habilitar quando disponível.
+              </p>
+            </div>
           </div>
-          <div className="min-w-0 flex-1">
-            <p className="font-semibold text-amber-800">Módulo em implementação</p>
-            <p className="text-sm text-amber-700 mt-0.5">
-              A emissão de NFS-e para serviços da clínica (consultas, cirurgias, exames) está sendo desenvolvida.
-              Entre em contato com o suporte para habilitar quando disponível.
-            </p>
-          </div>
-          <Badge variant="outline" className="border-amber-400 text-amber-700 shrink-0 sm:ml-auto">Em breve</Badge>
+          <Badge variant="outline" className="self-start border-amber-400 text-amber-700 sm:ml-auto sm:shrink-0 sm:self-auto">
+            Em breve
+          </Badge>
         </CardContent>
       </Card>
 

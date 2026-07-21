@@ -101,7 +101,8 @@ export function useDeletePatientMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      await api.delete(`/patients/${id}`);
+      const { data } = await api.delete(`/patients/${id}`);
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: patientKeys.all });

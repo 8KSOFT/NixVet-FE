@@ -76,7 +76,6 @@ export default function HolidaysPage() {
         city: formRegional ? formCity : null,
         state: formRegional ? formState : null,
       });
-      toast.success('Feriado adicionado');
       setAddOpen(false);
       resetAddForm();
     } catch (error: unknown) {
@@ -87,7 +86,6 @@ export default function HolidaysPage() {
   const handleDelete = async (id: string) => {
     try {
       await deleteMutation.mutateAsync(id);
-      toast.success('Feriado removido');
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao remover'));
     }
@@ -146,7 +144,6 @@ export default function HolidaysPage() {
         city: aiCity,
         state: aiState,
       });
-      toast.success(`${selected.length} feriados salvos`);
       setAiOpen(false);
       setSuggestions([]);
     } catch (error: unknown) {
@@ -177,7 +174,7 @@ export default function HolidaysPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-wrap items-center gap-3 mb-4">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
             <div className="flex items-center gap-2">
               <Label>Ano</Label>
               <Input
@@ -189,12 +186,18 @@ export default function HolidaysPage() {
                 max={2030}
               />
             </div>
-            <Button onClick={() => { resetAddForm(); setAddOpen(true); }} className="bg-primary">
-              <Plus className="w-4 h-4 mr-2" /> Adicionar
-            </Button>
-            <Button onClick={() => setAiOpen(true)} variant="outline" className="border-primary/40 text-primary hover:bg-primary/10">
-              <Sparkles className="w-4 h-4 mr-2" /> Buscar com IA
-            </Button>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Button onClick={() => { resetAddForm(); setAddOpen(true); }} className="w-full bg-primary sm:w-auto">
+                <Plus className="w-4 h-4 mr-2" /> Adicionar
+              </Button>
+              <Button
+                onClick={() => setAiOpen(true)}
+                variant="outline"
+                className="w-full border-primary/40 text-primary hover:bg-primary/10 sm:w-auto"
+              >
+                <Sparkles className="w-4 h-4 mr-2" /> Buscar com IA
+              </Button>
+            </div>
           </div>
 
           {loading ? (
@@ -206,42 +209,79 @@ export default function HolidaysPage() {
               Nenhum feriado cadastrado para {year}. Use o botão &quot;Buscar com IA&quot; para importar automaticamente.
             </p>
           ) : (
-            <div className="overflow-x-auto">
-            <Table className="min-w-full border-collapse bg-white text-sm">
-              <TableHeader>
-                <TableRow className="border-b border-gray-300 h-15">
-                  <TableHead>Data</TableHead>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Recorrente</TableHead>
-                  <TableHead>Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <>
+              {/* Desktop / tablet: tabela */}
+              <div className="hidden overflow-x-auto md:block">
+              <Table className="min-w-full border-collapse bg-white text-sm">
+                <TableHeader>
+                  <TableRow className="border-b border-gray-300 h-15">
+                    <TableHead>Data</TableHead>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Recorrente</TableHead>
+                    <TableHead>Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {holidays.map((h) => (
+                    <TableRow className="border-b border-gray-300 h-15" key={h.id}>
+                      <TableCell className="font-mono">{formatDate(h.date)}</TableCell>
+                      <TableCell>{h.name}</TableCell>
+                      <TableCell>
+                        {h.is_regional ? (
+                          <Badge variant="outline" className="border-orange-300 text-orange-700">
+                            Regional {h.city ? `(${h.city}/${h.state})` : ''}
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="border-primary/40 text-primary">Nacional</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {h.is_recurring ? (
+                          <Badge className="bg-green-500">Sim</Badge>
+                        ) : (
+                          <Badge variant="secondary">Não</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button variant="destructive" size="icon" className="h-7 w-7">
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Remover feriado?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Tem certeza que deseja remover &quot;{h.name}&quot;?
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDelete(h.id)}>Remover</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              </div>
+
+              {/* Mobile: cards */}
+              <div className="space-y-2 md:hidden">
                 {holidays.map((h) => (
-                  <TableRow className="border-b border-gray-300 h-15" key={h.id}>
-                    <TableCell className="font-mono">{formatDate(h.date)}</TableCell>
-                    <TableCell>{h.name}</TableCell>
-                    <TableCell>
-                      {h.is_regional ? (
-                        <Badge variant="outline" className="border-orange-300 text-orange-700">
-                          Regional {h.city ? `(${h.city}/${h.state})` : ''}
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="border-primary/40 text-primary">Nacional</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {h.is_recurring ? (
-                        <Badge className="bg-green-500">Sim</Badge>
-                      ) : (
-                        <Badge variant="secondary">Não</Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
+                  <div key={h.id} className="rounded-lg border border-gray-300 p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="truncate font-medium">{h.name}</p>
+                        <p className="font-mono text-xs text-muted-foreground">{formatDate(h.date)}</p>
+                      </div>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
-                          <Button variant="destructive" size="icon" className="h-7 w-7">
+                          <Button variant="destructive" size="icon" className="h-7 w-7 shrink-0">
                             <Trash2 className="w-3.5 h-3.5" />
                           </Button>
                         </AlertDialogTrigger>
@@ -258,12 +298,25 @@ export default function HolidaysPage() {
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
-                    </TableCell>
-                  </TableRow>
+                    </div>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      {h.is_regional ? (
+                        <Badge variant="outline" className="border-orange-300 text-orange-700">
+                          Regional {h.city ? `(${h.city}/${h.state})` : ''}
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="border-primary/40 text-primary">Nacional</Badge>
+                      )}
+                      {h.is_recurring ? (
+                        <Badge className="bg-green-500">Recorrente</Badge>
+                      ) : (
+                        <Badge variant="secondary">Não recorrente</Badge>
+                      )}
+                    </div>
+                  </div>
                 ))}
-              </TableBody>
-            </Table>
-            </div>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
@@ -359,7 +412,8 @@ export default function HolidaysPage() {
                     </Button>
                   </div>
                 </div>
-                <div className="max-h-[40vh] overflow-y-auto overflow-x-auto border border-gray-300 rounded-lg">
+                {/* Desktop / tablet: tabela */}
+                <div className="hidden max-h-[40vh] overflow-y-auto overflow-x-auto rounded-lg border border-gray-300 md:block">
                   <Table className="min-w-full border-collapse bg-white text-sm">
                     <TableHeader>
                       <TableRow className="border-b border-gray-300 h-15">
@@ -391,6 +445,35 @@ export default function HolidaysPage() {
                       ))}
                     </TableBody>
                   </Table>
+                </div>
+
+                {/* Mobile: cards */}
+                <div className="max-h-[40vh] space-y-2 overflow-y-auto md:hidden">
+                  {suggestions.map((s, i) => (
+                    <label
+                      key={i}
+                      className={`flex items-start gap-3 rounded-lg border border-gray-300 p-3 ${
+                        selectedSuggestions.has(i) ? '' : 'opacity-50'
+                      }`}
+                    >
+                      <Checkbox
+                        checked={selectedSuggestions.has(i)}
+                        onCheckedChange={() => toggleSuggestion(i)}
+                        className="mt-0.5"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="truncate font-medium">{s.name}</p>
+                          {s.is_regional ? (
+                            <Badge variant="outline" className="shrink-0 border-orange-300 text-xs text-orange-700">Regional</Badge>
+                          ) : (
+                            <Badge variant="outline" className="shrink-0 border-primary/40 text-xs text-primary">Nacional</Badge>
+                          )}
+                        </div>
+                        <p className="font-mono text-xs text-muted-foreground">{formatDate(s.date)}</p>
+                      </div>
+                    </label>
+                  ))}
                 </div>
                 <Button onClick={handleSaveSuggestions} disabled={aiSaving || selectedSuggestions.size === 0} className="bg-primary">
                   {aiSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}

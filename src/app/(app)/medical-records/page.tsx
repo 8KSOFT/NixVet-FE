@@ -93,7 +93,6 @@ export default function MedicalRecordsListPage() {
     }
     try {
       const record = await createRecord.mutateAsync(form);
-      toast.success('Prontuário criado');
       setModalVisible(false);
       router.push(`/medical-records/prontuario/${record.patient_id}`);
     } catch {
@@ -108,7 +107,6 @@ export default function MedicalRecordsListPage() {
     }
     try {
       const tutor = await createTutor.mutateAsync(tutorForm);
-      toast.success('Tutor cadastrado');
       setTutorModal(false);
       setTutorForm(emptyTutor());
       setPatientForm((p) => ({ ...p, tutor_id: tutor.id }));
@@ -135,7 +133,6 @@ export default function MedicalRecordsListPage() {
         tutor_id: hasTutor ? patientForm.tutor_id : null,
         no_tutor_reason: hasTutor ? null : 'EMERGENCIA',
       });
-      toast.success('Animal cadastrado');
       setForm((p) => ({ ...p, patient_id: patient.id }));
       setPatientModal(false);
       setPatientForm(emptyPatient());

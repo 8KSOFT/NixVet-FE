@@ -8,7 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { DashboardCreateFormDialog } from '@/components/dashboard-create-form-dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -125,7 +125,6 @@ export default function AccessControlProfilesPage() {
   const handleDelete = async (id: string) => {
     try {
       await deleteMutation.mutateAsync(id);
-      toast.success('Perfil removido');
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao remover perfil'));
     }
@@ -142,10 +141,8 @@ export default function AccessControlProfilesPage() {
     try {
       if (editingProfile) {
         await updateMutation.mutateAsync({ id: editingProfile.id, payload });
-        toast.success('Perfil atualizado');
       } else {
         await createMutation.mutateAsync(payload);
-        toast.success('Perfil criado');
       }
       setModalOpen(false);
     } catch (error: unknown) {
@@ -173,37 +170,36 @@ export default function AccessControlProfilesPage() {
         Monte perfis vinculando permissões e depois atribua cada perfil aos usuários da equipe em{' '}
         <span className="font-medium">Equipe</span>.
       </p>
-      <Card>
-        <CardContent className="pt-6">
-          <Button onClick={openCreate} className="mb-4 bg-primary">
+      <Card className="rounded-none border-0 bg-transparent py-0 shadow-none sm:rounded-xl sm:border sm:border-border/80 sm:bg-card sm:py-6 sm:shadow-(--shadow-card)">
+        <CardContent className="px-0 pt-0 sm:px-6 sm:pt-6">
+          <Button onClick={openCreate} className="mb-4 w-full bg-primary sm:w-auto">
             <Plus className="w-4 h-4 mr-2" /> Novo perfil
           </Button>
           {loading ? (
             <div className="flex justify-center py-8">
               <Loader2 className="w-6 h-6 animate-spin text-primary" />
             </div>
+          ) : list.length === 0 ? (
+            <div className="rounded-lg border border-gray-300 bg-white py-8 text-center text-sm text-slate-500">
+              Nenhum perfil cadastrado.
+            </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table className="min-w-full border-collapse bg-white text-sm">
-                <TableHeader>
-                  <TableRow className="border-b border-gray-300 h-15">
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Slug</TableHead>
-                    <TableHead>Permissões</TableHead>
-                    <TableHead>Origem</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="w-[120px]">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {list.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                        Nenhum perfil cadastrado.
-                      </TableCell>
+            <div>
+              {/* Desktop / tablet: tabela */}
+              <div className="hidden overflow-x-auto rounded-lg border border-gray-300 md:block">
+                <Table className="min-w-full border-collapse bg-white text-sm">
+                  <TableHeader>
+                    <TableRow className="border-b border-gray-300 h-15">
+                      <TableHead>Nome</TableHead>
+                      <TableHead>Slug</TableHead>
+                      <TableHead>Permissões</TableHead>
+                      <TableHead>Origem</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="w-30">Ações</TableHead>
                     </TableRow>
-                  ) : (
-                    list.map((r) => (
+                  </TableHeader>
+                  <TableBody>
+                    {list.map((r) => (
                       <TableRow className="border-b border-gray-300 h-15" key={r.id}>
                         <TableCell>{r.name}</TableCell>
                         <TableCell className="font-mono text-xs">{r.slug}</TableCell>
@@ -257,10 +253,73 @@ export default function AccessControlProfilesPage() {
                           )}
                         </TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Mobile: cards */}
+              <div className="space-y-2 md:hidden">
+                {list.map((r) => (
+                  <div key={r.id} className="rounded-lg border border-gray-300 p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="truncate font-medium">{r.name}</p>
+                        <p className="font-mono text-xs text-muted-foreground">{r.slug}</p>
+                      </div>
+                      {r.is_system ? (
+                        <div
+                          className="flex shrink-0 items-center gap-1 text-muted-foreground"
+                          title="Perfil de sistema — somente leitura"
+                        >
+                          <Lock className="w-4 h-4" />
+                        </div>
+                      ) : (
+                        <div className="flex shrink-0 items-center gap-2">
+                          <Button variant="ghost" size="icon" className="p-0" onClick={() => openEdit(r)}>
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="p-0 text-destructive hover:text-destructive"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Remover perfil?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  {r.name}. Perfis vinculados a usuários não podem ser removidos.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDelete(r.id)}>
+                                  Confirmar
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      )}
+                    </div>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <Badge variant={r.is_system ? 'secondary' : 'default'}>
+                        {r.is_system ? 'Sistema' : 'Customizado'}
+                      </Badge>
+                      <Badge variant={r.is_active ? 'default' : 'secondary'}>
+                        {r.is_active ? 'Ativo' : 'Inativo'}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">{r.permissions.length} permissões</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
               <ListPagination
                 page={listPage}
                 totalPages={listTotalPages}
@@ -274,75 +333,85 @@ export default function AccessControlProfilesPage() {
         </CardContent>
       </Card>
 
-      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{isEditing ? 'Editar perfil de acesso' : 'Novo perfil de acesso'}</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div>
-                <Label htmlFor="name">Nome</Label>
-                <Input
-                  id="name"
-                  placeholder="ex: Recepção Avançada"
-                  {...register('name', { required: true })}
-                  onChange={(e) => {
-                    setValue('name', e.target.value);
-                    if (!isEditing) setValue('slug', slugify(e.target.value));
-                  }}
-                />
-              </div>
-              <div>
-                <Label htmlFor="slug">Slug</Label>
-                <Input id="slug" placeholder="reception-advanced" {...register('slug', { required: true })} />
-              </div>
+      <DashboardCreateFormDialog
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        title={isEditing ? 'Editar perfil de acesso' : 'Novo perfil de acesso'}
+        contentClassName="modal-responsive"
+        footer={
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              className="border border-gray-300"
+              onClick={() => setModalOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" form="access-profile-form" className="bg-primary" disabled={!nameValue}>
+              {isEditing ? 'Salvar' : 'Criar'}
+            </Button>
+          </div>
+        }
+      >
+        <form id="access-profile-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4 md:space-y-6">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="name">Nome</Label>
+              <Input
+                id="name"
+                placeholder="ex: Recepção Avançada"
+                {...register('name', { required: true })}
+                onChange={(e) => {
+                  setValue('name', e.target.value);
+                  if (!isEditing) setValue('slug', slugify(e.target.value));
+                }}
+              />
             </div>
-            <div>
-              <Label htmlFor="description">Descrição</Label>
-              <Input id="description" placeholder="Descrição do perfil" {...register('description')} />
+            <div className="space-y-2">
+              <Label htmlFor="slug">Slug</Label>
+              <Input id="slug" placeholder="reception-advanced" {...register('slug', { required: true })} />
             </div>
-            <div className="flex items-center gap-2">
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="description">Descrição</Label>
+            <Input id="description" placeholder="Descrição do perfil" {...register('description')} />
+          </div>
+          <div className="flex items-center gap-2">
+            <Controller
+              name="is_active"
+              control={control}
+              render={({ field }) => (
+                <Switch id="is_active" checked={field.value} onCheckedChange={field.onChange} />
+              )}
+            />
+            <Label htmlFor="is_active">Ativo</Label>
+          </div>
+          <div className="space-y-2">
+            <Label className="block">Permissões</Label>
+            {permissionsLoading ? (
+              <div className="flex justify-center py-4">
+                <Loader2 className="w-5 h-5 animate-spin text-primary" />
+              </div>
+            ) : permissionsForbidden ? (
+              <p className="text-sm text-muted-foreground">Não foi possível carregar as permissões disponíveis.</p>
+            ) : (
               <Controller
-                name="is_active"
+                name="permission_ids"
                 control={control}
                 render={({ field }) => (
-                  <Switch id="is_active" checked={field.value} onCheckedChange={field.onChange} />
+                  <CheckboxMultiSelect
+                    options={permissionOptions}
+                    selected={field.value}
+                    onChange={field.onChange}
+                    emptyMessage="Nenhuma permissão cadastrada."
+                  />
                 )}
               />
-              <Label htmlFor="is_active">Ativo</Label>
-            </div>
-            <div>
-              <Label className="mb-2 block">Permissões</Label>
-              {permissionsLoading ? (
-                <div className="flex justify-center py-4">
-                  <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                </div>
-              ) : permissionsForbidden ? (
-                <p className="text-sm text-muted-foreground">Não foi possível carregar as permissões disponíveis.</p>
-              ) : (
-                <Controller
-                  name="permission_ids"
-                  control={control}
-                  render={({ field }) => (
-                    <CheckboxMultiSelect
-                      options={permissionOptions}
-                      selected={field.value}
-                      onChange={field.onChange}
-                      emptyMessage="Nenhuma permissão cadastrada."
-                    />
-                  )}
-                />
-              )}
-            </div>
-            <DialogFooter>
-              <Button type="submit" className="bg-primary" disabled={!nameValue}>
-                Salvar
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+            )}
+          </div>
+        </form>
+      </DashboardCreateFormDialog>
     </div>
   );
 }

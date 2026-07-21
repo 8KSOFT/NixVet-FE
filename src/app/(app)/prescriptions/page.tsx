@@ -280,7 +280,6 @@ export default function PrescriptionsPage() {
       }
 
       await createPrescription.mutateAsync(payload);
-      toast.success('Prescrição gerada com sucesso');
       setModalVisible(false);
     } catch {
       toast.error('Erro ao gerar prescrição');
@@ -318,7 +317,6 @@ export default function PrescriptionsPage() {
     if (!selectedPrescription) return;
     try {
       await sendEmailMutation.mutateAsync(selectedPrescription.id);
-      toast.success('Email enviado com sucesso');
       setEmailModalVisible(false);
     } catch {
       toast.error('Erro ao enviar email');

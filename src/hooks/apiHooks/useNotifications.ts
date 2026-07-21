@@ -45,8 +45,10 @@ export function useMarkNotificationReadMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      await api.post(`/notifications/${id}/read`);
+      const { data } = await api.post(`/notifications/${id}/read`);
+      return data;
     },
+    meta: { silent: true },
     onSuccess: (_data, id) => {
       queryClient.invalidateQueries({ queryKey: notificationKeys.unreadCount() });
       queryClient.setQueryData<ClinicNotification[]>(notificationKeys.list(), (prev) =>
@@ -60,8 +62,10 @@ export function useMarkAllNotificationsReadMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async () => {
-      await api.post('/notifications/read-all');
+      const { data } = await api.post('/notifications/read-all');
+      return data;
     },
+    meta: { silent: true },
     onSuccess: () => {
       queryClient.setQueryData(notificationKeys.unreadCount(), 0);
       queryClient.setQueryData<ClinicNotification[]>(notificationKeys.list(), (prev) =>

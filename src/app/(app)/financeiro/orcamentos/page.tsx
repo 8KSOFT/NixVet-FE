@@ -148,7 +148,6 @@ export default function OrcamentosPage() {
 
     try {
       await createBudget.mutateAsync(payload);
-      toast.success('Orçamento criado');
       setOpenNew(false);
       setForm({
         patient_id: '',
@@ -166,7 +165,6 @@ export default function OrcamentosPage() {
   const handleApprove = async (id: string) => {
     try {
       await approveBudget.mutateAsync(id);
-      toast.success('Orçamento aprovado');
     } catch {
       toast.error('Erro ao aprovar');
     }

@@ -65,8 +65,7 @@ export default function BillingSettingsPage() {
   const handleCancel = async () => {
     if (!confirmCancel) { setConfirmCancel(true); return; }
     try {
-      const data = await cancelMutation.mutateAsync();
-      toast.success(data.message ?? 'Plano cancelado com sucesso.');
+      await cancelMutation.mutateAsync();
       setConfirmCancel(false);
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao cancelar plano.'));

@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { DashboardCreateFormDialog } from '@/components/dashboard-create-form-dialog';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
@@ -127,7 +128,6 @@ export default function SettingsWhatsappNumbersPage() {
   const saveChatbotToggle = async (enabled: boolean) => {
     try {
       await updateTenantMutation.mutateAsync({ whatsapp_ai_chatbot_enabled: enabled });
-      toast.success(enabled ? 'Chatbot de IA ativado' : 'Chatbot de IA desativado');
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao salvar'));
     }
@@ -177,7 +177,6 @@ export default function SettingsWhatsappNumbersPage() {
   const handleProvision = async () => {
     try {
       await provisionMutation.mutateAsync(undefined);
-      toast.success('Instância Z-API provisionada! Escaneie o QR Code para conectar.');
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao provisionar instância'));
     }
@@ -187,7 +186,6 @@ export default function SettingsWhatsappNumbersPage() {
   const onRegister = async (values: RegisterFormValues) => {
     try {
       await registerMutation.mutateAsync(values);
-      toast.success('Instância cadastrada');
       setRegisterOpen(false);
       form.reset();
     } catch (error: unknown) {
@@ -200,7 +198,6 @@ export default function SettingsWhatsappNumbersPage() {
     if (!confirm('Desconectar este número? O WhatsApp será desvinculado da instância.')) return;
     try {
       await disconnectMutation.mutateAsync(numberId);
-      toast.success('Número desconectado');
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao desconectar'));
     }
@@ -244,17 +241,21 @@ export default function SettingsWhatsappNumbersPage() {
         </div>
       </InfoBox>
 
-      <Card>
-        <CardContent className="pt-6">
+      <Card className="rounded-none border-0 bg-transparent py-0 shadow-none sm:rounded-xl sm:border sm:border-border/80 sm:bg-card sm:py-6 sm:shadow-(--shadow-card)">
+        <CardContent className="px-0 pt-0 sm:px-6 sm:pt-6">
           {canManageNumbers && (
-            <div className="flex flex-wrap gap-2 mb-4">
+            <div className="flex flex-col gap-2 mb-4 sm:flex-row sm:flex-wrap">
               {provisionAvailable && (
-                <Button onClick={handleProvision} disabled={provisioning} className="bg-primary">
+                <Button onClick={handleProvision} disabled={provisioning} className="w-full bg-primary sm:w-auto">
                   {provisioning ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Plus className="w-4 h-4 mr-2" />}
                   Provisionar nova instância
                 </Button>
               )}
-              <Button variant="outline" onClick={() => { form.reset(); setRegisterOpen(true); }}>
+              <Button
+                variant="outline"
+                className="w-full sm:w-auto"
+                onClick={() => { form.reset(); setRegisterOpen(true); }}
+              >
                 <Plus className="w-4 h-4 mr-2" />
                 Cadastrar manualmente
               </Button>
@@ -265,81 +266,132 @@ export default function SettingsWhatsappNumbersPage() {
             <div className="flex items-center justify-center py-8">
               <Loader2 className="w-5 h-5 animate-spin text-primary" />
             </div>
+          ) : list.length === 0 ? (
+            <div className="rounded-lg border border-gray-300 bg-white py-8 text-center text-sm text-slate-500">
+              {provisionAvailable
+                ? 'Clique em "Provisionar nova instância" para conectar o WhatsApp da clínica.'
+                : 'Nenhuma instância cadastrada.'}
+            </div>
           ) : (
-            <div className="overflow-x-auto">
-            <Table className="min-w-full border-collapse bg-white text-sm">
-              <TableHeader>
-                <TableRow className="border-b border-gray-300 h-15">
-                  <TableHead>Instance ID</TableHead>
-                  <TableHead>Número conectado</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {list.map((row) => (
-                  <TableRow className="border-b border-gray-300 h-15" key={row.id}>
-                    <TableCell className="font-mono text-xs truncate" title={row.phone_number_id}>
-                      {row.phone_number_id}
-                    </TableCell>
-                    <TableCell>{row.display_phone ?? '—'}</TableCell>
-                    <TableCell>
-                      <StatusBadge status={statuses[row.id] ?? null} loading={statusLoading[row.id] ?? false} />
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          title="Verificar status"
-                          onClick={() => void fetchStatus(row.id)}
-                        >
-                          <RefreshCw className="w-3 h-3" />
-                        </Button>
-                        {!statuses[row.id]?.connected && (
+            <div>
+              {/* Desktop / tablet: tabela */}
+              <div className="hidden overflow-x-auto md:block">
+              <Table className="min-w-full border-collapse bg-white text-sm">
+                <TableHeader>
+                  <TableRow className="border-b border-gray-300 h-15">
+                    <TableHead>Instance ID</TableHead>
+                    <TableHead>Número conectado</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {list.map((row) => (
+                    <TableRow className="border-b border-gray-300 h-15" key={row.id}>
+                      <TableCell className="font-mono text-xs truncate" title={row.phone_number_id}>
+                        {row.phone_number_id}
+                      </TableCell>
+                      <TableCell>{row.display_phone ?? '—'}</TableCell>
+                      <TableCell>
+                        <StatusBadge status={statuses[row.id] ?? null} loading={statusLoading[row.id] ?? false} />
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
                           <Button
                             size="sm"
                             variant="outline"
-                            title="Escanear QR Code"
-                            onClick={() => void openQrModal(row.id)}
+                            title="Verificar status"
+                            onClick={() => void fetchStatus(row.id)}
                           >
-                            <QrCode className="w-3 h-3" />
+                            <RefreshCw className="w-3 h-3" />
                           </Button>
-                        )}
-                        {canManageNumbers && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="text-destructive hover:text-destructive"
-                            title="Desconectar"
-                            onClick={() => void handleDisconnect(row.id)}
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </Button>
-                        )}
+                          {!statuses[row.id]?.connected && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              title="Escanear QR Code"
+                              onClick={() => void openQrModal(row.id)}
+                            >
+                              <QrCode className="w-3 h-3" />
+                            </Button>
+                          )}
+                          {canManageNumbers && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-destructive hover:text-destructive"
+                              title="Desconectar"
+                              onClick={() => void handleDisconnect(row.id)}
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              </div>
+
+              {/* Mobile: cards */}
+              <div className="space-y-2 md:hidden">
+                {list.map((row) => (
+                  <div key={row.id} className="rounded-lg border border-gray-300 p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="truncate font-mono text-xs" title={row.phone_number_id}>
+                          {row.phone_number_id}
+                        </p>
+                        <p className="text-sm text-muted-foreground">{row.display_phone ?? '—'}</p>
                       </div>
-                    </TableCell>
-                  </TableRow>
+                      <div className="shrink-0">
+                        <StatusBadge status={statuses[row.id] ?? null} loading={statusLoading[row.id] ?? false} />
+                      </div>
+                    </div>
+                    <div className="mt-2 flex justify-end gap-1 border-t border-gray-200 pt-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        title="Verificar status"
+                        onClick={() => void fetchStatus(row.id)}
+                      >
+                        <RefreshCw className="w-3 h-3" />
+                      </Button>
+                      {!statuses[row.id]?.connected && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          title="Escanear QR Code"
+                          onClick={() => void openQrModal(row.id)}
+                        >
+                          <QrCode className="w-3 h-3" />
+                        </Button>
+                      )}
+                      {canManageNumbers && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-destructive hover:text-destructive"
+                          title="Desconectar"
+                          onClick={() => void handleDisconnect(row.id)}
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
                 ))}
-                {list.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={4} className="border-t border-slate-200 py-8 text-center text-sm text-slate-500">
-                      {provisionAvailable
-                        ? 'Clique em "Provisionar nova instância" para conectar o WhatsApp da clínica.'
-                        : 'Nenhuma instância cadastrada.'}
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-            <ListPagination
-              page={listPage}
-              totalPages={listTotalPages}
-              total={listTotal}
-              pageSize={API_PAGE_SIZE}
-              onPageChange={setListPage}
-              disabled={loading}
-            />
+              </div>
+
+              <ListPagination
+                page={listPage}
+                totalPages={listTotalPages}
+                total={listTotal}
+                pageSize={API_PAGE_SIZE}
+                onPageChange={setListPage}
+                disabled={loading}
+              />
             </div>
           )}
         </CardContent>
@@ -376,31 +428,45 @@ export default function SettingsWhatsappNumbersPage() {
       </Dialog>
 
       {/* Cadastro manual */}
-      <Dialog open={registerOpen} onOpenChange={setRegisterOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Cadastrar instância manualmente</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={form.handleSubmit(onRegister)} className="flex flex-col gap-4 mt-2">
-            <div className="flex flex-col gap-1.5">
-              <Label>Instance ID</Label>
-              <Input {...form.register('phone_number_id', { required: true })} placeholder="ex.: 3C9B2FA3491..." />
-              <p className="text-xs text-muted-foreground">Instance ID da dashboard Z-API.</p>
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label>Instance Token</Label>
-              <Input type="password" {...form.register('access_token', { required: true })} placeholder="ex.: F4B87A2C..." />
-              <p className="text-xs text-muted-foreground">Será criptografado no banco.</p>
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label>Número conectado (opcional)</Label>
-              <Input {...form.register('display_phone')} placeholder="5511999887766" />
-              <p className="text-xs text-muted-foreground">Somente dígitos.</p>
-            </div>
-            <Button type="submit" className="bg-primary">Cadastrar</Button>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <DashboardCreateFormDialog
+        open={registerOpen}
+        onOpenChange={setRegisterOpen}
+        title="Cadastrar instância manualmente"
+        contentClassName="modal-responsive"
+        footer={
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              className="border border-gray-300"
+              onClick={() => setRegisterOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" form="whatsapp-register-form" className="bg-primary">
+              Cadastrar
+            </Button>
+          </div>
+        }
+      >
+        <form id="whatsapp-register-form" onSubmit={form.handleSubmit(onRegister)} className="space-y-4 md:space-y-6">
+          <div className="space-y-2">
+            <Label>Instance ID</Label>
+            <Input {...form.register('phone_number_id', { required: true })} placeholder="ex.: 3C9B2FA3491..." />
+            <p className="text-xs text-muted-foreground">Instance ID da dashboard Z-API.</p>
+          </div>
+          <div className="space-y-2">
+            <Label>Instance Token</Label>
+            <Input type="password" {...form.register('access_token', { required: true })} placeholder="ex.: F4B87A2C..." />
+            <p className="text-xs text-muted-foreground">Será criptografado no banco.</p>
+          </div>
+          <div className="space-y-2">
+            <Label>Número conectado (opcional)</Label>
+            <Input {...form.register('display_phone')} placeholder="5511999887766" />
+            <p className="text-xs text-muted-foreground">Somente dígitos.</p>
+          </div>
+        </form>
+      </DashboardCreateFormDialog>
     </div>
   );
 }

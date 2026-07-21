@@ -52,7 +52,8 @@ export function useDeleteMaterialMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: number) => {
-      await api.delete(`/catalog/materials/${id}`);
+      const { data } = await api.delete(`/catalog/materials/${id}`);
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: materialKeys.all });

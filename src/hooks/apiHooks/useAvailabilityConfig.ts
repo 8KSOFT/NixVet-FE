@@ -58,6 +58,9 @@ export function useCreateEmergencyHourMutation() {
       const { data } = await api.post('/availability/config/emergency-hours', payload);
       return data;
     },
+    // silent: chamada em loop (um dia por vez) em settings/hours/page.tsx, que já mostra
+    // um toast agregado ao final — um toast por dia seria ruído.
+    meta: { silent: true },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: availabilityKeys.emergencyHours() });
     },
@@ -81,6 +84,9 @@ export function useCreateVetScheduleMutation() {
       const { data } = await api.post('/availability/config/veterinarian-schedules', payload);
       return data;
     },
+    // silent: chamada em loop (um dia por vez) em settings/hours/page.tsx, que já mostra
+    // um toast agregado ao final — um toast por dia seria ruído.
+    meta: { silent: true },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: availabilityKeys.vetSchedules() });
     },
@@ -91,7 +97,8 @@ export function useDeleteVetScheduleMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      await api.delete(`/availability/config/veterinarian-schedules/${id}`);
+      const { data } = await api.delete(`/availability/config/veterinarian-schedules/${id}`);
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: availabilityKeys.vetSchedules() });

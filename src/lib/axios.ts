@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { getApiBaseUrl } from './api-base';
+import { API_MESSAGE, isApiEnvelope } from '@/app/types/api-response';
 
 const api = axios.create({
   baseURL: getApiBaseUrl(),
@@ -60,8 +61,29 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+/**
+ * O backend esta migrando gradualmente as respostas de sucesso para o envelope
+ * { success, message, data } (ver DOCS/response-phase-1-front.md e response-phase-4-front.md).
+ * Aqui detectamos o envelope por formato (nao por rota) e desembrulhamos `data` de forma
+ * transparente, para que os hooks continuem lendo `response.data` como antes da migracao.
+ * A mensagem do backend fica "grudada" (nao-enumeravel) no payload desembrulhado, para ser
+ * usada pelo toast global de sucesso das mutations (ver AppProviders.tsx).
+ */
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    if (isApiEnvelope(response.data)) {
+      const { message, data: payload } = response.data;
+      if (payload && (typeof payload === 'object' || typeof payload === 'function')) {
+        Object.defineProperty(payload, API_MESSAGE, {
+          value: message,
+          enumerable: false,
+          configurable: true,
+        });
+      }
+      response.data = payload;
+    }
+    return response;
+  },
   (error) => {
     if (
       typeof window !== 'undefined' &&

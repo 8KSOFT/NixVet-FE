@@ -74,7 +74,6 @@ export default function ChatbotSettingsPage() {
   const onSubmit = async (values: ChatbotSettings) => {
     try {
       await saveMutation.mutateAsync(values);
-      toast.success('Configurações do chatbot salvas');
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao salvar'));
     }
@@ -113,18 +112,20 @@ export default function ChatbotSettingsPage() {
       ) : (
         <form onSubmit={handleSubmit(onSubmit)}>
           <Tabs defaultValue="persona">
-            <div className="mb-4 overflow-x-auto">
-              <TabsList className="w-full justify-start gap-1">
-                <TabsTrigger value="persona" className="shrink-0">Persona & Mensagens</TabsTrigger>
-                <TabsTrigger value="advanced" className="shrink-0">Prompt Avançado</TabsTrigger>
-              </TabsList>
-            </div>
+            <TabsList className="mb-4 grid h-auto! w-full grid-cols-1 gap-1 sm:grid-cols-2">
+              <TabsTrigger value="persona" className="h-auto! whitespace-normal px-3 py-2 text-center leading-snug">
+                Persona & Mensagens
+              </TabsTrigger>
+              <TabsTrigger value="advanced" className="h-auto! whitespace-normal px-3 py-2 text-center leading-snug">
+                Prompt Avançado
+              </TabsTrigger>
+            </TabsList>
 
-            <TabsContent value="persona" className="space-y-5 mt-0">
+            <TabsContent value="persona" className="mt-0">
               <Card>
-                <CardContent className="pt-6 space-y-5">
+                <CardContent className="space-y-4 pt-6 md:space-y-6">
                   {/* Persona name */}
-                  <div>
+                  <div className="space-y-2">
                     <Label htmlFor="persona_name" className="flex items-center gap-1">
                       Nome da persona
                       <FieldTooltip text="Como o bot se identifica nas respostas geradas pela IA (ex: Nina, Assistente Pet)." />
@@ -133,18 +134,17 @@ export default function ChatbotSettingsPage() {
                       id="persona_name"
                       placeholder="Ex.: Nina, Assistente Pet, Clínica PetCare"
                       maxLength={80}
-                      className="mt-1.5"
                       {...register('persona_name', { required: true })}
                     />
                     {errors.persona_name && (
-                      <p className="text-destructive text-xs mt-1">Campo obrigatório</p>
+                      <p className="text-destructive text-xs">Campo obrigatório</p>
                     )}
                   </div>
 
                   <Separator />
 
                   {/* Greeting */}
-                  <div>
+                  <div className="space-y-2">
                     <Label htmlFor="greeting_message" className="flex items-center gap-1">
                       Mensagem de boas-vindas
                       <FieldTooltip text="Enviada automaticamente quando o cliente escreve pela 1ª vez. Deixe vazio para não enviar." />
@@ -154,13 +154,12 @@ export default function ChatbotSettingsPage() {
                       rows={2}
                       placeholder={DEFAULTS.greeting_message}
                       maxLength={500}
-                      className="mt-1.5"
                       {...register('greeting_message')}
                     />
                   </div>
 
                   {/* Fallback */}
-                  <div>
+                  <div className="space-y-2">
                     <Label htmlFor="fallback_message" className="flex items-center gap-1">
                       Resposta de fallback
                       <FieldTooltip text="Enviada quando a IA não consegue responder (ex: sem OpenAI key ou intenção desconhecida)." />
@@ -170,13 +169,12 @@ export default function ChatbotSettingsPage() {
                       rows={2}
                       placeholder={DEFAULTS.fallback_message}
                       maxLength={500}
-                      className="mt-1.5"
                       {...register('fallback_message')}
                     />
                   </div>
 
                   {/* Emergency */}
-                  <div>
+                  <div className="space-y-2">
                     <Label htmlFor="emergency_message" className="flex items-center gap-1">
                       Mensagem de emergência
                       <FieldTooltip text="Enviada quando o sistema detecta uma emergência real (atropelamento, convulsão, envenenamento etc.)." />
@@ -186,13 +184,12 @@ export default function ChatbotSettingsPage() {
                       rows={2}
                       placeholder={DEFAULTS.emergency_message}
                       maxLength={500}
-                      className="mt-1.5"
                       {...register('emergency_message')}
                     />
                   </div>
 
                   {/* Human handoff */}
-                  <div>
+                  <div className="space-y-2">
                     <Label htmlFor="human_handoff_message" className="flex items-center gap-1">
                       Transferência para humano
                       <FieldTooltip text="Enviada quando o cliente solicita atendimento humano. Após isso o bot é pausado para essa conversa." />
@@ -202,13 +199,12 @@ export default function ChatbotSettingsPage() {
                       rows={2}
                       placeholder={DEFAULTS.human_handoff_message}
                       maxLength={500}
-                      className="mt-1.5"
                       {...register('human_handoff_message')}
                     />
                   </div>
 
                   {/* Farewell */}
-                  <div>
+                  <div className="space-y-2">
                     <Label htmlFor="farewell_message" className="flex items-center gap-1">
                       Mensagem de encerramento
                       <FieldTooltip text="Pode ser usada manualmente ou por automações ao finalizar um atendimento." />
@@ -218,7 +214,6 @@ export default function ChatbotSettingsPage() {
                       rows={2}
                       placeholder={DEFAULTS.farewell_message}
                       maxLength={500}
-                      className="mt-1.5"
                       {...register('farewell_message')}
                     />
                   </div>
@@ -226,15 +221,15 @@ export default function ChatbotSettingsPage() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="advanced" className="space-y-5 mt-0">
+            <TabsContent value="advanced" className="mt-0">
               <Card>
-                <CardContent className="pt-6 space-y-5">
-                  <div>
+                <CardContent className="pt-6">
+                  <div className="space-y-2">
                     <Label htmlFor="system_prompt_extra" className="flex items-center gap-1">
                       Instruções adicionais para a IA
                       <FieldTooltip text='Texto injetado no system prompt. Permite customizar o comportamento da IA. Ex: "Somos especializados em animais exóticos.", "Não mencione preços."' />
                     </Label>
-                    <p className="text-xs text-muted-foreground mt-1 mb-2">
+                    <p className="text-xs text-muted-foreground">
                       Este texto é concatenado ao prompt base da IA. Use para customizar o comportamento,
                       adicionar contexto da clínica ou restringir tópicos.
                     </p>
@@ -245,15 +240,15 @@ export default function ChatbotSettingsPage() {
                       maxLength={1000}
                       {...register('system_prompt_extra')}
                     />
-                    <p className="text-xs text-muted-foreground/60 mt-1">Máximo 1000 caracteres</p>
+                    <p className="text-xs text-muted-foreground/60">Máximo 1000 caracteres</p>
                   </div>
                 </CardContent>
               </Card>
             </TabsContent>
           </Tabs>
 
-          <div className="flex justify-end mt-4">
-            <Button type="submit" disabled={saving} className="bg-primary gap-2">
+          <div className="mt-4 flex flex-col sm:flex-row sm:justify-end">
+            <Button type="submit" disabled={saving} className="w-full gap-2 bg-primary sm:w-auto">
               {saving && <Loader2 className="w-4 h-4 animate-spin" />}
               Salvar configurações
             </Button>

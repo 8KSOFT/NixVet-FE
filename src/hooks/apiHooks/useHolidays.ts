@@ -42,7 +42,8 @@ export function useDeleteHolidayMutation(year: number) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      await api.delete(`/availability/config/holidays/${id}`);
+      const { data } = await api.delete(`/availability/config/holidays/${id}`);
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: holidayKeys.list(year) });

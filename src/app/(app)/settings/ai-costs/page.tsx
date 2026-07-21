@@ -62,14 +62,14 @@ export default function AiCostsPage() {
         </Button>
       </div>
 
-      <div className="flex flex-wrap items-end gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
         <div className="space-y-1">
           <Label className="text-xs text-muted-foreground">De</Label>
-          <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="w-40" />
+          <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="w-full sm:w-40" />
         </div>
         <div className="space-y-1">
           <Label className="text-xs text-muted-foreground">Até</Label>
-          <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="w-40" />
+          <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="w-full sm:w-40" />
         </div>
       </div>
 
@@ -110,13 +110,14 @@ export default function AiCostsPage() {
       </div>
 
       {(data?.by_operation?.length ?? 0) > 0 && (
-        <Card>
-          <CardContent className="p-5">
+        <Card className="rounded-none border-0 bg-transparent py-0 shadow-none sm:rounded-xl sm:border sm:border-border/80 sm:bg-card sm:py-6 sm:shadow-(--shadow-card)">
+          <CardContent className="px-0 py-4 sm:p-5">
             <h2 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
               <TrendingUp className="size-4" />
               Consumo por operação
             </h2>
-            <div className="overflow-x-auto">
+            {/* Desktop / tablet: tabela */}
+            <div className="hidden overflow-x-auto md:block">
               <Table className="min-w-full border-collapse bg-white text-sm">
                 <TableHeader>
                   <TableRow className="border-b border-gray-300 h-15">
@@ -140,15 +141,30 @@ export default function AiCostsPage() {
                 </TableBody>
               </Table>
             </div>
+
+            {/* Mobile: cards */}
+            <div className="space-y-2 md:hidden">
+              {data!.by_operation.map((op) => (
+                <div key={op.operation} className="rounded-lg border border-gray-300 p-3 text-sm">
+                  <p className="font-medium">{OP_LABELS[op.operation] || op.operation}</p>
+                  <div className="mt-2 flex justify-between text-muted-foreground">
+                    <span>Chamadas: {Number(op.calls)}</span>
+                    <span>Tokens: {formatTokens(Number(op.tokens))}</span>
+                    <span className="font-medium text-foreground">{formatCost(Number(op.cost_usd))}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
       )}
 
       {(data?.daily?.length ?? 0) > 0 && (
-        <Card>
-          <CardContent className="p-5">
+        <Card className="rounded-none border-0 bg-transparent py-0 shadow-none sm:rounded-xl sm:border sm:border-border/80 sm:bg-card sm:py-6 sm:shadow-(--shadow-card)">
+          <CardContent className="px-0 py-4 sm:p-5">
             <h2 className="text-sm font-semibold text-foreground mb-3">Consumo diário</h2>
-            <div className="overflow-x-auto">
+            {/* Desktop / tablet: tabela */}
+            <div className="hidden overflow-x-auto md:block">
               <Table className="min-w-full border-collapse bg-white text-sm">
                 <TableHeader>
                   <TableRow className="border-b border-gray-300 h-15">
@@ -170,13 +186,27 @@ export default function AiCostsPage() {
                 </TableBody>
               </Table>
             </div>
+
+            {/* Mobile: cards */}
+            <div className="space-y-2 md:hidden">
+              {data!.daily.map((d) => (
+                <div key={d.date} className="rounded-lg border border-gray-300 p-3 text-sm">
+                  <p className="font-medium">{dayjs(d.date).format('DD/MM/YYYY')}</p>
+                  <div className="mt-2 flex justify-between text-muted-foreground">
+                    <span>Chamadas: {Number(d.calls)}</span>
+                    <span>Tokens: {formatTokens(Number(d.tokens))}</span>
+                    <span className="font-medium text-foreground">{formatCost(Number(d.cost_usd))}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
       )}
 
       {(data?.recent?.length ?? 0) > 0 && (
-        <Card>
-          <CardContent className="p-5">
+        <Card className="rounded-none border-0 bg-transparent py-0 shadow-none sm:rounded-xl sm:border sm:border-border/80 sm:bg-card sm:py-6 sm:shadow-(--shadow-card)">
+          <CardContent className="px-0 py-4 sm:p-5">
             <h2 className="text-sm font-semibold text-foreground mb-3">Últimas chamadas</h2>
             {/* Desktop / tablet: tabela */}
             <div className="hidden overflow-x-auto md:block">
@@ -235,11 +265,9 @@ export default function AiCostsPage() {
       )}
 
       {!loading && !data && (
-        <Card>
-          <CardContent className="p-8 text-center text-muted-foreground">
-            Nenhum dado de consumo encontrado para o período selecionado.
-          </CardContent>
-        </Card>
+        <div className="rounded-lg border border-gray-300 bg-white py-8 text-center text-sm text-slate-500">
+          Nenhum dado de consumo encontrado para o período selecionado.
+        </div>
       )}
     </div>
   );

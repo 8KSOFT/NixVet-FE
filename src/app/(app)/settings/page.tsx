@@ -2,6 +2,7 @@
 
 import React from 'react';
 import type { ApiRequestError } from '@/app/types/api-error';
+import { getApiMessage } from '@/app/types/api-response';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -135,7 +136,6 @@ export default function SettingsPage() {
   const handleGoogleDisconnect = async () => {
     try {
       await googleDisconnectMutation.mutateAsync();
-      toast.success('Integração Google desconectada');
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao desconectar Google'));
     }
@@ -144,7 +144,6 @@ export default function SettingsPage() {
   const handleGoogleSaveCalendar = async () => {
     try {
       await saveGoogleCalendarMutation.mutateAsync({ calendarId: selectedCalendarId, syncDirection });
-      toast.success('Configurações do Google atualizadas');
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao salvar'));
     }
@@ -153,7 +152,6 @@ export default function SettingsPage() {
   const handleForceSync = async () => {
     try {
       await googleForceSyncMutation.mutateAsync();
-      toast.success('Sincronização executada');
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao sincronizar'));
     }
@@ -250,7 +248,7 @@ export default function SettingsPage() {
       const fullAddress = values.street
         ? `${values.street}, ${values.number}${values.complement ? ` - ${values.complement}` : ''} - ${values.neighborhood} - ${values.city}/${values.state}`
         : '';
-      await updateTenantMutation.mutateAsync({
+      const result = await updateTenantMutation.mutateAsync({
         name: values.clinicName,
         email: values.email,
         phone: values.phone,
@@ -262,7 +260,7 @@ export default function SettingsPage() {
         address: fullAddress,
         cep: values.cep,
       });
-      toast.success('Configurações salvas com sucesso!', { id: 'saving' });
+      toast.success(getApiMessage(result) ?? 'Configurações salvas com sucesso!', { id: 'saving' });
     } catch (error) {
       console.error('Error saving settings:', error);
       toast.error('Erro ao salvar configurações', { id: 'saving' });
@@ -287,11 +285,6 @@ export default function SettingsPage() {
         };
       }
       await createTenantMutation.mutateAsync(payload);
-      toast.success(
-        payload.initialUser
-          ? `Clínica "${values.name}" e usuário criados. Código: ${payload.code}`
-          : `Clínica "${values.name}" criada. Código para login: ${payload.code}`,
-      );
       resetTenant();
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao criar clínica'));
@@ -300,8 +293,8 @@ export default function SettingsPage() {
 
   const saveChatbotToggle = async (enabled: boolean) => {
     try {
-      await updateTenantMutation.mutateAsync({ whatsapp_ai_chatbot_enabled: enabled });
-      toast.success(enabled ? 'Chatbot de IA ativado' : 'Chatbot de IA desativado');
+      const result = await updateTenantMutation.mutateAsync({ whatsapp_ai_chatbot_enabled: enabled });
+      toast.success(getApiMessage(result) ?? (enabled ? 'Chatbot de IA ativado' : 'Chatbot de IA desativado'));
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao salvar'));
     }
@@ -380,44 +373,44 @@ export default function SettingsPage() {
             <CardTitle>Dados da Clínica</CardTitle>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit(onFinish)} className="flex flex-col gap-4">
-              <div className="flex flex-col gap-1.5">
+            <form onSubmit={handleSubmit(onFinish)} className="flex flex-col gap-4 md:gap-6">
+              <div className="flex flex-col gap-2">
                 <Label>Nome da Clínica</Label>
                 <Input {...register('clinicName')} />
               </div>
-              <div className="flex flex-col gap-1.5">
+              <div className="flex flex-col gap-2">
                 <Label>Email de Contato</Label>
                 <Input {...register('email')} />
               </div>
-              <div className="flex flex-col gap-1.5">
+              <div className="flex flex-col gap-2">
                 <Label>Telefone</Label>
                 <Input {...register('phone')} />
               </div>
-              <div className="flex flex-col gap-1.5">
+              <div className="flex flex-col gap-2">
                 <Label>Nome da marca (white-label)</Label>
                 <Input {...register('brandName')} placeholder="Ex: Vixen Vet" />
               </div>
-              <div className="flex flex-col gap-1.5">
+              <div className="flex flex-col gap-2">
                 <Label>URL do logo</Label>
                 <Input {...register('logoUrl')} placeholder="https://cdn.empresa.com/logo.png" />
               </div>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="flex flex-col gap-1.5">
+                <div className="flex flex-col gap-2">
                   <Label>Cor principal</Label>
                   <Input {...register('primaryColor')} placeholder="#2563eb" />
                 </div>
-                <div className="flex flex-col gap-1.5">
+                <div className="flex flex-col gap-2">
                   <Label>Subdomínio</Label>
                   <Input {...register('subdomain')} placeholder="vixen" />
                 </div>
               </div>
-              <div className="flex flex-col gap-1.5">
+              <div className="flex flex-col gap-2">
                 <Label>Domínio customizado (opcional)</Label>
                 <Input {...register('customDomain')} placeholder="app.empresa.com.br" />
               </div>
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                <div className="sm:col-span-1 flex flex-col gap-1.5">
+                <div className="sm:col-span-1 flex flex-col gap-2">
                   <Label>CEP</Label>
                   <div className="flex gap-2">
                     <Input {...register('cep')} disabled={loadingCep} placeholder="00000-000" className="flex-1" />
@@ -433,12 +426,12 @@ export default function SettingsPage() {
                   </div>
                 </div>
                 <div className="sm:col-span-2">
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="col-span-2 flex flex-col gap-1.5">
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="col-span-2 flex flex-col gap-2">
                       <Label>Logradouro</Label>
                       <Input {...register('street')} placeholder="Rua, Av, etc" />
                     </div>
-                    <div className="flex flex-col gap-1.5">
+                    <div className="flex flex-col gap-2">
                       <Label>Número</Label>
                       <Input {...register('number')} placeholder="123" />
                     </div>
@@ -447,22 +440,22 @@ export default function SettingsPage() {
               </div>
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                <div className="flex flex-col gap-1.5">
+                <div className="flex flex-col gap-2">
                   <Label>Complemento</Label>
                   <Input {...register('complement')} placeholder="Apto 101" />
                 </div>
-                <div className="flex flex-col gap-1.5">
+                <div className="flex flex-col gap-2">
                   <Label>Bairro</Label>
                   <Input {...register('neighborhood')} />
                 </div>
-                <div className="flex flex-col gap-1.5">
+                <div className="flex flex-col gap-2">
                   <Label>Cidade</Label>
                   <Input {...register('city')} />
                 </div>
               </div>
 
               <div className="grid grid-cols-3 gap-4">
-                <div className="flex flex-col gap-1.5">
+                <div className="flex flex-col gap-2">
                   <Label>UF</Label>
                   <Input {...register('state')} maxLength={2} />
                 </div>

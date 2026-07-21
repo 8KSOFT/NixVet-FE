@@ -51,7 +51,8 @@ export function useSeedDefaultChatbotWorkflowMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async () => {
-      await api.post('/chatbot-workflows/seed-default');
+      const { data } = await api.post('/chatbot-workflows/seed-default');
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: chatbotWorkflowKeys.lists() });
@@ -63,7 +64,8 @@ export function useActivateChatbotWorkflowMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      await api.put(`/chatbot-workflows/${id}/activate`);
+      const { data } = await api.put(`/chatbot-workflows/${id}/activate`);
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: chatbotWorkflowKeys.lists() });
@@ -75,7 +77,8 @@ export function useDeleteChatbotWorkflowMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      await api.delete(`/chatbot-workflows/${id}`);
+      const { data } = await api.delete(`/chatbot-workflows/${id}`);
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: chatbotWorkflowKeys.lists() });

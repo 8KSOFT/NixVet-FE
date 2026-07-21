@@ -64,7 +64,8 @@ export function useDeactivateHealthPlanMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      await api.delete(`/health-plans/${id}`);
+      const { data } = await api.delete(`/health-plans/${id}`);
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: healthPlanKeys.all });

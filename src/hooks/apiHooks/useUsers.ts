@@ -107,7 +107,8 @@ export function useDeleteUserMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      await api.delete(`/users/${id}`);
+      const { data } = await api.delete(`/users/${id}`);
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: userKeys.all });

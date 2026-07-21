@@ -114,7 +114,8 @@ export function useDeleteSurgicalProcedurePlanPriceMutation(procedureId: number)
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (healthPlanId: string) => {
-      await api.delete(`/catalog/surgical-procedures/${procedureId}/plan-prices/${healthPlanId}`);
+      const { data } = await api.delete(`/catalog/surgical-procedures/${procedureId}/plan-prices/${healthPlanId}`);
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: surgicalProcedureKeys.planPrices(procedureId) });

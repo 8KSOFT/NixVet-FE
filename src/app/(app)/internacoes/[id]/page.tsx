@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { DashboardCreateFormDialog } from '@/components/dashboard-create-form-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
@@ -127,7 +127,6 @@ function CustosTab({ hospitalizationId, status }: { hospitalizationId: string; s
   const addCost = async () => {
     try {
       await addCostMutation.mutateAsync({ hospitalizationId, payload: form });
-      toast.success('Custo adicionado');
       setOpenAdd(false);
     } catch {
       toast.error('Erro ao adicionar');
@@ -137,7 +136,6 @@ function CustosTab({ hospitalizationId, status }: { hospitalizationId: string; s
   const deleteCost = async (costId: string) => {
     try {
       await deleteCostMutation.mutateAsync({ hospitalizationId, costId });
-      toast.success('Removido');
     } catch {
       toast.error('Erro ao remover');
     }
@@ -178,13 +176,13 @@ function CustosTab({ hospitalizationId, status }: { hospitalizationId: string; s
         </div>
       )}
 
-      <div className="flex flex-wrap gap-2 sm:justify-between">
-        <Button size="sm" variant="outline" onClick={() => setOpenAdd(true)}>
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-between">
+        <Button size="sm" variant="outline" onClick={() => setOpenAdd(true)} className="w-full sm:w-auto">
           <Plus className="mr-2 size-4" />
           Adicionar Item
         </Button>
         {status === 'discharged' && (
-          <Button size="sm" onClick={generateInvoice}>
+          <Button size="sm" onClick={generateInvoice} className="w-full sm:w-auto">
             <Download className="mr-2 size-4" />
             Gerar Fatura
           </Button>
@@ -280,71 +278,71 @@ function CustosTab({ hospitalizationId, status }: { hospitalizationId: string; s
         </>
       )}
 
-      <Dialog open={openAdd} onOpenChange={setOpenAdd}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Adicionar Item de Custo</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div className="space-y-1">
-                <Label>Tipo</Label>
-                <Select value={form.type} onValueChange={(v) => setForm((f) => ({ ...f, type: v }))}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(COST_TYPE_LABELS).map(([k, v]) => (
-                      <SelectItem key={k} value={k}>
-                        {v}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <Label>Data</Label>
-                <Input
-                  type="date"
-                  value={form.date}
-                  onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
-                />
-              </div>
-              <div className="col-span-2 space-y-1">
-                <Label>Descrição</Label>
-                <Input
-                  value={form.description}
-                  onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                />
-              </div>
-              <div className="space-y-1">
-                <Label>Quantidade</Label>
-                <Input
-                  type="number"
-                  step="0.001"
-                  value={form.quantity}
-                  onChange={(e) => setForm((f) => ({ ...f, quantity: Number(e.target.value) }))}
-                />
-              </div>
-              <div className="space-y-1">
-                <Label>Valor Unitário</Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={form.unit_price}
-                  onChange={(e) => setForm((f) => ({ ...f, unit_price: Number(e.target.value) }))}
-                />
-              </div>
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setOpenAdd(false)}>
-                Cancelar
-              </Button>
-              <Button onClick={addCost}>Adicionar</Button>
-            </div>
+      <DashboardCreateFormDialog
+        open={openAdd}
+        onOpenChange={setOpenAdd}
+        title="Adicionar Item de Custo"
+        contentClassName="modal-responsive"
+        footer={
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button variant="outline" className="border border-gray-300" onClick={() => setOpenAdd(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={addCost} className="bg-primary">Adicionar</Button>
           </div>
-        </DialogContent>
-      </Dialog>
+        }
+      >
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label>Tipo</Label>
+            <Select value={form.type} onValueChange={(v) => setForm((f) => ({ ...f, type: v }))}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(COST_TYPE_LABELS).map(([k, v]) => (
+                  <SelectItem key={k} value={k}>
+                    {v}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Data</Label>
+            <Input
+              type="date"
+              value={form.date}
+              onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
+            />
+          </div>
+          <div className="col-span-2 space-y-2">
+            <Label>Descrição</Label>
+            <Input
+              value={form.description}
+              onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Quantidade</Label>
+            <Input
+              type="number"
+              step="0.001"
+              value={form.quantity}
+              onChange={(e) => setForm((f) => ({ ...f, quantity: Number(e.target.value) }))}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Valor Unitário</Label>
+            <Input
+              type="number"
+              step="0.01"
+              value={form.unit_price}
+              onChange={(e) => setForm((f) => ({ ...f, unit_price: Number(e.target.value) }))}
+            />
+          </div>
+        </div>
+      </DashboardCreateFormDialog>
     </div>
   );
 }
@@ -377,7 +375,6 @@ function OcorrenciasTab({ hospitalizationId }: { hospitalizationId: string }) {
           spo2_percent: form.spo2_percent ? Number(form.spo2_percent) : undefined,
         },
       });
-      toast.success('Ocorrência registrada');
       setOpenNew(false);
     } catch {
       toast.error('Erro ao registrar');
@@ -402,12 +399,12 @@ function OcorrenciasTab({ hospitalizationId }: { hospitalizationId: string }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-2 sm:justify-between">
-        <Button size="sm" variant="outline" onClick={() => setOpenNew(true)}>
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-between">
+        <Button size="sm" variant="outline" onClick={() => setOpenNew(true)} className="w-full sm:w-auto">
           <Plus className="mr-2 size-4" />
           Nova Ocorrência
         </Button>
-        <Button size="sm" variant="ghost" onClick={downloadPdf}>
+        <Button size="sm" variant="ghost" onClick={downloadPdf} className="w-full sm:w-auto">
           <Download className="mr-2 size-4" />
           Exportar Ficha PDF
         </Button>
@@ -476,80 +473,82 @@ function OcorrenciasTab({ hospitalizationId }: { hospitalizationId: string }) {
         )}
       </div>
 
-      <Dialog open={openNew} onOpenChange={setOpenNew}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Nova Ocorrência</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div className="space-y-1">
-              <Label>Tipo</Label>
-              <Select value={form.evolution_type} onValueChange={(v) => setForm((f) => ({ ...f, evolution_type: v }))}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="clinical">Clínica</SelectItem>
-                  <SelectItem value="procedure">Procedimento</SelectItem>
-                  <SelectItem value="nursing">Enfermagem</SelectItem>
-                  <SelectItem value="observation">Observação</SelectItem>
-                </SelectContent>
-              </Select>
+      <DashboardCreateFormDialog
+        open={openNew}
+        onOpenChange={setOpenNew}
+        title="Nova Ocorrência"
+        contentClassName="modal-responsive"
+        footer={
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button variant="outline" className="border border-gray-300" onClick={() => setOpenNew(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={createOcorrencia} className="bg-primary">Registrar</Button>
+          </div>
+        }
+      >
+        <div className="space-y-4 md:space-y-6">
+          <div className="space-y-2">
+            <Label>Tipo</Label>
+            <Select value={form.evolution_type} onValueChange={(v) => setForm((f) => ({ ...f, evolution_type: v }))}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="clinical">Clínica</SelectItem>
+                <SelectItem value="procedure">Procedimento</SelectItem>
+                <SelectItem value="nursing">Enfermagem</SelectItem>
+                <SelectItem value="observation">Observação</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="space-y-2">
+              <Label>FC (bpm)</Label>
+              <Input
+                type="number"
+                value={form.heart_rate}
+                onChange={(e) => setForm((f) => ({ ...f, heart_rate: e.target.value }))}
+              />
             </div>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-              <div className="space-y-1">
-                <Label>FC (bpm)</Label>
-                <Input
-                  type="number"
-                  value={form.heart_rate}
-                  onChange={(e) => setForm((f) => ({ ...f, heart_rate: e.target.value }))}
-                />
-              </div>
-              <div className="space-y-1">
-                <Label>Temp. (°C)</Label>
-                <Input
-                  type="number"
-                  step="0.1"
-                  value={form.temperature_c}
-                  onChange={(e) => setForm((f) => ({ ...f, temperature_c: e.target.value }))}
-                />
-              </div>
-              <div className="space-y-1">
-                <Label>SpO2 (%)</Label>
-                <Input
-                  type="number"
-                  value={form.spo2_percent}
-                  onChange={(e) => setForm((f) => ({ ...f, spo2_percent: e.target.value }))}
-                />
-              </div>
+            <div className="space-y-2">
+              <Label>Temp. (°C)</Label>
+              <Input
+                type="number"
+                step="0.1"
+                value={form.temperature_c}
+                onChange={(e) => setForm((f) => ({ ...f, temperature_c: e.target.value }))}
+              />
             </div>
-            {(['subjective', 'objective', 'assessment', 'plan'] as const).map((field) => (
-              <div key={field} className="space-y-1">
-                <Label>
-                  {field === 'subjective'
-                    ? 'Subjetivo'
-                    : field === 'objective'
-                      ? 'Objetivo'
-                      : field === 'assessment'
-                        ? 'Avaliação'
-                        : 'Plano'}
-                </Label>
-                <Textarea
-                  rows={2}
-                  value={form[field]}
-                  onChange={(e) => setForm((f) => ({ ...f, [field]: e.target.value }))}
-                />
-              </div>
-            ))}
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setOpenNew(false)}>
-                Cancelar
-              </Button>
-              <Button onClick={createOcorrencia}>Registrar</Button>
+            <div className="space-y-2">
+              <Label>SpO2 (%)</Label>
+              <Input
+                type="number"
+                value={form.spo2_percent}
+                onChange={(e) => setForm((f) => ({ ...f, spo2_percent: e.target.value }))}
+              />
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+          {(['subjective', 'objective', 'assessment', 'plan'] as const).map((field) => (
+            <div key={field} className="space-y-2">
+              <Label>
+                {field === 'subjective'
+                  ? 'Subjetivo'
+                  : field === 'objective'
+                    ? 'Objetivo'
+                    : field === 'assessment'
+                      ? 'Avaliação'
+                      : 'Plano'}
+              </Label>
+              <Textarea
+                rows={2}
+                value={form[field]}
+                onChange={(e) => setForm((f) => ({ ...f, [field]: e.target.value }))}
+              />
+            </div>
+          ))}
+        </div>
+      </DashboardCreateFormDialog>
     </div>
   );
 }
@@ -573,7 +572,6 @@ function MedicacoesTab({ hospitalizationId }: { hospitalizationId: string }) {
   const prescribe = async () => {
     try {
       await prescribeMutation.mutateAsync({ hospitalizationId, payload: form });
-      toast.success('Medicação prescrita');
       setOpenNew(false);
     } catch {
       toast.error('Erro ao prescrever');
@@ -583,7 +581,6 @@ function MedicacoesTab({ hospitalizationId }: { hospitalizationId: string }) {
   const confirm = async (adminId: string) => {
     try {
       await confirmAdminMutation.mutateAsync({ hospitalizationId, adminId });
-      toast.success('Administração confirmada');
     } catch {
       toast.error('Erro ao confirmar');
     }
@@ -607,12 +604,12 @@ function MedicacoesTab({ hospitalizationId }: { hospitalizationId: string }) {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-2 sm:justify-between">
-        <Button size="sm" variant="outline" onClick={() => setOpenNew(true)}>
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-between">
+        <Button size="sm" variant="outline" onClick={() => setOpenNew(true)} className="w-full sm:w-auto">
           <Plus className="mr-2 size-4" />
           Prescrever Medicação
         </Button>
-        <Button size="sm" variant="ghost" onClick={downloadKardex}>
+        <Button size="sm" variant="ghost" onClick={downloadKardex} className="w-full sm:w-auto">
           <Download className="mr-2 size-4" />
           Exportar Kardex PDF
         </Button>
@@ -664,69 +661,69 @@ function MedicacoesTab({ hospitalizationId }: { hospitalizationId: string }) {
         </div>
       )}
 
-      <Dialog open={openNew} onOpenChange={setOpenNew}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Prescrever Medicação</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div className="sm:col-span-2 space-y-1">
-                <Label>Medicamento *</Label>
-                <Input
-                  value={form.medication_name}
-                  onChange={(e) => setForm((f) => ({ ...f, medication_name: e.target.value }))}
-                />
-              </div>
-              <div className="space-y-1">
-                <Label>Dose *</Label>
-                <Input
-                  value={form.dose}
-                  onChange={(e) => setForm((f) => ({ ...f, dose: e.target.value }))}
-                  placeholder="Ex: 10mg/kg"
-                />
-              </div>
-              <div className="space-y-1">
-                <Label>Via</Label>
-                <Select value={form.route} onValueChange={(v) => setForm((f) => ({ ...f, route: v }))}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {['oral', 'iv', 'im', 'sc', 'topical', 'inhalation', 'other'].map((r) => (
-                      <SelectItem key={r} value={r}>
-                        {r.toUpperCase()}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <Label>Frequência (a cada X horas)</Label>
-                <Input
-                  type="number"
-                  value={form.frequency_hours}
-                  onChange={(e) => setForm((f) => ({ ...f, frequency_hours: Number(e.target.value) }))}
-                />
-              </div>
-              <div className="space-y-1">
-                <Label>Início</Label>
-                <Input
-                  type="datetime-local"
-                  value={form.start_datetime}
-                  onChange={(e) => setForm((f) => ({ ...f, start_datetime: e.target.value }))}
-                />
-              </div>
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setOpenNew(false)}>
-                Cancelar
-              </Button>
-              <Button onClick={prescribe}>Prescrever</Button>
-            </div>
+      <DashboardCreateFormDialog
+        open={openNew}
+        onOpenChange={setOpenNew}
+        title="Prescrever Medicação"
+        contentClassName="modal-responsive"
+        footer={
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button variant="outline" className="border border-gray-300" onClick={() => setOpenNew(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={prescribe} className="bg-primary">Prescrever</Button>
           </div>
-        </DialogContent>
-      </Dialog>
+        }
+      >
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="sm:col-span-2 space-y-2">
+            <Label>Medicamento *</Label>
+            <Input
+              value={form.medication_name}
+              onChange={(e) => setForm((f) => ({ ...f, medication_name: e.target.value }))}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Dose *</Label>
+            <Input
+              value={form.dose}
+              onChange={(e) => setForm((f) => ({ ...f, dose: e.target.value }))}
+              placeholder="Ex: 10mg/kg"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Via</Label>
+            <Select value={form.route} onValueChange={(v) => setForm((f) => ({ ...f, route: v }))}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {['oral', 'iv', 'im', 'sc', 'topical', 'inhalation', 'other'].map((r) => (
+                  <SelectItem key={r} value={r}>
+                    {r.toUpperCase()}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Frequência (a cada X horas)</Label>
+            <Input
+              type="number"
+              value={form.frequency_hours}
+              onChange={(e) => setForm((f) => ({ ...f, frequency_hours: Number(e.target.value) }))}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Início</Label>
+            <Input
+              type="datetime-local"
+              value={form.start_datetime}
+              onChange={(e) => setForm((f) => ({ ...f, start_datetime: e.target.value }))}
+            />
+          </div>
+        </div>
+      </DashboardCreateFormDialog>
     </div>
   );
 }
@@ -752,7 +749,6 @@ function SbarTab({ hospitalizationId, status }: { hospitalizationId: string; sta
     }
     try {
       await createReportMutation.mutateAsync({ hospitalizationId, payload: form });
-      toast.success('Relatório SBAR salvo');
       setForm(emptyForm());
     } catch { toast.error('Erro ao salvar relatório'); }
   };
@@ -761,7 +757,6 @@ function SbarTab({ hospitalizationId, status }: { hospitalizationId: string; sta
     setReviewingId(id);
     try {
       await aiReviewMutation.mutateAsync({ hospitalizationId, reportId: id });
-      toast.success('Relatório revisado com IA');
     } catch { toast.error('Erro ao revisar com IA'); } finally { setReviewingId(null); }
   };
 
@@ -864,7 +859,6 @@ function VisitasTab({ hospitalizationId, status }: { hospitalizationId: string; 
     if (!form.visitor_name && !form.notes) { toast.error('Informe o visitante ou uma observação'); return; }
     try {
       await createVisitMutation.mutateAsync({ hospitalizationId, payload: form });
-      toast.success('Visita registrada');
       setForm(emptyForm());
     } catch { toast.error('Erro ao registrar visita'); }
   };
@@ -967,7 +961,6 @@ function RelatorioMedicoTab({
         record_type: 'internacao',
       });
       await linkRecordMutation.mutateAsync({ id: hospitalizationId, medicalRecordId: created.id });
-      toast.success('Ficha de internação criada');
       onLinked();
     } catch { toast.error('Erro ao criar ficha de internação'); }
   };
@@ -976,7 +969,6 @@ function RelatorioMedicoTab({
     if (!medicalRecordId) return;
     try {
       await updateRecordMutation.mutateAsync({ id: medicalRecordId, payload: form });
-      toast.success('Ficha salva');
     } catch { toast.error('Erro ao salvar ficha'); }
   };
 
@@ -1056,7 +1048,6 @@ export default function HospitalizationDetailPage() {
 
     try {
       await dischargeMutation.mutateAsync({ id: hospitalizationId, payload: dischargeForm });
-      toast.success('Alta registrada');
       setOpenDischarge(false);
     } catch {
       toast.error('Erro ao registrar alta');
@@ -1078,41 +1069,67 @@ export default function HospitalizationDetailPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-wrap items-center gap-3">
-          <Button variant="ghost" size="icon" asChild>
-            <Link href="/internacoes">
-              <ArrowLeft className="size-4" />
-            </Link>
-          </Button>
+      <Button asChild variant="ghost" size="sm">
+        <Link href="/internacoes">
+          <ArrowLeft className="size-4 mr-1" /> Voltar
+        </Link>
+      </Button>
+
+      <Card>
+        <CardHeader className="pb-3">
           <div className="min-w-0">
-            <h1 className="text-xl font-bold truncate">{h.patient?.name}</h1>
-            <p className="text-sm text-muted-foreground">
-              {h.patient?.species} · Admissão: {new Date(h.admission_date).toLocaleDateString('pt-BR')}
-            </p>
+            <h1 className="truncate text-lg font-bold sm:text-xl">{h.patient?.name}</h1>
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
+              <Badge variant={h.status === 'active' ? 'default' : 'secondary'}>{h.status}</Badge>
+            </div>
           </div>
-          <Badge variant={h.status === 'active' ? 'default' : 'secondary'}>{h.status}</Badge>
-        </div>
-        {h.status === 'active' && (
-          <Button variant="destructive" onClick={() => setOpenDischarge(true)} className="w-full sm:w-auto">
-            <LogOut className="mr-2 size-4" />
-            Registrar Alta
-          </Button>
-        )}
-      </div>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Badge variant="secondary" className="font-normal text-muted-foreground">
+              {h.patient?.species}
+            </Badge>
+            <Badge variant="secondary" className="font-normal text-muted-foreground">
+              Admissão: {new Date(h.admission_date).toLocaleDateString('pt-BR')}
+            </Badge>
+          </div>
+          {h.status === 'active' && (
+            <div className="flex flex-col gap-2 border-t border-border/60 pt-3 sm:flex-row sm:justify-end">
+              <Button variant="destructive" onClick={() => setOpenDischarge(true)} className="w-full sm:w-auto">
+                <LogOut className="mr-2 size-4" />
+                Registrar Alta
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Tabs defaultValue="resumo">
-        <div className="overflow-x-auto">
-          <TabsList className="w-full justify-start gap-1">
-            <TabsTrigger value="resumo" className="shrink-0">Resumo</TabsTrigger>
-            <TabsTrigger value="ocorrencias" className="shrink-0">Ocorrências</TabsTrigger>
-            <TabsTrigger value="relatorio-medico" className="shrink-0"><FileText className="mr-1 size-4" /> Relatório Médico</TabsTrigger>
-            <TabsTrigger value="sbar" className="shrink-0"><ClipboardList className="mr-1 size-4" /> Relatório SBAR</TabsTrigger>
-            <TabsTrigger value="visitas" className="shrink-0"><Users className="mr-1 size-4" /> Visitas</TabsTrigger>
-            <TabsTrigger value="medicacoes" className="shrink-0">Medicações</TabsTrigger>
-            {canSee && <TabsTrigger value="custos" className="shrink-0">Custos</TabsTrigger>}
-          </TabsList>
-        </div>
+        <TabsList className="grid h-auto! w-full grid-cols-1 gap-1 sm:grid-cols-3 lg:grid-cols-7">
+          <TabsTrigger value="resumo" className="h-auto! w-full justify-start whitespace-normal px-3 py-2 text-left leading-snug sm:justify-center sm:text-center">
+            Resumo
+          </TabsTrigger>
+          <TabsTrigger value="ocorrencias" className="h-auto! w-full justify-start whitespace-normal px-3 py-2 text-left leading-snug sm:justify-center sm:text-center">
+            Ocorrências
+          </TabsTrigger>
+          <TabsTrigger value="relatorio-medico" className="h-auto! w-full justify-start whitespace-normal px-3 py-2 text-left leading-snug sm:justify-center sm:text-center">
+            <FileText className="mr-1 size-4 shrink-0" /> Relatório Médico
+          </TabsTrigger>
+          <TabsTrigger value="sbar" className="h-auto! w-full justify-start whitespace-normal px-3 py-2 text-left leading-snug sm:justify-center sm:text-center">
+            <ClipboardList className="mr-1 size-4 shrink-0" /> Relatório SBAR
+          </TabsTrigger>
+          <TabsTrigger value="visitas" className="h-auto! w-full justify-start whitespace-normal px-3 py-2 text-left leading-snug sm:justify-center sm:text-center">
+            <Users className="mr-1 size-4 shrink-0" /> Visitas
+          </TabsTrigger>
+          <TabsTrigger value="medicacoes" className="h-auto! w-full justify-start whitespace-normal px-3 py-2 text-left leading-snug sm:justify-center sm:text-center">
+            Medicações
+          </TabsTrigger>
+          {canSee && (
+            <TabsTrigger value="custos" className="h-auto! w-full justify-start whitespace-normal px-3 py-2 text-left leading-snug sm:justify-center sm:text-center">
+              Custos
+            </TabsTrigger>
+          )}
+        </TabsList>
 
         <TabsContent value="resumo" className="mt-4">
           <Card>
@@ -1155,56 +1172,58 @@ export default function HospitalizationDetailPage() {
         )}
       </Tabs>
 
-      <Dialog open={openDischarge} onOpenChange={setOpenDischarge}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Registrar Alta</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div className="space-y-1">
-              <Label>Data/Hora de Alta</Label>
-              <Input
-                type="datetime-local"
-                value={dischargeForm.actual_discharge_date}
-                onChange={(e) => setDischargeForm((f) => ({ ...f, actual_discharge_date: e.target.value }))}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label>Condição de Alta</Label>
-              <Select
-                value={dischargeForm.discharge_condition}
-                onValueChange={(v) => setDischargeForm((f) => ({ ...f, discharge_condition: v }))}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="improved">Melhorado</SelectItem>
-                  <SelectItem value="cured">Curado</SelectItem>
-                  <SelectItem value="referred">Encaminhado</SelectItem>
-                  <SelectItem value="deceased">Óbito</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1">
-              <Label>Instruções de Alta</Label>
-              <Textarea
-                rows={3}
-                value={dischargeForm.discharge_instructions}
-                onChange={(e) => setDischargeForm((f) => ({ ...f, discharge_instructions: e.target.value }))}
-              />
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setOpenDischarge(false)}>
-                Cancelar
-              </Button>
-              <Button variant="destructive" onClick={handleDischarge}>
-                Confirmar Alta
-              </Button>
-            </div>
+      <DashboardCreateFormDialog
+        open={openDischarge}
+        onOpenChange={setOpenDischarge}
+        title="Registrar Alta"
+        contentClassName="modal-responsive"
+        footer={
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button variant="outline" className="border border-gray-300" onClick={() => setOpenDischarge(false)}>
+              Cancelar
+            </Button>
+            <Button variant="destructive" onClick={handleDischarge}>
+              Confirmar Alta
+            </Button>
           </div>
-        </DialogContent>
-      </Dialog>
+        }
+      >
+        <div className="space-y-4 md:space-y-6">
+          <div className="space-y-2">
+            <Label>Data/Hora de Alta</Label>
+            <Input
+              type="datetime-local"
+              value={dischargeForm.actual_discharge_date}
+              onChange={(e) => setDischargeForm((f) => ({ ...f, actual_discharge_date: e.target.value }))}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Condição de Alta</Label>
+            <Select
+              value={dischargeForm.discharge_condition}
+              onValueChange={(v) => setDischargeForm((f) => ({ ...f, discharge_condition: v }))}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="improved">Melhorado</SelectItem>
+                <SelectItem value="cured">Curado</SelectItem>
+                <SelectItem value="referred">Encaminhado</SelectItem>
+                <SelectItem value="deceased">Óbito</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Instruções de Alta</Label>
+            <Textarea
+              rows={3}
+              value={dischargeForm.discharge_instructions}
+              onChange={(e) => setDischargeForm((f) => ({ ...f, discharge_instructions: e.target.value }))}
+            />
+          </div>
+        </div>
+      </DashboardCreateFormDialog>
     </div>
   );
 }

@@ -83,7 +83,8 @@ export function useDeleteExamMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: number) => {
-      await api.delete(`/catalog/exams/${id}`);
+      const { data } = await api.delete(`/catalog/exams/${id}`);
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: examCatalogKeys.exams() });
@@ -119,7 +120,8 @@ export function useDeleteExamPlanPriceMutation(examId: number) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (healthPlanId: string) => {
-      await api.delete(`/catalog/exams/${examId}/plan-prices/${healthPlanId}`);
+      const { data } = await api.delete(`/catalog/exams/${examId}/plan-prices/${healthPlanId}`);
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: examCatalogKeys.planPrices(examId) });

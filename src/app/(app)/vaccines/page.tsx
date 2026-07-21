@@ -132,7 +132,6 @@ export default function VaccinesPage() {
     try {
       const payload: VaccineReminderPayload = values;
       await createReminder.mutateAsync(payload);
-      toast.success('Lembrete criado');
       setModalOpen(false);
       reset();
     } catch (error: unknown) {

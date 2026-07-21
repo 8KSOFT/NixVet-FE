@@ -69,7 +69,6 @@ function CloseConversationDialog({
     if (!classification) { toast.error('Selecione uma classificação'); return; }
     try {
       await closeMutation.mutateAsync({ conversationId, classification, note });
-      toast.success('Conversa encerrada');
       onSuccess();
       onOpenChange(false);
     } catch {
@@ -220,7 +219,6 @@ export default function WhatsAppPage() {
     try {
       await sendMessageMutation.mutateAsync({ conversationId: selectedId, text: sendText.trim() });
       setSendText('');
-      toast.success('Mensagem enviada');
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao enviar'));
     }
@@ -230,7 +228,6 @@ export default function WhatsAppPage() {
     if (!selectedId) return;
     try {
       await resumeAiMutation.mutateAsync(selectedId);
-      toast.success('Bot retomado — IA voltará a responder automaticamente.');
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao retomar bot'));
     }
@@ -240,7 +237,6 @@ export default function WhatsAppPage() {
     if (!selectedId) return;
     try {
       await pauseAiMutation.mutateAsync(selectedId);
-      toast.success('Bot pausado — você pode responder manualmente.');
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao pausar bot'));
     }
@@ -250,7 +246,6 @@ export default function WhatsAppPage() {
     if (!selectedId) return;
     try {
       await archiveMutation.mutateAsync(selectedId);
-      toast.success('Conversa arquivada — pode acessá-la em "Arquivadas".');
       setSelectedId(null);
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao arquivar conversa'));
@@ -261,7 +256,6 @@ export default function WhatsAppPage() {
     if (!selectedId) return;
     try {
       await unarchiveMutation.mutateAsync(selectedId);
-      toast.success('Conversa desarquivada.');
       setSelectedId(null);
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao desarquivar conversa'));
@@ -272,7 +266,6 @@ export default function WhatsAppPage() {
     if (!selectedId) return;
     try {
       await closeQuickMutation.mutateAsync({ conversationId: selectedId, classification, note: '' });
-      toast.success('Conversa encerrada');
       setSelectedId(null);
     } catch {
       toast.error('Erro ao encerrar conversa');
@@ -284,7 +277,6 @@ export default function WhatsAppPage() {
     setClassifyPopover(false);
     try {
       await classifyMutation.mutateAsync({ conversationId: selectedId, classification });
-      toast.success('Classificação salva');
     } catch {
       toast.error('Erro ao classificar');
     }

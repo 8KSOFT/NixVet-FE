@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { DashboardCreateFormDialog } from '@/components/dashboard-create-form-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -91,7 +92,6 @@ function PlanPricesDialog({
         plan_price: parseFloat(newPlanPrice),
         reimbursement: newReimbursement ? parseFloat(newReimbursement) : 0,
       });
-      toast.success('Preço salvo');
       setAddMode(false);
       setNewPlanId('');
       setNewPlanPrice('');
@@ -104,7 +104,6 @@ function PlanPricesDialog({
   const handleDelete = async (healthPlanId: string) => {
     try {
       await deleteMutation.mutateAsync(healthPlanId);
-      toast.success('Removido');
     } catch {
       toast.error('Erro ao remover');
     }
@@ -125,99 +124,183 @@ function PlanPricesDialog({
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="overflow-x-auto border border-gray-300 rounded-lg">
-            <Table className="min-w-full border-collapse bg-white text-sm">
-              <TableHeader>
-                <TableRow className="border-b border-gray-300 h-15">
-                  <TableHead>Convênio</TableHead>
-                  <TableHead>Valor cobrado</TableHead>
-                  <TableHead>Reembolso recebido</TableHead>
-                  <TableHead className="w-[60px]" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {prices.length === 0 && (
-                  <TableRow>
-                    <TableCell colSpan={4} className="border-t border-slate-200 py-8 text-center text-sm text-slate-500">
-                      Nenhum convênio configurado
-                    </TableCell>
-                  </TableRow>
-                )}
-                {prices.map((p) => (
-                  <TableRow className="border-b border-gray-300 h-15" key={p.id}>
-                    <TableCell>{p.health_plan_name ?? p.health_plan_id}</TableCell>
-                    <TableCell>{fmtBRL(p.plan_price)}</TableCell>
-                    <TableCell>{fmtBRL(p.reimbursement)}</TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="p-0"
-                        title="Remover"
-                        aria-label="Remover"
-                        onClick={() => handleDelete(p.health_plan_id)}
-                      >
-                        <X className="w-4 h-4 text-red-500" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {addMode && (
-                  <TableRow className="border-b border-gray-300 h-15">
-                    <TableCell>
-                      <Select value={newPlanId} onValueChange={setNewPlanId}>
-                        <SelectTrigger className="h-8">
-                          <SelectValue placeholder="Selecionar convênio" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {availablePlans.map((p) => (
-                            <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        placeholder="0,00"
-                        className="h-8"
-                        value={newPlanPrice}
-                        onChange={(e) => setNewPlanPrice(e.target.value)}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        placeholder="0,00"
-                        className="h-8"
-                        value={newReimbursement}
-                        onChange={(e) => setNewReimbursement(e.target.value)}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="p-0"
-                        title="Salvar"
-                        aria-label="Salvar"
-                        disabled={saving}
-                        onClick={handleSaveNew}
-                      >
-                        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-            </div>
+            {prices.length === 0 && !addMode ? (
+              <div className="rounded-lg border border-gray-300 bg-white py-8 text-center text-sm text-slate-500">
+                Nenhum convênio configurado
+              </div>
+            ) : (
+              <>
+                {/* Desktop / tablet: tabela */}
+                <div className="hidden overflow-x-auto rounded-lg border border-gray-300 md:block">
+                <Table className="min-w-full border-collapse bg-white text-sm">
+                  <TableHeader>
+                    <TableRow className="border-b border-gray-300 h-15">
+                      <TableHead>Convênio</TableHead>
+                      <TableHead>Valor cobrado</TableHead>
+                      <TableHead>Reembolso recebido</TableHead>
+                      <TableHead className="w-15" />
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {prices.map((p) => (
+                      <TableRow className="border-b border-gray-300 h-15" key={p.id}>
+                        <TableCell>{p.health_plan_name ?? p.health_plan_id}</TableCell>
+                        <TableCell>{fmtBRL(p.plan_price)}</TableCell>
+                        <TableCell>{fmtBRL(p.reimbursement)}</TableCell>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="p-0"
+                            title="Remover"
+                            aria-label="Remover"
+                            onClick={() => handleDelete(p.health_plan_id)}
+                          >
+                            <X className="w-4 h-4 text-red-500" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {addMode && (
+                      <TableRow className="border-b border-gray-300 h-15">
+                        <TableCell>
+                          <Select value={newPlanId} onValueChange={setNewPlanId}>
+                            <SelectTrigger className="h-8">
+                              <SelectValue placeholder="Selecionar convênio" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {availablePlans.map((p) => (
+                                <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            placeholder="0,00"
+                            className="h-8"
+                            value={newPlanPrice}
+                            onChange={(e) => setNewPlanPrice(e.target.value)}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            placeholder="0,00"
+                            className="h-8"
+                            value={newReimbursement}
+                            onChange={(e) => setNewReimbursement(e.target.value)}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="p-0"
+                            title="Salvar"
+                            aria-label="Salvar"
+                            disabled={saving}
+                            onClick={handleSaveNew}
+                          >
+                            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+                </div>
+
+                {/* Mobile: cards */}
+                <div className="space-y-2 md:hidden">
+                  {prices.map((p) => (
+                    <div key={p.id} className="rounded-lg border border-gray-300 p-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="min-w-0 truncate font-medium">{p.health_plan_name ?? p.health_plan_id}</p>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 shrink-0 p-0"
+                          title="Remover"
+                          aria-label="Remover"
+                          onClick={() => handleDelete(p.health_plan_id)}
+                        >
+                          <X className="w-4 h-4 text-red-500" />
+                        </Button>
+                      </div>
+                      <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <p className="text-xs text-muted-foreground">Valor cobrado</p>
+                          <p className="tabular-nums">{fmtBRL(p.plan_price)}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Reembolso recebido</p>
+                          <p className="tabular-nums">{fmtBRL(p.reimbursement)}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {addMode && (
+                    <div className="space-y-3 rounded-lg border border-gray-300 p-3">
+                      <div className="space-y-1.5">
+                        <Label>Convênio</Label>
+                        <Select value={newPlanId} onValueChange={setNewPlanId}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecionar convênio" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {availablePlans.map((p) => (
+                              <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <Label>Valor cobrado</Label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            placeholder="0,00"
+                            value={newPlanPrice}
+                            onChange={(e) => setNewPlanPrice(e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label>Reembolso</Label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            placeholder="0,00"
+                            value={newReimbursement}
+                            onChange={(e) => setNewReimbursement(e.target.value)}
+                          />
+                        </div>
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <Button variant="outline" size="sm" onClick={() => setAddMode(false)}>
+                          Cancelar
+                        </Button>
+                        <Button size="sm" disabled={saving} onClick={handleSaveNew} className="bg-primary">
+                          {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                          Salvar
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
             {!addMode && availablePlans.length > 0 && (
-              <Button variant="outline" size="sm" onClick={() => setAddMode(true)}>
+              <Button variant="outline" size="sm" onClick={() => setAddMode(true)} className="w-full sm:w-auto">
                 <Plus className="w-4 h-4 mr-1" /> Adicionar convênio
               </Button>
             )}
@@ -265,12 +348,7 @@ export default function SettingsSurgicalProceduresPage() {
 
   const handleDelete = async (id: number) => {
     try {
-      const result = await deleteMutation.mutateAsync(id);
-      toast.success(
-        result.action === 'hidden_base'
-          ? 'Procedimento base ocultado para sua clínica'
-          : 'Procedimento removido',
-      );
+      await deleteMutation.mutateAsync(id);
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao remover'));
     }
@@ -287,10 +365,8 @@ export default function SettingsSurgicalProceduresPage() {
     try {
       if (editingId) {
         await updateMutation.mutateAsync({ id: editingId, payload });
-        toast.success('Atualizado');
       } else {
         await createMutation.mutateAsync(payload);
-        toast.success('Criado');
       }
       setModalOpen(false);
     } catch (error: unknown) {
@@ -300,10 +376,10 @@ export default function SettingsSurgicalProceduresPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-heading font-bold text-primary mb-6">Procedimentos cirúrgicos</h1>
-      <Card>
-        <CardContent className="pt-6">
-          <Button onClick={openCreate} className="mb-4 bg-primary">
+      <h1 className="text-2xl font-heading font-bold mb-6">Procedimentos cirúrgicos</h1>
+      <Card className="rounded-none border-0 bg-transparent py-0 shadow-none sm:rounded-xl sm:border sm:border-border/80 sm:bg-card sm:py-6 sm:shadow-(--shadow-card)">
+        <CardContent className="px-0 pt-0 sm:px-6 sm:pt-6">
+          <Button onClick={openCreate} className="mb-4 w-full bg-primary sm:w-auto">
             <Plus className="w-4 h-4 mr-2" /> Novo procedimento
           </Button>
           {loading ? (
@@ -489,84 +565,96 @@ export default function SettingsSurgicalProceduresPage() {
         </CardContent>
       </Card>
 
-      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editingId ? 'Editar procedimento' : 'Novo procedimento'}</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div>
-              <Label>Categoria</Label>
-              <Controller
-                name="category_id"
-                control={control}
-                render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((c) => (
-                        <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </div>
-            <div>
-              <Label htmlFor="name">Nome</Label>
-              <Input id="name" placeholder="Nome do procedimento" {...register('name', { required: true })} />
-              {errors.name && <p className="text-red-500 text-xs mt-1">Campo obrigatório</p>}
-            </div>
-            <div className="border-t pt-4">
-              <p className="text-sm font-medium text-muted-foreground mb-3">Precificação</p>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                <div>
-                  <Label htmlFor="private_price">Preço Particular (R$)</Label>
-                  <Input
-                    id="private_price"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder="0,00"
-                    {...register('private_price')}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="cost_price">Custo Interno (R$)</Label>
-                  <Input
-                    id="cost_price"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder="0,00"
-                    {...register('cost_price')}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="tax_percentage">Imposto (%)</Label>
-                  <Input
-                    id="tax_percentage"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    max="100"
-                    placeholder="0"
-                    {...register('tax_percentage')}
-                  />
-                </div>
+      <DashboardCreateFormDialog
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        title={editingId ? 'Editar procedimento' : 'Novo procedimento'}
+        contentClassName="modal-responsive"
+        footer={
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              className="border border-gray-300"
+              onClick={() => setModalOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" form="surgical-procedure-form" className="bg-primary">
+              {editingId ? 'Salvar' : 'Criar'}
+            </Button>
+          </div>
+        }
+      >
+        <form id="surgical-procedure-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4 md:space-y-6">
+          <div className="space-y-2">
+            <Label>Categoria</Label>
+            <Controller
+              name="category_id"
+              control={control}
+              render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((c) => (
+                      <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="name">Nome</Label>
+            <Input id="name" placeholder="Nome do procedimento" {...register('name', { required: true })} />
+            {errors.name && <p className="text-sm text-destructive">Campo obrigatório</p>}
+          </div>
+          <div className="border-t border-gray-200 pt-4">
+            <p className="mb-3 text-sm font-medium text-muted-foreground">Precificação</p>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div className="space-y-2">
+                <Label htmlFor="private_price">Preço Particular (R$)</Label>
+                <Input
+                  id="private_price"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="0,00"
+                  {...register('private_price')}
+                />
               </div>
-              <p className="mt-2 text-xs text-muted-foreground">
-                Imposto é adicionado por cima do preço (cliente paga preço + imposto). Margem = preço − custo.
-              </p>
+              <div className="space-y-2">
+                <Label htmlFor="cost_price">Custo Interno (R$)</Label>
+                <Input
+                  id="cost_price"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="0,00"
+                  {...register('cost_price')}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="tax_percentage">Imposto (%)</Label>
+                <Input
+                  id="tax_percentage"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="100"
+                  placeholder="0"
+                  {...register('tax_percentage')}
+                />
+              </div>
             </div>
-            <DialogFooter>
-              <Button type="submit" className="bg-primary">Salvar</Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Imposto é adicionado por cima do preço (cliente paga preço + imposto). Margem = preço − custo.
+            </p>
+          </div>
+        </form>
+      </DashboardCreateFormDialog>
 
       {planPricesFor && (
         <PlanPricesDialog

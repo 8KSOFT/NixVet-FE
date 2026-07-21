@@ -73,7 +73,8 @@ export function useDeleteClinicTermTemplateMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      await api.delete(`/clinic-term-templates/${id}`);
+      const { data } = await api.delete(`/clinic-term-templates/${id}`);
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: clinicTermTemplateKeys.all });

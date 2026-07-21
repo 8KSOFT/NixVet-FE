@@ -396,7 +396,6 @@ export default function CalendarPage() {
           address: '-',
         });
         tutorId = createdTutor.id;
-        toast.success(`Tutor ${newTutor.name} cadastrado`);
       } else if (newTutorId) {
         tutorId = newTutorId;
       }
@@ -411,7 +410,6 @@ export default function CalendarPage() {
         no_tutor_reason: !tutorId ? 'EMERGENCIA' : null,
       });
       const patientId = createdPatient.id;
-      toast.success(`Pet ${newPet.name} cadastrado`);
       setNewPatientMode(false);
       setFormData((prev) => ({ ...prev, patient_id: patientId }));
     } catch (error: unknown) {
@@ -448,7 +446,6 @@ export default function CalendarPage() {
         duration_minutes: tp?.duration_minutes,
         channel_origin: 'WEB',
       });
-      toast.success('Consulta agendada');
       setModalVisible(false);
     } catch (e: unknown) {
       toast.error(getApiErrorMessage(e, 'Erro ao agendar consulta'));
@@ -459,7 +456,6 @@ export default function CalendarPage() {
     if (!selectedConsultation) return;
     try {
       await updateConsultation.mutateAsync({ id: selectedConsultation.id, payload: { status: 'completed' } });
-      toast.success('Marcada como realizada');
       setDetailsVisible(false);
     } catch {
       toast.error('Erro');
@@ -469,7 +465,6 @@ export default function CalendarPage() {
     if (!selectedConsultation) return;
     try {
       await updateConsultation.mutateAsync({ id: selectedConsultation.id, payload: { paid: true } });
-      toast.success('Pagamento confirmado');
       setDetailsVisible(false);
     } catch {
       toast.error('Erro');
@@ -485,7 +480,6 @@ export default function CalendarPage() {
         startTime: s.toISOString(),
         endTime: e.toISOString(),
       });
-      toast.success('Reagendada');
       setRescheduleVisible(false);
       setDetailsVisible(false);
     } catch {

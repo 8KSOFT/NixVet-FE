@@ -94,7 +94,6 @@ export default function ProntuarioDetailPage() {
     setCreating(true);
     try {
       const record = await createRecord.mutateAsync({ patient_id: patientId });
-      toast.success("Ficha criada");
       router.push(`/medical-records/${record.id}`);
     } catch {
       toast.error("Erro ao criar ficha");
@@ -132,8 +131,8 @@ export default function ProntuarioDetailPage() {
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-        <Button asChild variant="ghost" className="pl-0">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <Button asChild variant="ghost" className="self-start pl-0">
           <Link href="/medical-records">
             <ChevronLeft className="w-4 h-4 mr-1" /> Prontuários
           </Link>
@@ -141,7 +140,7 @@ export default function ProntuarioDetailPage() {
         <Button
           onClick={handleNovaFicha}
           disabled={creating}
-          className="bg-primary hover:bg-primary/70"
+          className="w-full bg-primary hover:bg-primary/70 sm:w-auto"
         >
           {creating ? (
             <Loader2 className="h-4 w-4 mr-1 animate-spin" />
@@ -153,22 +152,21 @@ export default function ProntuarioDetailPage() {
       </div>
 
       {/* Cabeçalho do animal */}
-      <div className="mb-6 flex items-start gap-4 rounded-xl border border-slate-200 bg-white p-4">
-        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-          <PawPrint className="h-7 w-7" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <h1 className="text-xl font-extrabold font-['InterDoFigma'] text-slate-900">
+      <div className="mb-6 rounded-xl border border-slate-200 bg-white p-4">
+        <div className="flex items-center gap-3 sm:items-start sm:gap-4">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary sm:h-14 sm:w-14">
+            <PawPrint className="h-6 w-6 sm:h-7 sm:w-7" />
+          </div>
+          <h1 className="min-w-0 truncate text-lg font-extrabold font-['InterDoFigma'] text-slate-900 sm:text-xl">
             {patient.name}
           </h1>
-          <div className="mt-2 grid grid-cols-2 gap-x-6 gap-y-1 sm:grid-cols-3">
-            {info.map((f) => (
-              <div key={f.label} className="text-sm">
-                <span className="text-muted-foreground">{f.label}: </span>
-                <span className="text-slate-900">{f.value}</span>
-              </div>
-            ))}
-          </div>
+        </div>
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {info.map((f) => (
+            <Badge key={f.label} variant="secondary" className="font-normal text-muted-foreground">
+              {f.label}: <span className="ml-1 text-slate-900">{f.value}</span>
+            </Badge>
+          ))}
         </div>
       </div>
 

@@ -45,6 +45,9 @@ export function useWhatsappNumberStatusMutation() {
       const { data } = await api.get<WhatsappNumberStatus>(`/whatsapp/numbers/${numberId}/status`);
       return data;
     },
+    // silent: verificacao de status chamada em polling (20s) — nunca teve toast e um toast
+    // a cada tick seria ruido.
+    meta: { silent: true },
   });
 }
 
@@ -55,6 +58,8 @@ export function useWhatsappQrCodeMutation() {
       const { data } = await api.get<{ qrCode: string | null }>(`/whatsapp/numbers/${numberId}/qr-code`);
       return data.qrCode;
     },
+    // silent: recarregado em polling (20s) — nunca teve toast e um toast a cada tick seria ruido.
+    meta: { silent: true },
   });
 }
 
@@ -88,7 +93,8 @@ export function useDisconnectWhatsappNumberMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (numberId: string) => {
-      await api.delete(`/whatsapp/numbers/${numberId}`);
+      const { data } = await api.delete(`/whatsapp/numbers/${numberId}`);
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: whatsappNumberKeys.lists() });

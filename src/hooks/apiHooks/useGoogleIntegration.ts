@@ -52,7 +52,8 @@ export function useGoogleDisconnectMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async () => {
-      await api.post('/integrations/google/disconnect');
+      const { data } = await api.post('/integrations/google/disconnect');
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: googleIntegrationKeys.all });
@@ -64,7 +65,8 @@ export function useSaveGoogleCalendarSettingsMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (payload: GoogleCalendarSettingsPayload) => {
-      await api.put('/integrations/google/settings', payload);
+      const { data } = await api.put('/integrations/google/settings', payload);
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: googleIntegrationKeys.status() });
@@ -76,7 +78,8 @@ export function useGoogleForceSyncMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async () => {
-      await api.post('/integrations/google/force-sync');
+      const { data } = await api.post('/integrations/google/force-sync');
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: googleIntegrationKeys.status() });

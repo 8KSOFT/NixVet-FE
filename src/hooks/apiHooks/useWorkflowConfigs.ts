@@ -39,7 +39,8 @@ export function useDeleteWorkflowConfigMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      await api.delete(`/workflow-configs/${id}`);
+      const { data } = await api.delete(`/workflow-configs/${id}`);
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: workflowConfigKeys.all });

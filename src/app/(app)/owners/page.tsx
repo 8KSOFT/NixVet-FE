@@ -192,7 +192,6 @@ export default function OwnersPage() {
   const handleDelete = async (id: string) => {
     try {
       await deleteTutor.mutateAsync(id);
-      toast.success('Responsável removido com sucesso');
     } catch (error) {
       console.error('Error deleting tutor:', error);
       toast.error('Erro ao remover responsável');
@@ -248,10 +247,8 @@ export default function OwnersPage() {
 
       if (editingId) {
         await updateTutor.mutateAsync({ id: editingId, payload });
-        toast.success('Responsável atualizado com sucesso');
       } else {
         await createTutor.mutateAsync(payload);
-        toast.success('Responsável criado com sucesso');
       }
       setModalVisible(false);
       setEditingId(null);

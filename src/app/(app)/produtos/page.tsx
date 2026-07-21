@@ -132,10 +132,8 @@ export default function ProdutosPage() {
     try {
       if (editing) {
         await updateProduct.mutateAsync({ id: editing.id, payload });
-        toast.success('Produto atualizado');
       } else {
         await createProduct.mutateAsync(payload);
-        toast.success('Produto criado');
       }
       setProductDialog(false);
     } catch {
@@ -148,7 +146,6 @@ export default function ProdutosPage() {
   const handleDeleteProduct = async (p: Product) => {
     try {
       await deleteProduct.mutateAsync(p.id);
-      toast.success('Produto removido');
     } catch {
       toast.error('Erro ao remover produto');
     }
@@ -205,7 +202,6 @@ export default function ProdutosPage() {
     }
     try {
       await createSale.mutateAsync({ items: cart });
-      toast.success('Venda registrada — lançamento financeiro gerado');
       setSaleDialog(false);
     } catch {
       toast.error('Erro ao registrar venda');

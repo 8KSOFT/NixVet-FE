@@ -302,7 +302,6 @@ export default function WorkflowEditorPage() {
         nodes: toBackendNodes(nodes),
         edges: toBackendEdges(edges),
       });
-      toast.success('Workflow salvo');
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao salvar'));
     }

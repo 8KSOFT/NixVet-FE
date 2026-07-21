@@ -69,7 +69,6 @@ export default function RemindersSettingsPage() {
     try {
       const saved = await saveMutation.mutateAsync(settings);
       setSettings(saved);
-      toast.success('Configurações salvas com sucesso.');
     } catch {
       toast.error('Erro ao salvar configurações.');
     }
@@ -79,7 +78,6 @@ export default function RemindersSettingsPage() {
     try {
       const reset = await resetMutation.mutateAsync();
       setSettings(reset);
-      toast.success('Configurações redefinidas para o padrão do sistema.');
     } catch {
       toast.error('Erro ao redefinir configurações.');
     }

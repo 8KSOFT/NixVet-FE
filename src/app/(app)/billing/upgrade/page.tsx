@@ -102,11 +102,9 @@ export default function BillingUpgradePage() {
       const paymentUrl = data?.paymentUrl ?? null;
       if (paymentUrl) {
         // Redireciona para o checkout seguro da Asaas (PIX, boleto ou cartão).
-        toast.success('Assinatura criada! Redirecionando para o pagamento...');
         window.location.href = paymentUrl;
         return;
       }
-      toast.success('Assinatura ativada! A cobrança estará em Configurações › Faturamento.');
       router.push('/dashboard');
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao ativar plano. Tente novamente.'));

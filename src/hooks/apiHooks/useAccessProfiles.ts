@@ -66,7 +66,8 @@ export function useDeleteAccessProfileMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      await api.delete(`/access-control/profiles/${id}`);
+      const { data } = await api.delete(`/access-control/profiles/${id}`);
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: accessProfileKeys.all });

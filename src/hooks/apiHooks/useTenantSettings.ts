@@ -28,6 +28,10 @@ export function useUpdateTenantMeMutation() {
       const { data } = await api.put<TenantMe>('/tenants/me', payload);
       return data;
     },
+    // silent: usado tanto no form de dados da clínica (toast manual com id 'saving',
+    // ver settings/page.tsx) quanto no toggle do chatbot — o toast automático global
+    // duplicaria o feedback do form, então cada tela decide seu próprio feedback.
+    meta: { silent: true },
     onSuccess: (data) => {
       queryClient.setQueryData(tenantSettingsKeys.me(), data);
     },

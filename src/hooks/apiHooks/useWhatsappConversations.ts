@@ -108,7 +108,8 @@ export function useSendWhatsappMessageMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ conversationId, text }: { conversationId: string; text: string }) => {
-      await api.post('/whatsapp/send', { conversation_id: conversationId, text });
+      const { data } = await api.post('/whatsapp/send', { conversation_id: conversationId, text });
+      return data;
     },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: whatsappConversationKeys.messages(variables.conversationId) });
@@ -121,7 +122,8 @@ export function useResumeAiMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (conversationId: string) => {
-      await api.post(`/whatsapp/conversations/${conversationId}/resume-ai`);
+      const { data } = await api.post(`/whatsapp/conversations/${conversationId}/resume-ai`);
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: whatsappConversationKeys.lists() });
@@ -133,7 +135,8 @@ export function usePauseAiMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (conversationId: string) => {
-      await api.post(`/whatsapp/conversations/${conversationId}/pause-ai`);
+      const { data } = await api.post(`/whatsapp/conversations/${conversationId}/pause-ai`);
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: whatsappConversationKeys.lists() });
@@ -145,7 +148,8 @@ export function useArchiveConversationMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (conversationId: string) => {
-      await api.post(`/whatsapp/conversations/${conversationId}/archive`);
+      const { data } = await api.post(`/whatsapp/conversations/${conversationId}/archive`);
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: whatsappConversationKeys.lists() });
@@ -157,7 +161,8 @@ export function useUnarchiveConversationMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (conversationId: string) => {
-      await api.post(`/whatsapp/conversations/${conversationId}/unarchive`);
+      const { data } = await api.post(`/whatsapp/conversations/${conversationId}/unarchive`);
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: whatsappConversationKeys.lists() });
@@ -169,7 +174,8 @@ export function useCloseByPhoneMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ phone, classification }: { phone: string; classification: string }) => {
-      await api.post('/whatsapp/conversations/close-by-phone', { phone, classification });
+      const { data } = await api.post('/whatsapp/conversations/close-by-phone', { phone, classification });
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: whatsappConversationKeys.lists() });
@@ -183,7 +189,8 @@ export function useClassifyConversationMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ conversationId, classification }: { conversationId: string; classification: string }) => {
-      await api.post(`/whatsapp/conversations/${conversationId}/classify`, { classification });
+      const { data } = await api.post(`/whatsapp/conversations/${conversationId}/classify`, { classification });
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: whatsappConversationKeys.lists() });
@@ -203,7 +210,8 @@ export function useCloseConversationMutation() {
       classification: string;
       note: string;
     }) => {
-      await api.post(`/whatsapp/conversations/${conversationId}/close`, { classification, note });
+      const { data } = await api.post(`/whatsapp/conversations/${conversationId}/close`, { classification, note });
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: whatsappConversationKeys.all });

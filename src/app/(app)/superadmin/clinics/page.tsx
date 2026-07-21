@@ -197,7 +197,6 @@ export default function SuperadminClinicsPage() {
         id: resetTenantId,
         payload: { newPassword: newPassword.trim() },
       });
-      toast.success("Senha do admin redefinida");
       setResetTenantId(null);
     } catch (e: unknown) {
       const err = e as {
@@ -225,7 +224,6 @@ export default function SuperadminClinicsPage() {
         adminPassword: createForm.adminPassword || undefined,
         adminName: createForm.adminName.trim() || undefined,
       });
-      toast.success("Clínica criada");
       setCreateOpen(false);
       setCreateForm(emptyCreate());
     } catch (e: unknown) {
@@ -259,7 +257,6 @@ export default function SuperadminClinicsPage() {
   ) => {
     try {
       await patchMutation.mutateAsync({ id: tenantId, payload });
-      toast.success("Atualizado");
     } catch {
       toast.error("Falha ao atualizar");
     }
@@ -269,7 +266,6 @@ export default function SuperadminClinicsPage() {
     if (!editRow) return;
     try {
       await patchMutation.mutateAsync({ id: editRow.id, payload: editForm });
-      toast.success("Clínica atualizada");
       setEditRow(null);
     } catch (e: unknown) {
       const err = e as {
@@ -290,9 +286,6 @@ export default function SuperadminClinicsPage() {
         tenantId: whatsappTenantId,
         instanceName: `NixVet - ${whatsappClinicName}`,
       });
-      toast.success(
-        `Instância Z-API provisionada para ${whatsappClinicName}. A clínica pode escanear o QR Code em Configurações → WhatsApp.`,
-      );
       setWhatsappTenantId(null);
     } catch (e: unknown) {
       const err = e as {

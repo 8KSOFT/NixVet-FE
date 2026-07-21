@@ -90,7 +90,6 @@ export default function TermosPage() {
         responsible_document: form.responsible_document.trim() || undefined,
         reason: form.reason.trim() || undefined,
       });
-      toast.success('Termo criado');
       setDialog(false);
       setForm({ ...EMPTY });
       if (created?.id) downloadPdf(created.id);

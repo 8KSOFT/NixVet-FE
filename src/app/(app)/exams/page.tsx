@@ -151,7 +151,6 @@ function ExamRequestsContent() {
       }
 
       await createExamRequest.mutateAsync(payload);
-      toast.success('Solicitação gerada com sucesso');
       setModalVisible(false);
     } catch {
       toast.error('Erro ao gerar solicitação');
@@ -172,7 +171,6 @@ function ExamRequestsContent() {
     if (!selectedExamRequest) return;
     try {
       await sendEmailMutation.mutateAsync(selectedExamRequest.id);
-      toast.success('Email enviado com sucesso');
       setEmailModalVisible(false);
     } catch {
       toast.error('Erro ao enviar email');
@@ -190,7 +188,6 @@ function ExamRequestsContent() {
     }
     try {
       await createExamCatalogItem.mutateAsync({ name: newExamName.trim(), areaId: Number(newExamAreaId) });
-      toast.success('Exame adicionado ao catálogo da clínica');
       setAddExamModalVisible(false);
       setNewExamName('');
       setNewExamAreaId('');

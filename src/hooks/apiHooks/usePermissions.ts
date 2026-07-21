@@ -63,7 +63,8 @@ export function useDeletePermissionMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      await api.delete(`/access-control/permissions/${id}`);
+      const { data } = await api.delete(`/access-control/permissions/${id}`);
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: permissionKeys.all });

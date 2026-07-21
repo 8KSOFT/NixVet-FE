@@ -58,7 +58,6 @@ export default function TasksPage() {
     try {
       const payload: ClinicalTaskPayload = values;
       await createTask.mutateAsync(payload);
-      toast.success('Tarefa criada');
       setModalOpen(false);
       reset();
     } catch (error: unknown) {
@@ -69,7 +68,6 @@ export default function TasksPage() {
   const markDone = async (id: string) => {
     try {
       await markDoneMutation.mutateAsync(id);
-      toast.success('Tarefa concluída');
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro'));
     }

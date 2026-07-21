@@ -140,7 +140,6 @@ export default function TeamPage() {
   const handleDelete = async (id: string) => {
     try {
       await deleteUser.mutateAsync(id);
-      toast.success(t('team.removed'));
     } catch (error) {
       console.error('Error deleting user:', error);
       toast.error(t('team.removeError'));
@@ -155,11 +154,9 @@ export default function TeamPage() {
       if (editingId) {
         if (!payload.password?.trim()) delete payload.password;
         await updateUser.mutateAsync({ id: editingId, payload });
-        toast.success(t('team.updated'));
       } else {
         const created = await createUser.mutateAsync(payload);
         userId = created?.id ?? null;
-        toast.success(t('team.created'));
       }
       if (userId) {
         await syncAccessProfiles.mutateAsync({ id: userId, profileIds: accessProfileIds ?? [] });

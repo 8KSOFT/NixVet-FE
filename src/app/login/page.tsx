@@ -18,12 +18,17 @@ import { LogoCompactoDynamic } from "@/components/shared/componentizedImages/Log
 import Image from "next/image";
 import { useIsMobile } from "@/hooks/use-mobile";
 
-interface LoginResponseData {
+interface LoginResponsePayload {
   access_token?: string;
   user?: {
     tenant_id: string;
     name: string;
   } & Record<string, unknown>;
+}
+
+interface LoginResponseData {
+  // Envelope novo: { success, message, data }. Ver DOCS/response-phase-1-front.md.
+  data?: LoginResponsePayload;
   message?: string | string[];
 }
 
@@ -127,7 +132,7 @@ export default function LoginPage() {
         return;
       }
 
-      const { access_token, user } = data;
+      const { access_token, user } = data.data ?? {};
       if (!access_token || !user) {
         toast.error("Resposta de login inválida.");
         return;

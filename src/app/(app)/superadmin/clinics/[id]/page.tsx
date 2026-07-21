@@ -75,10 +75,9 @@ export default function ClinicDetailPage() {
     if (clinic) setPlan(clinic.billing_plan ?? 'essencial');
   }, [clinic]);
 
-  const patch = async (payload: Record<string, unknown>, successMsg?: string) => {
+  const patch = async (payload: Record<string, unknown>) => {
     try {
       await patchMutation.mutateAsync({ id, payload });
-      toast.success(successMsg ?? 'Atualizado');
     } catch {
       toast.error('Falha ao atualizar');
     }
@@ -87,7 +86,6 @@ export default function ClinicDetailPage() {
   const savePlan = async () => {
     try {
       await patchMutation.mutateAsync({ id, payload: { billing_plan: plan } });
-      toast.success('Plano atualizado');
     } catch {
       toast.error('Falha ao salvar plano');
     }
@@ -97,7 +95,6 @@ export default function ClinicDetailPage() {
     if (newPassword.trim().length < 8) { toast.error('Senha mínimo 8 caracteres'); return; }
     try {
       await resetPasswordMutation.mutateAsync({ id, payload: { newPassword: newPassword.trim() } });
-      toast.success('Senha redefinida');
       setResetOpen(false);
       setNewPassword('');
     } catch { toast.error('Erro ao redefinir senha'); }
@@ -106,7 +103,6 @@ export default function ClinicDetailPage() {
   const submitProvision = async () => {
     try {
       await provisionMutation.mutateAsync({ tenantId: id, instanceName: `NixVet - ${clinic?.name}` });
-      toast.success('Instância WhatsApp provisionada');
       setWhatsappOpen(false);
     } catch { toast.error('Erro ao provisionar WhatsApp'); }
   };
@@ -181,13 +177,13 @@ export default function ClinicDetailPage() {
             <div className="flex flex-wrap gap-2 pt-2">
               {!isAccessible && (
                 <Button size="sm" variant="outline" className="gap-1 text-emerald-700 border-emerald-200"
-                  onClick={() => void patch({ subscription_status: 'active' }, 'Acesso liberado')}>
+                  onClick={() => void patch({ subscription_status: 'active' })}>
                   <ShieldCheck className="size-3.5" /> Liberar acesso
                 </Button>
               )}
               {isAccessible && (
                 <Button size="sm" variant="outline" className="gap-1 text-red-600 border-red-200"
-                  onClick={() => void patch({ subscription_status: 'suspended' }, 'Conta suspensa')}>
+                  onClick={() => void patch({ subscription_status: 'suspended' })}>
                   <ShieldOff className="size-3.5" /> Suspender
                 </Button>
               )}

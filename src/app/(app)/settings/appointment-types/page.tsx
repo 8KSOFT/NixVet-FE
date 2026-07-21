@@ -62,10 +62,8 @@ export default function AppointmentTypesPage() {
     try {
       if (editing) {
         await updateMutation.mutateAsync({ id: editing.id, payload: values });
-        toast.success('Atualizado');
       } else {
         await createMutation.mutateAsync(values);
-        toast.success('Tipo criado');
       }
       setModalOpen(false);
       reset();
@@ -78,7 +76,6 @@ export default function AppointmentTypesPage() {
   const handleDelete = async (id: string) => {
     try {
       await deleteMutation.mutateAsync(id);
-      toast.success('Removido');
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao remover'));
     }
@@ -100,7 +97,7 @@ export default function AppointmentTypesPage() {
             Defina os tipos de procedimento com sua duração padrão. O sistema usará essa duração ao calcular
             os slots disponíveis na agenda.
           </p>
-          <Button onClick={openNew} className="mb-4 bg-primary">
+          <Button onClick={openNew} className="mb-4 w-full bg-primary sm:w-auto">
             <Plus className="w-4 h-4 mr-2" /> Novo tipo
           </Button>
           {loading ? (
@@ -109,7 +106,8 @@ export default function AppointmentTypesPage() {
             </div>
           ) : (
             <div>
-            <div className="overflow-x-auto">
+            {/* Desktop / tablet: tabela */}
+            <div className="hidden overflow-x-auto md:block">
             <Table className="min-w-full border-collapse bg-white text-sm">
               <TableHeader>
                 <TableRow className="border-b border-gray-300 h-15">
@@ -169,6 +167,51 @@ export default function AppointmentTypesPage() {
               </TableBody>
             </Table>
             </div>
+
+            {/* Mobile: cards */}
+            <div className="space-y-2 md:hidden">
+              {list.map((r) => (
+                <div key={r.id} className="rounded-lg border border-gray-300 p-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex min-w-0 items-center gap-2">
+                      {r.color && (
+                        <span
+                          style={{ background: r.color, width: 14, height: 14, borderRadius: 3 }}
+                          className="shrink-0"
+                        />
+                      )}
+                      <div className="min-w-0">
+                        <p className="truncate font-medium">{r.name}</p>
+                        <p className="text-xs text-muted-foreground">{formatDuration(r.duration_minutes)}</p>
+                      </div>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <Button variant="outline" size="sm" onClick={() => openEdit(r)}>
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Remover este tipo?</AlertDialogTitle>
+                            <AlertDialogDescription>Esta ação não pode ser desfeita.</AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDelete(r.id)}>Remover</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
             <ListPagination
               page={listPage}
               totalPages={listTotalPages}

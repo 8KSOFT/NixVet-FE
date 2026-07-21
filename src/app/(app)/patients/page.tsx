@@ -177,7 +177,6 @@ export default function PatientsPage() {
   const handleDelete = async (id: string) => {
     try {
       await deletePatient.mutateAsync(id);
-      toast.success('Paciente removido com sucesso');
     } catch (error) {
       console.error('Error deleting patient:', error);
       toast.error('Erro ao remover paciente');
@@ -197,10 +196,8 @@ export default function PatientsPage() {
     try {
       if (editingId) {
         await updatePatient.mutateAsync({ id: editingId, payload });
-        toast.success('Paciente atualizado com sucesso');
       } else {
         await createPatient.mutateAsync(payload);
-        toast.success('Paciente criado com sucesso');
       }
       setModalVisible(false);
     } catch (error) {

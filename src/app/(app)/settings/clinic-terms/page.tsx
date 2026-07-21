@@ -100,7 +100,6 @@ export default function ClinicTermsPage() {
         size_bytes: form.file.size,
         display_order: terms.length,
       });
-      toast.success("Termo adicionado");
       setAddOpen(false);
       setForm({ name: "", term_type: "service_terms", file: null });
     } catch {
@@ -134,7 +133,6 @@ export default function ClinicTermsPage() {
     if (!window.confirm("Excluir este termo?")) return;
     try {
       await deleteMutation.mutateAsync(id);
-      toast.success("Termo excluído");
     } catch {
       toast.error("Erro ao excluir");
     }
@@ -142,9 +140,9 @@ export default function ClinicTermsPage() {
 
   return (
     <div>
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-extrabold">Termos da Clínica</h1>
-        <Button onClick={() => setAddOpen(true)} className="bg-primary hover:bg-primary/70">
+        <Button onClick={() => setAddOpen(true)} className="w-full bg-primary hover:bg-primary/70 sm:w-auto">
           <Plus className="mr-1 h-4 w-4" /> Adicionar Termo
         </Button>
       </div>
@@ -153,37 +151,36 @@ export default function ClinicTermsPage() {
         <div className="flex justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-muted-foreground/60" />
         </div>
+      ) : terms.length === 0 ? (
+        <div className="rounded-lg border border-gray-300 bg-white py-8 text-center text-sm text-slate-500">
+          Nenhum termo cadastrado.
+        </div>
       ) : (
-        <div className="overflow-x-auto border border-gray-300 rounded-lg">
-          <Table className="min-w-full border-collapse bg-white text-sm">
-            <TableHeader>
-              <TableRow className="border-b border-gray-300 h-15">
-                <TableHead>
-                  Nome
-                </TableHead>
-                <TableHead>
-                  Tipo
-                </TableHead>
-                <TableHead>
-                  Ativo
-                </TableHead>
-                <TableHead>
-                  Ordem
-                </TableHead>
-                <TableHead className="text-right">
-                  Ações
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {terms.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} className="border-t border-slate-200 py-8 text-center text-sm text-slate-500">
-                    Nenhum termo cadastrado.
-                  </TableCell>
+        <>
+          {/* Desktop / tablet: tabela */}
+          <div className="hidden overflow-x-auto rounded-lg border border-gray-300 md:block">
+            <Table className="min-w-full border-collapse bg-white text-sm">
+              <TableHeader>
+                <TableRow className="border-b border-gray-300 h-15">
+                  <TableHead>
+                    Nome
+                  </TableHead>
+                  <TableHead>
+                    Tipo
+                  </TableHead>
+                  <TableHead>
+                    Ativo
+                  </TableHead>
+                  <TableHead>
+                    Ordem
+                  </TableHead>
+                  <TableHead className="text-right">
+                    Ações
+                  </TableHead>
                 </TableRow>
-              ) : (
-                terms.map((t) => (
+              </TableHeader>
+              <TableBody>
+                {terms.map((t) => (
                   <TableRow className="border-b border-gray-300 h-15" key={t.id}>
                     <TableCell className="font-medium">
                       {t.name}
@@ -213,11 +210,49 @@ export default function ClinicTermsPage() {
                       </div>
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Mobile: cards */}
+          <div className="space-y-3 md:hidden">
+            {terms.map((t) => (
+              <div key={t.id} className="rounded-lg border border-gray-300 bg-white p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{t.name}</p>
+                    <p className="text-xs text-muted-foreground">{typeLabel(t.term_type)}</p>
+                  </div>
+                  <Switch
+                    checked={t.is_active}
+                    onCheckedChange={() => toggleActive(t)}
+                    className="shrink-0"
+                  />
+                </div>
+
+                <div className="mt-3 text-sm">
+                  <p className="text-xs text-muted-foreground">Ordem</p>
+                  <p>{t.display_order}</p>
+                </div>
+
+                <div className="mt-3 flex items-center justify-end gap-2 border-t border-gray-200 pt-2">
+                  <Button size="sm" variant="outline" onClick={() => handlePreview(t.id)}>
+                    <Eye className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-red-500 border-red-300 hover:bg-red-50"
+                    onClick={() => handleDelete(t.id)}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
       )}
 
       {/* Adicionar Termo */}

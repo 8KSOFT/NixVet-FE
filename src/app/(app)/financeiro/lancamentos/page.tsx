@@ -129,7 +129,6 @@ export default function LancamentosPage() {
         paymentMethod: selectedMethod,
         discountAmount: discountNum,
       });
-      toast.success('Lançamento confirmado');
       setConfirmEntry(null);
     } catch {
       toast.error('Erro ao confirmar lançamento');
@@ -139,7 +138,6 @@ export default function LancamentosPage() {
   const cancelEntry = async (entry: FinancialEntry) => {
     try {
       await cancelEntryMutation.mutateAsync(entry.id);
-      toast.success('Lançamento cancelado');
     } catch {
       toast.error('Erro ao cancelar lançamento');
     }

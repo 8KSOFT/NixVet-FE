@@ -62,7 +62,8 @@ export function useDeleteTutorMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      await api.delete(`/tutors/${id}`);
+      const { data } = await api.delete(`/tutors/${id}`);
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: tutorKeys.all });

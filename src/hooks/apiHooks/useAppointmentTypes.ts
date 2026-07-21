@@ -53,7 +53,8 @@ export function useDeleteAppointmentTypeMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      await api.delete(`/appointment-types/${id}`);
+      const { data } = await api.delete(`/appointment-types/${id}`);
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: appointmentTypeKeys.all });

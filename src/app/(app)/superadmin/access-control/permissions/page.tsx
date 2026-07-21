@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -111,7 +110,6 @@ export default function AccessControlPermissionsPage() {
   const handleDelete = async (id: string) => {
     try {
       await deleteMutation.mutateAsync(id);
-      toast.success('Permissão removida');
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao remover permissão'));
     }
@@ -129,10 +127,8 @@ export default function AccessControlPermissionsPage() {
     try {
       if (editingId) {
         await updateMutation.mutateAsync({ id: editingId, payload });
-        toast.success('Permissão atualizada');
       } else {
         await createMutation.mutateAsync(payload);
-        toast.success('Permissão criada');
       }
       setModalOpen(false);
     } catch (error: unknown) {
@@ -142,104 +138,162 @@ export default function AccessControlPermissionsPage() {
 
   return (
     <div>
-      <h1 className="mb-2 flex items-center gap-2 text-2xl font-heading font-bold text-primary">
-        <ShieldCheck className="h-6 w-6" /> Catálogo de Permissões
-      </h1>
-      <p className="mb-6 text-sm text-muted-foreground">
-        Painel exclusivo do superadmin — gerencia as permissões disponíveis para montar perfis de acesso dos tenants.
-      </p>
-      <Card>
-        <CardContent className="pt-6">
-          <Button onClick={openCreate} className="mb-4 bg-primary">
-            <Plus className="w-4 h-4 mr-2" /> Nova permissão
-          </Button>
-          {loading ? (
-            <div className="flex justify-center py-8">
-              <Loader2 className="w-6 h-6 animate-spin text-primary" />
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table className="min-w-full border-collapse bg-white text-sm">
-                <TableHeader>
-                  <TableRow className="border-b border-gray-300 h-15">
-                    <TableHead>Chave</TableHead>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Recurso</TableHead>
-                    <TableHead>Ação</TableHead>
-                    <TableHead>Origem</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="w-[120px]">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {list.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                        Nenhuma permissão cadastrada.
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    list.map((r) => (
-                      <TableRow className="border-b border-gray-300 h-15" key={r.id}>
-                        <TableCell className="font-mono text-xs">{r.key}</TableCell>
-                        <TableCell>{r.name}</TableCell>
-                        <TableCell>{r.resource}</TableCell>
-                        <TableCell>{r.action}</TableCell>
-                        <TableCell>
-                          <Badge variant={r.is_system ? 'secondary' : 'default'}>
-                            {r.is_system ? 'Sistema' : 'Customizada'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={r.is_active ? 'default' : 'secondary'}>
-                            {r.is_active ? 'Ativa' : 'Inativa'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Button variant="ghost" size="icon" className="p-0" onClick={() => openEdit(r)}>
-                              <Pencil className="w-4 h-4" />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
+        <div>
+          <h1 className="mb-2 flex items-center gap-2 text-2xl font-heading font-bold">
+            Catálogo de Permissões
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Painel exclusivo do superadmin — gerencia as permissões disponíveis para montar perfis de acesso dos
+            tenants.
+          </p>
+        </div>
+        <Button onClick={openCreate} className="w-full bg-primary sm:w-auto">
+          <Plus className="w-4 h-4 mr-2" /> Nova permissão
+        </Button>
+      </div>
+      {loading ? (
+        <div className="flex justify-center py-8">
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+        </div>
+      ) : list.length === 0 ? (
+        <div className="rounded-lg border border-gray-300 bg-white py-8 text-center text-sm text-slate-500">
+          Nenhuma permissão cadastrada.
+        </div>
+      ) : (
+        <div>
+          {/* Desktop / tablet: tabela */}
+          <div className="hidden overflow-x-auto rounded-lg border border-gray-300 md:block">
+            <Table className="min-w-full border-collapse bg-white text-sm">
+              <TableHeader>
+                <TableRow className="border-b border-gray-300 h-15">
+                  <TableHead>Chave</TableHead>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>Recurso</TableHead>
+                  <TableHead>Ação</TableHead>
+                  <TableHead>Origem</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="w-30">Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {list.map((r) => (
+                  <TableRow className="border-b border-gray-300 h-15" key={r.id}>
+                    <TableCell className="font-mono text-xs">{r.key}</TableCell>
+                    <TableCell>{r.name}</TableCell>
+                    <TableCell>{r.resource}</TableCell>
+                    <TableCell>{r.action}</TableCell>
+                    <TableCell>
+                      <Badge variant={r.is_system ? 'secondary' : 'default'}>
+                        {r.is_system ? 'Sistema' : 'Customizada'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={r.is_active ? 'default' : 'secondary'}>
+                        {r.is_active ? 'Ativa' : 'Inativa'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="icon" className="p-0" onClick={() => openEdit(r)}>
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="p-0 text-destructive hover:text-destructive"
+                            >
+                              <Trash2 className="w-4 h-4" />
                             </Button>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="p-0 text-destructive hover:text-destructive"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Remover permissão?</AlertDialogTitle>
-                                  <AlertDialogDescription>{r.name}</AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => handleDelete(r.id)}>Confirmar</AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-              <ListPagination
-                page={listPage}
-                totalPages={listTotalPages}
-                total={listTotal}
-                pageSize={API_PAGE_SIZE}
-                onPageChange={setListPage}
-                disabled={loading}
-              />
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Remover permissão?</AlertDialogTitle>
+                              <AlertDialogDescription>{r.name}</AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDelete(r.id)}>Confirmar</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Mobile: cards */}
+          <div className="space-y-3 md:hidden">
+            {list.map((r) => (
+              <div key={r.id} className="rounded-lg border border-gray-300 bg-white p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{r.name}</p>
+                    <p className="truncate font-mono text-xs text-muted-foreground">{r.key}</p>
+                  </div>
+                  <Badge variant={r.is_active ? 'default' : 'secondary'} className="shrink-0">
+                    {r.is_active ? 'Ativa' : 'Inativa'}
+                  </Badge>
+                </div>
+
+                <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Recurso</p>
+                    <p className="truncate">{r.resource}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Ação</p>
+                    <p className="truncate">{r.action}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Origem</p>
+                    <Badge variant={r.is_system ? 'secondary' : 'default'}>
+                      {r.is_system ? 'Sistema' : 'Customizada'}
+                    </Badge>
+                  </div>
+                </div>
+
+                <div className="mt-3 flex items-center justify-end gap-1 border-t border-gray-200 pt-2">
+                  <Button variant="ghost" size="icon" className="p-0" onClick={() => openEdit(r)}>
+                    <Pencil className="w-4 h-4" />
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="ghost" size="icon" className="p-0 text-destructive hover:text-destructive">
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Remover permissão?</AlertDialogTitle>
+                        <AlertDialogDescription>{r.name}</AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => handleDelete(r.id)}>Confirmar</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <ListPagination
+            page={listPage}
+            totalPages={listTotalPages}
+            total={listTotal}
+            pageSize={API_PAGE_SIZE}
+            onPageChange={setListPage}
+            disabled={loading}
+          />
+        </div>
+      )}
 
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent>

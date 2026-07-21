@@ -139,7 +139,6 @@ export default function SettingsHoursPage() {
         is_closed: bhIsClosed,
         is_24h: bhIs24h && !bhIsClosed,
       });
-      toast.success(bhSelectedDays.length > 1 ? `${bhSelectedDays.length} dias atualizados` : 'Salvo');
       setBusinessModalOpen(false);
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao salvar'));
@@ -230,7 +229,6 @@ export default function SettingsHoursPage() {
   const handleDeleteVetSchedule = async (id: string) => {
     try {
       await deleteVetScheduleMutation.mutateAsync(id);
-      toast.success('Removido');
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao remover'));
     }
@@ -261,15 +259,19 @@ export default function SettingsHoursPage() {
         </div>
       ) : (
         <Card>
-          <CardContent className="pt-6">
+          <CardContent className="px-4 pt-6 sm:px-6">
             <Tabs defaultValue="business">
-              <div className="mb-4 overflow-x-auto">
-                <TabsList className="w-full justify-start gap-1">
-                  <TabsTrigger value="business" className="shrink-0">Horário de funcionamento</TabsTrigger>
-                  <TabsTrigger value="emergency" className="shrink-0">Plantão / Emergência</TabsTrigger>
-                  <TabsTrigger value="vet" className="shrink-0">Agenda por veterinário</TabsTrigger>
-                </TabsList>
-              </div>
+              <TabsList className="mb-4 grid h-auto! w-full grid-cols-1 gap-1 sm:grid-cols-3">
+                <TabsTrigger value="business" className="h-auto! whitespace-normal px-3 py-2 text-center leading-snug">
+                  Horário de funcionamento
+                </TabsTrigger>
+                <TabsTrigger value="emergency" className="h-auto! whitespace-normal px-3 py-2 text-center leading-snug">
+                  Plantão / Emergência
+                </TabsTrigger>
+                <TabsTrigger value="vet" className="h-auto! whitespace-normal px-3 py-2 text-center leading-snug">
+                  Agenda por veterinário
+                </TabsTrigger>
+              </TabsList>
 
               {/* ── Business Hours ── */}
               <TabsContent value="business">
@@ -277,10 +279,11 @@ export default function SettingsHoursPage() {
                   Define o horário de abertura/fechamento da clínica por dia da semana. Selecione vários dias para
                   aplicar o mesmo horário de uma vez.
                 </p>
-                <Button onClick={() => openBusinessModal()} className="mb-4 bg-primary">
+                <Button onClick={() => openBusinessModal()} className="mb-4 w-full bg-primary sm:w-auto">
                   <Plus className="w-4 h-4 mr-2" /> Configurar dias
                 </Button>
-                <div className="overflow-x-auto">
+                {/* Desktop / tablet: tabela */}
+                <div className="hidden overflow-x-auto md:block">
                 <Table className="min-w-full border-collapse bg-white text-sm">
                   <TableHeader>
                     <TableRow className="border-b border-gray-300 h-15">
@@ -323,6 +326,45 @@ export default function SettingsHoursPage() {
                   </TableBody>
                 </Table>
                 </div>
+
+                {/* Mobile: cards */}
+                <div className="space-y-2 md:hidden">
+                  {businessHours.map((r) => (
+                    <div key={r.id ?? r.day_of_week} className="rounded-lg border border-gray-300 p-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="truncate font-medium">
+                            {DAYS.find((x) => x.value === r.day_of_week)?.label ?? r.day_of_week}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {r.is_closed
+                              ? '—'
+                              : `${r.is_24h ? '00:00' : (r.open_time ?? '—')} – ${r.is_24h ? '23:59' : (r.close_time ?? '—')}`}
+                          </p>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-2">
+                          {r.is_closed ? (
+                            <Badge variant="destructive">Fechado</Badge>
+                          ) : r.is_24h ? (
+                            <Badge className="bg-purple-500">24 horas</Badge>
+                          ) : (
+                            <Badge className="bg-green-500">Aberto</Badge>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="p-0"
+                            title="Editar"
+                            aria-label="Editar"
+                            onClick={() => openBusinessModal(r)}
+                          >
+                            <Pencil className="size-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </TabsContent>
 
               {/* ── Emergency Hours ── */}
@@ -330,10 +372,11 @@ export default function SettingsHoursPage() {
                 <p className="text-muted-foreground mb-4">
                   Janelas de plantão ou emergência por dia da semana. Selecione vários dias de uma vez.
                 </p>
-                <Button onClick={() => openEmergencyModal()} className="mb-4 bg-primary">
+                <Button onClick={() => openEmergencyModal()} className="mb-4 w-full bg-primary sm:w-auto">
                   <Plus className="w-4 h-4 mr-2" /> Configurar plantão
                 </Button>
-                <div className="overflow-x-auto">
+                {/* Desktop / tablet: tabela */}
+                <div className="hidden overflow-x-auto md:block">
                 <Table className="min-w-full border-collapse bg-white text-sm">
                   <TableHeader>
                     <TableRow className="border-b border-gray-300 h-15">
@@ -374,6 +417,41 @@ export default function SettingsHoursPage() {
                   </TableBody>
                 </Table>
                 </div>
+
+                {/* Mobile: cards */}
+                <div className="space-y-2 md:hidden">
+                  {emergencyHours.map((r) => (
+                    <div key={r.id ?? r.day_of_week} className="rounded-lg border border-gray-300 p-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="truncate font-medium">
+                            {DAYS.find((x) => x.value === r.day_of_week)?.label ?? r.day_of_week}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {r.start_time} – {r.end_time}
+                          </p>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-2">
+                          {r.is_active ? (
+                            <Badge className="bg-green-500">Ativo</Badge>
+                          ) : (
+                            <Badge variant="secondary">Inativo</Badge>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="p-0"
+                            title="Editar"
+                            aria-label="Editar"
+                            onClick={() => openEmergencyModal(r)}
+                          >
+                            <Pencil className="size-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </TabsContent>
 
               {/* ── Vet Schedules ── */}
@@ -388,7 +466,7 @@ export default function SettingsHoursPage() {
                     setVetSelectedDays([]);
                     setVetModalOpen(true);
                   }}
-                  className="mb-4 bg-primary"
+                  className="mb-4 w-full bg-primary sm:w-auto"
                 >
                   <Plus className="w-4 h-4 mr-2" /> Adicionar horário
                 </Button>

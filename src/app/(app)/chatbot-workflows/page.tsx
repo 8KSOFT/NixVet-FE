@@ -72,7 +72,6 @@ export default function ChatbotWorkflowsPage() {
   const toggleBot = async (enabled: boolean) => {
     try {
       await updateTenantMutation.mutateAsync({ whatsapp_ai_chatbot_enabled: enabled });
-      toast.success(enabled ? 'Chatbot ativado' : 'Chatbot desativado');
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao salvar'));
     }
@@ -96,7 +95,6 @@ export default function ChatbotWorkflowsPage() {
         ],
         edges: [{ source_node: 'message_received', target_node: 'end' }],
       });
-      toast.success('Workflow criado');
       setCreateOpen(false);
       setNewName('');
       router.push(`/chatbot-workflows/${created.id}`);
@@ -108,7 +106,6 @@ export default function ChatbotWorkflowsPage() {
   const handleSeedDefault = async () => {
     try {
       await seedDefaultMutation.mutateAsync();
-      toast.success('Workflow padrão criado');
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro'));
     }
@@ -117,7 +114,6 @@ export default function ChatbotWorkflowsPage() {
   const handleActivate = async (id: string) => {
     try {
       await activateMutation.mutateAsync(id);
-      toast.success('Workflow ativado');
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro'));
     }
@@ -127,7 +123,6 @@ export default function ChatbotWorkflowsPage() {
     if (!confirm('Tem certeza que deseja excluir?')) return;
     try {
       await deleteMutation.mutateAsync(id);
-      toast.success('Workflow excluído');
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro'));
     }

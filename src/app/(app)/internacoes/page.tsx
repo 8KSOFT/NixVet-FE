@@ -107,7 +107,6 @@ export default function InternacoesPage() {
         health_plan_id: form.health_plan_id || undefined,
       };
       await createHospitalization.mutateAsync(payload);
-      toast.success('Internação aberta');
       setOpenNew(false);
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao abrir internação'));

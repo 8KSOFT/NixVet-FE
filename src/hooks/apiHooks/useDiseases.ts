@@ -60,7 +60,8 @@ export function useDeleteDiseaseMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: number) => {
-      await api.delete(`/catalog/diseases/${id}`);
+      const { data } = await api.delete(`/catalog/diseases/${id}`);
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: diseaseKeys.all });

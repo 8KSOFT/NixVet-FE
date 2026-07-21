@@ -41,7 +41,6 @@ export default function SettingsResourcesPage() {
   const onFinish = async (values: ResourceFormValues) => {
     try {
       await createMutation.mutateAsync(values);
-      toast.success('Recurso cadastrado');
       setModalOpen(false);
       form.reset();
     } catch (error: unknown) {
@@ -60,7 +59,7 @@ export default function SettingsResourcesPage() {
               form.reset();
               setModalOpen(true);
             }}
-            className="mb-4 bg-primary"
+            className="mb-4 w-full bg-primary sm:w-auto"
           >
             <Plus className="w-4 h-4 mr-2" /> Novo recurso
           </Button>
@@ -69,8 +68,13 @@ export default function SettingsResourcesPage() {
             <div className="flex items-center justify-center py-8">
               <Loader2 className="w-5 h-5 animate-spin text-primary" />
             </div>
+          ) : list.length === 0 ? (
+            <div className="rounded-lg border border-gray-300 bg-white py-8 text-center text-sm text-slate-500">
+              Nenhum recurso cadastrado.
+            </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div>
+            <div className="overflow-x-auto rounded-lg border border-gray-300">
             <Table className="min-w-full border-collapse bg-white text-sm">
               <TableHeader>
                 <TableRow className="border-b border-gray-300 h-15">
@@ -87,6 +91,7 @@ export default function SettingsResourcesPage() {
                 ))}
               </TableBody>
             </Table>
+            </div>
             <ListPagination
               page={listPage}
               totalPages={listTotalPages}

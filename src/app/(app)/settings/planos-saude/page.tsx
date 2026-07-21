@@ -6,12 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { DashboardCreateFormDialog } from '@/components/dashboard-create-form-dialog';
 import {
   Table,
   TableBody,
@@ -75,10 +70,8 @@ export default function PlanosSaudePage() {
     try {
       if (editing) {
         await updateMutation.mutateAsync({ id: editing.id, payload: form });
-        toast.success('Plano atualizado');
       } else {
         await createMutation.mutateAsync(form);
-        toast.success('Plano criado');
       }
       setModalOpen(false);
     } catch {
@@ -89,7 +82,6 @@ export default function PlanosSaudePage() {
   const handleDeactivate = async (id: string) => {
     try {
       await deactivateMutation.mutateAsync(id);
-      toast.success('Plano desativado');
     } catch {
       toast.error('Erro ao desativar');
     }
@@ -102,19 +94,19 @@ export default function PlanosSaudePage() {
           <h2 className="text-xl font-semibold">Planos de Saúde</h2>
           <p className="text-sm text-muted-foreground">Convênios e planos veterinários cadastrados</p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
           <label className="flex items-center gap-2 text-sm text-muted-foreground">
             <Switch checked={includeInactive} onCheckedChange={setIncludeInactive} />
             Mostrar inativos
           </label>
-          <Button size="sm" onClick={openCreate}>
+          <Button size="sm" onClick={openCreate} className="w-full sm:w-auto">
             <Plus className="mr-2 size-4" />
             Novo Plano
           </Button>
         </div>
       </div>
 
-      <Card>
+      <Card className="rounded-none border-0 bg-transparent py-0 shadow-none sm:rounded-xl sm:border sm:border-border/80 sm:bg-card sm:py-6 sm:shadow-(--shadow-card)">
         <CardContent className="p-0">
           {loading ? (
             <div className="p-6 space-y-2">
@@ -208,41 +200,52 @@ export default function PlanosSaudePage() {
         </CardContent>
       </Card>
 
-      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editing ? 'Editar Plano' : 'Novo Plano de Saúde'}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-1">
-              <Label>Nome *</Label>
-              <Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="Ex: Petlove Saúde" />
+      <DashboardCreateFormDialog
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        title={editing ? 'Editar Plano' : 'Novo Plano de Saúde'}
+        contentClassName="modal-responsive"
+        footer={
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              className="border border-gray-300"
+              onClick={() => setModalOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button onClick={handleSave} className="bg-primary">
+              {editing ? 'Salvar' : 'Criar'}
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-4 md:space-y-6">
+          <div className="space-y-2">
+            <Label>Nome *</Label>
+            <Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="Ex: Petlove Saúde" />
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label>CNPJ</Label>
+              <Input value={form.document} onChange={(e) => setForm((f) => ({ ...f, document: e.target.value }))} placeholder="00.000.000/0001-00" />
             </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div className="space-y-1">
-                <Label>CNPJ</Label>
-                <Input value={form.document} onChange={(e) => setForm((f) => ({ ...f, document: e.target.value }))} placeholder="00.000.000/0001-00" />
-              </div>
-              <div className="space-y-1">
-                <Label>Prazo de Repasse (dias)</Label>
-                <Input type="number" value={form.reimbursement_days} onChange={(e) => setForm((f) => ({ ...f, reimbursement_days: Number(e.target.value) }))} />
-              </div>
-              <div className="space-y-1">
-                <Label>Telefone</Label>
-                <Input value={form.contact_phone} onChange={(e) => setForm((f) => ({ ...f, contact_phone: e.target.value }))} />
-              </div>
-              <div className="space-y-1">
-                <Label>E-mail</Label>
-                <Input type="email" value={form.contact_email} onChange={(e) => setForm((f) => ({ ...f, contact_email: e.target.value }))} />
-              </div>
+            <div className="space-y-2">
+              <Label>Prazo de Repasse (dias)</Label>
+              <Input type="number" value={form.reimbursement_days} onChange={(e) => setForm((f) => ({ ...f, reimbursement_days: Number(e.target.value) }))} />
             </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setModalOpen(false)}>Cancelar</Button>
-              <Button onClick={handleSave}>Salvar</Button>
+            <div className="space-y-2">
+              <Label>Telefone</Label>
+              <Input value={form.contact_phone} onChange={(e) => setForm((f) => ({ ...f, contact_phone: e.target.value }))} />
+            </div>
+            <div className="space-y-2">
+              <Label>E-mail</Label>
+              <Input type="email" value={form.contact_email} onChange={(e) => setForm((f) => ({ ...f, contact_email: e.target.value }))} />
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      </DashboardCreateFormDialog>
     </div>
   );
 }

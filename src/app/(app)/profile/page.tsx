@@ -56,7 +56,6 @@ export default function ProfilePage() {
         payload.password = values.password;
       }
       const updated = await updateMutation.mutateAsync(payload);
-      toast.success(t('profile.saved'));
       const raw = localStorage.getItem('user');
       const prev = raw ? JSON.parse(raw) : {};
       localStorage.setItem(

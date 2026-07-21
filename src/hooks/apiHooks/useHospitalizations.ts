@@ -159,7 +159,8 @@ export function useDeleteHospitalizationCostMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ hospitalizationId, costId }: { hospitalizationId: string; costId: string }) => {
-      await api.delete(`/hospitalizations/${hospitalizationId}/costs/${costId}`);
+      const { data } = await api.delete(`/hospitalizations/${hospitalizationId}/costs/${costId}`);
+      return data;
     },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: hospitalizationKeys.costs(variables.hospitalizationId) });

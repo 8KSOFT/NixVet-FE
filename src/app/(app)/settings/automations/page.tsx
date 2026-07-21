@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { DashboardCreateFormDialog } from '@/components/dashboard-create-form-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
@@ -64,7 +64,6 @@ export default function SettingsAutomationsPage() {
         description: values.description || undefined,
         is_active: values.is_active !== false,
       });
-      toast.success('Regra salva');
       setModalOpen(false);
       reset();
     } catch (error: unknown) {
@@ -75,7 +74,6 @@ export default function SettingsAutomationsPage() {
   const handleDelete = async (id: string) => {
     try {
       await deleteMutation.mutateAsync(id);
-      toast.success('Removido');
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao remover'));
     }
@@ -83,16 +81,20 @@ export default function SettingsAutomationsPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-heading font-bold text-primary mb-6">Automações</h1>
-      <Card>
-        <CardContent className="pt-6">
+      <h1 className="text-2xl font-heading font-bold mb-6">Automações</h1>
+      <Card className="rounded-none border-0 bg-transparent py-0 shadow-none sm:rounded-xl sm:border sm:border-border/80 sm:bg-card sm:py-6 sm:shadow-(--shadow-card)">
+        <CardContent className="px-0 pt-0 sm:px-6 sm:pt-6">
           <p className="text-muted-foreground mb-4">Regras por evento (ex.: ao criar consulta → enviar lembrete WhatsApp).</p>
-          <Button onClick={() => setModalOpen(true)} className="mb-4 bg-primary">
+          <Button onClick={() => setModalOpen(true)} className="mb-4 w-full bg-primary sm:w-auto">
             <Plus className="w-4 h-4 mr-2" /> Nova regra
           </Button>
           {loading ? (
             <div className="flex justify-center py-8">
               <Loader2 className="w-6 h-6 animate-spin text-primary" />
+            </div>
+          ) : list.length === 0 ? (
+            <div className="rounded-lg border border-gray-300 bg-white py-8 text-center text-sm text-slate-500">
+              Nenhuma regra cadastrada.
             </div>
           ) : (
             <div>
@@ -161,70 +163,82 @@ export default function SettingsAutomationsPage() {
         </CardContent>
       </Card>
 
-      <Dialog open={modalOpen} onOpenChange={(open) => { setModalOpen(open); if (!open) reset(); }}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Nova regra de automação</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div>
-              <Label htmlFor="event_name">Nome do evento</Label>
-              <Input id="event_name" placeholder="Ex.: consultation.created.v1" {...register('event_name', { required: true })} />
-              {errors.event_name && <p className="text-red-500 text-xs mt-1">Campo obrigatório</p>}
-            </div>
-            <div>
-              <Label>Tipo de ação</Label>
-              <Controller
-                name="action_type"
-                control={control}
-                rules={{ required: true }}
-                render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {ACTION_TYPES.map((t) => (
-                        <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-              {errors.action_type && <p className="text-red-500 text-xs mt-1">Campo obrigatório</p>}
-            </div>
-            <div>
-              <Label htmlFor="delay_minutes">Atraso (minutos)</Label>
-              <Input id="delay_minutes" type="number" min={0} {...register('delay_minutes', { required: true })} />
-            </div>
-            <div>
-              <Label htmlFor="channel">Canal</Label>
-              <Input id="channel" placeholder="Ex.: whatsapp" {...register('channel')} />
-            </div>
-            <div>
-              <Label htmlFor="template_message">Mensagem modelo</Label>
-              <Textarea id="template_message" rows={2} placeholder="Texto da mensagem (placeholders conforme evento)" {...register('template_message')} />
-            </div>
-            <div>
-              <Label htmlFor="description">Descrição</Label>
-              <Input id="description" placeholder="Descrição da regra" {...register('description')} />
-            </div>
-            <div className="flex items-center gap-2">
-              <Controller
-                name="is_active"
-                control={control}
-                render={({ field }) => (
-                  <Switch id="is_active" checked={field.value} onCheckedChange={field.onChange} />
-                )}
-              />
-              <Label htmlFor="is_active">Ativo</Label>
-            </div>
-            <DialogFooter>
-              <Button type="submit" className="bg-primary">Salvar</Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <DashboardCreateFormDialog
+        open={modalOpen}
+        onOpenChange={(open) => { setModalOpen(open); if (!open) reset(); }}
+        title="Nova regra de automação"
+        contentClassName="modal-responsive"
+        footer={
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              className="border border-gray-300"
+              onClick={() => setModalOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button type="submit" form="automation-form" className="bg-primary">
+              Criar
+            </Button>
+          </div>
+        }
+      >
+        <form id="automation-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4 md:space-y-6">
+          <div className="space-y-2">
+            <Label htmlFor="event_name">Nome do evento</Label>
+            <Input id="event_name" placeholder="Ex.: consultation.created.v1" {...register('event_name', { required: true })} />
+            {errors.event_name && <p className="text-sm text-destructive">Campo obrigatório</p>}
+          </div>
+          <div className="space-y-2">
+            <Label>Tipo de ação</Label>
+            <Controller
+              name="action_type"
+              control={control}
+              rules={{ required: true }}
+              render={({ field }) => (
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ACTION_TYPES.map((t) => (
+                      <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+            {errors.action_type && <p className="text-sm text-destructive">Campo obrigatório</p>}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="delay_minutes">Atraso (minutos)</Label>
+            <Input id="delay_minutes" type="number" min={0} {...register('delay_minutes', { required: true })} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="channel">Canal</Label>
+            <Input id="channel" placeholder="Ex.: whatsapp" {...register('channel')} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="template_message">Mensagem modelo</Label>
+            <Textarea id="template_message" rows={2} placeholder="Texto da mensagem (placeholders conforme evento)" {...register('template_message')} />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="description">Descrição</Label>
+            <Input id="description" placeholder="Descrição da regra" {...register('description')} />
+          </div>
+          <div className="flex items-center gap-2">
+            <Controller
+              name="is_active"
+              control={control}
+              render={({ field }) => (
+                <Switch id="is_active" checked={field.value} onCheckedChange={field.onChange} />
+              )}
+            />
+            <Label htmlFor="is_active">Ativo</Label>
+          </div>
+        </form>
+      </DashboardCreateFormDialog>
     </div>
   );
 }

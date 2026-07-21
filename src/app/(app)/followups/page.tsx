@@ -62,7 +62,6 @@ export default function FollowupsPage() {
   const onSubmit = async (values: FollowupFormValues) => {
     try {
       await createFollowup.mutateAsync(values);
-      toast.success('Acompanhamento criado');
       setModalOpen(false);
       reset();
     } catch (error: unknown) {
@@ -73,7 +72,6 @@ export default function FollowupsPage() {
   const updateStatus = async (id: string, followup_status: string) => {
     try {
       await updateStatusMutation.mutateAsync({ id, followupStatus: followup_status });
-      toast.success('Atualizado');
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro'));
     }
@@ -82,7 +80,6 @@ export default function FollowupsPage() {
   const markResultAvailable = async (id: string) => {
     try {
       await markResultAvailableMutation.mutateAsync(id);
-      toast.success('Tutor notificado sobre resultado disponível');
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao notificar'));
     }
