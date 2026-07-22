@@ -456,6 +456,12 @@ const NAV_SECTIONS: NavSection[] = [
             href: "/dashboard/financeiro/planos-saude",
             labelKey: "nav.financeiroPlanosSaude",
           },
+          {
+            key: "financeiro-fluxo",
+            icon: TrendingUp,
+            href: "/dashboard/financeiro/fluxo",
+            labelKey: "nav.financeiroFluxo",
+          },
         ],
       },
     ],
