@@ -450,6 +450,12 @@ const NAV_SECTIONS: NavSection[] = [
             href: "/dashboard/financeiro/receita",
             labelKey: "nav.financeiroReceita",
           },
+          {
+            key: "financeiro-planos-saude",
+            icon: TrendingUp,
+            href: "/dashboard/financeiro/planos-saude",
+            labelKey: "nav.financeiroPlanosSaude",
+          },
         ],
       },
     ],
