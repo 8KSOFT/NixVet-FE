@@ -29,13 +29,13 @@ export function DashboardCreateFormDialog({
       <DialogContent
         showCloseButton={false}
         className={cn(
-          'h-fit max-h-[90vh] max-w-[calc(100%-4rem)] overflow-y-auto rounded-none border-none bg-white p-2.5 modal-responsive',
+          'grid-cols-1 h-fit max-h-[90vh] max-w-[calc(100%-4rem)] overflow-y-auto overflow-x-hidden rounded-2xl border-none bg-white p-0 modal-responsive',
           contentClassName,
         )}
         onInteractOutside={preventOutsideClose ? (event) => event.preventDefault() : undefined}
         onEscapeKeyDown={preventEscapeClose ? (event) => event.preventDefault() : undefined}
       >
-        <div className={cn('rounded-2xl border border-gray-300 bg-[#F2F2F7]', containerClassName)}>
+        <div className={cn('w-full overflow-hidden rounded-2xl border border-gray-300 bg-[#F2F2F7]', containerClassName)}>
           <DialogHeader
             className={cn(
               'flex flex-col items-start justify-between gap-0 rounded-2xl bg-[#F2F2F7] text-left',

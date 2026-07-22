@@ -126,9 +126,9 @@ body {
   font-family: var(--font-heading), var(--font-sans), system-ui, sans-serif;
 }
 
-/* * {
+* {
   border-color: var(--border);
-} */
+}
 
 .login-shell {
   background: var(--background);
@@ -298,13 +298,22 @@ body {
    to prevent text/input overflow and ensure proper stacking. */
 @media (max-width: 1024px) {
   .modal-responsive {
-    width: calc(100% - 0.5rem) !important;
-    max-width: calc(100% - 0.5rem) !important;
-    margin: 0.25rem !important;
+    width: calc(100% - 1.5rem) !important;
+    max-width: calc(100% - 1.5rem) !important;
+    /* Sem margin: o DialogContent é centralizado via left:50% + translateX(-50%)
+       (ver dialog.tsx). Margin nesse tipo de posicionamento empurra a caixa pra
+       direita em vez de dar respiro nos dois lados — o espaçamento das bordas
+       tem que vir só da largura reduzida acima. */
+    margin: 0 !important;
     border-radius: 0.75rem;
     padding: 0 !important;
     max-height: 95vh;
     overflow: hidden;
+    /* O card visível é o container interno (bg #f2f2f7 + header/body); o
+       DialogContent em si só existe pra centralizar/animar, então some com o
+       bg-white dele pra não sobrar uma faixa/moldura branca por fora do card. */
+    background-color: transparent !important;
+    box-shadow: none !important;
   }
 
   .modal-responsive [role="dialog"] {
@@ -362,21 +371,37 @@ body {
     margin-bottom: 0.5rem !important;
   }
 
-  /* Grid layouts: stack vertically on mobile */
+  /* Grid layouts: auto-fit as many columns as fit (min 8.5rem each) instead of
+     forcing a single column, so short fields (e.g. numero, UF, cep, cidade)
+     can still pair up side by side without overflowing narrow screens. */
   .modal-responsive .grid {
-    grid-template-columns: 1fr !important;
+    grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr)) !important;
     gap: 0.5rem !important;
   }
 
-  /* Radio group: compact layout */
+  /* Radio group: compact layout (exceto a linha divisória w-px entre opções,
+     que deve continuar um risquinho fino, igual no desktop) */
   .modal-responsive [role="radiogroup"] {
     gap: 0.5rem !important;
   }
 
-  .modal-responsive [role="radiogroup"] > div {
+  .modal-responsive [role="radiogroup"] > div:not(.w-px) {
     height: auto !important;
     padding: 0.5rem !important;
     min-height: 2rem;
+  }
+
+  .modal-responsive [role="radiogroup"] > div.w-px {
+    width: 1px !important;
+    min-height: 0;
+    padding: 0 !important;
+  }
+
+  /* Texto das opções do radio group vem num <span class="text-sm"> dentro do
+     label — tem font-size próprio, então herda do label não tem efeito;
+     precisa mirar o span direto. */
+  .modal-responsive [role="radiogroup"] label span {
+    font-size: 0.75rem !important;
   }
 
   /* Dialog footer: reduce button sizes */
@@ -409,15 +434,15 @@ body {
   @media (max-width: 480px) {
     .modal-responsive {
       margin: 0 !important;
-      width: 100% !important;
-      max-width: 100% !important;
-      border-radius: 0;
-      max-height: 100vh;
+      width: calc(100% - 1rem) !important;
+      max-width: calc(100% - 1rem) !important;
+      border-radius: 0.75rem;
+      max-height: 96vh;
     }
 
     .modal-responsive [class*="DialogHeader"] {
       padding: 0.5rem 0.75rem !important;
-      border-radius: 0;
+      border-radius: 0.75rem 0.75rem 0 0;
     }
 
     .modal-responsive [class*="DialogTitle"] {
@@ -437,6 +462,10 @@ body {
     }
 
     .modal-responsive label {
+      font-size: 0.7rem !important;
+    }
+
+    .modal-responsive [role="radiogroup"] label span {
       font-size: 0.7rem !important;
     }
 

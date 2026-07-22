@@ -1,0 +1,148 @@
+'use client';
+
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { toast } from 'sonner';
+import { useForm, Controller } from 'react-hook-form';
+import { Plus, Loader2 } from 'lucide-react';
+import { getApiErrorMessage } from '@/app/utils/api-error-message';
+import { API_PAGE_SIZE } from '@/lib/pagination';
+import { ListPagination } from '@/components/list-pagination';
+import { useResourcesPagedQuery, useCreateResourceMutation } from '@/hooks/apiHooks/useResources';
+
+interface ResourceFormValues {
+  name: string;
+  type: string;
+}
+
+const TYPES = [
+  { value: 'room', label: 'Sala' },
+  { value: 'surgery_room', label: 'Sala cirúrgica' },
+  { value: 'equipment', label: 'Equipamento' },
+];
+
+export default function SettingsResourcesPage() {
+  const [listPage, setListPage] = useState(1);
+  const [modalOpen, setModalOpen] = useState(false);
+  const form = useForm<ResourceFormValues>();
+
+  const { data, isLoading: loading } = useResourcesPagedQuery(listPage);
+  const list = data?.items ?? [];
+  const listTotal = data?.total ?? 0;
+  const listTotalPages = data?.totalPages ?? 1;
+  const createMutation = useCreateResourceMutation();
+
+  const onFinish = async (values: ResourceFormValues) => {
+    try {
+      await createMutation.mutateAsync(values);
+      setModalOpen(false);
+      form.reset();
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, 'Erro ao salvar'));
+    }
+  };
+
+  return (
+    <div>
+      <h1 className="text-2xl font-heading font-bold text-primary mb-6">Recursos</h1>
+      <Card>
+        <CardContent className="pt-6">
+          <p className="text-muted-foreground mb-4">Salas e equipamentos para agendamento (opcional na agenda).</p>
+          <Button
+            onClick={() => {
+              form.reset();
+              setModalOpen(true);
+            }}
+            className="mb-4 w-full bg-primary sm:w-auto"
+          >
+            <Plus className="w-4 h-4 mr-2" /> Novo recurso
+          </Button>
+
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-5 h-5 animate-spin text-primary" />
+            </div>
+          ) : list.length === 0 ? (
+            <div className="rounded-lg border border-gray-300 bg-white py-8 text-center text-sm text-slate-500">
+              Nenhum recurso cadastrado.
+            </div>
+          ) : (
+            <div>
+            <div className="overflow-x-auto rounded-lg border border-gray-300">
+            <Table className="min-w-full border-collapse bg-white text-sm">
+              <TableHeader>
+                <TableRow className="border-b border-gray-300 h-15">
+                  <TableHead>Nome</TableHead>
+                  <TableHead>Tipo</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {list.map((r) => (
+                  <TableRow className="border-b border-gray-300 h-15" key={r.id}>
+                    <TableCell>{r.name}</TableCell>
+                    <TableCell>{TYPES.find((x) => x.value === r.type)?.label ?? r.type}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            </div>
+            <ListPagination
+              page={listPage}
+              totalPages={listTotalPages}
+              total={listTotal}
+              pageSize={API_PAGE_SIZE}
+              onPageChange={setListPage}
+              disabled={loading}
+            />
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Novo recurso</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={form.handleSubmit(onFinish)} className="flex flex-col gap-4 mt-2">
+            <div className="flex flex-col gap-1.5">
+              <Label>Nome</Label>
+              <Input {...form.register('name', { required: true })} placeholder="Ex.: Sala 1, Raio-X" />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label>Tipo</Label>
+              <Controller
+                name="type"
+                control={form.control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {TYPES.map((t) => (
+                        <SelectItem key={t.value} value={t.value}>
+                          {t.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </div>
+            <Button type="submit" className="bg-primary">
+              Salvar
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

@@ -34,7 +34,7 @@ export function TrialBanner({ billing }: TrialBannerProps) {
       <div className="flex items-center gap-3 border-b border-red-200 bg-red-50 px-5 py-3 text-sm text-red-800">
         <AlertTriangle className="size-4 shrink-0 text-red-500" />
         <span className="flex-1">Pagamento em atraso. Regularize para evitar suspensão.</span>
-        <Link href="/dashboard/billing/upgrade" className="shrink-0 rounded-md bg-red-600 px-3 py-1 text-xs font-semibold text-white hover:bg-red-700">
+        <Link href="/billing/upgrade" className="shrink-0 rounded-md bg-red-600 px-3 py-1 text-xs font-semibold text-white hover:bg-red-700">
           Regularizar
         </Link>
       </div>
@@ -47,7 +47,7 @@ export function TrialBanner({ billing }: TrialBannerProps) {
       <div className="flex items-center gap-3 border-b border-red-300 bg-red-100 px-5 py-3 text-sm text-red-900">
         <AlertTriangle className="size-4 shrink-0 text-red-600" />
         <span className="flex-1">Seu período de teste expirou. Escolha um plano para recuperar o acesso.</span>
-        <Link href="/dashboard/billing/upgrade" className="shrink-0 rounded-md bg-red-600 px-3 py-1 text-xs font-semibold text-white hover:bg-red-700">
+        <Link href="/billing/upgrade" className="shrink-0 rounded-md bg-red-600 px-3 py-1 text-xs font-semibold text-white hover:bg-red-700">
           Escolher plano
         </Link>
       </div>
@@ -72,7 +72,7 @@ export function TrialBanner({ billing }: TrialBannerProps) {
         <div className="flex items-center gap-3 border-b border-orange-200 bg-orange-50 px-5 py-3 text-sm text-orange-900">
           <AlertTriangle className="size-4 shrink-0 text-orange-500" />
           <span className="flex-1">Trial expira hoje. Escolha um plano para continuar.</span>
-          <Link href="/dashboard/billing/upgrade" className="shrink-0 rounded-md bg-orange-600 px-3 py-1 text-xs font-semibold text-white hover:bg-orange-700">
+          <Link href="/billing/upgrade" className="shrink-0 rounded-md bg-orange-600 px-3 py-1 text-xs font-semibold text-white hover:bg-orange-700">
             Ver planos
           </Link>
         </div>
@@ -86,7 +86,7 @@ export function TrialBanner({ billing }: TrialBannerProps) {
           <span className="flex-1">
             Seu trial expira em <strong>{daysLeft} {daysLeft === 1 ? 'dia' : 'dias'}</strong>. Escolha um plano para continuar.
           </span>
-          <Link href="/dashboard/billing/upgrade" className="shrink-0 rounded-md bg-orange-600 px-3 py-1 text-xs font-semibold text-white hover:bg-orange-700">
+          <Link href="/billing/upgrade" className="shrink-0 rounded-md bg-orange-600 px-3 py-1 text-xs font-semibold text-white hover:bg-orange-700">
             Ver planos
           </Link>
         </div>
@@ -100,7 +100,7 @@ export function TrialBanner({ billing }: TrialBannerProps) {
           <span className="flex-1">
             Seu trial expira em <strong>{daysLeft} dias</strong>. Escolha um plano para continuar.
           </span>
-          <Link href="/dashboard/billing/upgrade" className="shrink-0 rounded-md bg-yellow-600 px-3 py-1 text-xs font-semibold text-white hover:bg-yellow-700">
+          <Link href="/billing/upgrade" className="shrink-0 rounded-md bg-yellow-600 px-3 py-1 text-xs font-semibold text-white hover:bg-yellow-700">
             Ver planos
           </Link>
         </div>
@@ -114,7 +114,7 @@ export function TrialBanner({ billing }: TrialBannerProps) {
         <span className="flex-1">
           Você está no período de teste — <strong>{daysLeft} dias restantes</strong>.
         </span>
-        <Link href="/dashboard/billing/upgrade" className={cn('shrink-0 rounded-md bg-blue-600 px-3 py-1 text-xs font-semibold text-white hover:bg-blue-700')}>
+        <Link href="/billing/upgrade" className={cn('shrink-0 rounded-md bg-blue-600 px-3 py-1 text-xs font-semibold text-white hover:bg-blue-700')}>
           Ver planos
         </Link>
       </div>

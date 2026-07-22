@@ -15,6 +15,7 @@ export interface PatientRow {
   tutor_id: string | null;
   no_tutor_reason?: string | null;
   tutor?: PatientTutor | null;
+  createdAt?: string;
 }
 
 export interface SupportOption {

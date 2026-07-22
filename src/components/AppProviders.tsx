@@ -1,14 +1,25 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { I18nextProvider } from 'react-i18next';
-import { Toaster } from 'sonner';
+import { Toaster, toast } from 'sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { MutationCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import 'dayjs/locale/pt-br';
 import 'dayjs/locale/es';
 import i18n, { persistLanguage } from '@/lib/i18n/instance';
 import { STORAGE_KEY, SUPPORTED_LANGUAGES, type AppLanguage } from '@/lib/i18n/resources';
+import { getApiMessage } from '@/app/types/api-response';
+
+declare module '@tanstack/react-query' {
+  interface Register {
+    mutationMeta: {
+      /** Se true, o toast automatico de sucesso (baseado em `message` do backend) fica desativado. */
+      silent?: boolean;
+    };
+  }
+}
 
 function dayjsLocaleFor(code: string) {
   const base = (code || 'pt').split('-')[0];
@@ -18,6 +29,30 @@ function dayjsLocaleFor(code: string) {
 }
 
 export default function AppProviders({ children }: { children: React.ReactNode }) {
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            staleTime: 30_000,
+            refetchOnWindowFocus: false,
+          },
+        },
+        // Endpoints ja migrados para o envelope { success, message, data } tem a mensagem
+        // "grudada" no resultado da mutation pelo interceptor do axios (src/lib/axios.ts).
+        // Quando presente, ela substitui o toast fixo que cada tela definiria manualmente.
+        mutationCache: new MutationCache({
+          // `meta: { silent: true }` opta uma mutation especifica fora do toast automatico
+          // (ex: marcar notificacao como lida — acao de alta frequencia, nunca teve feedback visual).
+          onSuccess: (data, _variables, _context, mutation) => {
+            if (mutation.meta?.silent) return;
+            const message = getApiMessage(data);
+            if (message) toast.success(message);
+          },
+        }),
+      }),
+  );
+
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -41,11 +76,13 @@ export default function AppProviders({ children }: { children: React.ReactNode }
   }, []);
 
   return (
-    <I18nextProvider i18n={i18n}>
-      <TooltipProvider>
-        {children}
-        <Toaster richColors position="top-right" />
-      </TooltipProvider>
-    </I18nextProvider>
+    <QueryClientProvider client={queryClient}>
+      <I18nextProvider i18n={i18n}>
+        <TooltipProvider>
+          {children}
+          <Toaster richColors position="top-right" />
+        </TooltipProvider>
+      </I18nextProvider>
+    </QueryClientProvider>
   );
 }

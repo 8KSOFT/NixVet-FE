@@ -3,7 +3,7 @@ const RESERVED_SUBDOMAINS = ['www', 'app', 'api', 'nixvet'];
 /** Hosts da aplicação (HML/PRD) — nunca são subdomínio de tenant. */
 const DEFAULT_APP_HOSTS = [
   'nixvet.8ksoft.com',
-  'nixvet-api.8ksoft.com',
+  'api.nixvetapp.com.br',
   'localhost',
   '127.0.0.1',
 ];

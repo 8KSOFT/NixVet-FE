@@ -163,7 +163,8 @@ export default function RegisterPage() {
         return;
       }
 
-      toast.success('Conta criada! Seus 14 dias de teste começaram.');
+      // Envelope novo: { success, message, data }. Ver DOCS/response-phase-4-front.md.
+      toast.success(data.message || 'Conta criada! Seus 14 dias de teste começaram.');
       router.push(`/login?code=${clinicCode}`);
     } catch {
       toast.error('Erro de conexão. Tente novamente.');

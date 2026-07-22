@@ -14,9 +14,18 @@ export interface TeamUserFormValues {
   password: string;
   crmv?: string;
   specialty?: string;
+  accessProfileIds: string[];
 }
 
 export interface TeamAssignableRole {
   value: string;
   labelKey: string;
+}
+
+export interface ProfilePayload {
+  name: string;
+  email: string;
+  crmv: string;
+  specialty: string;
+  password?: string;
 }
