@@ -27,13 +27,51 @@ interface DRE {
   gross_revenue: number;
   deductions: number;
   net_revenue: number;
-  operational_costs: number;
+  cmv: number;
   gross_profit: number;
+  gross_margin_pct: number;
+  opex: number;
+  ebitda: number;
+  ebitda_margin_pct: number;
+  operational_costs: number;
   breakdown: {
     by_category: Record<string, number>;
     by_payment_source: { particular: number; health_plan: number };
     by_payment_method: Record<string, number>;
+    cmv_by_category?: Record<string, number>;
+    opex_by_category?: Record<string, number>;
   };
+}
+
+const CATEGORY_LABELS: Record<string, string> = {
+  consultation: 'Consultas',
+  hospitalization: 'Internações',
+  exam: 'Exames',
+  procedure: 'Procedimentos',
+  vaccine: 'Vacinas',
+  product: 'Produtos',
+  medication: 'Medicamentos',
+  material: 'Materiais',
+  card_fee: 'Taxa de Cartão',
+  medication_purchase: 'Compra de Medicamentos',
+  material_purchase: 'Compra de Materiais',
+  lab_cost: 'Custo de Laboratório',
+  rent: 'Aluguel',
+  personnel: 'Pessoal',
+  utilities: 'Energia / Água / Internet',
+  marketing: 'Marketing',
+  equipment: 'Equipamento',
+  tax: 'Impostos',
+  diaria: 'Diárias',
+  other: 'Outros',
+};
+
+function catLabel(cat: string) {
+  return CATEGORY_LABELS[cat] ?? cat;
+}
+
+function fmtPct(n: number) {
+  return `${n.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
 }
 
 interface MonthlyDRE extends DRE {
@@ -47,12 +85,14 @@ function fmt(n: number) {
 function SummaryCard({
   title,
   value,
+  subtext,
   icon: Icon,
   color,
   loading,
 }: {
   title: string;
   value: number;
+  subtext?: string;
   icon: React.ElementType;
   color: string;
   loading: boolean;
@@ -67,7 +107,10 @@ function SummaryCard({
         {loading ? (
           <Skeleton className="h-7 w-32" />
         ) : (
-          <p className={cn('text-2xl font-bold', color)}>{fmt(value)}</p>
+          <>
+            <p className={cn('text-2xl font-bold', color)}>{fmt(value)}</p>
+            {subtext && <p className="text-xs text-muted-foreground">{subtext}</p>}
+          </>
         )}
       </CardContent>
     </Card>
@@ -196,15 +239,25 @@ export default function FinanceiroDREPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <SummaryCard title="Receita Bruta" value={dre?.gross_revenue ?? 0} icon={TrendingUp} color="text-green-600" loading={loading} />
         <SummaryCard title="Receita Líquida" value={dre?.net_revenue ?? 0} icon={DollarSign} color="text-blue-600" loading={loading} />
-        <SummaryCard title="Custos Operacionais" value={dre?.operational_costs ?? 0} icon={TrendingDown} color="text-orange-500" loading={loading} />
         <SummaryCard
-          title="Resultado"
+          title="Margem Bruta"
           value={dre?.gross_profit ?? 0}
-          icon={BarChart2}
+          subtext={dre ? fmtPct(dre.gross_margin_pct ?? 0) : undefined}
+          icon={TrendingUp}
           color={(dre?.gross_profit ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'}
+          loading={loading}
+        />
+        <SummaryCard title="Custos CMV" value={dre?.cmv ?? 0} icon={TrendingDown} color="text-orange-500" loading={loading} />
+        <SummaryCard title="OPEX" value={dre?.opex ?? 0} icon={TrendingDown} color="text-orange-500" loading={loading} />
+        <SummaryCard
+          title="EBITDA"
+          value={dre?.ebitda ?? 0}
+          subtext={dre ? fmtPct(dre.ebitda_margin_pct ?? 0) : undefined}
+          icon={BarChart2}
+          color={(dre?.ebitda ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'}
           loading={loading}
         />
       </div>
@@ -243,16 +296,29 @@ export default function FinanceiroDREPage() {
             <div>
               <DRERow label="(+) RECEITA BRUTA" value={dre.gross_revenue} bold />
               {Object.entries(dre.breakdown.by_category).map(([cat, val]) => (
-                <DRERow key={cat} label={cat} value={val} indent />
+                <DRERow key={cat} label={catLabel(cat)} value={val} indent />
               ))}
-              <DRERow label="(-) DEDUÇÕES" value={dre.deductions} bold />
+              <DRERow label="(-) Deduções / Glosas" value={dre.deductions} bold />
               <DRERow label="(=) RECEITA LÍQUIDA" value={dre.net_revenue} bold color="text-blue-600" />
-              <DRERow label="(-) CUSTOS OPERACIONAIS" value={dre.operational_costs} bold />
+              <DRERow label="(-) CMV — Custo de Mercadoria" value={dre.cmv} bold />
+              {Object.entries(dre.breakdown.cmv_by_category ?? {}).map(([cat, val]) => (
+                <DRERow key={`cmv-${cat}`} label={catLabel(cat)} value={val} indent />
+              ))}
               <DRERow
-                label="(=) RESULTADO"
+                label={`(=) MARGEM BRUTA (${fmtPct(dre.gross_margin_pct ?? 0)})`}
                 value={dre.gross_profit}
                 bold
                 color={dre.gross_profit >= 0 ? 'text-green-600' : 'text-red-600'}
+              />
+              <DRERow label="(-) DESPESAS OPERACIONAIS" value={dre.opex} bold />
+              {Object.entries(dre.breakdown.opex_by_category ?? {}).map(([cat, val]) => (
+                <DRERow key={`opex-${cat}`} label={catLabel(cat)} value={val} indent />
+              ))}
+              <DRERow
+                label={`(=) EBITDA / RESULTADO (${fmtPct(dre.ebitda_margin_pct ?? 0)})`}
+                value={dre.ebitda}
+                bold
+                color={dre.ebitda >= 0 ? 'text-green-600' : 'text-red-600'}
               />
             </div>
           ) : null}
