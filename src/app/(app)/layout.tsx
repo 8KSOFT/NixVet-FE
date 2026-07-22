@@ -610,7 +610,8 @@ function SidebarNav({
       </div>
 
       <ScrollArea className="flex-1 min-h-0 overflow-y-auto py-2 ">
-        <nav className="flex flex-col px-4 pt-10">
+        {/* pb generoso + safe-area p/ o último item não ficar sob a barra do navegador/home indicator */}
+        <nav className="flex flex-col px-4 pt-10 pb-10 [padding-bottom:calc(2.5rem+env(safe-area-inset-bottom))]">
           {visibleSections.map((section, si) => (
             <div key={section.sectionKey}>
               {/* separador antes do bloco superadmin/configurações (só uma vez, mesmo se superadmin estiver oculto) */}
@@ -818,7 +819,9 @@ export default function DashboardLayout({
       <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
         <SheetContent
           side="left"
-          className="w-[min(100%,280px)] h-screen border-0 bg-brand-deep p-0 text-sidebar-foreground shadow-none [&>button]:text-white [&>button]:ring-offset-sidebar"
+          // h-dvh (viewport dinâmico): 100vh no mobile inclui a área atrás da
+          // barra do navegador e cortava o final do menu.
+          className="w-[min(100%,280px)] h-dvh border-0 bg-brand-deep p-0 text-sidebar-foreground shadow-none [&>button]:text-white [&>button]:ring-offset-sidebar"
         >
           <SheetHeader className="sr-only">
             <SheetTitle>Menu</SheetTitle>
