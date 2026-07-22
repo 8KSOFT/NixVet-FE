@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { CheckCircle, XCircle, Clock, Wallet } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, Wallet, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,6 +13,14 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Table,
   TableBody,
@@ -65,6 +73,16 @@ const CATEGORY_LABELS: Record<string, string> = {
   medication: 'Medicamento',
   material: 'Material',
   other: 'Outro',
+  // Custos e despesas (lançamento manual)
+  medication_purchase: 'Compra de Medicamentos',
+  material_purchase: 'Compra de Materiais',
+  lab_cost: 'Custo de Laboratório',
+  rent: 'Aluguel',
+  personnel: 'Pessoal',
+  utilities: 'Energia/Água/Internet',
+  marketing: 'Marketing',
+  equipment: 'Equipamento',
+  tax: 'Impostos',
 };
 
 const METHOD_LABELS: Record<string, string> = {
@@ -76,7 +94,49 @@ const METHOD_LABELS: Record<string, string> = {
   credit_7_12x: 'Crédito 7-12x',
   credit_installment: 'Crédito parcelado',
   boleto: 'Boleto',
+  transfer: 'Transferência',
 };
+
+// Tipos de lançamento manual e categorias por tipo.
+const TYPE_LABELS: Record<string, string> = {
+  revenue: 'Receita',
+  cost: 'Custo Direto / CMV',
+  expense: 'Despesa Operacional',
+};
+
+const CATEGORIES_BY_TYPE: Record<string, { value: string; label: string }[]> = {
+  revenue: [
+    { value: 'consultation', label: 'Consulta' },
+    { value: 'hospitalization', label: 'Internação' },
+    { value: 'exam', label: 'Exame' },
+    { value: 'procedure', label: 'Procedimento' },
+    { value: 'product', label: 'Produto' },
+    { value: 'medication', label: 'Medicamento' },
+    { value: 'other', label: 'Outro' },
+  ],
+  cost: [
+    { value: 'medication_purchase', label: 'Compra de Medicamentos' },
+    { value: 'lab_cost', label: 'Custo de Laboratório' },
+    { value: 'material', label: 'Materiais' },
+    { value: 'other', label: 'Outro' },
+  ],
+  expense: [
+    { value: 'rent', label: 'Aluguel' },
+    { value: 'personnel', label: 'Pessoal' },
+    { value: 'utilities', label: 'Energia/Água/Internet' },
+    { value: 'marketing', label: 'Marketing' },
+    { value: 'equipment', label: 'Equipamento' },
+    { value: 'tax', label: 'Impostos' },
+    { value: 'other', label: 'Outro' },
+  ],
+};
+
+const MANUAL_METHODS = ['cash', 'pix', 'debit', 'credit_1x', 'credit_2_6x', 'credit_7_12x', 'boleto', 'transfer'];
+
+function todayISO() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
 
 function fmt(n: number | null | undefined) {
   return Number(n ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -103,6 +163,78 @@ export default function LancamentosPage() {
   const [selectedMethod, setSelectedMethod] = useState<string>('');
   const [discount, setDiscount] = useState<string>('');
   const [submitting, setSubmitting] = useState(false);
+
+  // Dialog de lançamento manual
+  const [createOpen, setCreateOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [form, setForm] = useState({
+    type: 'expense',
+    category: '',
+    entry_date: todayISO(),
+    gross_amount: '',
+    discount_amount: '',
+    payment_method: '',
+    payment_source: 'particular',
+    description: '',
+  });
+
+  const setField = (field: string, value: string) =>
+    setForm((f) => ({
+      ...f,
+      [field]: value,
+      // Categoria depende do tipo — resetar ao trocar o tipo.
+      ...(field === 'type' ? { category: '' } : {}),
+    }));
+
+  const formGross = Number(form.gross_amount) || 0;
+  const formDiscount = Number(form.discount_amount) || 0;
+  const formNet = Math.max(0, Math.round((formGross - formDiscount) * 100) / 100);
+
+  const openCreate = () => {
+    setForm({
+      type: 'expense',
+      category: '',
+      entry_date: todayISO(),
+      gross_amount: '',
+      discount_amount: '',
+      payment_method: '',
+      payment_source: 'particular',
+      description: '',
+    });
+    setCreateOpen(true);
+  };
+
+  const submitCreate = async () => {
+    if (!form.category || !form.payment_method || formGross <= 0) {
+      toast.error('Preencha tipo, categoria, valor e forma de pagamento');
+      return;
+    }
+    setCreating(true);
+    try {
+      await api.post('/financial-reports/entries', {
+        entry_date: form.entry_date,
+        type: form.type,
+        category: form.category,
+        payment_source: form.type === 'revenue' ? form.payment_source : 'particular',
+        payment_method: form.payment_method,
+        gross_amount: formGross,
+        discount_amount: formDiscount,
+        net_amount: formNet,
+        fee_amount: 0,
+        description: form.description || `${TYPE_LABELS[form.type]} — ${form.category}`,
+        status: 'confirmed',
+      });
+      toast.success('Lançamento criado com sucesso');
+      setCreateOpen(false);
+      // Lançamento manual nasce confirmado → mostra a aba certa.
+      if (status !== 'confirmed') setStatus('confirmed');
+      else fetchEntries();
+    } catch {
+      toast.error('Erro ao criar lançamento');
+    } finally {
+      setCreating(false);
+    }
+  };
 
   const fetchEntries = useCallback(async () => {
     setLoading(true);
@@ -187,11 +319,17 @@ export default function LancamentosPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Lançamentos Financeiros</h1>
-        <p className="text-sm text-muted-foreground">
-          Lançamentos sugeridos automaticamente; confirme a forma de pagamento usada para registrar o valor real.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">Lançamentos Financeiros</h1>
+          <p className="text-sm text-muted-foreground">
+            Lançamentos sugeridos automaticamente; confirme a forma de pagamento usada para registrar o valor real.
+          </p>
+        </div>
+        <Button onClick={openCreate}>
+          <Plus className="mr-2 size-4" />
+          Lançamento
+        </Button>
       </div>
 
       <div className="flex gap-2">
@@ -363,6 +501,139 @@ export default function LancamentosPage() {
             <Button onClick={submitConfirm} disabled={submitting || !selectedMethod}>
               <Wallet className="mr-2 size-4" />
               Confirmar recebimento
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de lançamento manual */}
+      <Dialog open={createOpen} onOpenChange={(o) => !o && setCreateOpen(false)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Novo lançamento manual</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Tipo *</Label>
+                <Select value={form.type} onValueChange={(v) => setField('type', v)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(TYPE_LABELS).map(([value, label]) => (
+                      <SelectItem key={value} value={value}>{label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Categoria *</Label>
+                <Select value={form.category} onValueChange={(v) => setField('category', v)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(CATEGORIES_BY_TYPE[form.type] ?? []).map((c) => (
+                      <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label htmlFor="entry-date">Data *</Label>
+                <Input
+                  id="entry-date"
+                  type="date"
+                  value={form.entry_date}
+                  onChange={(ev) => setField('entry_date', ev.target.value)}
+                />
+              </div>
+              <div>
+                <Label>Forma de pagamento *</Label>
+                <Select value={form.payment_method} onValueChange={(v) => setField('payment_method', v)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MANUAL_METHODS.map((m) => (
+                      <SelectItem key={m} value={m}>{methodLabel(m)}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label htmlFor="gross-amount">Valor bruto (R$) *</Label>
+                <Input
+                  id="gross-amount"
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={form.gross_amount}
+                  onChange={(ev) => setField('gross_amount', ev.target.value)}
+                  placeholder="0,00"
+                />
+              </div>
+              <div>
+                <Label htmlFor="discount-amount">Desconto (R$)</Label>
+                <Input
+                  id="discount-amount"
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={form.discount_amount}
+                  onChange={(ev) => setField('discount_amount', ev.target.value)}
+                  placeholder="0,00"
+                />
+              </div>
+            </div>
+
+            <p className="text-right text-sm">
+              <span className="text-muted-foreground">Valor líquido: </span>
+              <span className="font-semibold">{fmt(formNet)}</span>
+            </p>
+
+            {form.type === 'revenue' && (
+              <div>
+                <Label>Fonte</Label>
+                <Select value={form.payment_source} onValueChange={(v) => setField('payment_source', v)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="particular">Particular</SelectItem>
+                    <SelectItem value="health_plan">Plano de Saúde</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            <div>
+              <Label htmlFor="entry-description">Descrição</Label>
+              <Textarea
+                id="entry-description"
+                value={form.description}
+                onChange={(ev) => setField('description', ev.target.value)}
+                placeholder="Ex.: Aluguel julho 2026"
+                rows={2}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreateOpen(false)} disabled={creating}>
+              Cancelar
+            </Button>
+            <Button onClick={submitCreate} disabled={creating}>
+              <Plus className="mr-2 size-4" />
+              Criar lançamento
             </Button>
           </DialogFooter>
         </DialogContent>
