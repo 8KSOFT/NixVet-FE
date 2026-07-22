@@ -138,6 +138,18 @@ function todayISO() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+function monthStartISO() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
+}
+
+// Todas as categorias (para o filtro), agrupadas a partir das categorias por tipo.
+const ALL_CATEGORY_OPTIONS = Object.values(CATEGORIES_BY_TYPE)
+  .flat()
+  .filter((c, i, arr) => arr.findIndex((x) => x.value === c.value) === i);
+
+const PAGE_SIZE = 50;
+
 function fmt(n: number | null | undefined) {
   return Number(n ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
@@ -156,6 +168,64 @@ export default function LancamentosPage() {
   const [status, setStatus] = useState<Status>('suggested');
   const [entries, setEntries] = useState<FinancialEntry[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Filtros avançados
+  const [fromDate, setFromDate] = useState(monthStartISO());
+  const [toDate, setToDate] = useState(todayISO());
+  const [typeFilter, setTypeFilter] = useState('all');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [offset, setOffset] = useState(0);
+  const [total, setTotal] = useState(0);
+
+  // Debounce da busca por texto (400ms)
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 400);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  // Ao mudar qualquer filtro, volta para a primeira página.
+  useEffect(() => {
+    setOffset(0);
+  }, [status, fromDate, toDate, typeFilter, categoryFilter, debouncedSearch]);
+
+  const buildFilterParams = useCallback(() => {
+    const params = new URLSearchParams({ status });
+    if (fromDate && toDate) {
+      params.set('from', fromDate);
+      params.set('to', toDate);
+    }
+    if (typeFilter !== 'all') params.set('type', typeFilter);
+    if (categoryFilter !== 'all') params.set('category', categoryFilter);
+    if (debouncedSearch) params.set('search', debouncedSearch);
+    return params;
+  }, [status, fromDate, toDate, typeFilter, categoryFilter, debouncedSearch]);
+
+  const clearFilters = () => {
+    setFromDate(monthStartISO());
+    setToDate(todayISO());
+    setTypeFilter('all');
+    setCategoryFilter('all');
+    setSearch('');
+  };
+
+  const exportList = async () => {
+    try {
+      const params = buildFilterParams();
+      const res = await api.get(`/financial-reports/entries/export?${params.toString()}`, {
+        responseType: 'blob',
+      });
+      const url = URL.createObjectURL(res.data as Blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'lancamentos.xlsx';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      toast.error('Erro ao exportar lançamentos');
+    }
+  };
 
   // Dialog de confirmação
   const [confirmEntry, setConfirmEntry] = useState<FinancialEntry | null>(null);
@@ -239,14 +309,27 @@ export default function LancamentosPage() {
   const fetchEntries = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.get<FinancialEntry[]>(`/financial-reports/entries?status=${status}`);
-      setEntries(Array.isArray(res.data) ? res.data : []);
+      const params = buildFilterParams();
+      params.set('limit', String(PAGE_SIZE));
+      params.set('offset', String(offset));
+      const res = await api.get<{ rows: FinancialEntry[]; count: number }>(
+        `/financial-reports/entries?${params.toString()}`,
+      );
+      // Compatibilidade: aceita tanto {rows,count} quanto array simples.
+      const data = res.data as any;
+      if (Array.isArray(data)) {
+        setEntries(data);
+        setTotal(data.length);
+      } else {
+        setEntries(Array.isArray(data.rows) ? data.rows : []);
+        setTotal(Number(data.count) || 0);
+      }
     } catch {
       toast.error('Erro ao carregar lançamentos');
     } finally {
       setLoading(false);
     }
-  }, [status]);
+  }, [buildFilterParams, offset]);
 
   useEffect(() => {
     fetchEntries();
@@ -348,6 +431,71 @@ export default function LancamentosPage() {
         ))}
       </div>
 
+      {/* Filtros avançados */}
+      <div className="flex flex-wrap items-end gap-3">
+        <div>
+          <Label className="text-xs text-muted-foreground">De</Label>
+          <Input
+            type="date"
+            className="w-[150px]"
+            value={fromDate}
+            onChange={(ev) => setFromDate(ev.target.value)}
+          />
+        </div>
+        <div>
+          <Label className="text-xs text-muted-foreground">Até</Label>
+          <Input
+            type="date"
+            className="w-[150px]"
+            value={toDate}
+            onChange={(ev) => setToDate(ev.target.value)}
+          />
+        </div>
+        <div>
+          <Label className="text-xs text-muted-foreground">Tipo</Label>
+          <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <SelectTrigger className="w-[170px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              {Object.entries(TYPE_LABELS).map(([value, label]) => (
+                <SelectItem key={value} value={value}>{label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label className="text-xs text-muted-foreground">Categoria</Label>
+          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <SelectTrigger className="w-[190px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas</SelectItem>
+              {(typeFilter !== 'all' ? CATEGORIES_BY_TYPE[typeFilter] ?? [] : ALL_CATEGORY_OPTIONS).map((c) => (
+                <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="min-w-[200px] flex-1">
+          <Label className="text-xs text-muted-foreground">Busca</Label>
+          <Input
+            type="text"
+            placeholder="Buscar na descrição..."
+            value={search}
+            onChange={(ev) => setSearch(ev.target.value)}
+          />
+        </div>
+        <Button variant="ghost" size="sm" onClick={clearFilters}>
+          Limpar filtros
+        </Button>
+        <Button variant="outline" size="sm" onClick={exportList}>
+          ↓ Exportar (.xlsx)
+        </Button>
+      </div>
+
       <Card>
         <CardHeader>
           <CardTitle className="text-sm font-medium">
@@ -410,6 +558,32 @@ export default function LancamentosPage() {
                 ))}
               </TableBody>
             </Table>
+            </div>
+          )}
+
+          {!loading && total > 0 && (
+            <div className="mt-3 flex items-center justify-between text-sm text-muted-foreground">
+              <span>
+                Exibindo {entries.length} de {total} lançamento{total === 1 ? '' : 's'}
+              </span>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={offset === 0}
+                  onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))}
+                >
+                  Anterior
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={offset + PAGE_SIZE >= total}
+                  onClick={() => setOffset(offset + PAGE_SIZE)}
+                >
+                  Próximo
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>
