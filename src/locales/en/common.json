@@ -32,6 +32,7 @@
     "sectionComms": "Communication",
     "financeiro": "Financial",
     "financeiroLancamentos": "Entries",
+    "financeiroContasPagar": "Accounts Payable",
     "financeiroProdutos": "Products",
     "financeiroReceitas": "Revenue",
     "financeiroCustos": "Payment Costs",

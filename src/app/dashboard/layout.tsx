@@ -415,6 +415,12 @@ const NAV_SECTIONS: NavSection[] = [
             labelKey: "nav.financeiroLancamentos",
           },
           {
+            key: "financeiro-contas-pagar",
+            icon: CreditCard,
+            href: "/dashboard/financeiro/contas-pagar",
+            labelKey: "nav.financeiroContasPagar",
+          },
+          {
             key: "financeiro-receitas",
             icon: TrendingUp,
             href: "/dashboard/financeiro/receitas",
