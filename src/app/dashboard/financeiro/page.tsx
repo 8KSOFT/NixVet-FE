@@ -103,6 +103,48 @@ const METHOD_LABELS: Record<string, string> = {
   transfer: 'Transferência',
 };
 
+interface DREDiff {
+  current: number;
+  previous: number;
+  diff_amount: number;
+  diff_pct: number | null;
+}
+
+interface DREComparison {
+  period: string;
+  prev_period: string;
+  gross_revenue: DREDiff;
+  deductions: DREDiff;
+  net_revenue: DREDiff;
+  cmv: DREDiff;
+  gross_profit: DREDiff;
+  opex: DREDiff;
+  ebitda: DREDiff;
+}
+
+type CompareMode = 'none' | 'prev_month' | 'prev_year';
+
+const COMPARE_LABELS: Record<CompareMode, string> = {
+  none: '— (sem comparar)',
+  prev_month: 'Mês anterior',
+  prev_year: 'Mesmo mês do ano anterior',
+};
+
+/** Variação formatada com sinal; `inverse` para custos (aumento = ruim). */
+function DiffBadge({ diff, inverse }: { diff: DREDiff; inverse?: boolean }) {
+  if (diff.diff_pct === null) {
+    return <span className="text-xs text-muted-foreground">—</span>;
+  }
+  const up = diff.diff_amount >= 0;
+  const good = inverse ? !up : up;
+  return (
+    <span className={cn('inline-flex items-center gap-0.5 text-xs font-medium', good ? 'text-green-600' : 'text-red-600')}>
+      {up ? '↑' : '↓'} {up ? '+' : ''}
+      {diff.diff_pct.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%
+    </span>
+  );
+}
+
 function fmt(n: number) {
   return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
@@ -111,6 +153,7 @@ function SummaryCard({
   title,
   value,
   subtext,
+  extra,
   icon: Icon,
   color,
   loading,
@@ -118,6 +161,7 @@ function SummaryCard({
   title: string;
   value: number;
   subtext?: string;
+  extra?: React.ReactNode;
   icon: React.ElementType;
   color: string;
   loading: boolean;
@@ -135,6 +179,7 @@ function SummaryCard({
           <>
             <p className={cn('text-2xl font-bold', color)}>{fmt(value)}</p>
             {subtext && <p className="text-xs text-muted-foreground">{subtext}</p>}
+            {extra}
           </>
         )}
       </CardContent>
@@ -179,19 +224,25 @@ export default function FinanceiroDREPage() {
   const [dre, setDRE] = useState<DRE | null>(null);
   const [monthly, setMonthly] = useState<MonthlyDRE[]>([]);
   const [kpis, setKpis] = useState<KPIs | null>(null);
+  const [compare, setCompare] = useState<CompareMode>('none');
+  const [comparison, setComparison] = useState<DREComparison | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchDRE = async () => {
     setLoading(true);
     try {
-      const [dreRes, monthlyRes, kpisRes] = await Promise.all([
+      const [dreRes, monthlyRes, kpisRes, compareRes] = await Promise.all([
         api.get<DRE>(`/financial-reports/dre?period=${period}`),
         api.get<MonthlyDRE[]>('/financial-reports/dre/monthly'),
         api.get<KPIs>(`/financial-reports/kpis?period=${period}`),
+        compare !== 'none'
+          ? api.get<DREComparison>(`/financial-reports/dre?period=${period}&compare=${compare}`)
+          : Promise.resolve(null),
       ]);
       setDRE(dreRes.data);
       setMonthly(monthlyRes.data);
       setKpis(kpisRes.data);
+      setComparison(compareRes ? compareRes.data : null);
     } catch {
       toast.error('Erro ao carregar DRE');
     } finally {
@@ -199,7 +250,7 @@ export default function FinanceiroDREPage() {
     }
   };
 
-  useEffect(() => { fetchDRE(); }, [period]);
+  useEffect(() => { fetchDRE(); }, [period, compare]);
 
   const handleExport = async (format: 'pdf' | 'xlsx') => {
     try {
@@ -236,6 +287,21 @@ export default function FinanceiroDREPage() {
           <p className="text-sm text-muted-foreground">Demonstrativo de Resultado do Exercício</p>
         </div>
         <div className="flex items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                Comparar: {COMPARE_LABELS[compare]} <ChevronDown className="ml-2 size-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {(Object.keys(COMPARE_LABELS) as CompareMode[]).map((m) => (
+                <DropdownMenuItem key={m} onClick={() => setCompare(m)}>
+                  {COMPARE_LABELS[m]}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm">
@@ -405,22 +471,52 @@ export default function FinanceiroDREPage() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <SummaryCard title="Receita Bruta" value={dre?.gross_revenue ?? 0} icon={TrendingUp} color="text-green-600" loading={loading} />
-        <SummaryCard title="Receita Líquida" value={dre?.net_revenue ?? 0} icon={DollarSign} color="text-blue-600" loading={loading} />
+        <SummaryCard
+          title="Receita Bruta"
+          value={dre?.gross_revenue ?? 0}
+          extra={comparison && <DiffBadge diff={comparison.gross_revenue} />}
+          icon={TrendingUp}
+          color="text-green-600"
+          loading={loading}
+        />
+        <SummaryCard
+          title="Receita Líquida"
+          value={dre?.net_revenue ?? 0}
+          extra={comparison && <DiffBadge diff={comparison.net_revenue} />}
+          icon={DollarSign}
+          color="text-blue-600"
+          loading={loading}
+        />
         <SummaryCard
           title="Margem Bruta"
           value={dre?.gross_profit ?? 0}
           subtext={dre ? fmtPct(dre.gross_margin_pct ?? 0) : undefined}
+          extra={comparison && <DiffBadge diff={comparison.gross_profit} />}
           icon={TrendingUp}
           color={(dre?.gross_profit ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'}
           loading={loading}
         />
-        <SummaryCard title="Custos CMV" value={dre?.cmv ?? 0} icon={TrendingDown} color="text-orange-500" loading={loading} />
-        <SummaryCard title="OPEX" value={dre?.opex ?? 0} icon={TrendingDown} color="text-orange-500" loading={loading} />
+        <SummaryCard
+          title="Custos CMV"
+          value={dre?.cmv ?? 0}
+          extra={comparison && <DiffBadge diff={comparison.cmv} inverse />}
+          icon={TrendingDown}
+          color="text-orange-500"
+          loading={loading}
+        />
+        <SummaryCard
+          title="OPEX"
+          value={dre?.opex ?? 0}
+          extra={comparison && <DiffBadge diff={comparison.opex} inverse />}
+          icon={TrendingDown}
+          color="text-orange-500"
+          loading={loading}
+        />
         <SummaryCard
           title="EBITDA"
           value={dre?.ebitda ?? 0}
           subtext={dre ? fmtPct(dre.ebitda_margin_pct ?? 0) : undefined}
+          extra={comparison && <DiffBadge diff={comparison.ebitda} />}
           icon={BarChart2}
           color={(dre?.ebitda ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'}
           loading={loading}
@@ -450,12 +546,52 @@ export default function FinanceiroDREPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm font-medium">DRE Detalhado — {period}</CardTitle>
+          <CardTitle className="text-sm font-medium">
+            DRE Detalhado — {period}
+            {comparison && ` vs ${comparison.prev_period}`}
+          </CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
             <div className="space-y-2">
               {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-8 w-full" />)}
+            </div>
+          ) : comparison ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
+                    <th className="py-2">Linha DRE</th>
+                    <th className="py-2 text-right">{comparison.period}</th>
+                    <th className="py-2 text-right">{comparison.prev_period}</th>
+                    <th className="py-2 text-right">Variação</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(
+                    [
+                      { label: '(+) RECEITA BRUTA', diff: comparison.gross_revenue, bold: true },
+                      { label: '(-) Deduções / Glosas', diff: comparison.deductions, inverse: true },
+                      { label: '(=) RECEITA LÍQUIDA', diff: comparison.net_revenue, bold: true, color: 'text-blue-600' },
+                      { label: '(-) CMV — Custo de Mercadoria', diff: comparison.cmv, inverse: true },
+                      { label: '(=) MARGEM BRUTA', diff: comparison.gross_profit, bold: true, color: comparison.gross_profit.current >= 0 ? 'text-green-600' : 'text-red-600' },
+                      { label: '(-) DESPESAS OPERACIONAIS', diff: comparison.opex, inverse: true },
+                      { label: '(=) EBITDA / RESULTADO', diff: comparison.ebitda, bold: true, color: comparison.ebitda.current >= 0 ? 'text-green-600' : 'text-red-600' },
+                    ] as { label: string; diff: DREDiff; bold?: boolean; color?: string; inverse?: boolean }[]
+                  ).map((row) => (
+                    <tr key={row.label} className="border-t border-border">
+                      <td className={cn('py-2', row.bold && 'font-semibold')}>{row.label}</td>
+                      <td className={cn('py-2 text-right tabular-nums', row.color, row.bold && 'font-semibold')}>
+                        {fmt(row.diff.current)}
+                      </td>
+                      <td className="py-2 text-right tabular-nums text-muted-foreground">{fmt(row.diff.previous)}</td>
+                      <td className="py-2 text-right">
+                        <DiffBadge diff={row.diff} inverse={row.inverse} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           ) : dre ? (
             <div>
