@@ -138,7 +138,7 @@ export default function FinanceiroDREPage() {
       const url = URL.createObjectURL(res.data as Blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `dre-${period}.${format === 'xlsx' ? 'csv' : 'txt'}`;
+      a.download = `dre-${period}.${format === 'xlsx' ? 'xlsx' : 'txt'}`;
       a.click();
       URL.revokeObjectURL(url);
     } catch {
@@ -190,7 +190,7 @@ export default function FinanceiroDREPage() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => handleExport('pdf')}>Exportar PDF</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExport('xlsx')}>Exportar Excel (CSV)</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport('xlsx')}>Exportar Excel (XLSX)</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
