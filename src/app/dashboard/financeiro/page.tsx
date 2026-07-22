@@ -78,6 +78,31 @@ interface MonthlyDRE extends DRE {
   period: string;
 }
 
+interface KPIs {
+  ticket_medio: number;
+  total_atendimentos: number;
+  margem_bruta_pct: number;
+  ebitda_margin_pct: number | null;
+  crescimento_mom_pct: number | null;
+  receita_particular: number;
+  receita_plano: number;
+  pct_particular: number;
+  pct_plano: number;
+  mix_pagamento: Record<string, number>;
+  metodo_principal: string | null;
+}
+
+const METHOD_LABELS: Record<string, string> = {
+  cash: 'Dinheiro',
+  pix: 'PIX',
+  debit: 'Débito',
+  credit_1x: 'Crédito à vista',
+  credit_2_6x: 'Crédito 2-6x',
+  credit_7_12x: 'Crédito 7-12x',
+  boleto: 'Boleto',
+  transfer: 'Transferência',
+};
+
 function fmt(n: number) {
   return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
@@ -153,17 +178,20 @@ export default function FinanceiroDREPage() {
   );
   const [dre, setDRE] = useState<DRE | null>(null);
   const [monthly, setMonthly] = useState<MonthlyDRE[]>([]);
+  const [kpis, setKpis] = useState<KPIs | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchDRE = async () => {
     setLoading(true);
     try {
-      const [dreRes, monthlyRes] = await Promise.all([
+      const [dreRes, monthlyRes, kpisRes] = await Promise.all([
         api.get<DRE>(`/financial-reports/dre?period=${period}`),
         api.get<MonthlyDRE[]>('/financial-reports/dre/monthly'),
+        api.get<KPIs>(`/financial-reports/kpis?period=${period}`),
       ]);
       setDRE(dreRes.data);
       setMonthly(monthlyRes.data);
+      setKpis(kpisRes.data);
     } catch {
       toast.error('Erro ao carregar DRE');
     } finally {
@@ -237,6 +265,143 @@ export default function FinanceiroDREPage() {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
+      </div>
+
+      {/* KPIs gerenciais */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Ticket Médio</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loading || !kpis ? (
+              <Skeleton className="h-7 w-28" />
+            ) : (
+              <>
+                <p className="text-2xl font-bold">{fmt(kpis.ticket_medio)}</p>
+                <p className="text-xs text-muted-foreground">{kpis.total_atendimentos} atendimentos</p>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Margem Bruta</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loading || !kpis ? (
+              <Skeleton className="h-7 w-20" />
+            ) : (
+              <p
+                className={cn(
+                  'text-2xl font-bold',
+                  kpis.margem_bruta_pct > 40
+                    ? 'text-green-600'
+                    : kpis.margem_bruta_pct < 20
+                      ? 'text-red-600'
+                      : 'text-foreground',
+                )}
+              >
+                {fmtPct(kpis.margem_bruta_pct)}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Crescimento MoM</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loading || !kpis ? (
+              <Skeleton className="h-7 w-24" />
+            ) : kpis.crescimento_mom_pct === null ? (
+              <p className="text-2xl font-bold text-muted-foreground">—</p>
+            ) : (
+              <>
+                <p
+                  className={cn(
+                    'flex items-center gap-1 text-2xl font-bold',
+                    kpis.crescimento_mom_pct >= 0 ? 'text-green-600' : 'text-red-600',
+                  )}
+                >
+                  {kpis.crescimento_mom_pct >= 0 ? (
+                    <TrendingUp className="size-5" />
+                  ) : (
+                    <TrendingDown className="size-5" />
+                  )}
+                  {fmtPct(Math.abs(kpis.crescimento_mom_pct))}
+                </p>
+                <p className="text-xs text-muted-foreground">vs. mês anterior</p>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Receita Particular</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loading || !kpis ? (
+              <Skeleton className="h-7 w-28" />
+            ) : (
+              <>
+                <p className="text-2xl font-bold text-blue-600">{fmt(kpis.receita_particular)}</p>
+                <div className="mt-1 h-1.5 w-full rounded-full bg-muted">
+                  <div
+                    className="h-1.5 rounded-full bg-blue-600"
+                    style={{ width: `${Math.min(100, kpis.pct_particular)}%` }}
+                  />
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">{fmtPct(kpis.pct_particular)} do total</p>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Receita Planos</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loading || !kpis ? (
+              <Skeleton className="h-7 w-28" />
+            ) : (
+              <>
+                <p className="text-2xl font-bold text-purple-600">{fmt(kpis.receita_plano)}</p>
+                <div className="mt-1 h-1.5 w-full rounded-full bg-muted">
+                  <div
+                    className="h-1.5 rounded-full bg-purple-600"
+                    style={{ width: `${Math.min(100, kpis.pct_plano)}%` }}
+                  />
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">{fmtPct(kpis.pct_plano)} do total</p>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Método Principal</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loading || !kpis ? (
+              <Skeleton className="h-7 w-24" />
+            ) : kpis.metodo_principal ? (
+              <p className="text-2xl font-bold">
+                {METHOD_LABELS[kpis.metodo_principal] ?? kpis.metodo_principal}
+                <span className="ml-2 text-base font-medium text-muted-foreground">
+                  {fmtPct(kpis.mix_pagamento[kpis.metodo_principal] ?? 0)}
+                </span>
+              </p>
+            ) : (
+              <p className="text-2xl font-bold text-muted-foreground">—</p>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
