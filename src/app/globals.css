@@ -308,6 +308,10 @@ body {
     border-radius: 0.75rem;
     padding: 0 !important;
     max-height: 95vh;
+    /* dvh acompanha a altura real visível (barra de endereço/nav do navegador
+       mobile), evitando que o rodapé do modal fique cortado e inacessível em
+       telas curtas — vh sozinho superestima a área visível nesses casos. */
+    max-height: 95dvh;
     overflow: hidden;
     /* O card visível é o container interno (bg #f2f2f7 + header/body); o
        DialogContent em si só existe pra centralizar/animar, então some com o
@@ -341,14 +345,12 @@ body {
     padding: 0 !important;
   }
 
-  /* Form scrollable area */
-  .modal-responsive form {
-    flex: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
+  /* Região rolável do modal (ver data-slot="dialog-scroll-body" em
+     dashboard-create-form-dialog.tsx). O scroll/altura já vêm das classes
+     Tailwind do componente — aqui só reduzimos o padding no mobile. */
+  .modal-responsive [data-slot="dialog-scroll-body"] {
     padding: 0.75rem !important;
-    max-height: calc(95vh - 4.5rem);
-    gap: 0.75rem !important;
+    padding-top: 1.5rem !important;
   }
 
   /* All input fields: reduce height and padding */
@@ -438,6 +440,7 @@ body {
       max-width: calc(100% - 1rem) !important;
       border-radius: 0.75rem;
       max-height: 96vh;
+      max-height: 96dvh;
     }
 
     .modal-responsive [class*="DialogHeader"] {
@@ -449,9 +452,9 @@ body {
       font-size: 0.875rem !important;
     }
 
-    .modal-responsive form {
+    .modal-responsive [data-slot="dialog-scroll-body"] {
       padding: 0.5rem !important;
-      gap: 0.5rem !important;
+      padding-top: 1.5rem !important;
     }
 
     .modal-responsive input,

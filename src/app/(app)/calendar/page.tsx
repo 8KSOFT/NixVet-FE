@@ -204,7 +204,6 @@ export default function CalendarPage() {
   const [thumbHeight, setThumbHeight] = useState(0);
   const [thumbTop, setThumbTop] = useState(0);
   const [showThumb, setShowThumb] = useState(false);
-  const headerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -236,44 +235,40 @@ export default function CalendarPage() {
     };
   }, []);
 
-  // Keep header aligned by adding padding-right equal to native scrollbar width
+  // Faz as visões dia/semana/ano ocuparem a altura disponível até o fim da
+  // página (com uma margem no bottom), sem depender de vh fixo — o que está
+  // acima (banner de trial, status do Google, toolbar) pode variar de altura.
+  const viewsWrapperRef = useRef<HTMLDivElement | null>(null);
+  const [availableViewHeight, setAvailableViewHeight] = useState<number | null>(null);
+
   useEffect(() => {
-    const el = scrollRef.current;
-    const hdr = headerRef.current;
-    if (!el || !hdr) return;
+    const el = viewsWrapperRef.current;
+    if (!el) return;
 
-    const computeGutter = () => {
-      // measure native scrollbar width
-      const div = document.createElement('div');
-      div.style.width = '100px';
-      div.style.height = '100px';
-      div.style.overflow = 'scroll';
-      div.style.position = 'absolute';
-      div.style.top = '-9999px';
-      document.body.appendChild(div);
-      const scw = div.offsetWidth - div.clientWidth;
-      document.body.removeChild(div);
+    const BOTTOM_MARGIN = 24;
+    const MIN_HEIGHT = 240;
 
-      // apply padding only when vertical scrollbar is present
-      if (el.scrollHeight > el.clientHeight && scw > 0) {
-        hdr.style.paddingRight = `${scw}px`;
-      } else {
-        hdr.style.paddingRight = '';
-      }
+    const update = () => {
+      const top = el.getBoundingClientRect().top;
+      // `<main>` (layout do app) tem padding-bottom próprio (p-5/lg:p-8) que
+      // vem DEPOIS do nosso wrapper no fluxo — sem descontar isso, a página
+      // fica alguns px mais alta que a viewport e sobra um scroll Y à toa.
+      const mainEl = el.closest('main');
+      const mainPaddingBottom = mainEl ? parseFloat(getComputedStyle(mainEl).paddingBottom) || 0 : 0;
+      const available = window.innerHeight - top - mainPaddingBottom - BOTTOM_MARGIN;
+      setAvailableViewHeight(Math.max(available, MIN_HEIGHT));
     };
 
-    computeGutter();
-    const ro2 = new ResizeObserver(computeGutter);
-    ro2.observe(el);
-    window.addEventListener('resize', computeGutter);
-    el.addEventListener('scroll', computeGutter, { passive: true });
+    update();
+    window.addEventListener('resize', update);
+    const ro = new ResizeObserver(update);
+    ro.observe(document.body);
 
     return () => {
-      ro2.disconnect();
-      window.removeEventListener('resize', computeGutter);
-      el.removeEventListener('scroll', computeGutter);
+      window.removeEventListener('resize', update);
+      ro.disconnect();
     };
-  }, []);
+  }, [viewMode, googleConnected]);
 
   /** Filtro opcional: `GET /patients?tutor_id=` */
   const [patientFilterTutorId, setPatientFilterTutorId] = useState('');
@@ -578,8 +573,8 @@ export default function CalendarPage() {
     const items = getListData(day);
     const gEvents = getGoogleByDay(day);
     return (
-      <div className="bg-white rounded-sm overflow-hidden">
-        <div className="divide-y max-h-[65vh] overflow-y-auto border-gray-300">
+      <div className="h-full bg-white rounded-sm overflow-hidden">
+        <div className="h-full divide-y overflow-y-auto border-gray-300">
           {HOURS.map((h) => {
             const hourItems = items.filter((c) => dayjs(c.consultation_date).hour() === h);
             const hourGoogle = gEvents.filter((e) => dayjs(e.start).hour() === h);
@@ -622,77 +617,83 @@ export default function CalendarPage() {
   const renderWeekView = () => {
     const weekDays = buildWeekDays(currentMonth);
     return (
-      <div className="bg-white rounded-lg overflow-hidden">
-        <div ref={headerRef} className="grid grid-cols-[0.2fr_repeat(7,1fr)] border-b border-gray-300">
-          <div className="w-14" />
-          {weekDays.map((d, i) => (
-            <div
-              key={i}
-              className={cn(
-                'text-center px-1 py-2 text-sm font-medium border-l border-gray-300 cursor-pointer hover:bg-muted/50 transition',
-                d.isSame(dayjs(), 'day') && 'bg-primary/10',
-              )}
-              onClick={() => {
-                setSelectedDate(d);
-                setCurrentMonth(d);
-                setViewMode('day');
-              }}
-            >
-              <div className="text-muted-foreground">{WEEKDAYS[d.day()]}</div>
-              <div
-                className={cn(
-                  'w-7 h-7 rounded-full mx-auto flex items-center justify-center',
-                  d.isSame(dayjs(), 'day') && 'bg-primary text-white',
-                )}
-              >
-                {d.date()}
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="relative">
-          <div ref={scrollRef} className="max-h-[60vh] overflow-y-auto hide-scrollbar">
-            {HOURS.map((h) => (
-              <div key={h} className="grid grid-cols-[0.2fr_repeat(7,1fr)] border-b border-gray-300 min-h-10">
-                <div className="w-14 flex flex-col">
-                  <div className="w-full flex items-center justify-end text-xs text-muted-foreground/60 text-right pr-1">
-                    {String(h).padStart(2, '0')}:00
-                  </div>
-                  <div className="w-full flex items-center justify-end text-xs text-muted-foreground/60 text-right pr-1">
-                    {String(h).padStart(2, '0')}:30
+      <div className="h-full bg-white rounded-lg overflow-hidden">
+        <div className="relative h-full">
+          {/* Header e horas são itens de UM único grid (não grids separados por linha),
+              assim as colunas ficam garantidamente alinhadas — inclusive no mobile. */}
+          <div ref={scrollRef} className="h-full overflow-y-auto hide-scrollbar">
+            <div className="grid grid-cols-[56px_repeat(7,1fr)]">
+              <div className="sticky top-0 z-20 border-b border-gray-300 bg-white" />
+              {weekDays.map((d, i) => (
+                <div
+                  key={`hd-${i}`}
+                  className={cn(
+                    'sticky top-0 z-20 border-b border-l border-gray-300 bg-white text-center px-1 py-2 text-sm font-medium cursor-pointer hover:bg-muted/50 transition',
+                    d.isSame(dayjs(), 'day') && 'bg-primary/10',
+                  )}
+                  onClick={() => {
+                    setSelectedDate(d);
+                    setCurrentMonth(d);
+                    setViewMode('day');
+                  }}
+                >
+                  <div className="text-muted-foreground">{WEEKDAYS[d.day()]}</div>
+                  <div
+                    className={cn(
+                      'w-7 h-7 rounded-full mx-auto flex items-center justify-center',
+                      d.isSame(dayjs(), 'day') && 'bg-primary text-white',
+                    )}
+                  >
+                    {d.date()}
                   </div>
                 </div>
-                {weekDays.map((d, di) => {
-                  const items = getListData(d).filter((c) => dayjs(c.consultation_date).hour() === h);
-                  const gEv = getGoogleByDay(d).filter((e) => dayjs(e.start).hour() === h);
-                  return (
-                    <div key={di} className="border-l px-1 py-0.5 space-y-0.5 border-gray-300">
-                      {items.map((c) => (
-                        <div
-                          key={c.id}
-                          className={cn(
-                            'text-[10px] px-1 rounded cursor-pointer truncate',
-                            statusColor(c.status),
-                            'text-white',
-                          )}
-                          onClick={() => openDetails(c)}
-                        >
-                          {dayjs(c.consultation_date).format('HH:mm')} {c.patient?.name}
-                        </div>
-                      ))}
-                      {gEv.map((e) => (
-                        <div
-                          key={`g-${e.id}`}
-                          className="text-[10px] px-1 rounded bg-purple-100 text-purple-700 truncate"
-                        >
-                          {e.title}
-                        </div>
-                      ))}
+              ))}
+
+              {HOURS.map((h) => (
+                <React.Fragment key={h}>
+                  <div className="min-h-10 w-14 flex flex-col border-b border-gray-300">
+                    <div className="w-full flex items-center justify-end text-xs text-muted-foreground/60 text-right pr-1">
+                      {String(h).padStart(2, '0')}:00
                     </div>
-                  );
-                })}
-              </div>
-            ))}
+                    <div className="w-full flex items-center justify-end text-xs text-muted-foreground/60 text-right pr-1">
+                      {String(h).padStart(2, '0')}:30
+                    </div>
+                  </div>
+                  {weekDays.map((d, di) => {
+                    const items = getListData(d).filter((c) => dayjs(c.consultation_date).hour() === h);
+                    const gEv = getGoogleByDay(d).filter((e) => dayjs(e.start).hour() === h);
+                    return (
+                      <div
+                        key={di}
+                        className="min-h-10 min-w-0 border-b border-l px-1 py-0.5 space-y-0.5 border-gray-300"
+                      >
+                        {items.map((c) => (
+                          <div
+                            key={c.id}
+                            className={cn(
+                              'text-[10px] px-1 rounded cursor-pointer truncate',
+                              statusColor(c.status),
+                              'text-white',
+                            )}
+                            onClick={() => openDetails(c)}
+                          >
+                            {dayjs(c.consultation_date).format('HH:mm')} {c.patient?.name}
+                          </div>
+                        ))}
+                        {gEv.map((e) => (
+                          <div
+                            key={`g-${e.id}`}
+                            className="text-[10px] px-1 rounded bg-purple-100 text-purple-700 truncate"
+                          >
+                            {e.title}
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })}
+                </React.Fragment>
+              ))}
+            </div>
           </div>
 
           <div
@@ -720,15 +721,15 @@ export default function CalendarPage() {
   // ── View: Month ──
   const calendarDays = buildCalendarDays(currentMonth);
   const renderMonthView = () => (
-    <div className="bg-white p-4 rounded-lg shadow">
-      <div className="grid grid-cols-7 mb-1">
+    <div className="h-full flex flex-col bg-white">
+      <div className="shrink-0 grid grid-cols-7 mb-1">
         {WEEKDAYS.map((d) => (
           <div key={d} className="text-center text-xs font-medium text-muted-foreground py-1">
             {d}
           </div>
         ))}
       </div>
-      <div className="grid grid-cols-7 border-l border-t border-gray-300">
+      <div className="flex-1 min-h-0 overflow-y-auto grid grid-cols-7 auto-rows-[minmax(5rem,1fr)] border-l border-t border-gray-300">
         {calendarDays.map((day, idx) => {
           const isCur = day.isSame(currentMonth, 'month');
           const isToday = day.isSame(dayjs(), 'day');
@@ -792,54 +793,57 @@ export default function CalendarPage() {
 
   // ── View: Year ──
   const renderYearView = () => (
-    <div className="grid grid-cols-3 md:grid-cols-4 gap-4">
-      {Array.from({ length: 12 }, (_, m) => {
-        const month = currentMonth.startOf('year').add(m, 'month');
-        const days = buildCalendarDays(month);
-        const monthConsultations = consultations.filter((c) => dayjs(c.consultation_date).isSame(month, 'month'));
-        return (
-          <div
-            key={m}
-            className="bg-white rounded-lg shadow p-3 cursor-pointer hover:ring-2 ring-blue-300 transition"
-            onClick={() => {
-              setCurrentMonth(month);
-              setViewMode('month');
-            }}
-          >
-            <h3 className="text-sm font-semibold mb-2">{PT_MONTHS_SHORT[m]}</h3>
-            <div className="grid grid-cols-7 gap-0.5">
-              {WEEKDAYS.map((d) => (
-                <div key={d} className="text-[8px] text-muted-foreground/60 text-center">
-                  {d[0]}
-                </div>
-              ))}
-              {days.map((day, i) => {
-                const isCur = day.isSame(month, 'month');
-                const hasEvent = isCur && monthConsultations.some((c) => dayjs(c.consultation_date).isSame(day, 'day'));
-                return (
-                  <div
-                    key={i}
-                    className={cn(
-                      'text-[9px] text-center rounded',
-                      !isCur && 'text-gray-200',
-                      hasEvent && 'bg-primary/100 text-white font-bold',
-                      day.isSame(dayjs(), 'day') && !hasEvent && 'ring-1 ring-blue-400',
-                    )}
-                  >
-                    {day.date()}
+    <div className="h-full overflow-y-auto">
+      <div className="grid grid-cols-3 md:grid-cols-4 gap-4">
+        {Array.from({ length: 12 }, (_, m) => {
+          const month = currentMonth.startOf('year').add(m, 'month');
+          const days = buildCalendarDays(month);
+          const monthConsultations = consultations.filter((c) => dayjs(c.consultation_date).isSame(month, 'month'));
+          return (
+            <div
+              key={m}
+              className="bg-white rounded-lg shadow p-3 cursor-pointer hover:ring-2 ring-blue-300 transition"
+              onClick={() => {
+                setCurrentMonth(month);
+                setViewMode('month');
+              }}
+            >
+              <h3 className="text-sm font-semibold mb-2">{PT_MONTHS_SHORT[m]}</h3>
+              <div className="grid grid-cols-7 gap-0.5">
+                {WEEKDAYS.map((d) => (
+                  <div key={d} className="text-[8px] text-muted-foreground/60 text-center">
+                    {d[0]}
                   </div>
-                );
-              })}
-            </div>
-            {monthConsultations.length > 0 && (
-              <div className="text-[10px] text-primary mt-1">
-                {monthConsultations.length} consulta
-                {monthConsultations.length > 1 ? 's' : ''}
+                ))}
+                {days.map((day, i) => {
+                  const isCur = day.isSame(month, 'month');
+                  const hasEvent =
+                    isCur && monthConsultations.some((c) => dayjs(c.consultation_date).isSame(day, 'day'));
+                  return (
+                    <div
+                      key={i}
+                      className={cn(
+                        'text-[9px] text-center rounded',
+                        !isCur && 'text-gray-200',
+                        hasEvent && 'bg-primary/100 text-white font-bold',
+                        day.isSame(dayjs(), 'day') && !hasEvent && 'ring-1 ring-blue-400',
+                      )}
+                    >
+                      {day.date()}
+                    </div>
+                  );
+                })}
               </div>
-            )}
-          </div>
-        );
-      })}
+              {monthConsultations.length > 0 && (
+                <div className="text-[10px] text-primary mt-1">
+                  {monthConsultations.length} consulta
+                  {monthConsultations.length > 1 ? 's' : ''}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 
@@ -854,26 +858,58 @@ export default function CalendarPage() {
             </span>
           )}
         </h1>
-        <div className="flex items-center gap-2">
-          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)}>
-            <TabsList>
-              <TabsTrigger value="day">Dia</TabsTrigger>
-              <TabsTrigger value="week">Semana</TabsTrigger>
-              <TabsTrigger value="month">Mês</TabsTrigger>
-              <TabsTrigger value="year">Ano</TabsTrigger>
-            </TabsList>
-          </Tabs>
-          <Button
-            onClick={() => {
-              setCurrentMonth(dayjs());
-              setSelectedDate(dayjs());
-            }}
-            variant="outline"
-            size="sm"
-          >
-            Hoje
-          </Button>
-          <Button onClick={handleAdd} className="bg-brand-deep hover:bg-brand-deep/80">
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+          {/* Mobile: dropdown de visualização (80%) + Hoje (20%) */}
+          <div className="flex w-full items-center gap-2 sm:hidden">
+            <div className="min-w-0 flex-[4]">
+              <Select value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="day">Dia</SelectItem>
+                  <SelectItem value="week">Semana</SelectItem>
+                  <SelectItem value="month">Mês</SelectItem>
+                  <SelectItem value="year">Ano</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              onClick={() => {
+                setCurrentMonth(dayjs());
+                setSelectedDate(dayjs());
+              }}
+              variant="outline"
+              size="sm"
+              className="flex-1"
+            >
+              Hoje
+            </Button>
+          </div>
+
+          {/* Desktop: tabs em pílula + Hoje */}
+          <div className="hidden items-center gap-2 sm:flex">
+            <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)}>
+              <TabsList>
+                <TabsTrigger value="day">Dia</TabsTrigger>
+                <TabsTrigger value="week">Semana</TabsTrigger>
+                <TabsTrigger value="month">Mês</TabsTrigger>
+                <TabsTrigger value="year">Ano</TabsTrigger>
+              </TabsList>
+            </Tabs>
+            <Button
+              onClick={() => {
+                setCurrentMonth(dayjs());
+                setSelectedDate(dayjs());
+              }}
+              variant="outline"
+              size="sm"
+            >
+              Hoje
+            </Button>
+          </div>
+
+          <Button onClick={handleAdd} className="w-full bg-brand-deep hover:bg-brand-deep/80 sm:w-auto">
             + {t('calendar.scheduleConsultation')}
           </Button>
         </div>
@@ -915,10 +951,16 @@ export default function CalendarPage() {
       </div>
 
       {/* Calendar views */}
-      {viewMode === 'day' && renderDayView()}
-      {viewMode === 'week' && renderWeekView()}
-      {viewMode === 'month' && renderMonthView()}
-      {viewMode === 'year' && renderYearView()}
+      <div
+        ref={viewsWrapperRef}
+        className="overflow-hidden"
+        style={availableViewHeight != null ? { height: availableViewHeight } : undefined}
+      >
+        {viewMode === 'day' && renderDayView()}
+        {viewMode === 'week' && renderWeekView()}
+        {viewMode === 'month' && renderMonthView()}
+        {viewMode === 'year' && renderYearView()}
+      </div>
 
       {/* Modal: Agendar */}
       <DashboardCreateFormDialog
