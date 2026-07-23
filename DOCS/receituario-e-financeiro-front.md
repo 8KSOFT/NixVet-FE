@@ -4,6 +4,23 @@
 > Todas as respostas de sucesso usam o envelope `{ success, message, data }` — o interceptor do axios
 > (`src/lib/axios.ts`) já desembrulha `data` de forma transparente.
 
+## ⚡ Resposta aos 3 bloqueios apontados pelo front (23/07)
+
+| # | Bloqueio apontado | Status |
+|---|---|---|
+| 1 | `sipeagro_number` fora dos DTOs (whitelist bloqueia) | ✅ **Resolvido e em produção** — aceito em `POST /api/users`, `PATCH /api/users/:id` e `PATCH /api/users/profile` (string, máx. 20) |
+| 2 | `continuous_use` fora do DTO de criação de prescrição | ✅ **Resolvido** — `medications[].continuous_use?: boolean` aceito no `POST /api/prescriptions`; o PDF imprime "uso contínuo" no lugar da duração |
+| 3 | Sem integração real com SIPEAGRO/MAPA | ✅ **Escopo confirmado**: é assinar + imprimir as vias. Não existe API pública do MAPA para submissão eletrônica da notificação — o fluxo legal da IN 35/2017 é em papel (vias físicas retidas). O nº SIPEAGRO do vet é impresso na 3 vias; nada é transmitido ao governo. |
+
+Outras pendências mapeadas pelo front:
+
+- **Download autenticado do PDF assinado** → ✅ criado: `GET /api/prescriptions/:id/signature/pdf`
+  (JWT; retorna `application/pdf` inline; farmácia continua usando `/verificar/:id/pdf` com token).
+- **Endereço/telefone do vet inexistente no model** → o PDF já usa fallback: imprime
+  endereço/telefone **da clínica** (tenant) no box do emitente quando o vet não tem dado próprio.
+  Campo por-veterinário fica como melhoria futura, não bloqueia.
+- **ICP-Brasil (`QUALIFIED_ICP`)** → segue Fase 3 (ver §1.5).
+
 ---
 
 ## PARTE 1 — Receituário: 3 modelos de emissão
