@@ -349,6 +349,14 @@ const NAV_SECTIONS: NavSection[] = [
         labelKey: "nav.financeiro",
         children: [
           {
+            // Reusa a chave 'financeiro' (já liberada no RBAC) — o header do
+            // grupo só expande/recolhe; o DRE abre por este subitem (mockup).
+            key: "financeiro",
+            icon: BarChart2,
+            href: "/financeiro",
+            labelKey: "nav.financeiroDre",
+          },
+          {
             key: "financeiro-lancamentos",
             icon: Wallet,
             href: "/financeiro/lancamentos",
@@ -464,8 +472,18 @@ function getActiveKey(pathname: string): string {
   if (pathname.includes("/exams")) return "exams";
   if (pathname.includes("/followups")) return "followups";
   if (pathname.includes("/internacoes")) return "hospitalizations";
+  if (pathname.includes("/financeiro/produtos"))
+    return "financeiro-produtos";
   if (pathname.includes("/produtos")) return "products";
   if (pathname.includes("/financeiro/orcamentos")) return "budgets";
+  if (pathname.includes("/financeiro/lancamentos"))
+    return "financeiro-lancamentos";
+  if (pathname.includes("/financeiro/contas-pagar"))
+    return "financeiro-contas-pagar";
+  if (pathname.includes("/financeiro/planos-saude"))
+    return "financeiro-planos-saude";
+  if (pathname.includes("/financeiro/fluxo"))
+    return "financeiro-fluxo";
   if (pathname.includes("/financeiro/receitas"))
     return "financeiro-receitas";
   if (pathname.includes("/financeiro/custos-pagamento"))
