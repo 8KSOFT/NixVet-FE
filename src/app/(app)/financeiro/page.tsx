@@ -138,12 +138,19 @@ function SummaryCard({
 function DRERow({
   label,
   value,
+  pct,
+  diff,
+  diffInverse,
   bold,
   indent,
   color,
 }: {
   label: string;
   value: number;
+  /** Percentual sobre a receita líquida, exibido ao lado do valor. */
+  pct?: number;
+  diff?: DREDiff;
+  diffInverse?: boolean;
   bold?: boolean;
   indent?: boolean;
   color?: string;
@@ -157,8 +164,14 @@ function DRERow({
       )}
     >
       <span className={cn('text-sm', indent && 'text-muted-foreground')}>{label}</span>
-      <span className={cn('text-sm tabular-nums', color ?? 'text-foreground', bold && 'font-semibold')}>
-        {fmt(value)}
+      <span className="flex items-center gap-2">
+        <span className={cn('text-sm tabular-nums', color ?? 'text-foreground', bold && 'font-semibold')}>
+          {fmt(value)}
+        </span>
+        {pct !== undefined && (
+          <span className="text-xs text-muted-foreground">{fmtPct(pct)}</span>
+        )}
+        {diff && <DiffBadge diff={diff} inverse={diffInverse} />}
       </span>
     </div>
   );
@@ -203,10 +216,14 @@ export default function FinanceiroDREPage() {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
   });
 
+  // Percentuais sobre a receita líquida (mockup: pct inline nas linhas de custo)
+  const pctOfNet = (v: number) =>
+    dre && dre.net_revenue > 0 ? (v / dre.net_revenue) * 100 : 0;
+
   const chartData = monthly.map((m) => ({
     name: m.period.split('-').reverse().join('/'),
     receita: Number(m.gross_revenue),
-    liquida: Number(m.net_revenue),
+    ebitda: Number(m.ebitda ?? 0),
   }));
 
   return (
@@ -400,7 +417,8 @@ export default function FinanceiroDREPage() {
         </Card>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {/* Resumo DRE — 4 cards (mockup) */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <SummaryCard
           title="Receita Bruta"
           value={dre?.gross_revenue ?? 0}
@@ -410,33 +428,18 @@ export default function FinanceiroDREPage() {
           loading={loading}
         />
         <SummaryCard
-          title="Receita Líquida"
-          value={dre?.net_revenue ?? 0}
-          extra={activeComparison && <DiffBadge diff={activeComparison.net_revenue} />}
-          icon={DollarSign}
-          color="text-blue-600"
-          loading={loading}
-        />
-        <SummaryCard
           title="Margem Bruta"
           value={dre?.gross_profit ?? 0}
-          subtext={dre ? fmtPct(dre.gross_margin_pct ?? 0) : undefined}
+          subtext={dre ? `${fmtPct(dre.gross_margin_pct ?? 0)} da receita líquida` : undefined}
           extra={activeComparison && <DiffBadge diff={activeComparison.gross_profit} />}
-          icon={TrendingUp}
-          color={(dre?.gross_profit ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'}
+          icon={DollarSign}
+          color={(dre?.gross_profit ?? 0) >= 0 ? 'text-blue-600' : 'text-red-600'}
           loading={loading}
         />
         <SummaryCard
-          title="Custos CMV"
-          value={dre?.cmv ?? 0}
-          extra={activeComparison && <DiffBadge diff={activeComparison.cmv} inverse />}
-          icon={TrendingDown}
-          color="text-orange-500"
-          loading={loading}
-        />
-        <SummaryCard
-          title="OPEX"
+          title="Desp. Operacionais"
           value={dre?.opex ?? 0}
+          subtext={dre ? `${fmtPct(pctOfNet(dre.opex))} da receita` : undefined}
           extra={activeComparison && <DiffBadge diff={activeComparison.opex} inverse />}
           icon={TrendingDown}
           color="text-orange-500"
@@ -453,21 +456,23 @@ export default function FinanceiroDREPage() {
         />
       </div>
 
+      {/* Gráfico + DRE detalhado lado a lado (mockup) */}
+      <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm font-medium">Receita Bruta — Últimos 6 Meses</CardTitle>
+          <CardTitle className="text-sm font-medium">Receita Bruta × EBITDA — Últimos 6 Meses</CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
             <Skeleton className="h-48 w-full" />
           ) : (
-            <ResponsiveContainer width="100%" height={200}>
+            <ResponsiveContainer width="100%" height={220}>
               <BarChart data={chartData}>
                 <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                 <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
-                <Tooltip formatter={(v) => fmt(Number(v))} />
-                <Bar dataKey="receita" fill="#3b82f6" radius={[3, 3, 0, 0]} name="Receita Bruta" />
-                <Bar dataKey="liquida" fill="#22c55e" radius={[3, 3, 0, 0]} name="Receita Líquida" />
+                <Tooltip formatter={(v, name) => [fmt(Number(v)), name === 'receita' ? 'Receita Bruta' : 'EBITDA']} />
+                <Bar dataKey="receita" fill="#3b82f6" radius={[3, 3, 0, 0]} name="receita" />
+                <Bar dataKey="ebitda" fill="#22c55e" radius={[3, 3, 0, 0]} name="ebitda" />
               </BarChart>
             </ResponsiveContainer>
           )}
@@ -486,68 +491,55 @@ export default function FinanceiroDREPage() {
             <div className="space-y-2">
               {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-8 w-full" />)}
             </div>
-          ) : activeComparison ? (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                    <th className="py-2">Linha DRE</th>
-                    <th className="py-2 text-right">{activeComparison.period}</th>
-                    <th className="py-2 text-right">{activeComparison.prev_period}</th>
-                    <th className="py-2 text-right">Variação</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(
-                    [
-                      { label: '(+) RECEITA BRUTA', diff: activeComparison.gross_revenue, bold: true },
-                      { label: '(-) Deduções / Glosas', diff: activeComparison.deductions, inverse: true },
-                      { label: '(=) RECEITA LÍQUIDA', diff: activeComparison.net_revenue, bold: true, color: 'text-blue-600' },
-                      { label: '(-) CMV — Custo de Mercadoria', diff: activeComparison.cmv, inverse: true },
-                      { label: '(=) MARGEM BRUTA', diff: activeComparison.gross_profit, bold: true, color: activeComparison.gross_profit.current >= 0 ? 'text-green-600' : 'text-red-600' },
-                      { label: '(-) DESPESAS OPERACIONAIS', diff: activeComparison.opex, inverse: true },
-                      { label: '(=) EBITDA / RESULTADO', diff: activeComparison.ebitda, bold: true, color: activeComparison.ebitda.current >= 0 ? 'text-green-600' : 'text-red-600' },
-                    ] as { label: string; diff: DREDiff; bold?: boolean; color?: string; inverse?: boolean }[]
-                  ).map((row) => (
-                    <tr key={row.label} className="border-t border-border">
-                      <td className={cn('py-2', row.bold && 'font-semibold')}>{row.label}</td>
-                      <td className={cn('py-2 text-right tabular-nums', row.color, row.bold && 'font-semibold')}>
-                        {fmt(row.diff.current)}
-                      </td>
-                      <td className="py-2 text-right tabular-nums text-muted-foreground">{fmt(row.diff.previous)}</td>
-                      <td className="py-2 text-right">
-                        <DiffBadge diff={row.diff} inverse={row.inverse} />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
           ) : dre ? (
             <div>
-              <DRERow label="(+) RECEITA BRUTA" value={dre.gross_revenue} bold />
+              <DRERow
+                label="(+) RECEITA BRUTA"
+                value={dre.gross_revenue}
+                diff={activeComparison?.gross_revenue}
+                bold
+                color="text-green-600"
+              />
               {Object.entries(dre.breakdown.by_category).map(([cat, val]) => (
                 <DRERow key={cat} label={catLabel(cat)} value={val} indent />
               ))}
               <DRERow label="(-) Deduções / Glosas" value={dre.deductions} bold />
               <DRERow label="(=) RECEITA LÍQUIDA" value={dre.net_revenue} bold color="text-blue-600" />
-              <DRERow label="(-) CMV — Custo de Mercadoria" value={dre.cmv} bold />
+              <DRERow
+                label="(-) CMV — Custo Direto"
+                value={dre.cmv}
+                pct={pctOfNet(dre.cmv)}
+                diff={activeComparison?.cmv}
+                diffInverse
+                bold
+              />
               {Object.entries(dre.breakdown.cmv_by_category ?? {}).map(([cat, val]) => (
                 <DRERow key={`cmv-${cat}`} label={catLabel(cat)} value={val} indent />
               ))}
               <DRERow
-                label={`(=) MARGEM BRUTA (${fmtPct(dre.gross_margin_pct ?? 0)})`}
+                label="(=) MARGEM BRUTA"
                 value={dre.gross_profit}
+                pct={dre.gross_margin_pct ?? 0}
+                diff={activeComparison?.gross_profit}
                 bold
                 color={dre.gross_profit >= 0 ? 'text-green-600' : 'text-red-600'}
               />
-              <DRERow label="(-) DESPESAS OPERACIONAIS" value={dre.opex} bold />
+              <DRERow
+                label="(-) DESPESAS OPERACIONAIS"
+                value={dre.opex}
+                pct={pctOfNet(dre.opex)}
+                diff={activeComparison?.opex}
+                diffInverse
+                bold
+              />
               {Object.entries(dre.breakdown.opex_by_category ?? {}).map(([cat, val]) => (
                 <DRERow key={`opex-${cat}`} label={catLabel(cat)} value={val} indent />
               ))}
               <DRERow
-                label={`(=) EBITDA / RESULTADO (${fmtPct(dre.ebitda_margin_pct ?? 0)})`}
+                label="(=) EBITDA"
                 value={dre.ebitda}
+                pct={dre.ebitda_margin_pct ?? 0}
+                diff={activeComparison?.ebitda}
                 bold
                 color={dre.ebitda >= 0 ? 'text-green-600' : 'text-red-600'}
               />
@@ -555,6 +547,7 @@ export default function FinanceiroDREPage() {
           ) : null}
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }
