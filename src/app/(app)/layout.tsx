@@ -614,6 +614,23 @@ function SidebarNav({
     return { ...section, items: visibleItems };
   }).filter((s) => s.items.length > 0);
 
+  // Chaves de item que NÃO devem ter divisor antes: o primeiro item de toda a
+  // lista, e o primeiro item logo após o rótulo "Admin" (que já tem sua
+  // própria linha). O divisor entre itens é global — não reseta por "seção"
+  // de dados, senão duas seções adjacentes ficam sem nenhuma linha entre si
+  // (a "seção" é só um agrupamento interno, nunca é mostrada como cabeçalho).
+  const noLeadingDividerKeys = new Set<string>();
+  visibleSections.forEach((section, si) => {
+    const isFirstBottomSection =
+      BOTTOM_SECTION_KEYS.has(section.sectionKey) &&
+      !BOTTOM_SECTION_KEYS.has(visibleSections[si - 1]?.sectionKey ?? "");
+    section.items.forEach((item, itemIdx) => {
+      if ((si === 0 && itemIdx === 0) || (isFirstBottomSection && itemIdx === 0)) {
+        noLeadingDividerKeys.add(item.key);
+      }
+    });
+  });
+
   return (
     <div className="flex flex-col h-full">
       <div className={cn("flex items-center h-16 px-4 shrink-0")}>
@@ -687,7 +704,8 @@ function SidebarNav({
               )}
 
               <div className="flex flex-col">
-                {section.items.map((item, itemIdx) => {
+                {section.items.map((item) => {
+                  const showLeadingDivider = !noLeadingDividerKeys.has(item.key);
                   if (item.type === "group") {
                     const isOpen = openGroups.has(item.key);
                     const groupActive =
@@ -699,7 +717,7 @@ function SidebarNav({
 
                     return (
                       <React.Fragment key={item.key}>
-                        {itemIdx > 0 && <ItemDivider />}
+                        {showLeadingDivider && <ItemDivider />}
                       <div className="my-1">
                         {/* cabeçalho do grupo */}
                         <button
@@ -773,7 +791,7 @@ function SidebarNav({
                   const isActive = activeKey === item.key;
                   return (
                     <React.Fragment key={item.key}>
-                      {itemIdx > 0 && <ItemDivider />}
+                      {showLeadingDivider && <ItemDivider />}
                       <Link
                         href={item.href}
                         onClick={() => onNavigate?.()}
