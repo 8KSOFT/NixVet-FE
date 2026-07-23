@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getStoredUserRole } from '@/lib/role-permissions';
+import { planShortLabel } from '@/lib/plans';
 import { API_PAGE_SIZE } from '@/lib/pagination';
 import { ListPagination } from '@/components/list-pagination';
 import {
@@ -45,12 +46,6 @@ const FILTER_TABS: { key: FinanceFilter; label: string }[] = [
   { key: 'trial_expired', label: 'Trial expirado' },
   { key: 'suspended', label: 'Suspensos' },
 ];
-
-const PLAN_LABELS: Record<string, string> = {
-  essencial: 'Essencial',
-  clinica: 'Clínica',
-  hospital: 'Hospital',
-};
 
 const STATUS_LABELS: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
   active: { label: 'Ativo', variant: 'default' },
@@ -415,7 +410,7 @@ export default function SuperadminFinancePage() {
                           <TableCell>
                             {row.billing_plan ? (
                               <span>
-                                {PLAN_LABELS[row.billing_plan] || row.billing_plan}
+                                {planShortLabel(row.billing_plan)}
                                 {row.plan_value_brl > 0 && (
                                   <span className="text-xs text-muted-foreground ml-1">
                                     ({formatBrl(row.plan_value_brl)}/mês)
@@ -466,7 +461,7 @@ export default function SuperadminFinancePage() {
                           <p>
                             {row.billing_plan ? (
                               <>
-                                {PLAN_LABELS[row.billing_plan] || row.billing_plan}
+                                {planShortLabel(row.billing_plan)}
                                 {row.plan_value_brl > 0 && (
                                   <span className="text-xs text-muted-foreground"> ({formatBrl(row.plan_value_brl)}/mês)</span>
                                 )}

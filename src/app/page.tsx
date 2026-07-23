@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, CheckCircle2 } from "lucide-react";
+import { PLANS } from "@/lib/plans";
 import { HeaderComponent } from "@/components/shared/HeaderComponent";
 import { LogoCompactoDynamic } from "@/components/shared/componentizedImages/LogoCompactoDynamic";
 import { DogDynamic } from "@/components/shared/componentizedImages/DogDynamic";
@@ -198,6 +199,72 @@ export default function LandingPage() {
               className="fill-brand-deep"
             />
           </svg>
+        </div>
+      </section>
+
+      {/* Planos */}
+      <section className="relative w-full py-20 px-4 lg:px-6 bg-white">
+        <div className="mx-auto max-w-6xl">
+          <RevealOnScroll className="mx-auto mb-14 max-w-2xl text-center">
+            <h2 className="text-brand-deep-dark text-[32px] font-['InterDoFigma'] font-black leading-tight lg:text-[48px] md:text-[38px]">
+              Planos para cada tamanho de clínica
+            </h2>
+            <p className="mt-4 text-[16px] text-[#565656] lg:text-[20px]">
+              14 dias grátis para testar, sem cartão de crédito. Escolha o plano ideal quando estiver pronto.
+            </p>
+          </RevealOnScroll>
+
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+            {PLANS.map((plan, planIndex) => (
+              <RevealOnScroll
+                key={plan.id}
+                delayClassName={FEATURE_ANIMATION_DELAY_CLASS_NAMES[planIndex] ?? ""}
+                className="h-full"
+              >
+                <Card
+                  className={`relative flex h-full flex-col p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${
+                    plan.highlight
+                      ? "border-brand-deep/40 bg-brand-deep/5 shadow-md"
+                      : "border-border"
+                  }`}
+                >
+                  {plan.highlight && (
+                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-brand-deep px-3 py-0.5 text-xs font-bold text-white shadow">
+                      Mais popular
+                    </span>
+                  )}
+                  <CardContent className="flex h-full flex-col p-0">
+                    <h3 className="text-xl font-semibold text-brand-deep-dark">{plan.name}</h3>
+                    <p className="mt-1 text-sm text-gray-500">{plan.tagline}</p>
+                    <div className="mt-4 flex items-end gap-1">
+                      <span className="text-4xl font-extrabold text-brand-deep-dark">
+                        R${plan.price}
+                      </span>
+                      <span className="mb-1 text-sm text-gray-500">/mês</span>
+                    </div>
+                    <ul className="mt-6 flex-1 space-y-2.5">
+                      {plan.features.map((feature) => (
+                        <li key={feature} className="flex items-start gap-2 text-sm text-gray-600">
+                          <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-brand-deep" />
+                          {feature}
+                        </li>
+                      ))}
+                    </ul>
+                    <Button
+                      asChild
+                      className={`mt-8 w-full rounded-full ${
+                        plan.highlight
+                          ? "bg-brand-deep text-white hover:bg-brand-deep-dark"
+                          : "bg-brand-deep/10 text-brand-deep-dark hover:bg-brand-deep/20"
+                      }`}
+                    >
+                      <Link href="/register">Começar grátis</Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+              </RevealOnScroll>
+            ))}
+          </div>
         </div>
       </section>
 

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { CheckCircle2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getApiErrorMessage } from '@/app/utils/api-error-message';
-import { useActivateBillingMutation } from '@/hooks/apiHooks/useBilling';
+import { useActivateBillingMutation, useBillingStatusQuery } from '@/hooks/apiHooks/useBilling';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {
@@ -15,8 +15,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { PLANS, type PlanId } from '@/lib/plans';
 
-type PlanName = 'essencial' | 'clinica' | 'hospital';
+type PlanName = PlanId;
 type BillingType = 'CREDIT_CARD' | 'BOLETO' | 'PIX';
 
 function formatCpfCnpj(value: string) {
@@ -24,54 +25,6 @@ function formatCpfCnpj(value: string) {
   if (d.length <= 11) return d.replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})$/, '$1-$2');
   return d.replace(/(\d{2})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1/$2').replace(/(\d{4})(\d{1,2})$/, '$1-$2');
 }
-
-interface Plan {
-  id: PlanName;
-  name: string;
-  price: number;
-  highlight?: boolean;
-  features: readonly string[];
-}
-
-const PLANS: Plan[] = [
-  {
-    id: 'essencial' as PlanName,
-    name: 'Essencial',
-    price: 179,
-    features: [
-      'Prontuário eletrônico',
-      'Cadastro ilimitado de pacientes',
-      'Agendamento online',
-      'Emissão de receitas e pedidos',
-      'WhatsApp básico',
-    ],
-  },
-  {
-    id: 'clinica' as PlanName,
-    name: 'Clínica',
-    price: 299,
-    highlight: true,
-    features: [
-      'Tudo do Essencial',
-      'Múltiplos veterinários',
-      'Relatórios avançados',
-      'Chatbot WhatsApp',
-      'Lembretes automáticos',
-    ],
-  },
-  {
-    id: 'hospital' as PlanName,
-    name: 'Hospital',
-    price: 499,
-    features: [
-      'Tudo do Clínica',
-      'IA clínica integrada',
-      'Multi-unidades',
-      'API dedicada',
-      'Suporte prioritário 24/7',
-    ],
-  },
-] as const;
 
 const BILLING_TYPE_LABELS: Record<BillingType, string> = {
   CREDIT_CARD: 'Cartão de crédito',
@@ -85,7 +38,11 @@ export default function BillingUpgradePage() {
   const [billingType, setBillingType] = useState<BillingType>('PIX');
   const [cpfCnpj, setCpfCnpj] = useState('');
   const activateMutation = useActivateBillingMutation();
+  const { data: billing } = useBillingStatusQuery();
   const loading = activateMutation.isPending;
+
+  const isChangingPlan = billing?.status === 'active';
+  const currentPlanId = billing?.billingPlan ?? null;
 
   const handleActivate = async () => {
     if (!selectedPlan) { toast.error('Selecione um plano para continuar.'); return; }
@@ -105,7 +62,7 @@ export default function BillingUpgradePage() {
         window.location.href = paymentUrl;
         return;
       }
-      router.push('/dashboard');
+      router.push(isChangingPlan ? '/settings/billing' : '/dashboard');
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao ativar plano. Tente novamente.'));
     }
@@ -115,10 +72,12 @@ export default function BillingUpgradePage() {
     <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-6">
       <div className="mb-8 text-center">
         <h1 className="text-3xl font-bold tracking-tight text-foreground">
-          Escolha seu plano
+          {isChangingPlan ? 'Trocar de plano' : 'Escolha seu plano'}
         </h1>
         <p className="mt-2 text-muted-foreground">
-          Selecione o plano ideal para a sua clínica e continue usando o NixVet.
+          {isChangingPlan
+            ? 'Ao confirmar, sua assinatura atual é cancelada no Asaas e a nova começa imediatamente.'
+            : 'Selecione o plano ideal para a sua clínica e continue usando o NixVet.'}
         </p>
       </div>
 
@@ -133,11 +92,15 @@ export default function BillingUpgradePage() {
                 : 'border-border hover:border-primary/40 hover:shadow-md'
             } ${plan.highlight ? 'border-primary/40 bg-primary/5' : ''}`}
           >
-            {plan.highlight && (
+            {plan.id === currentPlanId ? (
+              <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-foreground px-3 py-0.5 text-xs font-bold text-white shadow">
+                Plano atual
+              </span>
+            ) : plan.highlight ? (
               <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-0.5 text-xs font-bold text-white shadow">
                 Mais popular
               </span>
-            )}
+            ) : null}
             <div className="mb-4">
               <h2 className="text-xl font-semibold text-foreground">{plan.name}</h2>
               <div className="mt-1 flex items-end gap-1">
@@ -203,10 +166,10 @@ export default function BillingUpgradePage() {
           {loading ? (
             <>
               <Loader2 className="mr-2 size-4 animate-spin" />
-              Ativando...
+              {isChangingPlan ? 'Trocando...' : 'Ativando...'}
             </>
           ) : (
-            `Ativar plano${selectedPlan ? ' ' + PLANS.find((p) => p.id === selectedPlan)?.name : ''}`
+            `${isChangingPlan ? 'Confirmar troca para' : 'Ativar plano'}${selectedPlan ? ' ' + PLANS.find((p) => p.id === selectedPlan)?.name : ''}`
           )}
         </Button>
       </div>
