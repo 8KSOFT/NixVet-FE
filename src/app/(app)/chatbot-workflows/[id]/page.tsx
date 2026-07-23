@@ -27,6 +27,7 @@ import {
   type NodeProps,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
+import { PlanUpgradeGate } from '@/components/billing/PlanUpgradeGate';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -237,7 +238,7 @@ const NODE_PALETTE = [
   { type: 'end', label: 'Fim', icon: Square, description: 'Encerra o fluxo desta mensagem' },
 ] as const;
 
-export default function WorkflowEditorPage() {
+function WorkflowEditorPageContent() {
   const params = useParams();
   const router = useRouter();
   const workflowId = typeof params?.id === 'string' ? params.id : '';
@@ -633,5 +634,13 @@ export default function WorkflowEditorPage() {
         </SheetContent>
       </Sheet>
     </div>
+  );
+}
+
+export default function WorkflowEditorPage() {
+  return (
+    <PlanUpgradeGate requiredPlan="clinica" feature="Chatbot / Workflows visuais">
+      <WorkflowEditorPageContent />
+    </PlanUpgradeGate>
   );
 }

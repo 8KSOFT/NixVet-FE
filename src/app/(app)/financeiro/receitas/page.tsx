@@ -15,6 +15,7 @@ import {
 import api from '@/lib/axios';
 import { toast } from 'sonner';
 import { getApiErrorMessage } from '@/app/utils/api-error-message';
+import { PlanUpgradeGate } from '@/components/billing/PlanUpgradeGate';
 
 interface RevenueBySource {
   particular: number;
@@ -36,7 +37,7 @@ function formatPieLabel(payload: PieLabelPayload): string {
   return `${payload.name ?? ''} (${((payload.percent ?? 0) * 100).toFixed(0)}%)`;
 }
 
-export default function ReceitasPage() {
+function ReceitasPageContent() {
   const now = new Date();
   const [period, setPeriod] = useState(
     `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`,
@@ -127,5 +128,13 @@ export default function ReceitasPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function ReceitasPage() {
+  return (
+    <PlanUpgradeGate requiredPlan="clinica" feature="Receitas por origem">
+      <ReceitasPageContent />
+    </PlanUpgradeGate>
   );
 }

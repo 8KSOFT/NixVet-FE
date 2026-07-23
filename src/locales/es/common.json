@@ -105,6 +105,8 @@
   "auth": {
     "cardTitle": "Accede a tu cuenta",
     "subtitle": "Sistema de gestión veterinaria",
+    "heroTitle": "La gestión de tu clínica\nen el bolsillo",
+    "heroDescription": "Historiales, agenda y recetas digitales\nen cualquier lugar.",
     "tenantCodeLabel": "Código de la clínica",
     "tenantCodePlaceholder": "Código de la clínica",
     "emailLabel": "Correo",

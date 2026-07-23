@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/tooltip';
 import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import { useChatbotSettingsQuery, useSaveChatbotSettingsMutation } from '@/hooks/apiHooks/useChatbotSettings';
+import { PlanUpgradeGate } from '@/components/billing/PlanUpgradeGate';
 import type { ChatbotSettings } from '@/app/types/chatbot-settings';
 
 const DEFAULTS: Record<string, string> = {
@@ -45,7 +46,7 @@ function FieldTooltip({ text }: { text: string }) {
   );
 }
 
-export default function ChatbotSettingsPage() {
+function ChatbotSettingsPageContent() {
   const { register, handleSubmit, reset, formState: { errors } } = useForm<ChatbotSettings>({
     defaultValues: DEFAULTS,
   });
@@ -256,5 +257,13 @@ export default function ChatbotSettingsPage() {
         </form>
       )}
     </div>
+  );
+}
+
+export default function ChatbotSettingsPage() {
+  return (
+    <PlanUpgradeGate requiredPlan="clinica" feature="Chatbot / IA">
+      <ChatbotSettingsPageContent />
+    </PlanUpgradeGate>
   );
 }

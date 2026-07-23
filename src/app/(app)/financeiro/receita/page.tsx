@@ -13,6 +13,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } fro
 import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import { useRevenueAnalysisQuery } from '@/hooks/apiHooks/useFinancialReports';
 import { useHealthPlansListQuery } from '@/hooks/apiHooks/useHealthPlans';
+import { PlanUpgradeGate } from '@/components/billing/PlanUpgradeGate';
 
 function fmtBRL(v: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
@@ -27,7 +28,7 @@ function firstOfMonth() {
   return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().substring(0, 10);
 }
 
-export default function ReceitaLiquidaPage() {
+function ReceitaLiquidaPageContent() {
   const [from, setFrom] = useState(firstOfMonth());
   const [to, setTo] = useState(today());
   const [healthPlanId, setHealthPlanId] = useState('all');
@@ -228,5 +229,13 @@ export default function ReceitaLiquidaPage() {
         </>
       )}
     </div>
+  );
+}
+
+export default function ReceitaLiquidaPage() {
+  return (
+    <PlanUpgradeGate requiredPlan="clinica" feature="Análise de receita líquida">
+      <ReceitaLiquidaPageContent />
+    </PlanUpgradeGate>
   );
 }

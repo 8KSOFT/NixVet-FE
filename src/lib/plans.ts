@@ -84,3 +84,15 @@ export function planFullLabel(planId: string | null | undefined): string {
   if (planId === 'enterprise') return 'Enterprise';
   return planId;
 }
+
+/** Espelha PLAN_RANK do PlanGuard (NixVet-BE `plan.guard.ts`) — precisa ficar em sincronia. */
+export const PLAN_RANK: Record<PlanId, number> = { essencial: 1, clinica: 2, hospital: 3 };
+
+/**
+ * Mesma regra do PlanGuard: tenant sem `billing_plan` definido (trial sem plano escolhido)
+ * conta como 'essencial' para fins de checagem de recurso.
+ */
+export function planMeetsRequirement(currentPlanId: string | null | undefined, requiredPlan: PlanId): boolean {
+  const currentRank = PLAN_RANK[(currentPlanId as PlanId) ?? 'essencial'] ?? PLAN_RANK.essencial;
+  return currentRank >= PLAN_RANK[requiredPlan];
+}

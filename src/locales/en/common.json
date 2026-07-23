@@ -105,7 +105,9 @@
   "auth": {
     "cardTitle": "Sign in to your account",
     "subtitle": "Veterinary practice management",
-    "tenantCodeLabel": "Clinic code (e.g. NIXVET)",
+    "heroTitle": "Your clinic management\nin your pocket",
+    "heroDescription": "Records, scheduling and digital prescriptions,\nanywhere.",
+    "tenantCodeLabel": "Clinic code",
     "tenantCodePlaceholder": "Clinic Code",
     "emailLabel": "Email",
     "emailPlaceholder": "Email",

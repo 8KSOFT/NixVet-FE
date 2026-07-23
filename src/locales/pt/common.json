@@ -105,7 +105,9 @@
   "auth": {
     "cardTitle": "Acesse sua conta",
     "subtitle": "Sistema de Gestão Veterinária",
-    "tenantCodeLabel": "Código da Clínica (Ex: NIXVET)",
+    "heroTitle": "Gestão da sua\nclínica no bolso",
+    "heroDescription": "Prontuários, agenda e receitas digitais\nem qualquer lugar.",
+    "tenantCodeLabel": "Código da clínica",
     "tenantCodePlaceholder": "Código da Clínica",
     "emailLabel": "Email",
     "emailPlaceholder": "Email",

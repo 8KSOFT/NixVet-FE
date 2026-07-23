@@ -160,22 +160,22 @@ export default function LoginPage() {
 
   return (
     <div className="login-shell relative min-h-screen flex flex-col sm:flex-row">
-      <div className="absolute top-4 right-4 z-10">
+      <div className="absolute top-4 right-4 z-10 hidden sm:block">
         <LanguageSwitcher />
       </div>
 
       {/* <div className="flex flex-col min-h-screen w-full sm:flex-row"> */}
-      <section className="relative flex w-full h-50 shrink-0 flex-row items-center bg-brand-deep text-white sm:w-1/2 sm:h-screen sm:flex-col sm:items-center sm:justify-center">
+      <section className="relative flex w-full flex-col items-start justify-center gap-0 overflow-hidden bg-brand-deep px-6 pt-8 pb-8 text-white sm:w-1/2 sm:h-screen sm:flex-col sm:items-center sm:justify-center sm:px-0 sm:pt-0 sm:pb-0">
         <div className="p-0 m-0">
           <Image
             src="/images/logo/logo-bg.svg"
             alt="Logo"
             fill={true}
-            className="opacity-8 sm:pb-28 invert"
+            className="origin-top-right scale-[0.65] opacity-20 sm:scale-100 sm:origin-center sm:opacity-8 sm:invert"
           />
         </div>
 
-        <div className="w-fit relative h-fit z-10 mx-auto flex items-center justify-between max-w-lg flex-col gap-2 sm:items-start">
+        <div className="relative z-10 flex w-full flex-col items-start gap-6 sm:mx-auto sm:h-fit sm:w-fit sm:max-w-lg sm:items-start sm:justify-between sm:gap-2">
           <div className="sm:mb-8">
             {brandingLoading ? (
               <div className="flex items-start gap-2">
@@ -186,8 +186,8 @@ export default function LoginPage() {
               </div>
             ) : (
               <div className="flex items-end gap-2">
-                <LogoCompactoDynamic width="41" height="41" />
-                <h1 className="font-heading leading-7 text-[32px] tracking-tight scale-y-85">
+                <LogoCompactoDynamic width="40" height="40" />
+                <h1 className="font-heading leading-7 text-[31px] tracking-tight scale-y-85">
                   <span className="text-white">
                     {brandName.substring(0, 6)}
                   </span>
@@ -201,12 +201,12 @@ export default function LoginPage() {
 
           <div className="sm:block">
             <div>
-              <p className="text-base tracking-wide leading-5 font-black subpixel-antialiased text-white sm:text-[42px] font-['InterDoFigma'] sm:leading-11 sm:tracking-wider sm:max-w-md">
+              <p className="text-left text-[29px] leading-9 font-black text-white sm:text-[42px] font-['InterDoFigma'] sm:leading-11 sm:tracking-wider sm:max-w-md">
                 {isMobile
-                  ? translation("auth.subtitle")
-                      .split(/ (?=Veterinária)/)
+                  ? translation("auth.heroTitle")
+                      .split("\n")
                       .map((line: string, index: number) => (
-                        <span key={index} className="block text-center">
+                        <span key={index} className="block">
                           {line}
                         </span>
                       ))
@@ -217,6 +217,15 @@ export default function LoginPage() {
                           {line}
                         </span>
                       ))}
+              </p>
+              <p className="mt-3 max-w-xs text-base leading-relaxed text-white/80 sm:hidden">
+                {translation("auth.heroDescription")
+                  .split("\n")
+                  .map((line: string, index: number) => (
+                    <span key={index} className="block">
+                      {line}
+                    </span>
+                  ))}
               </p>
             </div>
             <ul className="hidden mt-0 max-w-md space-y-0 text-sm leading-relaxed text-white/80 sm:mt-4 sm:block">
@@ -232,23 +241,23 @@ export default function LoginPage() {
       </section>
 
       {/* Formulário */}
-      <section className="flex flex-col flex-1 items-center justify-start sm:px-8 lg:py-14">
-        <div className="flex w-full max-w-87.5 flex-col flex-1 items-center justify-start sm:justify-center sm:mt-12">
-          <div className="w-full flex flex-col items-center mt-[10%] sm:mt-10 sm:items-start">
-            <h2 className="font-heading mb-8 text-center text-xl font-semibold text-foreground sm:mb-6">
+      <section className="relative flex flex-1 flex-col items-center justify-start bg-background px-6 pt-8 pb-10 sm:px-8 sm:pt-0 sm:pb-0 lg:py-14">
+        <div className="flex w-full max-w-87.5 flex-1 flex-col items-center justify-start sm:justify-center sm:mt-12">
+          <div className="flex w-full flex-1 flex-col items-start sm:flex-none sm:mt-10 sm:items-start">
+            <h2 className="font-heading mb-6 text-left text-xl font-semibold text-foreground sm:mb-6">
               {translation("auth.cardTitle")}
             </h2>
 
             <form
               onSubmit={handleLogin}
-              className="space-y-3 w-full px-8 sm:px-0"
+              className="flex w-full flex-1 flex-col sm:flex-none"
             >
-              <div className="space-y-1.5">
+              <div className="space-y-4">
                 <div className="relative">
                   <Input
                     id="tenantCode"
                     name="tenantCode"
-                    className={`pl-5 shadow-none${tenantLocked ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`}
+                    className={`h-13 pl-5 shadow-none sm:h-11 ${tenantLocked ? "bg-muted text-muted-foreground cursor-not-allowed" : ""}`}
                     placeholder={translation("auth.tenantCodePlaceholder")}
                     value={tenantCode}
                     onChange={(e) =>
@@ -260,15 +269,13 @@ export default function LoginPage() {
                     autoComplete="organization"
                   />
                 </div>
-              </div>
 
-              <div className="space-y-1.5">
                 <div className="relative">
                   <Input
                     id="email"
                     name="email"
                     type="email"
-                    className="pl-5 shadow-none"
+                    className="h-13 pl-5 shadow-none sm:h-11"
                     placeholder={translation("auth.emailPlaceholder")}
                     value={email}
                     onChange={(e) => setEmail(e.target.value.toLowerCase())}
@@ -276,15 +283,13 @@ export default function LoginPage() {
                     autoComplete="email"
                   />
                 </div>
-              </div>
 
-              <div className="space-y-1.5">
                 <div className="relative">
                   <Input
                     id="password"
                     name="password"
                     type="password"
-                    className="pl-5 shadow-none"
+                    className="h-13 pl-5 shadow-none sm:h-11"
                     placeholder={translation("auth.passwordPlaceholder")}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -293,39 +298,48 @@ export default function LoginPage() {
                   />
                 </div>
               </div>
-              <div className="w-full flex items-center justify-between mt-8 px-4 sm:px-0">
-                <div className="text-center">
+
+              <a
+                href="#"
+                className="mt-4 self-end text-xs font-medium text-gray-400 transition-colors duration-200 hover:text-(--primary-hover) sm:hidden"
+                onClick={(e) => e.preventDefault()}
+              >
+                {translation("auth.forgotPassword")}
+              </a>
+
+              <div className="mt-auto flex w-full flex-col gap-6 pt-6 sm:mt-8 sm:gap-8 sm:pt-0">
+                <div className="flex w-full flex-col items-end gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-0">
                   <a
                     href="#"
-                    className="text-xs font-medium text-gray-400 transition-colors duration-200 hover:text-(--primary-hover)"
+                    className="hidden text-xs font-medium text-gray-400 transition-colors duration-200 hover:text-(--primary-hover) sm:inline"
                     onClick={(e) => e.preventDefault()}
                   >
                     {translation("auth.forgotPassword")}
                   </a>
+                  <Button
+                    type="submit"
+                    className="w-full py-3.5 text-base font-medium rounded-full sm:w-35 sm:py-2.5"
+                    disabled={loading}
+                  >
+                    {loading && <Loader2 className="size-4 animate-spin" />}
+                    {translation("auth.submit")}
+                  </Button>
                 </div>
-                <Button
-                  type="submit"
-                  className="w-22 text-base font-medium rounded-full sm:w-35"
-                  disabled={loading}
-                >
-                  {loading && <Loader2 className="size-4 animate-spin" />}
-                  {translation("auth.submit")}
-                </Button>
+
+                <p className="text-center text-xs text-muted-foreground w-full sm:text-sm">
+                  Não tem conta?{" "}
+                  <a
+                    href="/register"
+                    className="font-semibold text-primary hover:underline"
+                  >
+                    Comece grátis por 14 dias
+                  </a>
+                </p>
               </div>
             </form>
-
-            <p className="mt-8 text-center text-xs text-muted-foreground w-full sm:text-sm">
-              Não tem conta?{" "}
-              <a
-                href="/register"
-                className="font-semibold text-primary hover:underline"
-              >
-                Comece grátis por 14 dias
-              </a>
-            </p>
           </div>
         </div>
-        <p className="w-full mt-8 text-center text-xs text-muted-foreground">
+        <p className="hidden w-full mt-8 text-center text-xs text-muted-foreground sm:block">
           © {new Date().getFullYear()} {brandName}. {translation("auth.footer")}
         </p>
       </section>

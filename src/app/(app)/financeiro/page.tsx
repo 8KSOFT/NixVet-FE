@@ -21,6 +21,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { PlanUpgradeGate } from '@/components/billing/PlanUpgradeGate';
 import type { DRECompareMode, DREDiff } from '@/app/types/financial-report';
 import {
   useDREComparisonQuery,
@@ -177,7 +178,7 @@ function DRERow({
   );
 }
 
-export default function FinanceiroDREPage() {
+function FinanceiroDREPageContent() {
   const now = new Date();
   const [period, setPeriod] = useState(
     `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`,
@@ -549,5 +550,13 @@ export default function FinanceiroDREPage() {
       </Card>
       </div>
     </div>
+  );
+}
+
+export default function FinanceiroDREPage() {
+  return (
+    <PlanUpgradeGate requiredPlan="clinica" feature="Relatórios financeiros (DRE)">
+      <FinanceiroDREPageContent />
+    </PlanUpgradeGate>
   );
 }

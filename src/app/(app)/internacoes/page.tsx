@@ -18,6 +18,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import Link from 'next/link';
+import { PlanUpgradeGate } from '@/components/billing/PlanUpgradeGate';
 import {
   useActiveHospitalizationsListQuery,
   useCreateHospitalizationMutation,
@@ -58,7 +59,7 @@ function getApiErrorMessage(error: unknown, fallbackMessage: string): string {
   return responseMessage ?? typedError.message ?? fallbackMessage;
 }
 
-export default function InternacoesPage() {
+function InternacoesPageContent() {
   const [openNew, setOpenNew] = useState(false);
 
   const { data: active = [], isLoading: loadingActive } = useActiveHospitalizationsListQuery();
@@ -351,5 +352,13 @@ export default function InternacoesPage() {
         </div>
       </DashboardCreateFormDialog>
     </div>
+  );
+}
+
+export default function InternacoesPage() {
+  return (
+    <PlanUpgradeGate requiredPlan="clinica" feature="Internações">
+      <InternacoesPageContent />
+    </PlanUpgradeGate>
   );
 }

@@ -18,6 +18,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { getStoredUserRole } from '@/lib/role-permissions';
 import { toast } from 'sonner';
+import { PlanUpgradeGate } from '@/components/billing/PlanUpgradeGate';
 import type { Hospitalization } from '@/app/types/hospitalization';
 import {
   useAddHospitalizationCostMutation,
@@ -1026,7 +1027,7 @@ function RelatorioMedicoTab({
   );
 }
 
-export default function HospitalizationDetailPage() {
+function HospitalizationDetailPageContent() {
   const params = useParams<{ id: string }>();
   const hospitalizationId = typeof params?.id === 'string' ? params.id : '';
   const { data: h, isLoading: loading } = useHospitalizationQuery(hospitalizationId);
@@ -1225,5 +1226,13 @@ export default function HospitalizationDetailPage() {
         </div>
       </DashboardCreateFormDialog>
     </div>
+  );
+}
+
+export default function HospitalizationDetailPage() {
+  return (
+    <PlanUpgradeGate requiredPlan="clinica" feature="Internações">
+      <HospitalizationDetailPageContent />
+    </PlanUpgradeGate>
   );
 }

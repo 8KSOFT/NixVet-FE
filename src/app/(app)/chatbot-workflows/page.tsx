@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
+import { PlanUpgradeGate } from '@/components/billing/PlanUpgradeGate';
 import {
   Loader2,
   Plus,
@@ -50,7 +51,7 @@ function getApiErrorMessage(error: unknown, fallbackMessage: string): string {
   return responseMessage ?? typedError.message ?? fallbackMessage;
 }
 
-export default function ChatbotWorkflowsPage() {
+function ChatbotWorkflowsPageContent() {
   const [listPage, setListPage] = useState(1);
   const [createOpen, setCreateOpen] = useState(false);
   const [newName, setNewName] = useState('');
@@ -439,5 +440,13 @@ export default function ChatbotWorkflowsPage() {
         </div>
       </DashboardCreateFormDialog>
     </div>
+  );
+}
+
+export default function ChatbotWorkflowsPage() {
+  return (
+    <PlanUpgradeGate requiredPlan="clinica" feature="Chatbot / Workflows visuais">
+      <ChatbotWorkflowsPageContent />
+    </PlanUpgradeGate>
   );
 }

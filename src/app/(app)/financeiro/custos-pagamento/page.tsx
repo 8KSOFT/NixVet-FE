@@ -16,6 +16,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { toast } from 'sonner';
 import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import { useCustosPagamentoQuery } from '@/hooks/apiHooks/useFinancialReports';
+import { PlanUpgradeGate } from '@/components/billing/PlanUpgradeGate';
 
 function fmt(n: number) {
   return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -41,7 +42,7 @@ function formatPieLabel(payload: PieLabelPayload): string {
   return `${payload.name ?? ''} (${((payload.percent ?? 0) * 100).toFixed(0)}%)`;
 }
 
-export default function CustosPagamentoPage() {
+function CustosPagamentoPageContent() {
   const now = new Date();
   const [period, setPeriod] = useState(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`);
   const { data = {}, isLoading: loading, error } = useCustosPagamentoQuery(period);
@@ -167,5 +168,13 @@ export default function CustosPagamentoPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+export default function CustosPagamentoPage() {
+  return (
+    <PlanUpgradeGate requiredPlan="clinica" feature="Custos por forma de pagamento">
+      <CustosPagamentoPageContent />
+    </PlanUpgradeGate>
   );
 }

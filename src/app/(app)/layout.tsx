@@ -23,8 +23,10 @@ import {
   CreditCard,
   ChevronDown,
   Package,
+  Lock,
 } from "lucide-react";
 import { MenuIconsWhite } from "@/components/MenuIconsWhite";
+import { planMeetsRequirement, type PlanId } from "@/lib/plans";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -456,6 +458,16 @@ const NAV_SECTIONS: NavSection[] = [
   },
 ];
 
+// Chaves de nav que exigem um plano mínimo (espelha @RequirePlan() no backend).
+// Itens fora deste mapa ficam liberados para qualquer plano.
+const NAV_PLAN_REQUIREMENTS: Record<string, PlanId> = {
+  hospitalizations: "clinica",
+  "financeiro-receitas": "clinica",
+  "financeiro-custos": "clinica",
+  "financeiro-receita": "clinica",
+  chatbot: "clinica",
+};
+
 function getActiveKey(pathname: string): string {
   if (pathname.includes("/profile")) return "profile";
   if (pathname.includes("/superadmin/finance"))
@@ -512,6 +524,8 @@ interface SidebarNavProps {
   brandLogo: string | null;
   variant?: "medical" | "light";
   onNavigate?: () => void;
+  billingPlan: string | null;
+  isSuperAdmin: boolean;
 }
 
 function SidebarNav({
@@ -522,7 +536,14 @@ function SidebarNav({
   brandName,
   variant = "medical",
   onNavigate,
+  billingPlan,
+  isSuperAdmin,
 }: SidebarNavProps) {
+  const isNavItemLocked = (key: string) => {
+    if (isSuperAdmin) return false;
+    const requiredPlan = NAV_PLAN_REQUIREMENTS[key];
+    return !!requiredPlan && !planMeetsRequirement(billingPlan, requiredPlan);
+  };
   const { t } = useTranslation("common");
   const medical = variant === "medical";
 
@@ -711,7 +732,10 @@ function SidebarNav({
                                 )}
                               >
                                 <child.icon className="size-3.5 shrink-0 stroke-[1.5]" />
-                                <span>{t(child.labelKey)}</span>
+                                <span className="flex-1">{t(child.labelKey)}</span>
+                                {isNavItemLocked(child.key) && (
+                                  <Lock className="size-3 shrink-0 opacity-60" />
+                                )}
                               </Link>
                             ))}
                           </div>
@@ -737,7 +761,10 @@ function SidebarNav({
                         )}
                       />
                       {!collapsed && (
-                        <span className="text-[12px]">{t(item.labelKey)}</span>
+                        <span className="flex-1 text-[12px]">{t(item.labelKey)}</span>
+                      )}
+                      {!collapsed && isNavItemLocked(item.key) && (
+                        <Lock className="size-3 shrink-0 opacity-60" />
                       )}
                     </Link>
                   );
@@ -831,6 +858,8 @@ export default function DashboardLayout({
           brandName={brandName}
           brandLogo={brandLogo}
           variant="medical"
+          billingPlan={billing.billingPlan}
+          isSuperAdmin={headerRole === "superadmin"}
         />
       </aside>
 
@@ -854,6 +883,8 @@ export default function DashboardLayout({
             brandLogo={brandLogo}
             variant="medical"
             onNavigate={() => setMobileNavOpen(false)}
+            billingPlan={billing.billingPlan}
+            isSuperAdmin={headerRole === "superadmin"}
           />
         </SheetContent>
       </Sheet>

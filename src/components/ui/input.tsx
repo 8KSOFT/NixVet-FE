@@ -18,7 +18,11 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
           
           // Manteve apenas o tratamento de erro estrutural (opcional tirar se não quiser ring nem no erro)
           "aria-invalid:border-destructive aria-invalid:ring-0",
-          
+
+          // Evita que o autofill/popup de valores salvos do navegador troque o
+          // fundo (amarelo/azul) e a cor do texto do input
+          "autofill:bg-white autofill:text-foreground autofill:[-webkit-text-fill-color:var(--foreground)] autofill:[-webkit-box-shadow:0_0_0px_1000px_white_inset] autofill:[transition:background-color_9999s_ease-in-out_0s]",
+
           className
         )}
         {...props}
