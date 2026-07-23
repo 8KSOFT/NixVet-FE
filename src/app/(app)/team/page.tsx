@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import type { ApiRequestError } from '@/app/types/api-error';
 import type { TeamAssignableRole, TeamUserFormValues, TeamUserRow } from '@/app/types/team-user';
 import { DashboardCreateFormDialog } from '@/components/dashboard-create-form-dialog';
@@ -23,7 +23,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { useForm, Controller } from 'react-hook-form';
-import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Loader2, ChevronDown, X } from 'lucide-react';
 import { API_PAGE_SIZE } from '@/lib/pagination';
 import {
   useCreateUserMutation,
@@ -38,6 +38,7 @@ import { useAccessProfilesListQuery } from '@/hooks/apiHooks/useAccessProfiles';
 import { CheckboxMultiSelect } from '@/components/checkbox-multi-select';
 import { ListPagination } from '@/components/list-pagination';
 import { getStoredUserRole } from '@/lib/role-permissions';
+import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
 
 const ASSIGNABLE_ROLES = [
@@ -65,7 +66,7 @@ export default function TeamPage() {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  const { register, handleSubmit, reset, control, setValue } = useForm<TeamUserFormValues>();
+  const { register, handleSubmit, reset, control, setValue, watch } = useForm<TeamUserFormValues>();
 
   const currentRole = getStoredUserRole();
   const canAssignAdmin = currentRole === 'admin' || currentRole === 'superadmin';
@@ -91,6 +92,43 @@ export default function TeamPage() {
     label: profile.name,
     description: profile.description,
   }));
+  const selectedProfileIds = watch('accessProfileIds') ?? [];
+  const selectedProfileLabels = accessProfileOptions
+    .filter((o) => selectedProfileIds.includes(o.value))
+    .map((o) => o.label);
+
+  const [accessProfilesPanelOpen, setAccessProfilesPanelOpen] = useState(false);
+  const [accessProfilesPanelPlacement, setAccessProfilesPanelPlacement] = useState<'top' | 'bottom'>('bottom');
+  const accessProfilesPanelRef = useRef<HTMLDivElement>(null);
+  const accessProfilesButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!accessProfilesPanelOpen) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      if (accessProfilesPanelRef.current && !accessProfilesPanelRef.current.contains(event.target as Node)) {
+        setAccessProfilesPanelOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [accessProfilesPanelOpen]);
+
+  // Estima se há espaço abaixo do botão; se não houver, abre o painel para cima.
+  const toggleAccessProfilesPanel = () => {
+    setAccessProfilesPanelOpen((wasOpen) => {
+      const willOpen = !wasOpen;
+      if (willOpen && accessProfilesButtonRef.current) {
+        const rect = accessProfilesButtonRef.current.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const spaceAbove = rect.top;
+        const estimatedPanelHeight = 340;
+        setAccessProfilesPanelPlacement(
+          spaceBelow < estimatedPanelHeight && spaceAbove > spaceBelow ? 'top' : 'bottom',
+        );
+      }
+      return willOpen;
+    });
+  };
 
   const { data: editingUserAccessProfiles } = useUserAccessProfilesQuery(editingId, modalVisible && !!editingId);
   useEffect(() => {
@@ -118,6 +156,7 @@ export default function TeamPage() {
       password: '',
       crmv: '',
       specialty: '',
+      sipeagro_number: '',
       accessProfileIds: [],
     });
     setModalVisible(true);
@@ -132,6 +171,7 @@ export default function TeamPage() {
       password: '',
       crmv: record.crmv ?? '',
       specialty: record.specialty ?? '',
+      sipeagro_number: record.sipeagro_number ?? '',
       accessProfileIds: [],
     });
     setModalVisible(true);
@@ -214,6 +254,7 @@ export default function TeamPage() {
                   <TableHead>{t('team.colName')}</TableHead>
                   <TableHead>{t('team.colEmail')}</TableHead>
                   <TableHead>{t('team.colCrmv')}</TableHead>
+                  <TableHead>{t('team.colSipeagro')}</TableHead>
                   <TableHead>{t('team.colSpecialty')}</TableHead>
                   <TableHead>{t('team.colRole')}</TableHead>
                   <TableHead>{t('team.colActions')}</TableHead>
@@ -225,6 +266,7 @@ export default function TeamPage() {
                     <TableCell>{user.name}</TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>{user.crmv}</TableCell>
+                    <TableCell>{user.sipeagro_number}</TableCell>
                     <TableCell>{user.specialty}</TableCell>
                     <TableCell>
                       <Badge variant={roleBadgeVariant(user.role)}>
@@ -279,6 +321,10 @@ export default function TeamPage() {
                   <div>
                     <p className="text-xs text-muted-foreground">{t('team.colCrmv')}</p>
                     <p>{user.crmv || '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">{t('team.colSipeagro')}</p>
+                    <p>{user.sipeagro_number || '—'}</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">{t('team.colSpecialty')}</p>
@@ -386,30 +432,73 @@ export default function TeamPage() {
               <Input {...register('crmv')} />
             </div>
           </div>
-          <div className="space-y-1">
-            <Label>{t('team.formSpecialty')}</Label>
-            <Input {...register('specialty')} />
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="space-y-1">
+              <Label>{t('team.formSipeagro')}</Label>
+              <Input maxLength={20} {...register('sipeagro_number')} />
+              <p className="text-xs text-muted-foreground">{t('team.formSipeagroHint')}</p>
+            </div>
+            <div className="space-y-1">
+              <Label>{t('team.formSpecialty')}</Label>
+              <Input {...register('specialty')} />
+            </div>
           </div>
           <div className="space-y-2">
             <Label>{t('team.formAccessProfiles')}</Label>
             <p className="text-xs text-muted-foreground">{t('team.formAccessProfilesHint')}</p>
-            {accessProfilesLoading ? (
-              <div className="flex justify-center py-4">
-                <Loader2 className="w-5 h-5 animate-spin text-primary" />
-              </div>
-            ) : (
-              <Controller
-                name="accessProfileIds"
-                control={control}
-                render={({ field }) => (
-                  <CheckboxMultiSelect
-                    options={accessProfileOptions}
-                    selected={field.value ?? []}
-                    onChange={field.onChange}
-                    emptyMessage={t('team.formAccessProfilesEmpty')}
+            <div className="relative" ref={accessProfilesPanelRef}>
+              <Button
+                ref={accessProfilesButtonRef}
+                type="button"
+                variant="outline"
+                className="w-full justify-between font-normal"
+                disabled={accessProfilesLoading}
+                onClick={toggleAccessProfilesPanel}
+              >
+                <span className="truncate text-left">
+                  {accessProfilesLoading
+                    ? 'Carregando...'
+                    : selectedProfileIds.length > 0
+                      ? `${selectedProfileIds.length} perfil(is) selecionado(s)`
+                      : 'Definir perfis de acesso'}
+                </span>
+                <ChevronDown className="w-4 h-4 shrink-0 opacity-60" />
+              </Button>
+              {accessProfilesPanelOpen && (
+                <div
+                  className={cn(
+                    'absolute left-0 right-0 z-50 rounded-lg border border-gray-300 bg-white p-2 shadow-md',
+                    accessProfilesPanelPlacement === 'top' ? 'bottom-full mb-1' : 'top-full mt-1',
+                  )}
+                >
+                  <div className="flex items-center justify-between px-1 pb-1">
+                    <span className="text-xs font-medium text-muted-foreground">{t('team.formAccessProfiles')}</span>
+                    <button
+                      type="button"
+                      className="text-muted-foreground hover:text-foreground"
+                      onClick={() => setAccessProfilesPanelOpen(false)}
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                  <Controller
+                    name="accessProfileIds"
+                    control={control}
+                    render={({ field }) => (
+                      <CheckboxMultiSelect
+                        options={accessProfileOptions}
+                        selected={field.value ?? []}
+                        onChange={field.onChange}
+                        emptyMessage={t('team.formAccessProfilesEmpty')}
+                        className="max-h-72 border-none p-0"
+                      />
+                    )}
                   />
-                )}
-              />
+                </div>
+              )}
+            </div>
+            {selectedProfileLabels.length > 0 && (
+              <p className="truncate text-xs text-muted-foreground">{selectedProfileLabels.join(', ')}</p>
             )}
           </div>
         </form>

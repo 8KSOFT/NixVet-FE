@@ -13,23 +13,82 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { useForm, Controller, useFieldArray } from 'react-hook-form';
-import { Plus, BookOpen, Loader2, X, Info, Search, FileText, Mail, FlaskConical, Eye } from 'lucide-react';
+import {
+  Plus,
+  BookOpen,
+  Loader2,
+  X,
+  Info,
+  Search,
+  FileText,
+  Mail,
+  FlaskConical,
+  Eye,
+  ShieldCheck,
+  ShieldX,
+  Copy,
+  Download,
+} from 'lucide-react';
+import QRCode from 'react-qr-code';
 import { API_PAGE_SIZE } from '@/lib/pagination';
 import { ListPagination } from '@/components/list-pagination';
 import dayjs from 'dayjs';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import type { CreatePrescriptionPayload, Prescription } from '@/app/types/prescription';
+import type { CreatePrescriptionPayload, PrescriptionLegalModel, Prescription } from '@/app/types/prescription';
 import type { BularioItem } from '@/app/types/bulario';
+import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import {
   useCreatePrescriptionMutation,
   useDownloadPrescriptionPdfMutation,
+  useDownloadSignedPrescriptionPdfMutation,
   usePrescriptionsQuery,
+  useRevokeSignatureMutation,
   useSendPrescriptionEmailMutation,
+  useSignPrescriptionMutation,
+  useSignatureStatusQuery,
 } from '@/hooks/apiHooks/usePrescriptions';
+import { useProfileQuery } from '@/hooks/apiHooks/useUsers';
 import { useBularioItemQuery, useBularioSearchMutation } from '@/hooks/apiHooks/useBulario';
 import { useSurgicalProceduresListQuery } from '@/hooks/apiHooks/useSurgicalProcedures';
 import { usePatientsListQuery } from '@/hooks/apiHooks/usePatients';
 import { useConsultationsQuery } from '@/hooks/apiHooks/useConsultations';
+
+const LEGAL_MODEL_OPTIONS: {
+  value: PrescriptionLegalModel;
+  label: string;
+  legalBasis: string;
+  vias: string;
+}[] = [
+  {
+    value: 'SIMPLE',
+    label: 'Receituário simples',
+    legalBasis: 'Uso veterinário · medicamento sob prescrição',
+    vias: '1 via — Tutor(a) · 30 dias',
+  },
+  {
+    value: 'SPECIAL_CONTROL',
+    label: 'Controle especial',
+    legalBasis: 'Portaria SVS/MS 344/98 · listas C1/C5, fenobarbital',
+    vias: '2 vias — 1ª Farmácia (retenção) · 2ª Tutor(a) · 30 dias',
+  },
+  {
+    value: 'VET_NOTIFICATION',
+    label: 'Notificação veterinária',
+    legalBasis: 'IN MAPA 35/2017 · produto de uso veterinário controlado',
+    vias: '3 vias — Tutor(a), Estabelecimento, Veterinário · exige Nº SIPEAGRO',
+  },
+];
+
+/**
+ * A resposta de sign/status não devolve `prescription_type` — só `is_controlled` + `serial_number`.
+ * Como só VET_NOTIFICATION gera numeração, infere-se o modelo a partir desses dois campos.
+ */
+function inferLegalModel(sig: { is_controlled?: boolean; serial_number?: string | null } | undefined | null): PrescriptionLegalModel | null {
+  if (!sig) return null;
+  if (!sig.is_controlled) return 'SIMPLE';
+  return sig.serial_number ? 'VET_NOTIFICATION' : 'SPECIAL_CONTROL';
+}
 
 const FORM_ADMIN_OPTIONS = [
   { value: 'oral', label: 'Oral' },
@@ -82,6 +141,7 @@ type MedicationField = {
   frequency_unit?: string;
   duration_value?: string;
   duration_unit?: string;
+  continuous_use?: boolean;
   usage_description?: string;
   observations?: string;
 };
@@ -258,8 +318,9 @@ export default function PrescriptionsPage() {
           dosage: m.dosage || undefined,
           frequency_value: m.frequency_value ? Number(m.frequency_value) : undefined,
           frequency_unit: m.frequency_unit || undefined,
-          duration_value: m.duration_value ? Number(m.duration_value) : undefined,
-          duration_unit: m.duration_unit || undefined,
+          duration_value: m.continuous_use ? undefined : m.duration_value ? Number(m.duration_value) : undefined,
+          duration_unit: m.continuous_use ? undefined : m.duration_unit || undefined,
+          continuous_use: m.continuous_use || undefined,
           usage_description: m.usage_description || undefined,
           observations: m.observations || undefined,
         }));
@@ -332,6 +393,89 @@ export default function PrescriptionsPage() {
   const toggleProcedure = (id: number) => {
     setSelectedProcedureIds((prev) => (prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]));
   };
+
+  // Assinatura digital (3 modelos de receituário — Portaria 837/25, Portaria SVS/MS 344/98, IN MAPA 35/2017)
+  const [signatureModalVisible, setSignatureModalVisible] = useState(false);
+  const [signaturePrescriptionId, setSignaturePrescriptionId] = useState<string | null>(null);
+  const [legalModel, setLegalModel] = useState<PrescriptionLegalModel>('SIMPLE');
+  const [isHumanAntibacterial, setIsHumanAntibacterial] = useState(false);
+  const [revokeFormOpen, setRevokeFormOpen] = useState(false);
+  const [revokeReason, setRevokeReason] = useState('');
+
+  const { data: myProfile } = useProfileQuery();
+  const { data: signatureStatus, isLoading: signatureLoading } = useSignatureStatusQuery(
+    signaturePrescriptionId,
+    signatureModalVisible,
+  );
+  const signMutation = useSignPrescriptionMutation();
+  const revokeMutation = useRevokeSignatureMutation();
+  const downloadSignedPdf = useDownloadSignedPrescriptionPdfMutation();
+
+  const openSignatureModal = (id: string) => {
+    setSignaturePrescriptionId(id);
+    setLegalModel('SIMPLE');
+    setIsHumanAntibacterial(false);
+    setRevokeFormOpen(false);
+    setRevokeReason('');
+    setSignatureModalVisible(true);
+  };
+
+  const closeSignatureModal = (open: boolean) => {
+    setSignatureModalVisible(open);
+    if (!open) setSignaturePrescriptionId(null);
+  };
+
+  const sipeagroMissing = legalModel === 'VET_NOTIFICATION' && !myProfile?.sipeagro_number;
+
+  const handleSign = async () => {
+    if (!signaturePrescriptionId || sipeagroMissing) return;
+    try {
+      await signMutation.mutateAsync({
+        id: signaturePrescriptionId,
+        payload: {
+          prescription_type: legalModel,
+          ...(legalModel === 'SIMPLE' ? { is_human_antibacterial: isHumanAntibacterial } : {}),
+        },
+      });
+      toast.success('Prescrição assinada com sucesso.');
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Erro ao assinar prescrição'));
+    }
+  };
+
+  const handleRevoke = async () => {
+    if (!signaturePrescriptionId || !revokeReason.trim()) return;
+    try {
+      await revokeMutation.mutateAsync({ id: signaturePrescriptionId, reason: revokeReason.trim() });
+      toast.success('Assinatura revogada.');
+      setRevokeFormOpen(false);
+      setRevokeReason('');
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Erro ao revogar assinatura'));
+    }
+  };
+
+  const handleDownloadSignedPdf = async () => {
+    if (!signaturePrescriptionId) return;
+    try {
+      const blob = await downloadSignedPdf.mutateAsync(signaturePrescriptionId);
+      const url = window.URL.createObjectURL(blob);
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } catch {
+      toast.error('Erro ao baixar PDF assinado');
+    }
+  };
+
+  const handleCopy = async (value: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      toast.success('Copiado para a área de transferência.');
+    } catch {
+      toast.error('Não foi possível copiar');
+    }
+  };
+
+  const canSign = (record: Prescription) => record.prescription_type === 'receita' || !record.prescription_type;
 
   return (
     <div>
@@ -421,6 +565,19 @@ export default function PrescriptionsPage() {
                         >
                           <FlaskConical className="w-4 h-4" />
                         </Button>
+                        {canSign(record) && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="p-0"
+                            title="Assinatura digital"
+                            aria-label="Assinatura digital"
+                            onClick={() => openSignatureModal(record.id)}
+                          >
+                            <ShieldCheck className="w-4 h-4" />
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -501,6 +658,19 @@ export default function PrescriptionsPage() {
                   >
                     <FlaskConical className="w-4 h-4" />
                   </Button>
+                  {canSign(record) && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="p-0"
+                      title="Assinatura digital"
+                      aria-label="Assinatura digital"
+                      onClick={() => openSignatureModal(record.id)}
+                    >
+                      <ShieldCheck className="w-4 h-4" />
+                    </Button>
+                  )}
                 </div>
               </div>
             ))}
@@ -756,6 +926,7 @@ export default function PrescriptionsPage() {
               <Label className="text-sm font-medium">Medicamentos</Label>
               {fields.map((field, index) => {
                 const bularioId = watch(`medications.${index}.bulario_item_id`);
+                const isContinuousUse = watch(`medications.${index}.continuous_use`);
                 return (
                   <div key={field.id} className="border rounded-xl p-4 bg-muted/30 space-y-4">
                     <input type="hidden" {...register(`medications.${index}.bulario_item_id`)} />
@@ -944,14 +1115,21 @@ export default function PrescriptionsPage() {
                             control={control}
                             name={`medications.${index}.duration_value`}
                             render={({ field }) => (
-                              <Input type="number" min="1" className="h-9 w-16 shrink-0" placeholder="7" {...field} />
+                              <Input
+                                type="number"
+                                min="1"
+                                className="h-9 w-16 shrink-0"
+                                placeholder="7"
+                                disabled={!!isContinuousUse}
+                                {...field}
+                              />
                             )}
                           />
                           <Controller
                             control={control}
                             name={`medications.${index}.duration_unit`}
                             render={({ field }) => (
-                              <Select value={field.value ?? ''} onValueChange={field.onChange}>
+                              <Select value={field.value ?? ''} onValueChange={field.onChange} disabled={!!isContinuousUse}>
                                 <SelectTrigger className="h-9 flex-1">
                                   <SelectValue placeholder="Un." />
                                 </SelectTrigger>
@@ -966,6 +1144,21 @@ export default function PrescriptionsPage() {
                             )}
                           />
                         </div>
+                        <label className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
+                          <Controller
+                            control={control}
+                            name={`medications.${index}.continuous_use`}
+                            render={({ field }) => (
+                              <input
+                                type="checkbox"
+                                checked={!!field.value}
+                                onChange={(e) => field.onChange(e.target.checked)}
+                                className="accent-primary w-3.5 h-3.5"
+                              />
+                            )}
+                          />
+                          Uso contínuo (imprime &quot;USO CONTÍNUO&quot; no lugar da duração)
+                        </label>
                       </div>
                     </div>
 
@@ -1016,6 +1209,7 @@ export default function PrescriptionsPage() {
                     frequency_unit: 'horas',
                     duration_value: '',
                     duration_unit: 'dias',
+                    continuous_use: false,
                     usage_description: '',
                     observations: '',
                   })
@@ -1124,6 +1318,223 @@ export default function PrescriptionsPage() {
               ) : (
                 <p className="text-muted-foreground">Sem detalhes cadastrados.</p>
               )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={signatureModalVisible} onOpenChange={closeSignatureModal}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Assinatura digital</DialogTitle>
+          </DialogHeader>
+
+          {signatureLoading ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="animate-spin w-6 h-6 text-muted-foreground/60" />
+            </div>
+          ) : signatureStatus?.status === 'SIGNED' ? (
+            <div className="space-y-4">
+              {(() => {
+                const model = inferLegalModel(signatureStatus);
+                const modelInfo = LEGAL_MODEL_OPTIONS.find((o) => o.value === model);
+                return (
+                  <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-emerald-800">
+                    <div className="flex items-center gap-2">
+                      <ShieldCheck className="w-5 h-5" />
+                      <span className="font-semibold">Assinatura válida</span>
+                    </div>
+                    {modelInfo && (
+                      <p className="text-sm mt-1">
+                        {modelInfo.label}
+                        {signatureStatus.serial_number ? ` — Nº ${signatureStatus.serial_number}` : ''}
+                      </p>
+                    )}
+                    {signatureStatus.signed_at && (
+                      <p className="text-xs mt-1 text-emerald-700">
+                        Assinado em {new Date(signatureStatus.signed_at).toLocaleString('pt-BR')}
+                      </p>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {signatureStatus.verification_url && (
+                <div className="flex flex-col items-center gap-2 rounded-lg border p-4">
+                  <QRCode value={signatureStatus.verification_url} size={160} />
+                  <p className="text-xs text-muted-foreground text-center break-all">
+                    {signatureStatus.verification_url}
+                  </p>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {signatureStatus.public_token && (
+                  <div className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Token (farmácia)</p>
+                      <p className="font-mono">{signatureStatus.public_token}</p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="p-0"
+                      onClick={() => handleCopy(signatureStatus.public_token!)}
+                    >
+                      <Copy className="w-4 h-4" />
+                    </Button>
+                  </div>
+                )}
+                {signatureStatus.private_code && (
+                  <div className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Código (tutor)</p>
+                      <p className="font-mono">{signatureStatus.private_code}</p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="p-0"
+                      onClick={() => handleCopy(signatureStatus.private_code!)}
+                    >
+                      <Copy className="w-4 h-4" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1"
+                  onClick={handleDownloadSignedPdf}
+                  disabled={downloadSignedPdf.isPending}
+                >
+                  {downloadSignedPdf.isPending ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Download className="w-4 h-4 mr-2" />
+                  )}
+                  Baixar PDF assinado
+                </Button>
+                {!revokeFormOpen && (
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    className="flex-1"
+                    onClick={() => setRevokeFormOpen(true)}
+                  >
+                    Revogar assinatura
+                  </Button>
+                )}
+              </div>
+
+              {revokeFormOpen && (
+                <div className="space-y-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+                  <Label className="text-sm">Motivo da revogação *</Label>
+                  <Textarea
+                    rows={3}
+                    maxLength={500}
+                    value={revokeReason}
+                    onChange={(e) => setRevokeReason(e.target.value)}
+                    placeholder="Descreva o motivo da revogação..."
+                  />
+                  <div className="flex justify-end gap-2">
+                    <Button type="button" variant="outline" onClick={() => setRevokeFormOpen(false)}>
+                      Cancelar
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      disabled={!revokeReason.trim() || revokeMutation.isPending}
+                      onClick={handleRevoke}
+                    >
+                      {revokeMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />} Confirmar
+                      revogação
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : signatureStatus?.status === 'REVOKED' ? (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">
+              <div className="flex items-center gap-2">
+                <ShieldX className="w-5 h-5" />
+                <span className="font-semibold">Assinatura revogada</span>
+              </div>
+              {signatureStatus.revoked_at && (
+                <p className="text-xs mt-1">
+                  Revogada em {new Date(signatureStatus.revoked_at).toLocaleString('pt-BR')}
+                </p>
+              )}
+              {signatureStatus.revoke_reason && <p className="text-sm mt-2">{signatureStatus.revoke_reason}</p>}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div>
+                <Label className="text-sm font-medium">Modelo do receituário</Label>
+                <div className="mt-2 space-y-2">
+                  {LEGAL_MODEL_OPTIONS.map((opt) => (
+                    <label
+                      key={opt.value}
+                      className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 text-sm transition-colors ${
+                        legalModel === opt.value ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/50'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="legal_model"
+                        className="mt-1 accent-primary w-4 h-4"
+                        checked={legalModel === opt.value}
+                        onChange={() => setLegalModel(opt.value)}
+                      />
+                      <div>
+                        <p className="font-medium">{opt.label}</p>
+                        <p className="text-xs text-muted-foreground">{opt.legalBasis}</p>
+                        <p className="text-xs text-muted-foreground">{opt.vias}</p>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {legalModel === 'SIMPLE' && (
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="accent-primary w-4 h-4"
+                    checked={isHumanAntibacterial}
+                    onChange={(e) => setIsHumanAntibacterial(e.target.checked)}
+                  />
+                  Antibacteriano de uso humano (RDC 471/2021 — força 2 vias e validade de 10 dias)
+                </label>
+              )}
+
+              {sipeagroMissing && (
+                <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
+                  Você precisa cadastrar seu Nº SIPEAGRO antes de assinar este modelo.{' '}
+                  <Link href="/profile" className="font-medium underline">
+                    Ir para o perfil
+                  </Link>
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2">
+                <Button type="button" variant="outline" onClick={() => closeSignatureModal(false)}>
+                  Cancelar
+                </Button>
+                <Button
+                  type="button"
+                  className="bg-primary hover:bg-blue-700 text-white"
+                  disabled={sipeagroMissing || signMutation.isPending}
+                  onClick={handleSign}
+                >
+                  {signMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />} Assinar
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>

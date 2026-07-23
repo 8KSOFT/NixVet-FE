@@ -3,7 +3,12 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/axios';
 import { listQueryParams, parseListResponse } from '@/lib/pagination';
-import type { CreatePrescriptionPayload, Prescription } from '@/app/types/prescription';
+import type {
+  CreatePrescriptionPayload,
+  Prescription,
+  PrescriptionSignature,
+  SignPrescriptionPayload,
+} from '@/app/types/prescription';
 
 export const prescriptionKeys = {
   all: ['prescriptions'] as const,
@@ -50,6 +55,55 @@ export function useSendPrescriptionEmailMutation() {
     mutationFn: async (id: string) => {
       const { data } = await api.post(`/prescriptions/${id}/email`);
       return data;
+    },
+  });
+}
+
+/** Assina digitalmente uma prescrição, definindo o modelo legal do receituário (SIMPLE/SPECIAL_CONTROL/VET_NOTIFICATION). */
+export function useSignPrescriptionMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, payload }: { id: string; payload: SignPrescriptionPayload }) => {
+      const { data } = await api.post(`/prescriptions/${id}/sign`, payload);
+      return data as PrescriptionSignature;
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['prescriptions', 'signature', variables.id] });
+    },
+  });
+}
+
+/** Status atual da assinatura de uma prescrição — busca sob demanda (evita N+1 na listagem). */
+export function useSignatureStatusQuery(id: string | null, enabled: boolean) {
+  return useQuery({
+    queryKey: ['prescriptions', 'signature', id],
+    queryFn: async () => {
+      const { data } = await api.get(`/prescriptions/${id}/signature`);
+      return data as PrescriptionSignature;
+    },
+    enabled: enabled && !!id,
+  });
+}
+
+export function useRevokeSignatureMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, reason }: { id: string; reason: string }) => {
+      const { data } = await api.post(`/prescriptions/${id}/signature/revoke`, { reason });
+      return data as PrescriptionSignature;
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['prescriptions', 'signature', variables.id] });
+    },
+  });
+}
+
+/** Baixa o PDF já assinado (3 vias) via endpoint autenticado — não exige token público. */
+export function useDownloadSignedPrescriptionPdfMutation() {
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await api.get(`/prescriptions/${id}/signature/pdf`, { responseType: 'blob' });
+      return data as Blob;
     },
   });
 }

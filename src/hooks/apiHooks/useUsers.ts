@@ -47,6 +47,7 @@ export interface UserPayload {
   password?: string;
   crmv?: string;
   specialty?: string;
+  sipeagro_number?: string;
 }
 
 /** Lista paginada da equipe (staff) — usada na tela de gestão de Time. */

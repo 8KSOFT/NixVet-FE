@@ -18,6 +18,7 @@ interface ProfileFormValues {
   password: string;
   crmv: string;
   specialty: string;
+  sipeagro_number: string;
 }
 
 export default function ProfilePage() {
@@ -39,6 +40,7 @@ export default function ProfilePage() {
       email: profile.email,
       crmv: profile.crmv ?? '',
       specialty: profile.specialty ?? '',
+      sipeagro_number: profile.sipeagro_number ?? '',
       password: '',
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -46,11 +48,19 @@ export default function ProfilePage() {
 
   const onSubmit = async (values: ProfileFormValues) => {
     try {
-      const payload: { name: string; email: string; crmv: string; specialty: string; password?: string } = {
+      const payload: {
+        name: string;
+        email: string;
+        crmv: string;
+        specialty: string;
+        sipeagro_number: string;
+        password?: string;
+      } = {
         name: values.name,
         email: values.email,
         crmv: values.crmv,
         specialty: values.specialty,
+        sipeagro_number: values.sipeagro_number,
       };
       if (values.password?.trim()) {
         payload.password = values.password;
@@ -104,6 +114,11 @@ export default function ProfilePage() {
               <div>
                 <Label>{t('profile.crmv')}</Label>
                 <Input {...register('crmv')} />
+              </div>
+              <div>
+                <Label>{t('profile.sipeagro')}</Label>
+                <Input maxLength={20} {...register('sipeagro_number')} />
+                <p className="text-xs text-muted-foreground mt-1">{t('profile.sipeagroHint')}</p>
               </div>
               <div>
                 <Label>{t('profile.specialty')}</Label>

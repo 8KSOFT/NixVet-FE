@@ -4,6 +4,7 @@ export interface TeamUserRow {
   email: string;
   crmv?: string;
   specialty?: string;
+  sipeagro_number?: string;
   role: string;
 }
 
@@ -14,6 +15,7 @@ export interface TeamUserFormValues {
   password: string;
   crmv?: string;
   specialty?: string;
+  sipeagro_number?: string;
   accessProfileIds: string[];
 }
 
@@ -27,5 +29,6 @@ export interface ProfilePayload {
   email: string;
   crmv: string;
   specialty: string;
+  sipeagro_number?: string;
   password?: string;
 }
