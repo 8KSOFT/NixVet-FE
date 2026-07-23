@@ -22,13 +22,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
-
-const PLAN_OPTIONS = [
-  { value: 'essencial', label: 'Essencial — R$179/mês' },
-  { value: 'clinica', label: 'Clínica — R$299/mês' },
-  { value: 'hospital', label: 'Hospital — R$499/mês' },
-  { value: 'enterprise', label: 'Enterprise (manual)' },
-];
+import { PLAN_SELECT_OPTIONS as PLAN_OPTIONS } from '@/lib/plans';
 
 const STATUS_MAP: Record<string, { label: string; color: string }> = {
   active:       { label: 'Ativo',           color: 'bg-green-100 text-green-800 border-green-200' },

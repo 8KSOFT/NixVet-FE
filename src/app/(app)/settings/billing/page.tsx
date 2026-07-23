@@ -22,13 +22,7 @@ import {
   usePaymentLinkMutation,
   useCancelBillingMutation,
 } from '@/hooks/apiHooks/useBilling';
-
-const PLAN_LABELS: Record<string, string> = {
-  essencial: 'Essencial — R$179/mês',
-  clinica: 'Clínica — R$299/mês',
-  hospital: 'Hospital — R$499/mês',
-  enterprise: 'Enterprise',
-};
+import { planFullLabel } from '@/lib/plans';
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ElementType }> = {
   active: { label: 'Ativo', color: 'text-green-600 bg-green-50 border-green-200', icon: CheckCircle2 },
@@ -103,7 +97,7 @@ export default function BillingSettingsPage() {
 
               {billing.billingPlan && (
                 <p className="text-base font-semibold text-slate-800">
-                  {PLAN_LABELS[billing.billingPlan] ?? billing.billingPlan}
+                  {planFullLabel(billing.billingPlan)}
                 </p>
               )}
 
@@ -136,6 +130,14 @@ export default function BillingSettingsPage() {
                   {paying ? <Loader2 className="mr-2 size-4 animate-spin" /> : <CreditCard className="mr-2 size-4" />}
                   Pagar cobrança pendente
                 </Button>
+              )}
+
+              {billing.status === 'active' && !cancelAtDate && (
+                <Link href="/billing/upgrade">
+                  <Button size="sm" variant="outline" className="w-full sm:w-auto">
+                    Trocar de plano
+                  </Button>
+                </Link>
               )}
 
               {billing.status === 'active' && !cancelAtDate && (

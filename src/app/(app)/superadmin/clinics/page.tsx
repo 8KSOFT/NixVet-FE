@@ -60,14 +60,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useRouter } from "next/navigation";
 import { getStoredUserRole } from "@/lib/role-permissions";
+import { PLAN_SELECT_OPTIONS as PLAN_OPTIONS } from "@/lib/plans";
 import type { SuperadminTenantRow as ClinicRow } from "@/app/types/tenant";
-
-const PLAN_OPTIONS = [
-  { value: "essencial", label: "Essencial — R$179/mês" },
-  { value: "clinica", label: "Clínica — R$299/mês" },
-  { value: "hospital", label: "Hospital — R$499/mês" },
-  { value: "enterprise", label: "Enterprise (manual)" },
-];
 
 const STATUS_OPTIONS = [
   { value: "active", label: "Ativo" },
