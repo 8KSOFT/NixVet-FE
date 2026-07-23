@@ -39,6 +39,7 @@ import type { CreatePrescriptionPayload, PrescriptionLegalModel, Prescription } 
 import type { BularioItem } from '@/app/types/bulario';
 import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import {
+  fetchPrescriptionSignatureStatus,
   useCreatePrescriptionMutation,
   useDownloadPrescriptionPdfMutation,
   useDownloadSignedPrescriptionPdfMutation,
@@ -186,8 +187,9 @@ export default function PrescriptionsPage() {
 
   const createPrescription = useCreatePrescriptionMutation();
   const downloadPdf = useDownloadPrescriptionPdfMutation();
+  const downloadSignedPdf = useDownloadSignedPrescriptionPdfMutation();
   const sendEmailMutation = useSendPrescriptionEmailMutation();
-  const pdfPreviewLoading = downloadPdf.isPending;
+  const pdfPreviewLoading = downloadPdf.isPending || downloadSignedPdf.isPending;
 
   const { control, register, handleSubmit, reset, setValue, watch } = useForm<FormValues>({
     defaultValues: {
@@ -254,11 +256,16 @@ export default function PrescriptionsPage() {
     }
   };
 
-  // GRUPO 4 — preview do PDF sem download
+  // GRUPO 4 — preview do PDF sem download. Se a prescrição já estiver assinada, mostra o PDF
+  // assinado (3 vias, endpoint autenticado) em vez do rascunho não assinado.
   const handlePreviewPdf = async (id: string) => {
     setPdfPreviewOpen(true);
     try {
-      const blob = await downloadPdf.mutateAsync(id);
+      const signature = await fetchPrescriptionSignatureStatus(id);
+      const blob =
+        signature?.status === 'SIGNED'
+          ? await downloadSignedPdf.mutateAsync(id)
+          : await downloadPdf.mutateAsync(id);
       const url = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
       setPdfPreviewUrl((prev) => {
         if (prev) window.URL.revokeObjectURL(prev);
@@ -409,7 +416,6 @@ export default function PrescriptionsPage() {
   );
   const signMutation = useSignPrescriptionMutation();
   const revokeMutation = useRevokeSignatureMutation();
-  const downloadSignedPdf = useDownloadSignedPrescriptionPdfMutation();
 
   const openSignatureModal = (id: string) => {
     setSignaturePrescriptionId(id);

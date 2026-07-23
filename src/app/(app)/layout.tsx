@@ -593,6 +593,13 @@ function SidebarNav({
       collapsed && "justify-center px-2",
     );
 
+  // Divisor reto e discreto ENTRE opções consecutivas (não uma borda no próprio
+  // item, que herdava o rounded-sm e virava um arco em vez de linha reta).
+  // Some sozinho antes do 1º item de cada lista, então nunca "separa o nada".
+  const ItemDivider = () => (
+    <div className={cn("mx-3 h-px", medical ? "bg-white/8" : "bg-border")} />
+  );
+
   // filtra seções e itens por permissão
   const visibleSections = NAV_SECTIONS.map((section) => {
     const visibleItems = section.items.filter((item) => {
@@ -653,21 +660,34 @@ function SidebarNav({
         <nav className="flex flex-col px-4 pt-10 pb-10 [padding-bottom:calc(2.5rem+env(safe-area-inset-bottom))]">
           {visibleSections.map((section, si) => (
             <div key={section.sectionKey}>
-              {/* separador antes do bloco superadmin/configurações (só uma vez, mesmo se superadmin estiver oculto) */}
+              {/* separador antes do bloco superadmin/configurações (só uma vez, mesmo se superadmin estiver oculto).
+                  Leva o rótulo "Admin" em vez de duplicar linha com o divisor entre itens. */}
               {BOTTOM_SECTION_KEYS.has(section.sectionKey) &&
                 !BOTTOM_SECTION_KEYS.has(
                   visibleSections[si - 1]?.sectionKey ?? "",
                 ) && (
-                <div
-                  className={cn(
-                    "mx-3 my-2 border-t",
-                    medical ? "border-white/10" : "border-border",
+                <div className="mx-3 my-2 flex items-center gap-2">
+                  {!collapsed && (
+                    <span
+                      className={cn(
+                        "text-[10px] font-semibold tracking-wide uppercase",
+                        medical ? "text-white/40" : "text-muted-foreground/60",
+                      )}
+                    >
+                      Admin
+                    </span>
                   )}
-                />
+                  <div
+                    className={cn(
+                      "h-px flex-1",
+                      medical ? "bg-white/10" : "bg-border",
+                    )}
+                  />
+                </div>
               )}
 
               <div className="flex flex-col">
-                {section.items.map((item) => {
+                {section.items.map((item, itemIdx) => {
                   if (item.type === "group") {
                     const isOpen = openGroups.has(item.key);
                     const groupActive =
@@ -678,7 +698,9 @@ function SidebarNav({
                     );
 
                     return (
-                      <div key={item.key} className="my-1">
+                      <React.Fragment key={item.key}>
+                        {itemIdx > 0 && <ItemDivider />}
+                      <div className="my-1">
                         {/* cabeçalho do grupo */}
                         <button
                           type="button"
@@ -721,52 +743,57 @@ function SidebarNav({
                                 : "max-h-0 opacity-0 pointer-events-none",
                             )}
                           >
-                            {visibleChildren.map((child) => (
-                              <Link
-                                key={child.key}
-                                href={child.href}
-                                onClick={() => onNavigate?.()}
-                                className={linkClass(
-                                  activeKey === child.key,
-                                  true,
-                                )}
-                              >
-                                <child.icon className="size-3.5 shrink-0 stroke-[1.5]" />
-                                <span className="flex-1">{t(child.labelKey)}</span>
-                                {isNavItemLocked(child.key) && (
-                                  <Lock className="size-3 shrink-0 opacity-60" />
-                                )}
-                              </Link>
+                            {visibleChildren.map((child, childIdx) => (
+                              <React.Fragment key={child.key}>
+                                {childIdx > 0 && <ItemDivider />}
+                                <Link
+                                  href={child.href}
+                                  onClick={() => onNavigate?.()}
+                                  className={linkClass(
+                                    activeKey === child.key,
+                                    true,
+                                  )}
+                                >
+                                  <child.icon className="size-3.5 shrink-0 stroke-[1.5]" />
+                                  <span className="flex-1">{t(child.labelKey)}</span>
+                                  {isNavItemLocked(child.key) && (
+                                    <Lock className="size-3 shrink-0 opacity-60" />
+                                  )}
+                                </Link>
+                              </React.Fragment>
                             ))}
                           </div>
                         )}
                       </div>
+                      </React.Fragment>
                     );
                   }
 
                   const Icon = item.icon;
                   const isActive = activeKey === item.key;
                   return (
-                    <Link
-                      key={item.key}
-                      href={item.href}
-                      onClick={() => onNavigate?.()}
-                      className={cn("my-1", linkClass(isActive))}
-                      title={collapsed ? t(item.labelKey) : undefined}
-                    >
-                      <Icon
-                        className={cn(
-                          "shrink-0 stroke-[1.5]",
-                          collapsed ? "size-5" : "size-5",
+                    <React.Fragment key={item.key}>
+                      {itemIdx > 0 && <ItemDivider />}
+                      <Link
+                        href={item.href}
+                        onClick={() => onNavigate?.()}
+                        className={cn("my-1", linkClass(isActive))}
+                        title={collapsed ? t(item.labelKey) : undefined}
+                      >
+                        <Icon
+                          className={cn(
+                            "shrink-0 stroke-[1.5]",
+                            collapsed ? "size-5" : "size-5",
+                          )}
+                        />
+                        {!collapsed && (
+                          <span className="flex-1 text-[12px]">{t(item.labelKey)}</span>
                         )}
-                      />
-                      {!collapsed && (
-                        <span className="flex-1 text-[12px]">{t(item.labelKey)}</span>
-                      )}
-                      {!collapsed && isNavItemLocked(item.key) && (
-                        <Lock className="size-3 shrink-0 opacity-60" />
-                      )}
-                    </Link>
+                        {!collapsed && isNavItemLocked(item.key) && (
+                          <Lock className="size-3 shrink-0 opacity-60" />
+                        )}
+                      </Link>
+                    </React.Fragment>
                   );
                 })}
               </div>

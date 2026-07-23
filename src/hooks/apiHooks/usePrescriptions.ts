@@ -73,6 +73,20 @@ export function useSignPrescriptionMutation() {
   });
 }
 
+/**
+ * Busca pontual (fora de hook) do status de assinatura — usada pelo preview/"olho" do PDF na
+ * listagem para decidir se mostra o PDF assinado (3 vias) ou o rascunho não assinado. Retorna
+ * `null` quando ainda não há assinatura (404) em vez de propagar o erro.
+ */
+export async function fetchPrescriptionSignatureStatus(id: string): Promise<PrescriptionSignature | null> {
+  try {
+    const { data } = await api.get(`/prescriptions/${id}/signature`);
+    return data as PrescriptionSignature;
+  } catch {
+    return null;
+  }
+}
+
 /** Status atual da assinatura de uma prescrição — busca sob demanda (evita N+1 na listagem). */
 export function useSignatureStatusQuery(id: string | null, enabled: boolean) {
   return useQuery({

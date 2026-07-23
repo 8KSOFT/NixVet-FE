@@ -178,9 +178,9 @@ export default function LoginPage() {
         <div className="relative z-10 flex w-full flex-col items-start gap-6 sm:mx-auto sm:h-fit sm:w-fit sm:max-w-lg sm:items-start sm:justify-between sm:gap-2">
           <div className="sm:mb-8">
             {brandingLoading ? (
-              <div className="flex items-start gap-2">
+              <div className="flex items-end gap-2">
                 <Skeleton className="h-10 w-10 rounded-full" />
-                <div className="flex items-center">
+                <div className="flex items-center h-7">
                   <Skeleton className="h-5 w-36 rounded" />
                 </div>
               </div>

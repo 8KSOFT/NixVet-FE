@@ -4,7 +4,6 @@ import React, { useMemo, useState } from 'react';
 import { Plus, Package, ShoppingCart, Trash2, Pencil, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { DashboardCreateFormDialog } from '@/components/dashboard-create-form-dialog';
 import {
@@ -236,190 +235,83 @@ export default function ProdutosPage() {
         </Button>
       </div>
 
-      <Card>
-        <CardContent className="pt-6">
-          {loading ? (
-            <div className="space-y-2">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Skeleton key={i} className="h-10 w-full" />
-              ))}
+      <div>
+        {loading ? (
+          <div className="space-y-2">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="h-10 w-full" />
+            ))}
+          </div>
+        ) : tab === 'products' ? (
+          products.length === 0 ? (
+            <div className="rounded-lg border border-gray-300 bg-white py-8 text-center text-sm text-slate-500">
+              Nenhum produto cadastrado.
             </div>
-          ) : tab === 'products' ? (
-            products.length === 0 ? (
-              <p className="py-8 text-center text-sm text-muted-foreground">Nenhum produto cadastrado.</p>
-            ) : (
-              <>
-                {/* Desktop / tablet: tabela */}
-                <div className="hidden overflow-x-auto md:block">
-                  <Table className="min-w-full border-collapse bg-white text-sm">
-                    <TableHeader>
-                      <TableRow className="border-b border-gray-300 h-15">
-                        <TableHead>Produto</TableHead>
-                        <TableHead className="text-right">Custo</TableHead>
-                        <TableHead className="text-right">Venda</TableHead>
-                        <TableHead className="text-right">Imposto</TableHead>
-                        <TableHead className="text-right">Margem</TableHead>
-                        <TableHead className="text-right">Estoque</TableHead>
-                        <TableHead className="text-right">Ações</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {products.map((p) => (
-                        <TableRow key={p.id} className={`border-b border-gray-300 h-15${!p.active ? ' opacity-50' : ''}`}>
-                          <TableCell className="font-medium">
-                            {p.name}
-                            {p.sku ? <span className="ml-2 text-xs text-muted-foreground">{p.sku}</span> : null}
-                          </TableCell>
-                          <TableCell className="text-right tabular-nums">
-                            {p.cost_price_formatted ?? fmt(p.cost_price)}
-                          </TableCell>
-                          <TableCell className="text-right tabular-nums">
-                            {p.sale_price_formatted ?? fmt(p.sale_price)}
-                          </TableCell>
-                          <TableCell className="text-right tabular-nums">{Number(p.tax_percentage)}%</TableCell>
-                          <TableCell className="text-right tabular-nums">
-                            {p.pricing ? `${p.pricing.margin_percentage}%` : '—'}
-                          </TableCell>
-                          <TableCell className="text-right tabular-nums">{p.stock_quantity}</TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end gap-1">
-                              <Button size="icon" variant="ghost" onClick={() => openEditProduct(p)}>
-                                <Pencil className="size-4" />
-                              </Button>
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button size="icon" variant="ghost">
-                                    <Trash2 className="size-4" />
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>Remover produto</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      Tem certeza que deseja remover &quot;{p.name}&quot;? Essa ação não pode ser desfeita.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                    <AlertDialogAction
-                                      className="bg-destructive hover:bg-destructive/90"
-                                      onClick={() => handleDeleteProduct(p)}
-                                    >
-                                      Remover
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-
-                {/* Mobile: cards */}
-                <div className="space-y-3 md:hidden">
-                  {products.map((p) => (
-                    <div
-                      key={p.id}
-                      className={`rounded-lg border border-gray-300 p-4${!p.active ? ' opacity-50' : ''}`}
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <p className="truncate font-medium">{p.name}</p>
-                          {p.sku ? <p className="text-xs text-muted-foreground">{p.sku}</p> : null}
-                        </div>
-                        {!p.active && (
-                          <Badge variant="secondary" className="shrink-0">
-                            Inativo
-                          </Badge>
-                        )}
-                      </div>
-
-                      <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                        <div>
-                          <p className="text-xs text-muted-foreground">Custo</p>
-                          <p className="tabular-nums">{p.cost_price_formatted ?? fmt(p.cost_price)}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Venda</p>
-                          <p className="tabular-nums">{p.sale_price_formatted ?? fmt(p.sale_price)}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Imposto</p>
-                          <p className="tabular-nums">{Number(p.tax_percentage)}%</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Margem</p>
-                          <p className="tabular-nums">{p.pricing ? `${p.pricing.margin_percentage}%` : '—'}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Estoque</p>
-                          <p className="tabular-nums">{p.stock_quantity}</p>
-                        </div>
-                      </div>
-
-                      <div className="mt-3 flex justify-end gap-1 border-t border-gray-200 pt-2">
-                        <Button size="icon" variant="ghost" onClick={() => openEditProduct(p)}>
-                          <Pencil className="size-4" />
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button size="icon" variant="ghost">
-                              <Trash2 className="size-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Remover produto</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Tem certeza que deseja remover &quot;{p.name}&quot;? Essa ação não pode ser desfeita.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction
-                                className="bg-destructive hover:bg-destructive/90"
-                                onClick={() => handleDeleteProduct(p)}
-                              >
-                                Remover
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )
-          ) : sales.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">Nenhuma venda registrada.</p>
           ) : (
             <>
               {/* Desktop / tablet: tabela */}
-              <div className="hidden overflow-x-auto md:block">
+              <div className="hidden overflow-x-auto rounded-lg border border-gray-300 md:block">
                 <Table className="min-w-full border-collapse bg-white text-sm">
                   <TableHeader>
                     <TableRow className="border-b border-gray-300 h-15">
-                      <TableHead>Data</TableHead>
-                      <TableHead>Itens</TableHead>
-                      <TableHead className="text-right">Bruto</TableHead>
+                      <TableHead>Produto</TableHead>
+                      <TableHead className="text-right">Custo</TableHead>
+                      <TableHead className="text-right">Venda</TableHead>
                       <TableHead className="text-right">Imposto</TableHead>
-                      <TableHead className="text-right">Total</TableHead>
+                      <TableHead className="text-right">Margem</TableHead>
+                      <TableHead className="text-right">Estoque</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {sales.map((s) => (
-                      <TableRow className="border-b border-gray-300 h-15" key={s.id}>
-                        <TableCell>{new Date(s.sold_at).toLocaleString('pt-BR')}</TableCell>
-                        <TableCell className="max-w-[320px] truncate">
-                          {(s.items ?? []).map((i) => `${i.quantity}× ${i.product_name}`).join(', ')}
+                    {products.map((p) => (
+                      <TableRow key={p.id} className={`border-b border-gray-300 h-15${!p.active ? ' opacity-50' : ''}`}>
+                        <TableCell className="font-medium">
+                          {p.name}
+                          {p.sku ? <span className="ml-2 text-xs text-muted-foreground">{p.sku}</span> : null}
                         </TableCell>
-                        <TableCell className="text-right tabular-nums">{fmt(s.total_gross)}</TableCell>
-                        <TableCell className="text-right tabular-nums">{fmt(s.total_tax)}</TableCell>
-                        <TableCell className="text-right font-semibold tabular-nums">{fmt(s.total_amount)}</TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {p.cost_price_formatted ?? fmt(p.cost_price)}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {p.sale_price_formatted ?? fmt(p.sale_price)}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">{Number(p.tax_percentage)}%</TableCell>
+                        <TableCell className="text-right tabular-nums">
+                          {p.pricing ? `${p.pricing.margin_percentage}%` : '—'}
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums">{p.stock_quantity}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1">
+                            <Button size="icon" variant="ghost" onClick={() => openEditProduct(p)}>
+                              <Pencil className="size-4" />
+                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button size="icon" variant="ghost">
+                                  <Trash2 className="size-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Remover produto</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Tem certeza que deseja remover &quot;{p.name}&quot;? Essa ação não pode ser desfeita.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    className="bg-destructive hover:bg-destructive/90"
+                                    onClick={() => handleDeleteProduct(p)}
+                                  >
+                                    Remover
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -428,26 +320,135 @@ export default function ProdutosPage() {
 
               {/* Mobile: cards */}
               <div className="space-y-3 md:hidden">
-                {sales.map((s) => (
-                  <div key={s.id} className="rounded-lg border border-gray-300 p-4 text-sm">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-medium">{new Date(s.sold_at).toLocaleString('pt-BR')}</span>
-                      <span className="font-semibold tabular-nums">{fmt(s.total_amount)}</span>
+                {products.map((p) => (
+                  <div
+                    key={p.id}
+                    className={`rounded-lg border border-gray-300 bg-white p-4${!p.active ? ' opacity-50' : ''}`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="truncate font-medium">{p.name}</p>
+                        {p.sku ? <p className="text-xs text-muted-foreground">{p.sku}</p> : null}
+                      </div>
+                      {!p.active && (
+                        <Badge variant="secondary" className="shrink-0">
+                          Inativo
+                        </Badge>
+                      )}
                     </div>
-                    <p className="mt-1 truncate text-xs text-muted-foreground">
-                      {(s.items ?? []).map((i) => `${i.quantity}× ${i.product_name}`).join(', ')}
-                    </p>
-                    <div className="mt-2 flex justify-between border-t border-gray-200 pt-2 text-xs text-muted-foreground">
-                      <span>Bruto: {fmt(s.total_gross)}</span>
-                      <span>Imposto: {fmt(s.total_tax)}</span>
+
+                    <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                      <div>
+                        <p className="text-xs text-muted-foreground">Custo</p>
+                        <p className="tabular-nums">{p.cost_price_formatted ?? fmt(p.cost_price)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Venda</p>
+                        <p className="tabular-nums">{p.sale_price_formatted ?? fmt(p.sale_price)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Imposto</p>
+                        <p className="tabular-nums">{Number(p.tax_percentage)}%</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Margem</p>
+                        <p className="tabular-nums">{p.pricing ? `${p.pricing.margin_percentage}%` : '—'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Estoque</p>
+                        <p className="tabular-nums">{p.stock_quantity}</p>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 flex justify-end gap-1 border-t border-gray-200 pt-2">
+                      <Button size="icon" variant="ghost" onClick={() => openEditProduct(p)}>
+                        <Pencil className="size-4" />
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button size="icon" variant="ghost">
+                            <Trash2 className="size-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Remover produto</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Tem certeza que deseja remover &quot;{p.name}&quot;? Essa ação não pode ser desfeita.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction
+                              className="bg-destructive hover:bg-destructive/90"
+                              onClick={() => handleDeleteProduct(p)}
+                            >
+                              Remover
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   </div>
                 ))}
               </div>
             </>
-          )}
-        </CardContent>
-      </Card>
+          )
+        ) : sales.length === 0 ? (
+          <div className="rounded-lg border border-gray-300 bg-white py-8 text-center text-sm text-slate-500">
+            Nenhuma venda registrada.
+          </div>
+        ) : (
+          <>
+            {/* Desktop / tablet: tabela */}
+            <div className="hidden overflow-x-auto rounded-lg border border-gray-300 md:block">
+              <Table className="min-w-full border-collapse bg-white text-sm">
+                <TableHeader>
+                  <TableRow className="border-b border-gray-300 h-15">
+                    <TableHead>Data</TableHead>
+                    <TableHead>Itens</TableHead>
+                    <TableHead className="text-right">Bruto</TableHead>
+                    <TableHead className="text-right">Imposto</TableHead>
+                    <TableHead className="text-right">Total</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {sales.map((s) => (
+                    <TableRow className="border-b border-gray-300 h-15" key={s.id}>
+                      <TableCell>{new Date(s.sold_at).toLocaleString('pt-BR')}</TableCell>
+                      <TableCell className="max-w-[320px] truncate">
+                        {(s.items ?? []).map((i) => `${i.quantity}× ${i.product_name}`).join(', ')}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">{fmt(s.total_gross)}</TableCell>
+                      <TableCell className="text-right tabular-nums">{fmt(s.total_tax)}</TableCell>
+                      <TableCell className="text-right font-semibold tabular-nums">{fmt(s.total_amount)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Mobile: cards */}
+            <div className="space-y-3 md:hidden">
+              {sales.map((s) => (
+                <div key={s.id} className="rounded-lg border border-gray-300 bg-white p-4 text-sm">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-medium">{new Date(s.sold_at).toLocaleString('pt-BR')}</span>
+                    <span className="font-semibold tabular-nums">{fmt(s.total_amount)}</span>
+                  </div>
+                  <p className="mt-1 truncate text-xs text-muted-foreground">
+                    {(s.items ?? []).map((i) => `${i.quantity}× ${i.product_name}`).join(', ')}
+                  </p>
+                  <div className="mt-2 flex justify-between border-t border-gray-200 pt-2 text-xs text-muted-foreground">
+                    <span>Bruto: {fmt(s.total_gross)}</span>
+                    <span>Imposto: {fmt(s.total_tax)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
 
       {/* Dialog produto */}
       <DashboardCreateFormDialog
