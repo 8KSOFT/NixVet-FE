@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import type { ApiRequestError } from '@/app/types/api-error';
 import type { FollowupFormValues } from '@/app/types/exam-followup';
 import { Button } from '@/components/ui/button';
@@ -36,11 +37,24 @@ function getApiErrorMessage(error: unknown, fallbackMessage: string): string {
   return responseMessage ?? fallbackMessage;
 }
 
-export default function FollowupsPage() {
+function FollowupsContent() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [awaitingPage, setAwaitingPage] = useState(1);
   const [allPage, setAllPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const { register, handleSubmit, reset, control } = useForm<FollowupFormValues>();
+
+  // Entrada vinda do "+ Novo" (Command Palette / menu global) — abre o dialog de
+  // criação já existente e limpa o parâmetro da URL logo em seguida.
+  useEffect(() => {
+    if (searchParams?.get('create') === '1') {
+      setModalOpen(true);
+      router.replace(pathname ?? '/followups', { scroll: false });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const { data: awaitingPageData, isLoading: loadingAwaiting } = useAwaitingFollowupsQuery(awaitingPage);
   const { data: allPageData, isLoading: loadingAll } = useFollowupsQuery(allPage);
@@ -387,5 +401,13 @@ export default function FollowupsPage() {
         </form>
       </DashboardCreateFormDialog>
     </div>
+  );
+}
+
+export default function FollowupsPage() {
+  return (
+    <Suspense fallback={<div className="p-6">Carregando...</div>}>
+      <FollowupsContent />
+    </Suspense>
   );
 }

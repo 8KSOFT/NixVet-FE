@@ -75,7 +75,7 @@ export function useCreatePatientMutation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (payload: PatientPayload) => {
-      const { data } = await api.post('/patients', payload);
+      const { data } = await api.post<PatientRow>('/patients', payload);
       return data;
     },
     onSuccess: () => {

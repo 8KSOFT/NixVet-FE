@@ -1,28 +1,61 @@
 'use client';
 
 import { useTranslation } from 'react-i18next';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 import { SUPPORTED_LANGUAGES, type AppLanguage } from '@/lib/i18n/resources';
 
-export default function LanguageSwitcher({ className }: { className?: string }) {
+const LANGUAGE_LABELS: Record<AppLanguage, string> = {
+  pt: 'PT',
+  en: 'EN',
+  es: 'ES',
+};
+
+interface LanguageSwitcherProps {
+  className?: string;
+  /** "subtle": translúcido, para usar sobre fundos escuros/coloridos (ex.: rodapé do drawer da sidebar). */
+  variant?: 'default' | 'subtle';
+}
+
+export default function LanguageSwitcher({ className, variant = 'default' }: LanguageSwitcherProps) {
   const { i18n, t } = useTranslation('common');
   const currentLang = ((i18n.language || 'pt').split('-')[0]) as AppLanguage;
+  const subtle = variant === 'subtle';
 
   return (
-    <Select
-      value={currentLang}
-      onValueChange={(v) => void i18n.changeLanguage(v)}
+    <div
+      role="radiogroup"
+      aria-label={t('language.label')}
+      className={cn(
+        'inline-flex items-center gap-0.5 rounded-full p-0.5',
+        subtle ? 'bg-white/5' : 'border border-border bg-muted',
+        className,
+      )}
     >
-      <SelectTrigger className={`h-8 w-[130px] text-xs ${className ?? ''}`} aria-label={t('language.label')}>
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        {SUPPORTED_LANGUAGES.map((code) => (
-          <SelectItem key={code} value={code} className="text-xs">
-            {t(`language.${code}`)}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+      {SUPPORTED_LANGUAGES.map((code) => {
+        const active = code === currentLang;
+        return (
+          <button
+            key={code}
+            type="button"
+            role="radio"
+            aria-checked={active}
+            title={t(`language.${code}`)}
+            onClick={() => void i18n.changeLanguage(code)}
+            className={cn(
+              'rounded-full px-2.5 py-1 text-xs font-medium transition-colors duration-150',
+              subtle
+                ? active
+                  ? 'bg-white/15 text-white'
+                  : 'text-white/50 hover:text-white/80'
+                : active
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground',
+            )}
+          >
+            {LANGUAGE_LABELS[code]}
+          </button>
+        );
+      })}
+    </div>
   );
 }

@@ -19,6 +19,9 @@ import { MenuIconsColored } from "@/components/MenuIconsColored";
 import { useDashboardMetricsQuery } from "@/hooks/apiHooks/useDashboardMetrics";
 import { useConsultationsQuery } from "@/hooks/apiHooks/useConsultations";
 import { usePatientsListQuery } from "@/hooks/apiHooks/usePatients";
+import { useClinicalTasksQuery } from "@/hooks/apiHooks/useClinicalTasks";
+import { Badge } from "@/components/ui/badge";
+import { ListChecks } from "lucide-react";
 
 export default function DashboardPage() {
   const { t, i18n } = useTranslation("common");
@@ -32,7 +35,20 @@ export default function DashboardPage() {
   const { data: metrics, isLoading: loadingMetrics } = useDashboardMetricsQuery();
   const { data: consultations = [], isLoading: loadingConsultations } = useConsultationsQuery();
   const { data: patients = [], isLoading: loadingPatients } = usePatientsListQuery();
+  const { data: tasksPage } = useClinicalTasksQuery(1);
   const loading = loadingMetrics || loadingConsultations || loadingPatients;
+
+  const pendingTasks = useMemo(() => {
+    const items = tasksPage?.items ?? [];
+    return [...items]
+      .filter((task) => task.status !== "completed")
+      .sort((a, b) => {
+        if (!a.due_date) return 1;
+        if (!b.due_date) return -1;
+        return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+      })
+      .slice(0, 5);
+  }, [tasksPage]);
 
   // Compara em data LOCAL (BRT), não UTC: toISOString() desloca o dia
   // perto da virada e fazia a tabela "Atendimentos de hoje" ficar vazia.
@@ -114,6 +130,7 @@ export default function DashboardPage() {
   const statCards = useMemo(
     () => [
       {
+        key: "today",
         label: t("dashboardHome.statsToday"),
         value: stats.appointmentsToday,
         icon: MenuIconsColored.atendimentos,
@@ -123,6 +140,7 @@ export default function DashboardPage() {
         href: undefined,
       },
       {
+        key: "newPatients",
         label: t("dashboardHome.statsNewPatients"),
         value: stats.newPatientsMonth,
         icon: MenuIconsColored.pacientes,
@@ -132,6 +150,7 @@ export default function DashboardPage() {
         href: undefined,
       },
       {
+        key: "revenue",
         label: t("dashboardHome.statsRevenue"),
         value: `${t("dashboardHome.currencyPrefix")}${stats.revenueMonth.toFixed(2)}`,
         icon: MenuIconsColored.receitaMes,
@@ -141,6 +160,7 @@ export default function DashboardPage() {
         href: undefined,
       },
       {
+        key: "cancelled",
         label: t("dashboardHome.statsCancelled"),
         value: stats.cancelledThisMonth,
         icon: MenuIconsColored.canceladas,
@@ -150,6 +170,7 @@ export default function DashboardPage() {
         href: undefined,
       },
       {
+        key: "vaccines",
         label: t("dashboardHome.statsVaccines"),
         value: stats.vaccinesDue,
         icon: MenuIconsColored.vacinas,
@@ -159,6 +180,7 @@ export default function DashboardPage() {
         href: "/vaccines",
       },
       {
+        key: "exams",
         label: t("dashboardHome.statsExams"),
         value: stats.examsAwaitingFollowup,
         icon: MenuIconsColored.exames,
@@ -168,6 +190,7 @@ export default function DashboardPage() {
         href: "/followups",
       },
       {
+        key: "whatsapp",
         label: t("dashboardHome.statsWhatsApp"),
         value: stats.unansweredConversations,
         icon: MenuIconsColored.naoRespondidas,
@@ -177,9 +200,10 @@ export default function DashboardPage() {
         href: "/whatsapp",
       },
       {
+        key: "awaitingTutor",
         label: t("dashboardHome.statsAwaitingTutor"),
         value: stats.awaitingTutorConversations,
-        icon: MenuIconsColored.naoRespondidas,
+        icon: MenuIconsColored.aguardandoTutor,
         color: "text-sky-600",
         bg: "bg-sky-50",
         valueColor: "text-sky-700",
@@ -201,7 +225,52 @@ export default function DashboardPage() {
         {t("dashboardHome.title")}
       </h2>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {/* Mobile: todas as métricas, cartão compacto (ícone/número/label empilhado), altura padrão */}
+      <div className="grid grid-cols-2 gap-3 sm:hidden">
+        {statCards.map((card) => {
+          const Icon = card.icon;
+          const cardContent = (
+            <Card
+              className={cn(
+                "m-0 h-full w-full p-0 rounded-xl border border-gray-300",
+                card.href && "cursor-pointer hover:shadow-md",
+              )}
+            >
+              <CardContent className="flex h-full flex-col gap-2 p-3">
+                <div className="h-8 w-8 shrink-0">
+                  <Icon />
+                </div>
+                {loading ? (
+                  <div className="space-y-2">
+                    <Skeleton className="h-6 w-10" />
+                    <Skeleton className="h-3 w-20" />
+                  </div>
+                ) : (
+                  <div>
+                    <p className="font-extrabold font-['InterDoFigma'] text-2xl leading-none">
+                      {card.value}
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">{card.label}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          );
+
+          return card.href ? (
+            <Link key={card.key} href={card.href} className="block h-full">
+              {cardContent}
+            </Link>
+          ) : (
+            <div key={card.key} className="h-full">
+              {cardContent}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Tablet / desktop: todas as métricas, cartão completo */}
+      <div className="hidden gap-4 sm:grid sm:grid-cols-2 lg:grid-cols-4">
         {statCards.map((card) => {
           const Icon = card.icon;
           const cardContent = (
@@ -213,7 +282,7 @@ export default function DashboardPage() {
             >
               <CardContent className="relative flex items-center m-0 p-4 justify-between h-full rounded-xl">
                 <div className="absolute top-2 right-2 flex items-center justify-center w-11 h-11 rounded-[9px]">
-                  <Icon className={cn("h-11 w-11", card.color)} />
+                  <Icon className="h-11 w-11" />
                 </div>
                 {loading ? (
                   <div className="space-y-3">
@@ -237,22 +306,25 @@ export default function DashboardPage() {
           );
 
           return card.href ? (
-            <Link key={card.label} href={card.href} className="w-full">
+            <Link key={card.key} href={card.href} className="w-full">
               {cardContent}
             </Link>
           ) : (
-            <div key={card.label} className="w-full">
+            <div key={card.key} className="w-full">
               {cardContent}
             </div>
           );
         })}
       </div>
 
-      <div className="overflow-x-auto">
-        <div className="px-2 mb-8 mt-4">
+      <div>
+        <div className="px-2 mb-8 mt-4 flex items-center justify-between">
           <h3 className="text-[20px] font-bold text-slate-900">
             {t("dashboardHome.tableTitle")}
           </h3>
+          <Link href="/calendar" className="text-sm font-medium text-primary hover:underline">
+            Ver agenda
+          </Link>
         </div>
         <div className="p-0">
           {loading ? (
@@ -261,69 +333,103 @@ export default function DashboardPage() {
                 <Skeleton key={i} className="h-10 w-full" />
               ))}
             </div>
+          ) : recentAppointments.length === 0 ? (
+            <div className="rounded-lg border border-gray-300 bg-white py-8 text-center text-sm text-slate-500">
+              {t("dashboardHome.noAppointments", "Nenhuma consulta hoje")}
+            </div>
           ) : (
-            <div className="overflow-x-auto border border-gray-300 rounded-lg">
-              <Table className="min-w-full border-collapse bg-white text-sm">
-                <TableHeader>
-                  <TableRow className="border-b border-gray-300 h-15">
-                    <TableHead>
-                      {t("dashboardHome.colDate")}
-                    </TableHead>
-                    <TableHead>
-                      {t("dashboardHome.colTime")}
-                    </TableHead>
-                    <TableHead>
-                      {t("dashboardHome.colPatient")}
-                    </TableHead>
-                    <TableHead>
-                      {t("dashboardHome.colVet")}
-                    </TableHead>
-                    <TableHead>
-                      {t("dashboardHome.colStatus")}
-                    </TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {recentAppointments.length === 0 ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={5}
-                        className="border-t border-slate-200 py-8 text-center text-sm text-slate-500"
-                      >
-                        {t(
-                          "dashboardHome.noAppointments",
-                          "Nenhuma consulta hoje",
-                        )}
-                      </TableCell>
+            <>
+              {/* Desktop / tablet: tabela */}
+              <div className="hidden overflow-x-auto rounded-lg border border-gray-300 md:block">
+                <Table className="min-w-full border-collapse bg-white text-sm">
+                  <TableHeader>
+                    <TableRow className="border-b border-gray-300 h-15">
+                      <TableHead>{t("dashboardHome.colDate")}</TableHead>
+                      <TableHead>{t("dashboardHome.colTime")}</TableHead>
+                      <TableHead>{t("dashboardHome.colPatient")}</TableHead>
+                      <TableHead>{t("dashboardHome.colVet")}</TableHead>
+                      <TableHead>{t("dashboardHome.colStatus")}</TableHead>
                     </TableRow>
-                  ) : (
-                    recentAppointments.map((row) => (
+                  </TableHeader>
+                  <TableBody>
+                    {recentAppointments.map((row) => (
                       <TableRow className="border-b border-gray-300 h-15" key={row.key}>
+                        <TableCell>{row.date}</TableCell>
+                        <TableCell>{row.time}</TableCell>
+                        <TableCell className="font-medium">{row.patient}</TableCell>
+                        <TableCell>{row.veterinarian}</TableCell>
                         <TableCell>
-                          {row.date}
-                        </TableCell>
-                        <TableCell>
-                          {row.time}
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          {row.patient}
-                        </TableCell>
-                        <TableCell>
-                          {row.veterinarian}
-                        </TableCell>
-                        <TableCell>
-                          <span className={statusTextClass(row.statusKey)}>
-                            {row.status}
-                          </span>
+                          <span className={statusTextClass(row.statusKey)}>{row.status}</span>
                         </TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Mobile: cards */}
+              <div className="space-y-3 md:hidden">
+                {recentAppointments.map((row) => (
+                  <div key={row.key} className="rounded-lg border border-gray-300 bg-white p-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="truncate font-medium">{row.patient}</p>
+                        <p className="text-xs text-muted-foreground">{row.veterinarian}</p>
+                      </div>
+                      <span className={cn("shrink-0 text-xs font-medium", statusTextClass(row.statusKey))}>
+                        {row.status}
+                      </span>
+                    </div>
+                    <div className="mt-3 flex items-center gap-3 border-t border-gray-200 pt-2 text-xs text-muted-foreground">
+                      <span>{row.date}</span>
+                      <span>{row.time}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
         </div>
+      </div>
+
+      <div>
+        <div className="px-2 mb-4 flex items-center justify-between">
+          <h3 className="text-[20px] font-bold text-slate-900">Tarefas pendentes</h3>
+          <Link href="/tasks" className="text-sm font-medium text-primary hover:underline">
+            Ver todas
+          </Link>
+        </div>
+        {loading ? (
+          <div className="space-y-2">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="h-14 w-full" />
+            ))}
+          </div>
+        ) : pendingTasks.length === 0 ? (
+          <div className="rounded-lg border border-gray-300 bg-white py-8 text-center text-sm text-slate-500">
+            Nenhuma tarefa pendente.
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {pendingTasks.map((task) => (
+              <div
+                key={task.id}
+                className="flex items-center gap-3 rounded-lg border border-gray-300 bg-white px-4 py-3"
+              >
+                <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                  <ListChecks className="size-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-slate-900">{task.task_type}</p>
+                  <p className="truncate text-xs text-muted-foreground">{task.Patient?.name ?? t("dashboardHome.na")}</p>
+                </div>
+                <Badge variant="secondary" className="shrink-0">
+                  {task.due_date ? new Date(task.due_date).toLocaleDateString(locale) : "Sem prazo"}
+                </Badge>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useEffect, useState, useMemo, useRef } from 'react';
+import React, { Suspense, useEffect, useState, useMemo, useRef } from 'react';
+import Link from 'next/link';
 import type { ApiRequestError } from '@/app/types/api-error';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
@@ -30,6 +31,7 @@ import {
   CheckCircle2,
   CreditCard,
   CalendarRange,
+  CalendarClock,
   X,
   PawPrint,
   ChevronDown,
@@ -37,7 +39,7 @@ import {
 } from 'lucide-react';
 import { formatTimeBr, formatConsultationWeekdayDate, formatTimeRangeBr } from '@/lib/datetime-br';
 import { useTranslation } from 'react-i18next';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import type { AvailabilitySlot, Consultation } from '@/app/types/consultation';
 import type { GoogleEvent } from '@/app/types/google-integration';
 import {
@@ -54,6 +56,7 @@ import { useVeterinariansQuery } from '@/hooks/apiHooks/useUsers';
 import { useResourcesListQuery } from '@/hooks/apiHooks/useResources';
 import { useAppointmentTypesQuery } from '@/hooks/apiHooks/useAppointmentTypes';
 import { useGoogleStatusQuery, useGoogleEventsQuery } from '@/hooks/apiHooks/useGoogleIntegration';
+import { useAwaitingFollowupsQuery } from '@/hooks/apiHooks/useExamFollowups';
 import { useSummarizeMutation, useStructureObservationsMutation } from '@/hooks/apiHooks/useAi';
 
 function getApiErrorMessage(error: unknown, fallbackMessage: string): string {
@@ -153,9 +156,11 @@ function SlotSelect({
   );
 }
 
-export default function CalendarPage() {
+function CalendarContent() {
   const { t } = useTranslation('common');
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Dayjs>(dayjs());
   const [detailsVisible, setDetailsVisible] = useState(false);
@@ -170,6 +175,8 @@ export default function CalendarPage() {
   const { data: veterinarians = [] } = useVeterinariansQuery();
   const { data: resources = [] } = useResourcesListQuery();
   const { data: appointmentTypes = [] } = useAppointmentTypesQuery();
+  const { data: awaitingFollowups } = useAwaitingFollowupsQuery(1);
+  const awaitingFollowupsCount = awaitingFollowups?.total ?? 0;
 
   const { data: googleStatus } = useGoogleStatusQuery();
   const googleConnected = !!googleStatus?.connected;
@@ -367,6 +374,16 @@ export default function CalendarPage() {
     setNewTutorId('');
     setModalVisible(true);
   };
+
+  // Entrada vinda do "+ Novo" (Command Palette / menu global) — abre o dialog de
+  // criação já existente e limpa o parâmetro da URL logo em seguida.
+  useEffect(() => {
+    if (searchParams?.get('create') === '1') {
+      handleAdd();
+      router.replace(pathname ?? '/calendar', { scroll: false });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const handleCreatePatientAndSubmit = async () => {
     if (!newPet.name || !newPet.species || !newPet.breed || !newPet.sex || !newPet.age || !newPet.weight) {
@@ -914,6 +931,19 @@ export default function CalendarPage() {
           </Button>
         </div>
       </div>
+
+      {awaitingFollowupsCount > 0 && (
+        <Link
+          href="/followups"
+          className="mb-3 flex items-center justify-between gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-800 transition-colors hover:bg-amber-100"
+        >
+          <span className="flex items-center gap-2">
+            <CalendarClock className="size-4 shrink-0" />
+            {awaitingFollowupsCount} acompanhamento{awaitingFollowupsCount > 1 ? 's' : ''} aguardando retorno
+          </span>
+          <ChevronRight className="size-4 shrink-0" />
+        </Link>
+      )}
 
       {googleConnected && (
         <div className="space-y-2 mb-3">
@@ -1645,5 +1675,13 @@ export default function CalendarPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+export default function CalendarPage() {
+  return (
+    <Suspense fallback={<div className="p-6">Carregando...</div>}>
+      <CalendarContent />
+    </Suspense>
   );
 }

@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import type { ApiRequestError } from '@/app/types/api-error';
 import { Button } from '@/components/ui/button';
 import { DashboardCreateFormDialog } from '@/components/dashboard-create-form-dialog';
@@ -39,10 +40,23 @@ function getApiErrorMessage(error: unknown, fallbackMessage: string): string {
   return responseMessage ?? typedError.message ?? fallbackMessage;
 }
 
-export default function TasksPage() {
+function TasksContent() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [listPage, setListPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const { register, handleSubmit, reset, control } = useForm<TaskFormValues>();
+
+  // Entrada vinda do "+ Novo" (Command Palette / menu global) — abre o dialog de
+  // criação já existente e limpa o parâmetro da URL logo em seguida.
+  useEffect(() => {
+    if (searchParams?.get('create') === '1') {
+      setModalOpen(true);
+      router.replace(pathname ?? '/tasks', { scroll: false });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const { data: tasksPage, isLoading: loading } = useClinicalTasksQuery(listPage);
   const list = tasksPage?.items ?? [];
@@ -234,5 +248,13 @@ export default function TasksPage() {
         </form>
       </DashboardCreateFormDialog>
     </div>
+  );
+}
+
+export default function TasksPage() {
+  return (
+    <Suspense fallback={<div className="p-6">Carregando...</div>}>
+      <TasksContent />
+    </Suspense>
   );
 }

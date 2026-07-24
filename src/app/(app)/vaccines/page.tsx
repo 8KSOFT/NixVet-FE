@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import type { ApiRequestError } from '@/app/types/api-error';
 import { Button } from '@/components/ui/button';
 import { DashboardCreateFormDialog } from '@/components/dashboard-create-form-dialog';
@@ -108,11 +109,24 @@ function ReminderTable({ data, loading }: { data: VaccineReminder[]; loading: bo
   );
 }
 
-export default function VaccinesPage() {
+function VaccinesContent() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [duePage, setDuePage] = useState(1);
   const [allPage, setAllPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const { register, handleSubmit, reset, control } = useForm<VaccineFormValues>();
+
+  // Entrada vinda do "+ Novo" (Command Palette / menu global) — abre o dialog de
+  // criação já existente e limpa o parâmetro da URL logo em seguida.
+  useEffect(() => {
+    if (searchParams?.get('create') === '1') {
+      setModalOpen(true);
+      router.replace(pathname ?? '/vaccines', { scroll: false });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const { data: allPageData, isLoading: loadingAll } = useVaccineRemindersQuery(allPage);
   const { data: duePageData, isLoading: loadingDue } = useDueVaccineRemindersQuery(duePage, 30);
@@ -234,5 +248,13 @@ export default function VaccinesPage() {
         </form>
       </DashboardCreateFormDialog>
     </div>
+  );
+}
+
+export default function VaccinesPage() {
+  return (
+    <Suspense fallback={<div className="p-6">Carregando...</div>}>
+      <VaccinesContent />
+    </Suspense>
   );
 }

@@ -2,13 +2,14 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/axios';
-import { listQueryParams, parseListResponse } from '@/lib/pagination';
+import { fetchAllListPages, listQueryParams, parseListResponse } from '@/lib/pagination';
 import type { ExamFollowup, FollowupFormValues } from '@/app/types/exam-followup';
 
 export const examFollowupKeys = {
   all: ['exam-followups'] as const,
   lists: () => [...examFollowupKeys.all, 'list'] as const,
   list: (page: number) => [...examFollowupKeys.lists(), { page }] as const,
+  allFlat: () => [...examFollowupKeys.all, 'all'] as const,
   awaiting: (page: number) => [...examFollowupKeys.all, 'awaiting', { page }] as const,
 };
 
@@ -31,6 +32,14 @@ export function useFollowupsQuery(page: number) {
       return parseListResponse<ExamFollowup>(data, page);
     },
     placeholderData: keepPreviousData,
+  });
+}
+
+/** Lista completa de acompanhamentos (todas as páginas) — usada para filtrar por paciente no Prontuário. */
+export function useFollowupsListQuery() {
+  return useQuery({
+    queryKey: examFollowupKeys.allFlat(),
+    queryFn: () => fetchAllListPages<ExamFollowup>('/exam-followups'),
   });
 }
 

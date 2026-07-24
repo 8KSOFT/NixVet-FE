@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -24,9 +24,11 @@ import {
   BadgeDollarSign,
   FileText,
   ShieldCheck,
+  Package,
+  Users,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { getStoredUserRole } from '@/lib/role-permissions';
+import { getStoredMenuKeys, getStoredUserRole, menuKeysForRole } from '@/lib/role-permissions';
 
 type NavSection = {
   label: string;
@@ -85,6 +87,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
   const role = (getStoredUserRole() || '').toLowerCase();
   const isSuperAdmin = role === 'superadmin';
   const canManageTerms = ['admin', 'manager', 'superadmin'].includes(role);
+  const menuAllow = new Set(isSuperAdmin ? menuKeysForRole('superadmin') : getStoredMenuKeys());
 
   // GRUPO 7 — "Termos da Clínica" visível só para admin/manager
   let sections = canManageTerms
@@ -101,6 +104,29 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
       )
     : navSections;
 
+  // Fase 2 (reestruturação de navegação): Produtos e Equipe saíram da sidebar
+  // fixa e moraram pra dentro de Configurações — cada um com sua seção, visível
+  // só se o usuário tiver a chave de RBAC correspondente (mesmas chaves
+  // 'products'/'team' já usadas em toda a checagem de menu do app).
+  const contextualSections: NavSection[] = [];
+  if (menuAllow.has('products')) {
+    contextualSections.push({
+      label: 'Estoque',
+      items: [{ key: '/settings/produtos', icon: Package, label: 'Produtos' }],
+    });
+  }
+  if (menuAllow.has('team')) {
+    contextualSections.push({
+      label: 'Equipe',
+      items: [{ key: '/settings/team', icon: Users, label: 'Equipe' }],
+    });
+  }
+  const catalogIdx = sections.findIndex((s) => s.label === 'Catálogo');
+  sections =
+    catalogIdx >= 0
+      ? [...sections.slice(0, catalogIdx + 1), ...contextualSections, ...sections.slice(catalogIdx + 1)]
+      : [...sections, ...contextualSections];
+
   // "Perfis de Acesso" (RBAC) visível para admin/manager — o catálogo de permissões em si
   // é restrito a superadmin no backend, então fica em "Plataforma" (ver platformItems).
   if (canManageTerms) {
@@ -113,6 +139,19 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
     ];
   }
 
+  // Guarda de RBAC: o redirect de /produtos e /team (next.config.mjs) roda no
+  // servidor, antes de qualquer checagem de permissão — então um usuário sem a
+  // chave 'products'/'team' que caísse aqui via URL antiga (ou digitando o link
+  // novo direto) ficaria numa tela de Configurações vazia. Manda pro dashboard.
+  useEffect(() => {
+    if (currentPathname.startsWith('/settings/produtos') && !menuAllow.has('products')) {
+      router.replace('/dashboard');
+    } else if (currentPathname.startsWith('/settings/team') && !menuAllow.has('team')) {
+      router.replace('/dashboard');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPathname]);
+
   const platformItems = isSuperAdmin
     ? [
         { key: '/superadmin/clinics', icon: Landmark, label: 'Clínicas (global)' },
@@ -124,7 +163,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
   return (
     <div className="flex flex-col gap-4 lg:flex-row lg:gap-6">
       {/* Mobile / tablet: dropdown de navegação */}
-      <div className="lg:hidden">
+      <div className="md:hidden">
         <select
           value={currentPathname}
           onChange={(e) => router.push(e.target.value)}
@@ -152,7 +191,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
       </div>
 
       {/* Desktop: sidebar completa */}
-      <div className="hidden w-56 shrink-0 lg:block">
+      <div className="hidden w-56 shrink-0 md:block">
         <nav className="flex flex-col gap-0.5 rounded-lg border border-slate-200 bg-white p-1.5">
           {platformItems.length > 0 && (
             <>

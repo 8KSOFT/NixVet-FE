@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { Suspense, useEffect, useRef, useState } from 'react';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import type { ApiRequestError } from '@/app/types/api-error';
 import type { TeamAssignableRole, TeamUserFormValues, TeamUserRow } from '@/app/types/team-user';
 import { DashboardCreateFormDialog } from '@/components/dashboard-create-form-dialog';
@@ -60,8 +61,11 @@ function getApiErrorMessage(error: unknown, fallbackMessage: string): string {
   return responseMessage ?? typedError.message ?? fallbackMessage;
 }
 
-export default function TeamPage() {
+function TeamContent() {
   const { t } = useTranslation('common');
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [listPage, setListPage] = useState(1);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -161,6 +165,16 @@ export default function TeamPage() {
     });
     setModalVisible(true);
   };
+
+  // Entrada vinda do "+ Novo" (Command Palette / menu global) — abre o dialog de
+  // criação já existente e limpa o parâmetro da URL logo em seguida.
+  useEffect(() => {
+    if (searchParams?.get('create') === '1') {
+      handleAdd();
+      router.replace(pathname ?? '/settings/team', { scroll: false });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const handleEdit = (record: TeamUserRow) => {
     setEditingId(record.id);
@@ -504,5 +518,13 @@ export default function TeamPage() {
         </form>
       </DashboardCreateFormDialog>
     </div>
+  );
+}
+
+export default function TeamPage() {
+  return (
+    <Suspense fallback={<div className="p-6">Carregando...</div>}>
+      <TeamContent />
+    </Suspense>
   );
 }

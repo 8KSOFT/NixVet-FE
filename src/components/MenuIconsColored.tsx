@@ -231,6 +231,39 @@ export const MenuIconsColored = {
       />
     </svg>
   ),
+  // Mesmo glifo de "naoRespondidas" (balão de conversa), com outra cor — usado
+  // em "Aguardando tutor responder" pra não ficar visualmente idêntico ao
+  // card de "Conversas não respondidas" logo ao lado.
+  aguardandoTutor: (props: IconProps) => (
+    <svg
+      width="100%"
+      height="100%"
+      viewBox="0 0 38 38"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        d="M0 8C0 3.58172 3.58172 0 8 0H30C34.4183 0 38 3.58172 38 8V30C38 34.4183 34.4183 38 30 38H8C3.58172 38 0 34.4183 0 30V8Z"
+        fill="#BAE6FD"
+      />
+      <path
+        d="M13 15.5H25M13 19.5H20"
+        stroke="#0369A1"
+        stroke-width="1.5"
+        stroke-miterlimit="10"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+      <path
+        d="M14 25.4302H18L22.45 28.3902C23.11 28.8302 24 28.3602 24 27.5602V25.4302C27 25.4302 29 23.4302 29 20.4302V14.4302C29 11.4302 27 9.43018 24 9.43018H14C11 9.43018 9 11.4302 9 14.4302V20.4302C9 23.4302 11 25.4302 14 25.4302Z"
+        stroke="#0369A1"
+        stroke-width="1.5"
+        stroke-miterlimit="10"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </svg>
+  ),
   agenda: (props: IconProps) => (
     <svg
       width="100%"

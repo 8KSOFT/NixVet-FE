@@ -3,9 +3,10 @@
 import type { ApiRequestError } from '@/app/types/api-error';
 import type { PatientFormValues, PatientRow } from '@/app/types/patient';
 import { useForm, Controller } from 'react-hook-form';
-import React, { useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Link from 'next/link';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 
 import { Plus, Pencil, Trash2, History } from 'lucide-react';
 import { toast } from 'sonner';
@@ -91,7 +92,7 @@ function getApiErrorMessage(error: unknown, fallbackMessage: string): string {
   return responseMessage ?? typedError.message ?? fallbackMessage;
 }
 
-export default function PatientsPage() {
+function PatientsContent() {
   const [breedSearchValue, setBreedSearchValue] = useState('');
   const [breedOpen, setBreedOpen] = useState(false);
   const [listPage, setListPage] = useState(1);
@@ -99,6 +100,9 @@ export default function PatientsPage() {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const { t } = useTranslation('common');
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const {
     control,
     handleSubmit,
@@ -155,6 +159,21 @@ export default function PatientsPage() {
     setModalVisible(true);
   };
 
+  // Entrada vinda do "+ Novo" (Command Palette / menu global): abre o dialog de
+  // criação já existente desta página, ou avisa que precisa escolher o paciente
+  // primeiro para iniciar um atendimento — e limpa o parâmetro da URL logo em
+  // seguida, pra um F5 mais tarde não reabrir o dialog sozinho.
+  useEffect(() => {
+    if (searchParams?.get('create') === '1') {
+      handleAdd();
+      router.replace(pathname ?? '/patients', { scroll: false });
+    } else if (searchParams?.get('intent') === 'start-atendimento') {
+      toast.info('Selecione o paciente para iniciar o atendimento.');
+      router.replace(pathname ?? '/patients', { scroll: false });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
   const handleEdit = (record: PatientRow) => {
     setEditingId(record.id);
     const hasTutor = !!record.tutor_id;
@@ -196,10 +215,14 @@ export default function PatientsPage() {
     try {
       if (editingId) {
         await updatePatient.mutateAsync({ id: editingId, payload });
+        setModalVisible(false);
       } else {
-        await createPatient.mutateAsync(payload);
+        const created = await createPatient.mutateAsync(payload);
+        setModalVisible(false);
+        // Fluxo de criação rápida: paciente novo já nasce com um destino —
+        // vai direto para o prontuário em vez de ficar na lista.
+        router.push(`/medical-records/prontuario/${created.id}`);
       }
-      setModalVisible(false);
     } catch (error) {
       console.error('Error saving patient:', error);
       toast.error('Erro ao salvar paciente');
@@ -719,5 +742,13 @@ export default function PatientsPage() {
         </form>
       </DashboardCreateFormDialog>
     </div>
+  );
+}
+
+export default function PatientsPage() {
+  return (
+    <Suspense fallback={<div className="p-6">Carregando...</div>}>
+      <PatientsContent />
+    </Suspense>
   );
 }

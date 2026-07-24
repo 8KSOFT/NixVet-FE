@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import type { StoredUser } from '@/app/types/exam-request';
 import { Button } from '@/components/ui/button';
 import { DashboardCreateFormDialog } from '@/components/dashboard-create-form-dialog';
@@ -34,7 +34,7 @@ import { API_PAGE_SIZE } from '@/lib/pagination';
 import { ListPagination } from '@/components/list-pagination';
 import dayjs from 'dayjs';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import type { CreatePrescriptionPayload, PrescriptionLegalModel, Prescription } from '@/app/types/prescription';
 import type { BularioItem } from '@/app/types/bulario';
 import { getApiErrorMessage } from '@/app/utils/api-error-message';
@@ -156,8 +156,10 @@ type FormValues = {
   observations?: string;
 };
 
-export default function PrescriptionsPage() {
+function PrescriptionsContent() {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [pdfPreviewOpen, setPdfPreviewOpen] = useState(false);
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
   const [listPage, setListPage] = useState(1);
@@ -234,6 +236,16 @@ export default function PrescriptionsPage() {
     setVaccineInput('');
     setModalVisible(true);
   };
+
+  // Entrada vinda do "+ Novo" (Command Palette / menu global) — abre o dialog de
+  // criação já existente e limpa o parâmetro da URL logo em seguida.
+  useEffect(() => {
+    if (searchParams?.get('create') === '1') {
+      handleAdd();
+      router.replace(pathname ?? '/prescriptions', { scroll: false });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const handlePatientChange = (patientId: string) => {
     setSelectedPatientId(patientId || null);
@@ -1570,5 +1582,13 @@ export default function PrescriptionsPage() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+export default function PrescriptionsPage() {
+  return (
+    <Suspense fallback={<div className="p-6">Carregando...</div>}>
+      <PrescriptionsContent />
+    </Suspense>
   );
 }

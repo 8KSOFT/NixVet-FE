@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { Suspense, useEffect, useMemo, useState } from 'react';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { Plus, Package, ShoppingCart, Trash2, Pencil, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -64,7 +65,10 @@ const EMPTY_FORM = {
   active: true,
 };
 
-export default function ProdutosPage() {
+function ProdutosContent() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [tab, setTab] = useState<'products' | 'sales'>('products');
 
   const { data: products = [], isLoading: loadingProducts } = useProductsQuery(true);
@@ -92,6 +96,16 @@ export default function ProdutosPage() {
     setForm({ ...EMPTY_FORM });
     setProductDialog(true);
   };
+
+  // Entrada vinda do "+ Novo" (Command Palette / menu global) — abre o dialog de
+  // criação já existente e limpa o parâmetro da URL logo em seguida.
+  useEffect(() => {
+    if (searchParams?.get('create') === '1') {
+      openNewProduct();
+      router.replace(pathname ?? '/settings/produtos', { scroll: false });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   const openEditProduct = (p: Product) => {
     setEditing(p);
@@ -658,5 +672,13 @@ export default function ProdutosPage() {
         </form>
       </DashboardCreateFormDialog>
     </div>
+  );
+}
+
+export default function ProdutosPage() {
+  return (
+    <Suspense fallback={<div className="p-6">Carregando...</div>}>
+      <ProdutosContent />
+    </Suspense>
   );
 }
