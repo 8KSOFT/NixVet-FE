@@ -241,31 +241,55 @@ export default function PrescriptionsPage() {
     setValue('prescription_date', undefined);
   };
 
-  const handleDownloadPdf = async (id: string) => {
+  const downloadBlob = (blob: Blob, filename: string) => {
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  };
+
+  // Receita (não cirurgia/vacina) sem assinatura ainda não tem um PDF "de verdade" — numerado,
+  // com QR e nas vias corretas (1/2/3 conforme o modelo legal). Em vez de baixar/mostrar o
+  // rascunho antigo de 1 via, essas ações abrem o fluxo de assinatura, que já pede pra escolher
+  // entre os 3 modelos. Cirurgia/vacina não passam pelo modelo legal, então seguem no PDF simples.
+  const handleDownloadPdf = async (record: Prescription) => {
+    if (canSign(record)) {
+      const signature = await fetchPrescriptionSignatureStatus(record.id);
+      if (signature?.status !== 'SIGNED') {
+        openSignatureModal(record.id);
+        return;
+      }
+      try {
+        downloadBlob(await downloadSignedPdf.mutateAsync(record.id), `prescricao-${record.id}.pdf`);
+      } catch {
+        toast.error('Erro ao baixar PDF assinado');
+      }
+      return;
+    }
     try {
-      const blob = await downloadPdf.mutateAsync(id);
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `prescricao-${id}.pdf`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
+      downloadBlob(await downloadPdf.mutateAsync(record.id), `prescricao-${record.id}.pdf`);
     } catch {
       toast.error('Erro ao baixar PDF');
     }
   };
 
-  // GRUPO 4 — preview do PDF sem download. Se a prescrição já estiver assinada, mostra o PDF
-  // assinado (3 vias, endpoint autenticado) em vez do rascunho não assinado.
-  const handlePreviewPdf = async (id: string) => {
+  // GRUPO 4 — preview do PDF sem download (mesma regra acima para decidir a fonte do PDF).
+  const handlePreviewPdf = async (record: Prescription) => {
+    if (canSign(record)) {
+      const signature = await fetchPrescriptionSignatureStatus(record.id);
+      if (signature?.status !== 'SIGNED') {
+        openSignatureModal(record.id);
+        return;
+      }
+    }
     setPdfPreviewOpen(true);
     try {
-      const signature = await fetchPrescriptionSignatureStatus(id);
-      const blob =
-        signature?.status === 'SIGNED'
-          ? await downloadSignedPdf.mutateAsync(id)
-          : await downloadPdf.mutateAsync(id);
+      const blob = canSign(record)
+        ? await downloadSignedPdf.mutateAsync(record.id)
+        : await downloadPdf.mutateAsync(record.id);
       const url = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
       setPdfPreviewUrl((prev) => {
         if (prev) window.URL.revokeObjectURL(prev);
@@ -534,7 +558,7 @@ export default function PrescriptionsPage() {
                           className="p-0"
                           title="Visualizar"
                           aria-label="Visualizar"
-                          onClick={() => handlePreviewPdf(record.id)}
+                          onClick={() => handlePreviewPdf(record)}
                         >
                           <Eye className="w-4 h-4" />
                         </Button>
@@ -545,7 +569,7 @@ export default function PrescriptionsPage() {
                           className="p-0"
                           title="Baixar PDF"
                           aria-label="Baixar PDF"
-                          onClick={() => handleDownloadPdf(record.id)}
+                          onClick={() => handleDownloadPdf(record)}
                         >
                           <FileText className="w-4 h-4" />
                         </Button>
@@ -627,7 +651,7 @@ export default function PrescriptionsPage() {
                     className="p-0"
                     title="Visualizar"
                     aria-label="Visualizar"
-                    onClick={() => handlePreviewPdf(record.id)}
+                    onClick={() => handlePreviewPdf(record)}
                   >
                     <Eye className="w-4 h-4" />
                   </Button>
@@ -638,7 +662,7 @@ export default function PrescriptionsPage() {
                     className="p-0"
                     title="Baixar PDF"
                     aria-label="Baixar PDF"
-                    onClick={() => handleDownloadPdf(record.id)}
+                    onClick={() => handleDownloadPdf(record)}
                   >
                     <FileText className="w-4 h-4" />
                   </Button>
