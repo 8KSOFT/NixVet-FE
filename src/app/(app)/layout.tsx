@@ -614,18 +614,17 @@ function SidebarNav({
     return { ...section, items: visibleItems };
   }).filter((s) => s.items.length > 0);
 
-  // Chaves de item que NÃO devem ter divisor antes: o primeiro item de toda a
-  // lista, e o primeiro item logo após o rótulo "Admin" (que já tem sua
-  // própria linha). O divisor entre itens é global — não reseta por "seção"
-  // de dados, senão duas seções adjacentes ficam sem nenhuma linha entre si
-  // (a "seção" é só um agrupamento interno, nunca é mostrada como cabeçalho).
+  // Cada seção "de contexto" (não-superadmin) agora vira seu próprio bloco com
+  // fundo discreto — o próprio fundo já separa um contexto do outro, então o
+  // divisor entre itens reseta a cada bloco (não precisa de linha na borda).
+  // O cluster superadmin/admin continua sem fundo próprio ("separadinho" mas
+  // como uma lista só), então mantém o divisor contínuo entre suas seções.
   const noLeadingDividerKeys = new Set<string>();
   visibleSections.forEach((section, si) => {
-    const isFirstBottomSection =
-      BOTTOM_SECTION_KEYS.has(section.sectionKey) &&
-      !BOTTOM_SECTION_KEYS.has(visibleSections[si - 1]?.sectionKey ?? "");
+    const isBottom = BOTTOM_SECTION_KEYS.has(section.sectionKey);
+    const prevIsBottom = BOTTOM_SECTION_KEYS.has(visibleSections[si - 1]?.sectionKey ?? "");
     section.items.forEach((item, itemIdx) => {
-      if ((si === 0 && itemIdx === 0) || (isFirstBottomSection && itemIdx === 0)) {
+      if (itemIdx === 0 && !(isBottom && prevIsBottom)) {
         noLeadingDividerKeys.add(item.key);
       }
     });
@@ -674,16 +673,17 @@ function SidebarNav({
 
       <ScrollArea className="flex-1 min-h-0 overflow-y-auto py-2 ">
         {/* pb generoso + safe-area p/ o último item não ficar sob a barra do navegador/home indicator */}
-        <nav className="flex flex-col px-4 pt-10 pb-10 [padding-bottom:calc(2.5rem+env(safe-area-inset-bottom))]">
-          {visibleSections.map((section, si) => (
+        <nav className="flex flex-col gap-2 px-4 pt-10 pb-10 [padding-bottom:calc(2.5rem+env(safe-area-inset-bottom))]">
+          {visibleSections.map((section, si) => {
+            const isBottom = BOTTOM_SECTION_KEYS.has(section.sectionKey);
+            const isFirstBottomSection =
+              isBottom && !BOTTOM_SECTION_KEYS.has(visibleSections[si - 1]?.sectionKey ?? "");
+            return (
             <div key={section.sectionKey}>
               {/* separador antes do bloco superadmin/configurações (só uma vez, mesmo se superadmin estiver oculto).
                   Leva o rótulo "Admin" em vez de duplicar linha com o divisor entre itens. */}
-              {BOTTOM_SECTION_KEYS.has(section.sectionKey) &&
-                !BOTTOM_SECTION_KEYS.has(
-                  visibleSections[si - 1]?.sectionKey ?? "",
-                ) && (
-                <div className="mx-3 my-2 flex items-center gap-2">
+              {isFirstBottomSection && (
+                <div className="mx-3 mb-2 flex items-center gap-2">
                   {!collapsed && (
                     <span
                       className={cn(
@@ -703,7 +703,16 @@ function SidebarNav({
                 </div>
               )}
 
-              <div className="flex flex-col">
+              {/* Cada contexto (não-superadmin) ganha um fundo discreto — mesma
+                  cor da sidebar, só um pouco mais claro — pra "agrupar"
+                  visualmente sem introduzir uma cor nova. */}
+              <div
+                className={cn(
+                  "flex flex-col",
+                  !isBottom && "rounded-lg p-1",
+                  !isBottom && (medical ? "bg-white/5" : "bg-black/3"),
+                )}
+              >
                 {section.items.map((item) => {
                   const showLeadingDivider = !noLeadingDividerKeys.has(item.key);
                   if (item.type === "group") {
@@ -816,7 +825,8 @@ function SidebarNav({
                 })}
               </div>
             </div>
-          ))}
+            );
+          })}
         </nav>
       </ScrollArea>
     </div>
