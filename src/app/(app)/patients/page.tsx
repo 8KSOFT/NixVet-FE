@@ -8,9 +8,10 @@ import { useTranslation } from 'react-i18next';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 
-import { Plus, Pencil, Trash2, History } from 'lucide-react';
+import { Plus, Pencil, Trash2, History, Stethoscope, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
+import { cn } from '@/lib/utils';
 import { API_PAGE_SIZE } from '@/lib/pagination';
 import {
   useCreatePatientMutation,
@@ -20,6 +21,7 @@ import {
   type PatientPayload,
 } from '@/hooks/apiHooks/usePatients';
 import { useTutorsListQuery } from '@/hooks/apiHooks/useTutors';
+import { useCreateMedicalRecordMutation } from '@/hooks/apiHooks/useMedicalRecords';
 import {
   useCreateSupportOptionMutation,
   usePagedSupportOptionsQuery,
@@ -99,6 +101,11 @@ function PatientsContent() {
   const [listTutorFilter, setListTutorFilter] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  // "Nova Consulta / Atendimento" (Command Palette / menu "+ Novo") cai aqui via
+  // ?intent=start-atendimento pedindo pra escolher o paciente — enquanto ativo,
+  // cada linha ganha um botão que já cria a ficha e leva pro atendimento.
+  const [startAtendimentoIntent, setStartAtendimentoIntent] = useState(false);
+  const [creatingRecordFor, setCreatingRecordFor] = useState<string | null>(null);
   const { t } = useTranslation('common');
   const router = useRouter();
   const pathname = usePathname();
@@ -131,6 +138,7 @@ function PatientsContent() {
   const updatePatient = useUpdatePatientMutation();
   const deletePatient = useDeletePatientMutation();
   const createSupportOption = useCreateSupportOptionMutation();
+  const createRecord = useCreateMedicalRecordMutation();
 
   const handleAddBreed = async (breedName?: string) => {
     const species = getValues('species');
@@ -169,10 +177,31 @@ function PatientsContent() {
       router.replace(pathname ?? '/patients', { scroll: false });
     } else if (searchParams?.get('intent') === 'start-atendimento') {
       toast.info('Selecione o paciente para iniciar o atendimento.');
+      setStartAtendimentoIntent(true);
       router.replace(pathname ?? '/patients', { scroll: false });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
+
+  const handleStartAtendimento = async (record: PatientRow) => {
+    setCreatingRecordFor(record.id);
+    try {
+      const created = await createRecord.mutateAsync({ patient_id: record.id });
+      router.push(`/medical-records/${created.id}`);
+    } catch (error) {
+      console.error('Error starting atendimento:', error);
+      toast.error('Erro ao iniciar atendimento');
+      setCreatingRecordFor(null);
+    }
+  };
+
+  // Linha/card inteiro vira o alvo do clique nesse modo — os botões de ação
+  // (timeline/editar/excluir) têm stopPropagation pra não disparar os dois ao
+  // mesmo tempo. Ignora clique duplo enquanto já está criando uma ficha.
+  const handleRowClick = (record: PatientRow) => {
+    if (!startAtendimentoIntent || creatingRecordFor) return;
+    handleStartAtendimento(record);
+  };
 
   const handleEdit = (record: PatientRow) => {
     setEditingId(record.id);
@@ -269,6 +298,23 @@ function PatientsContent() {
         </div>
       </div>
 
+      {startAtendimentoIntent && (
+        <div className="mb-4 flex flex-col gap-2 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2 text-sm text-slate-700">
+            <Stethoscope className="h-4 w-4 shrink-0 text-primary" />
+            Clique em um paciente da lista para iniciar o atendimento.
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="self-end sm:self-auto"
+            onClick={() => setStartAtendimentoIntent(false)}
+          >
+            Cancelar
+          </Button>
+        </div>
+      )}
+
       {loading ? (
         <div className="text-center py-8 text-muted-foreground">Carregando...</div>
       ) : (
@@ -295,12 +341,26 @@ function PatientsContent() {
                   <TableBody>
                     {patients.map((record) => (
                       /* Aplica a cor gray-300 na borda inferior da linha */
-                      <TableRow className="border-b border-gray-300 h-15" key={record.id}>
-                        <TableCell>{record.name}</TableCell>
+                      <TableRow
+                        className={cn(
+                          'border-b border-gray-300 h-15',
+                          startAtendimentoIntent && 'cursor-pointer hover:bg-primary/5',
+                        )}
+                        key={record.id}
+                        onClick={() => handleRowClick(record)}
+                      >
+                        <TableCell>
+                          <span className="inline-flex items-center gap-2">
+                            {record.name}
+                            {creatingRecordFor === record.id && (
+                              <Loader2 className="w-3.5 h-3.5 shrink-0 animate-spin text-primary" />
+                            )}
+                          </span>
+                        </TableCell>
                         <TableCell>{record.species}</TableCell>
                         <TableCell>{record.breed}</TableCell>
                         <TableCell>{guardianLabel(record)}</TableCell>
-                        <TableCell>
+                        <TableCell onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center gap-1">
                             <Button asChild variant="ghost" size="icon" className="p-0" title="Ver timeline">
                               <Link href={`/patients/${record.id}`}>
@@ -340,10 +400,22 @@ function PatientsContent() {
               {/* Mobile: cards */}
               <div className="space-y-3 md:hidden">
                 {patients.map((record) => (
-                  <div key={record.id} className="rounded-lg border border-gray-300 bg-white p-4">
+                  <div
+                    key={record.id}
+                    className={cn(
+                      'rounded-lg border border-gray-300 bg-white p-4',
+                      startAtendimentoIntent && 'cursor-pointer active:bg-primary/5',
+                    )}
+                    onClick={() => handleRowClick(record)}
+                  >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="truncate font-medium">{record.name}</p>
+                        <p className="truncate font-medium flex items-center gap-2">
+                          {record.name}
+                          {creatingRecordFor === record.id && (
+                            <Loader2 className="w-3.5 h-3.5 shrink-0 animate-spin text-primary" />
+                          )}
+                        </p>
                         <p className="text-xs text-muted-foreground">
                           {record.species}
                           {record.breed ? ` · ${record.breed}` : ''}
@@ -356,7 +428,10 @@ function PatientsContent() {
                       <p className="truncate">{guardianLabel(record)}</p>
                     </div>
 
-                    <div className="mt-3 flex items-center justify-end gap-1 border-t border-gray-200 pt-2">
+                    <div
+                      className="mt-3 flex items-center justify-end gap-1 border-t border-gray-200 pt-2"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <Button asChild variant="ghost" size="icon" className="p-0" title="Ver timeline">
                         <Link href={`/patients/${record.id}`}>
                           <History className="w-4 h-4" />
