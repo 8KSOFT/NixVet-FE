@@ -8,7 +8,8 @@ import type { PatientDetail, PatientRow, PatientTimelineEvent } from '@/app/type
 export const patientKeys = {
   all: ['patients'] as const,
   lists: () => [...patientKeys.all, 'list'] as const,
-  list: (page: number, tutorId?: string) => [...patientKeys.lists(), { page, tutorId: tutorId || undefined }] as const,
+  list: (page: number, tutorId?: string, search?: string) =>
+    [...patientKeys.lists(), { page, tutorId: tutorId || undefined, search: search || undefined }] as const,
   allFlat: (tutorId?: string) => [...patientKeys.all, 'all', { tutorId: tutorId || undefined }] as const,
   details: () => [...patientKeys.all, 'detail'] as const,
   detail: (id: string) => [...patientKeys.details(), id] as const,
@@ -28,13 +29,16 @@ export interface PatientPayload {
   no_tutor_reason: string | null;
 }
 
-/** Lista paginada de pacientes, com filtro opcional por tutor. */
-export function usePatientsQuery(page: number, tutorId?: string) {
+/** Lista paginada de pacientes, com filtro opcional por tutor e busca por nome/chip_number. */
+export function usePatientsQuery(page: number, tutorId?: string, search?: string) {
   return useQuery({
-    queryKey: patientKeys.list(page, tutorId),
+    queryKey: patientKeys.list(page, tutorId, search),
     queryFn: async () => {
       const { data } = await api.get('/patients', {
-        params: listQueryParams(page, API_PAGE_SIZE, { tutor_id: tutorId || undefined }),
+        params: listQueryParams(page, API_PAGE_SIZE, {
+          tutor_id: tutorId || undefined,
+          search: search || undefined,
+        }),
       });
       return parseListResponse<PatientRow>(data, page);
     },

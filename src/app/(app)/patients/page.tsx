@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 
-import { Plus, Pencil, Trash2, History, Stethoscope, Loader2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, History, Stethoscope, Loader2, Search } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { cn } from '@/lib/utils';
@@ -99,6 +99,8 @@ function PatientsContent() {
   const [breedOpen, setBreedOpen] = useState(false);
   const [listPage, setListPage] = useState(1);
   const [listTutorFilter, setListTutorFilter] = useState('');
+  const [rawSearch, setRawSearch] = useState('');
+  const [search, setSearch] = useState('');
   const [modalVisible, setModalVisible] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   // "Nova Consulta / Atendimento" (Command Palette / menu "+ Novo") cai aqui via
@@ -124,7 +126,11 @@ function PatientsContent() {
   const watchedTutorChoice = watch('tutor_choice');
   const breedDiscriminator = watchedSpecies ? getBreedDiscriminator(watchedSpecies) : null;
 
-  const { data: patientsPage, isLoading: loading } = usePatientsQuery(listPage, listTutorFilter || undefined);
+  const { data: patientsPage, isLoading: loading } = usePatientsQuery(
+    listPage,
+    listTutorFilter || undefined,
+    search || undefined,
+  );
   const patients = patientsPage?.items ?? [];
   const listTotal = patientsPage?.total ?? 0;
   const listTotalPages = patientsPage?.totalPages ?? 1;
@@ -158,7 +164,14 @@ function PatientsContent() {
 
   useEffect(() => {
     setListPage(1);
-  }, [listTutorFilter]);
+  }, [listTutorFilter, search]);
+
+  // Debounce leve (mesmo padrão do Command Palette) — evita 1 request por
+  // tecla no backend, que já filtra por nome/chip_number via ILIKE.
+  useEffect(() => {
+    const id = window.setTimeout(() => setSearch(rawSearch.trim()), 250);
+    return () => window.clearTimeout(id);
+  }, [rawSearch]);
 
   const handleAdd = () => {
     setEditingId(null);
@@ -274,6 +287,15 @@ function PatientsContent() {
       <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center mb-8">
         <h1 className="text-2xl font-extrabold font-['InterDoFigma'] flex items-center gap-2">{t('patients.title')}</h1>
         <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+          <div className="relative sm:w-60">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={rawSearch}
+              onChange={(e) => setRawSearch(e.target.value)}
+              placeholder="Buscar por nome ou nº do chip..."
+              className="h-9 w-full pl-8"
+            />
+          </div>
           <div className="flex items-center gap-2 sm:min-w-50">
             <Label className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
               {t('patients.dropdownLabel')}
@@ -321,7 +343,7 @@ function PatientsContent() {
         <div>
           {patients.length === 0 ? (
             <div className="rounded-lg border border-gray-300 bg-white py-8 text-center text-sm text-slate-500">
-              Nenhum paciente cadastrado.
+              {search ? `Nenhum paciente encontrado para "${search}".` : 'Nenhum paciente cadastrado.'}
             </div>
           ) : (
             <>
