@@ -10,6 +10,7 @@ export const tutorKeys = {
   lists: () => [...tutorKeys.all, 'list'] as const,
   list: (page: number) => [...tutorKeys.lists(), { page }] as const,
   allFlat: () => [...tutorKeys.all, 'all'] as const,
+  search: (term: string) => [...tutorKeys.all, 'search', term] as const,
 };
 
 /** Lista paginada de tutores — usada na tela de gestão (CRUD). */
@@ -29,6 +30,22 @@ export function useTutorsListQuery() {
   return useQuery({
     queryKey: tutorKeys.allFlat(),
     queryFn: () => fetchAllListPages<Tutor>('/tutors'),
+  });
+}
+
+/** Busca por nome/CPF no backend — usada no Command Palette (Ctrl/Cmd+K). */
+export function useSearchTutorsQuery(term: string, limit = 8) {
+  const trimmed = term.trim();
+  return useQuery({
+    queryKey: tutorKeys.search(trimmed),
+    queryFn: async () => {
+      const { data } = await api.get('/tutors', {
+        params: listQueryParams(1, limit, { search: trimmed }),
+      });
+      return parseListResponse<Tutor>(data, 1, limit).items;
+    },
+    enabled: trimmed.length > 0,
+    placeholderData: keepPreviousData,
   });
 }
 

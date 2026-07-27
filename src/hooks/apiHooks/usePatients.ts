@@ -13,6 +13,7 @@ export const patientKeys = {
   details: () => [...patientKeys.all, 'detail'] as const,
   detail: (id: string) => [...patientKeys.details(), id] as const,
   timeline: (id: string) => [...patientKeys.all, 'timeline', id] as const,
+  search: (term: string) => [...patientKeys.all, 'search', term] as const,
 };
 
 export interface PatientPayload {
@@ -46,6 +47,22 @@ export function usePatientsListQuery(tutorId?: string) {
   return useQuery({
     queryKey: patientKeys.allFlat(tutorId),
     queryFn: () => fetchAllListPages<PatientRow>('/patients', tutorId ? { tutor_id: tutorId } : {}),
+  });
+}
+
+/** Busca por nome/chip_number no backend — usada no Command Palette (Ctrl/Cmd+K). */
+export function useSearchPatientsQuery(term: string, limit = 8) {
+  const trimmed = term.trim();
+  return useQuery({
+    queryKey: patientKeys.search(trimmed),
+    queryFn: async () => {
+      const { data } = await api.get('/patients', {
+        params: listQueryParams(1, limit, { search: trimmed }),
+      });
+      return parseListResponse<PatientRow>(data, 1, limit).items;
+    },
+    enabled: trimmed.length > 0,
+    placeholderData: keepPreviousData,
   });
 }
 

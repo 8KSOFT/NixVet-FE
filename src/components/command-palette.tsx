@@ -15,8 +15,8 @@ import {
 } from "@/components/ui/command";
 import { getSearchableNavItems } from "@/config/navigation";
 import { QUICK_CREATE_ACTIONS } from "@/config/quick-create";
-import { usePatientsListQuery } from "@/hooks/apiHooks/usePatients";
-import { useTutorsListQuery } from "@/hooks/apiHooks/useTutors";
+import { useSearchPatientsQuery } from "@/hooks/apiHooks/usePatients";
+import { useSearchTutorsQuery } from "@/hooks/apiHooks/useTutors";
 
 interface CommandPaletteProps {
   open: boolean;
@@ -32,7 +32,7 @@ export function CommandPalette({ open, onOpenChange, menuAllow }: CommandPalette
   const [rawQuery, setRawQuery] = useState("");
   const [query, setQuery] = useState("");
 
-  // Debounce leve só para a busca de registros (nome/CPF sobre a lista completa);
+  // Debounce leve só para a busca de registros (evita 1 request por tecla no backend);
   // a filtragem de Telas/Ações rápidas já é feita pelo cmdk em tempo real via CommandInput.
   useEffect(() => {
     const id = window.setTimeout(() => setQuery(rawQuery.trim().toLowerCase()), 250);
@@ -46,11 +46,11 @@ export function CommandPalette({ open, onOpenChange, menuAllow }: CommandPalette
     }
   }, [open]);
 
-  // Só interessa buscar registros quando o palette é usado — mas os hooks já são
-  // compartilhados (mesma queryKey) com o resto do app via react-query, então abrir
-  // o Ctrl/Cmd+K não dispara uma requisição nova se a lista já estiver em cache.
-  const { data: patients = [] } = usePatientsListQuery();
-  const { data: tutors = [] } = useTutorsListQuery();
+  // Busca já filtrada no backend (nome/chip_number para pacientes, nome/CPF para
+  // tutores) — só dispara quando há termo (enabled: query.length > 0), com o
+  // debounce de 250ms acima evitando uma requisição a cada tecla.
+  const { data: matchedPatients = [] } = useSearchPatientsQuery(query, MAX_RECORD_RESULTS);
+  const { data: matchedTutors = [] } = useSearchTutorsQuery(query, MAX_RECORD_RESULTS);
 
   const navItems = useMemo(() => getSearchableNavItems(menuAllow), [menuAllow]);
 
@@ -58,28 +58,6 @@ export function CommandPalette({ open, onOpenChange, menuAllow }: CommandPalette
     () => QUICK_CREATE_ACTIONS.filter((action) => menuAllow.has(action.menuKey)),
     [menuAllow],
   );
-
-  const matchedPatients = useMemo(() => {
-    if (!query) return [];
-    return patients
-      .filter(
-        (p) =>
-          p.name?.toLowerCase().includes(query) ||
-          p.chip_number?.toLowerCase().includes(query),
-      )
-      .slice(0, MAX_RECORD_RESULTS);
-  }, [patients, query]);
-
-  const matchedTutors = useMemo(() => {
-    if (!query) return [];
-    return tutors
-      .filter(
-        (owner) =>
-          owner.name?.toLowerCase().includes(query) ||
-          owner.cpf?.toLowerCase().includes(query),
-      )
-      .slice(0, MAX_RECORD_RESULTS);
-  }, [tutors, query]);
 
   // Fecha o palette antes/junto da navegação — router.push é assíncrono, então
   // chamar onOpenChange(false) depois deixaria o diálogo visível por alguns frames.

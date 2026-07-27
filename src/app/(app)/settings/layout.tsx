@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -84,10 +84,24 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
   const pathname = usePathname();
   const router = useRouter();
   const currentPathname = pathname ?? '';
-  const role = (getStoredUserRole() || '').toLowerCase();
+
+  // inicia vazio/neutro (igual no server e no primeiro paint do client) e só lê
+  // localStorage no useEffect abaixo — ler localStorage direto no corpo da
+  // função quebra a hidratação, pois o server nunca tem acesso a ele.
+  const [role, setRole] = useState('');
+  const [menuAllow, setMenuAllow] = useState<Set<string>>(() => new Set());
+  const [menuLoaded, setMenuLoaded] = useState(false);
+
+  useEffect(() => {
+    const storedRole = (getStoredUserRole() || '').toLowerCase();
+    const keys = storedRole === 'superadmin' ? menuKeysForRole('superadmin') : getStoredMenuKeys();
+    setRole(storedRole);
+    setMenuAllow(new Set(keys));
+    setMenuLoaded(true);
+  }, [pathname]);
+
   const isSuperAdmin = role === 'superadmin';
   const canManageTerms = ['admin', 'manager', 'superadmin'].includes(role);
-  const menuAllow = new Set(isSuperAdmin ? menuKeysForRole('superadmin') : getStoredMenuKeys());
 
   // GRUPO 7 — "Termos da Clínica" visível só para admin/manager
   let sections = canManageTerms
@@ -143,14 +157,16 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
   // servidor, antes de qualquer checagem de permissão — então um usuário sem a
   // chave 'products'/'team' que caísse aqui via URL antiga (ou digitando o link
   // novo direto) ficaria numa tela de Configurações vazia. Manda pro dashboard.
+  // Só roda depois que `menuAllow` foi populado (menuLoaded) — antes disso o
+  // Set está vazio e redirecionaria por engano até usuários com permissão.
   useEffect(() => {
+    if (!menuLoaded) return;
     if (currentPathname.startsWith('/settings/produtos') && !menuAllow.has('products')) {
       router.replace('/dashboard');
     } else if (currentPathname.startsWith('/settings/team') && !menuAllow.has('team')) {
       router.replace('/dashboard');
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPathname]);
+  }, [currentPathname, menuAllow, menuLoaded, router]);
 
   const platformItems = isSuperAdmin
     ? [
