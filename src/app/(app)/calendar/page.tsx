@@ -22,6 +22,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -186,6 +188,17 @@ function CalendarContent() {
   const [rescheduleDate, setRescheduleDate] = useState('');
   const [currentMonth, setCurrentMonth] = useState<Dayjs>(dayjs());
   const [viewMode, setViewMode] = useState<ViewMode>('month');
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
+
+  // No mobile a agenda deve sempre abrir na visão de Dia (o dropdown some as
+  // outras visões atrás de um menu, então "Dia" é o que faz sentido na tela
+  // pequena). Roda só uma vez, após montar no cliente, pra não quebrar o SSR.
+  useEffect(() => {
+    if (window.matchMedia('(max-width: 639px)').matches) {
+      setViewMode('day');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const { data: consultations = [] } = useConsultationsQuery();
   const { data: veterinarians = [] } = useVeterinariansQuery();
@@ -473,7 +486,19 @@ function CalendarContent() {
     }
     const tp = appointmentTypes.find((t) => t.id === formData.appointment_type_id);
     const durationMinutes = tp?.duration_minutes ?? 30;
-    const startIso = formData.slot_datetime || dayjs(formData.consultation_date).startOf('day').toISOString();
+    // O dia escolhido no campo "Data" é sempre a fonte da verdade — o slot que
+    // vem do backend (/consultations/available-slots) só empresta a hora:minuto.
+    // Isso blinda contra qualquer diferença de fuso na resposta do backend que
+    // fizesse o slot cair num dia diferente do selecionado na UI. Mantido de
+    // propósito mesmo depois de corrigido no backend: como só lê hora:minuto
+    // do slot (o dia do slot nunca é usado), não há conflito possível.
+    const selectedDay = dayjs(formData.consultation_date).startOf('day');
+    const startIso = formData.slot_datetime
+      ? selectedDay
+          .hour(dayjs(formData.slot_datetime).hour())
+          .minute(dayjs(formData.slot_datetime).minute())
+          .toISOString()
+      : selectedDay.toISOString();
     if (dayjs(startIso).isAfter(dayjs().add(30, 'day').endOf('day'))) {
       toast.error('Agendamentos online são permitidos apenas até 30 dias à frente.');
       return;
@@ -1047,7 +1072,29 @@ function CalendarContent() {
         <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
           <ChevronLeft className="h-4 w-4" />
         </Button>
-        <h2 className="text-lg font-semibold min-w-[200px] text-center">{headerLabel}</h2>
+        <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              className="min-w-[200px] rounded-md px-2 py-1 text-center text-lg font-semibold transition-colors hover:bg-muted/50 hover:text-primary"
+            >
+              {headerLabel}
+            </button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="center">
+            <Calendar
+              mode="single"
+              selected={currentMonth.toDate()}
+              onSelect={(date) => {
+                if (!date) return;
+                const d = dayjs(date);
+                setSelectedDate(d);
+                setCurrentMonth(d);
+                setDatePickerOpen(false);
+              }}
+            />
+          </PopoverContent>
+        </Popover>
         <Button variant="ghost" size="icon" onClick={() => navigate(1)}>
           <ChevronRight className="h-4 w-4" />
         </Button>

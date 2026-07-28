@@ -831,15 +831,17 @@ export default function DashboardLayout({
                     {t("userMenu.profile")}
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link
-                    href="/settings"
-                    className="flex items-center gap-2"
-                  >
-                    <Settings className="size-4 text-black" />
-                    {t("userMenu.settings")}
-                  </Link>
-                </DropdownMenuItem>
+                {menuAllow.has("settings") && (
+                  <DropdownMenuItem asChild>
+                    <Link
+                      href="/settings"
+                      className="flex items-center gap-2"
+                    >
+                      <Settings className="size-4 text-black" />
+                      {t("userMenu.settings")}
+                    </Link>
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="flex items-center gap-2"

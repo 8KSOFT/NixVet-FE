@@ -327,32 +327,32 @@ export default function MedicalRecordsListPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
-            <div className="space-y-2 md:col-span-6">
-              <Label>Veterinário</Label>
-              <Select
-                value={form.veterinarian_id || '_none'}
-                onValueChange={(v) =>
-                  setForm((p) => ({
-                    ...p,
-                    veterinarian_id: v === '_none' ? '' : v,
-                  }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="_none">Nenhum</SelectItem>
-                  {vets.map((v) => (
-                    <SelectItem key={v.id} value={v.id}>
-                      {v.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1 md:col-span-3">
+          <div className="space-y-2">
+            <Label>Veterinário</Label>
+            <Select
+              value={form.veterinarian_id || '_none'}
+              onValueChange={(v) =>
+                setForm((p) => ({
+                  ...p,
+                  veterinarian_id: v === '_none' ? '' : v,
+                }))
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="_none">Nenhum</SelectItem>
+                {vets.map((v) => (
+                  <SelectItem key={v.id} value={v.id}>
+                    {v.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="space-y-1">
               <Label>Tipo</Label>
               <Select value={form.record_type} onValueChange={(v) => setForm((p) => ({ ...p, record_type: v }))}>
                 <SelectTrigger>
@@ -367,7 +367,7 @@ export default function MedicalRecordsListPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1 md:col-span-3">
+            <div className="space-y-1">
               <Label>Data</Label>
               <Input
                 type="date"

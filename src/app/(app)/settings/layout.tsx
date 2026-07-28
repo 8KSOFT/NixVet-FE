@@ -153,15 +153,18 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
     ];
   }
 
-  // Guarda de RBAC: o redirect de /produtos e /team (next.config.mjs) roda no
-  // servidor, antes de qualquer checagem de permissão — então um usuário sem a
-  // chave 'products'/'team' que caísse aqui via URL antiga (ou digitando o link
-  // novo direto) ficaria numa tela de Configurações vazia. Manda pro dashboard.
-  // Só roda depois que `menuAllow` foi populado (menuLoaded) — antes disso o
-  // Set está vazio e redirecionaria por engano até usuários com permissão.
+  // Guarda de RBAC: esconder "Configurações" do menu (sidebar/perfil) não
+  // impede que alguém sem a chave 'settings' (ex: veterinário) chegue aqui
+  // digitando a URL direto ou por um link antigo — então qualquer rota dentro
+  // de /settings exige a chave 'settings', com produtos/team exigindo a sua
+  // própria chave por cima. Só roda depois que `menuAllow` foi populado
+  // (menuLoaded) — antes disso o Set está vazio e redirecionaria por engano
+  // até usuários com permissão.
   useEffect(() => {
     if (!menuLoaded) return;
-    if (currentPathname.startsWith('/settings/produtos') && !menuAllow.has('products')) {
+    if (!menuAllow.has('settings')) {
+      router.replace('/dashboard');
+    } else if (currentPathname.startsWith('/settings/produtos') && !menuAllow.has('products')) {
       router.replace('/dashboard');
     } else if (currentPathname.startsWith('/settings/team') && !menuAllow.has('team')) {
       router.replace('/dashboard');
