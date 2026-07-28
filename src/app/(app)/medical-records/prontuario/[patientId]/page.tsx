@@ -65,6 +65,7 @@ const recordTypeLabel = (t: string) => {
     emergencia: "Emergência",
     cirurgia: "Cirurgia",
     internacao: "Internação",
+    no_show: "Não Compareceu",
   };
   return map[t] || t;
 };

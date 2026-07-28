@@ -23,6 +23,42 @@ unifica a experiência sem tocar na lógica de conflito existente.
 
 ---
 
+## ⚠️ Correção (revisão do time de backend, 2026-07-27)
+
+A primeira versão deste relatório tinha **2 erros factuais**, confirmados
+depois de reler o código com mais cuidado (o backend apontou; eu conferi de
+novo no repo antes de aceitar ou refutar). Motivo raiz dos dois: eu só tinha
+pesquisado a pasta `migrations/` — existe uma **segunda pasta**,
+`database/migrations/`, que não entrou na minha busca original.
+
+1. **`consultation_id` já é aceito e persistido** — não é "próximo passo".
+   `medical-records.controller.ts:123` (tipo do body) e `:149`
+   (`consultation_id: body.consultation_id ?? null` no `.create()`). Veio do
+   commit `44620b0` ("feat(v2)..."), bem anterior a este relatório. Eu simplesmente
+   não cheguei a essas linhas na leitura original.
+2. **Os constraints `EXCLUDE` temporais existem e estão ativos** —
+   `database/migrations/20260319000001-temporal-consultations-and-resources.js:44-48`:
+   ```sql
+   ALTER TABLE consultations
+   ADD CONSTRAINT consultations_vet_temporal_excl
+   EXCLUDE USING gist (veterinarian_id WITH =, tstzrange(start_time, end_time) WITH &&)
+   WHERE (start_time IS NOT NULL AND end_time IS NOT NULL);
+   ```
+   Mesmo veterinário não pode ter duas consultas com intervalo de horário
+   sobreposto — **imposto pelo Postgres**, não só por código de aplicação. Tem
+   um gêmeo pra recursos: `resource_reservations_temporal_excl` (mesma
+   migration, linhas 82-86). O catch de `23P01` em `consultations.service.ts`
+   que eu descrevi como "código defensivo pra um constraint que não existe" —
+   **está tratando algo real**.
+
+Isso invalida a Seção 5 original (a ideia de "pular as checagens" criando a
+consulta direto): não dá pra pular, porque quem garante o conflito não é a
+função `isSlotAvailable`, é o próprio banco. As seções 3, 4, 5 e 6 abaixo já
+estão corrigidas para refletir isso — o que ficou riscado é só pra mostrar
+onde eu errei, não pra esconder.
+
+---
+
 ## 1. O que existe hoje
 
 ### 1.1 Três pontos que criam `MedicalRecord`
@@ -56,10 +92,13 @@ O modelo (`medical-record.model.ts:78-79`) já tem um campo pronto pra isso:
 declare consultation_id: string | null;
 ```
 
-**Mas nenhum dos 3 fluxos acima envia `consultation_id`** — e o controller
-sequer aceita esse campo no corpo da requisição hoje (`body` do `@Post()` não
-lista `consultation_id` em `medical-records.controller.ts:99-125`). Ou seja,
-pra linkar, precisa de uma pequena mudança no backend também, não só no front.
+~~**Mas nenhum dos 3 fluxos acima envia `consultation_id`** — e o controller
+sequer aceita esse campo no corpo da requisição hoje.~~ **Correção**: o
+controller **já aceita e persiste** `consultation_id`
+(`medical-records.controller.ts:123` e `:149`, desde o commit `44620b0`) — o
+único motivo de nenhum dos 3 fluxos usar isso é que nenhum deles **passa** o
+valor no payload, não que o backend precise de mudança. É um ajuste só de
+frontend: mandar `consultation_id` quando ele existir.
 
 ### 1.2 O botão da Agenda que quase faz a ponte, mas não faz
 
@@ -126,52 +165,60 @@ Esse era o risco mais sério em teoria, então fui direto no código de criaçã
 de consulta (`consultations.service.ts:54-199`) pra entender exatamente onde
 e como o sistema impede conflito hoje.
 
-### 3.1 Onde o conflito é checado hoje (e só hoje, na criação de `Consultation`)
+### 3.1 Onde o conflito é checado hoje
 
-Duas checagens, **as duas em nível de aplicação (código), nenhuma é constraint
-de banco**:
+Duas checagens em nível de aplicação, **mais um constraint real no banco**:
 
-1. **Conflito de veterinário** — só roda se `veterinarian_id` foi passado
-   explicitamente na criação (`consultations.service.ts:96-106`):
+1. **Conflito de veterinário (app-level, pré-checagem)** — só roda se
+   `veterinarian_id` foi passado explicitamente na criação
+   (`consultations.service.ts:96-106`):
    ```ts
    const slotOk = await this.availabilityService.isSlotAvailable(tenantId, veterinarianId, startTime);
    if (!slotOk) throw new BadRequestException('O horário selecionado não está mais disponível...');
    ```
    Se `veterinarian_id` não é passado, quem escolhe o vet é o
-   `vetAssignmentService.assignVet(...)` (linha 89), que presumivelmente já
-   escolhe alguém livre.
+   `vetAssignmentService.assignVet(...)` (linha 89).
 
-2. **Conflito de recurso (sala/equipamento)** — só roda se
-   `required_resources` (lista de tipos, ex. `["sala-1", "ultrassom"]`) **não
-   estiver vazia** (`consultations.service.ts:108-122`):
-   ```ts
-   const requiredResources = createConsultationDto.required_resources ?? [];
-   if (requiredResources.length > 0) {
-     const canAlloc = await this.resourceSchedulingService.canAllocateResources(...);
-     if (!canAlloc) throw new BadRequestException('Recursos solicitados não estão disponíveis...');
-   }
+2. **Conflito de recurso (sala/equipamento, app-level, pré-checagem)** — só
+   roda se `required_resources` **não estiver vazia**
+   (`consultations.service.ts:108-122`), via `resourceSchedulingService.canAllocateResources(...)`.
+
+3. **Constraint de banco (real, incondicional) — ⚠️ isto eu tinha errado.**
+   `database/migrations/20260319000001-temporal-consultations-and-resources.js:44-48`
+   cria, via SQL puro:
+   ```sql
+   ALTER TABLE consultations
+   ADD CONSTRAINT consultations_vet_temporal_excl
+   EXCLUDE USING gist (veterinarian_id WITH =, tstzrange(start_time, end_time) WITH &&)
+   WHERE (start_time IS NOT NULL AND end_time IS NOT NULL);
    ```
+   Isso **impede, no Postgres**, que o mesmo veterinário tenha duas linhas em
+   `consultations` com intervalo de tempo sobreposto — não importa se as
+   checagens de (1)/(2) rodaram ou não antes do insert. A mesma migration cria
+   `resource_reservations_temporal_excl` (linhas 82-86), equivalente pra
+   recursos. O catch de `23P01`/`23505` em `consultations.service.ts:186-196`
+   — que eu descrevi antes como "código defensivo pra algo que não existe" —
+   está, na verdade, traduzindo essa violação real de constraint pra um
+   `ConflictException` amigável.
 
-Fui conferir `resource-scheduling.service.ts` inteiro (`findAvailableResources`,
-`canAllocateResources`) — é uma checagem por `SELECT ... WHERE` (linhas 56-79),
-não uma constraint de banco. Também procurei nas migrations por qualquer
-`EXCLUDE`/constraint de intervalo (`tstzrange`, `btree_gist`) — **não existe
-nenhuma**. O tratamento de erro `23P01`/`23505` no catch de
-`consultations.service.ts:186-196` é defensivo (preparado pra um constraint
-que, pelo que encontrei, não está de fato criado no banco hoje).
+   **Eu tinha procurado isso na hora errada** — só olhei a pasta `migrations/`
+   e não `database/migrations/`, onde essa migration realmente está.
 
 ### 3.2 Por que isso importa pro nosso caso
 
 `MedicalRecord.create()` (o que de fato roda quando alguém clica "Nova ficha"
 ou "Iniciar atendimento" hoje) **nunca passa pelo `Consultation.create()`**.
-São tabelas e serviços totalmente desacoplados — criar uma ficha não aciona
-`isSlotAvailable` nem `canAllocateResources`, em nenhum dos 3 fluxos atuais.
+São tabelas e serviços desacoplados — criar uma ficha não aciona nenhuma das
+três checagens acima, em nenhum dos 3 fluxos atuais.
 
-**Isso significa que unificar o "Iniciar atendimento" não obriga a mexer em
-nada da lógica de conflito existente**, porque essa lógica só existe dentro de
-`ConsultationsService.create()`, e a ficha de atendimento não precisa passar
-por ali pra ser criada — só precisa, opcionalmente, apontar pra uma consulta
-que já existe (e que já foi validada no momento em que foi agendada).
+**Isso continua significando que unificar o "Iniciar atendimento" não obriga
+a mexer em nada da lógica de conflito existente** — pelo motivo certo,
+diferente do que eu disse antes: não é porque a checagem é "opt-in e pulável",
+é porque `MedicalRecord` e `Consultation` são tabelas diferentes e criar uma
+ficha sozinha nunca insere uma linha em `consultations`. Onde eu errei foi em
+propor, na Seção 5, que dava pra criar uma `Consultation` pulando as
+checagens de propósito — isso **não é possível**: o constraint do banco roda
+sempre, veja a correção na Seção 5.
 
 ---
 
@@ -187,9 +234,10 @@ Ao abrir uma consulta agendada e clicar "Iniciar atendimento":
   consulta já existente**.
 - **Nenhuma checagem nova de conflito roda** — a consulta já foi validada
   quando foi agendada (isso já aconteceu no passado, em `ConsultationsService.create()`).
-- Precisa de uma mudança pequena e pontual no backend: aceitar `consultation_id`
-  no `POST /medical-records` e persistir (hoje o `body` do controller nem
-  lista esse campo — `medical-records.controller.ts:99-125`).
+- ~~Precisa de uma mudança pequena e pontual no backend: aceitar
+  `consultation_id`...~~ **Correção: não precisa.** O backend já aceita e
+  persiste (`medical-records.controller.ts:123,149`) — é só o frontend passar
+  o valor. Zero mudança de backend pra esse caminho.
 - Opcional: ao concluir a ficha, chamar o `markComplete` que já existe em
   `consultations.service.ts:387-431` (já muda status pra `completed` e já
   sugere lançamento financeiro) — hoje isso só é acionado de algum outro lugar
@@ -225,45 +273,98 @@ deveria aparecer na Agenda depois, como um registro do que aconteceu?**
   continua mostrando só o que foi agendado; encaixes só existem como fichas em
   `/medical-records`. Zero risco, zero mudança na Agenda.
 - **Se sim**: o encaixe também criaria uma `Consultation` (com `start_time =
-  agora`, veterinário = quem está atendendo), só que chamando o `create()`
-  **sem** passar por `isSlotAvailable`/`canAllocateResources` (são só chamadas
-  de função dentro do método — dá pra ter um caminho alternativo, tipo
-  `logWalkInConsultation()`, que pula essas duas checagens de propósito,
-  já que um encaixe descreve o que **já aconteceu**, não uma reserva de
-  horário futuro). Isso deixaria o calendário do veterinário mostrar
-  "ocupado" durante o encaixe — útil pra clínicas maiores não tentarem marcar
-  outro paciente pro mesmo vet no mesmo horário sem saber que ele estava
-  atendendo um encaixe.
+  agora`, veterinário = quem está atendendo).
+  ~~só que chamando o `create()` **sem** passar por
+  `isSlotAvailable`/`canAllocateResources`... dá pra ter um caminho
+  alternativo tipo `logWalkInConsultation()` que pula essas checagens de
+  propósito~~
+  **Correção: isso não funciona.** As checagens de `isSlotAvailable`/
+  `canAllocateResources` são só um *pré-check* que dá um erro mais bonito
+  *antes* de tentar o insert — mas quem realmente impede a sobreposição é o
+  constraint `consultations_vet_temporal_excl` no Postgres (Seção 3.1), que
+  roda **sempre**, em qualquer insert na tabela `consultations`, não importa
+  se você chamou alguma função de checagem antes ou não. "Pular a checagem"
+  só significa perder o erro bonito e antecipado — o insert vai falhar do
+  mesmo jeito lá na hora H se o veterinário já estiver em outra consulta
+  naquele intervalo exato.
 
-Não decidi isso por vocês — é uma escolha de produto. Mas tecnicamente, **ambas
-as opções são seguras** frente à lógica de conflito existente, porque essa
-lógica só protege reservas *futuras*, e um encaixe logado é sempre relativo ao
-passado/presente.
+  O caminho certo, se decidido que sim: criar a `Consultation` do encaixe
+  **passando pelo `ConsultationsService.create()` normal** (que já faz o
+  pré-check E já traduz a violação do constraint em `ConflictException` —
+  `consultations.service.ts:183-198`), não por um atalho que ignora os dois.
+  Se dois eventos genuinamente se sobrepõem pro mesmo veterinário (ex.: um
+  encaixe às 14h45 enquanto ele já tem uma consulta agendada 14h30-15h), o
+  sistema **vai** rejeitar — e isso é o comportamento correto (o veterinário
+  não pode estar em dois atendimentos ao mesmo tempo), não um bug a evitar.
+  Na prática, isso significa: se o produto quiser permitir encaixe mesmo
+  "por cima" de um horário já ocupado do mesmo vet, o app precisa tratar esse
+  erro na UI (e decidir o que fazer: negar, pedir outro vet, etc.) — não dá
+  pra simplesmente contornar no código.
+
+Não decidi isso por vocês — é uma escolha de produto. Mas agora, ao contrário
+do que eu disse antes, **as duas opções não são igualmente simples**: "não
+criar Consultation pro encaixe" (Caminho B, sem nenhuma linha nova em
+`consultations`) continua zero-risco; "criar Consultation pro encaixe" precisa
+lidar de verdade com a possibilidade de rejeição pelo constraint.
 
 ---
 
 ## 6. Resumo — por que a unificação continua fazendo sentido
 
-1. **Não existe conflito técnico real**: `MedicalRecord` e `Consultation` já
-   são desacoplados hoje. Linkar um ao outro (Caminho A) é só preencher um
-   campo que já existe no modelo; não linkar (Caminho B) é o que já acontece.
-2. **A checagem de conflito de horário/recursos é 100% opt-in e por função**,
-   não por constraint de banco — ela só roda dentro de `ConsultationsService.create()`,
-   que o fluxo de ficha nunca precisa chamar.
+1. **`MedicalRecord` e `Consultation` são tabelas desacopladas hoje** — criar
+   uma ficha nunca insere linha em `consultations`, então nunca toca o
+   constraint de banco. Linkar (Caminho A) é só o frontend passar
+   `consultation_id`, que o backend já aceita; não linkar (Caminho B) é o que
+   já acontece hoje.
+2. **O conflito de horário É garantido pelo banco** (constraint `EXCLUDE`,
+   não só função de aplicação) — isso é uma proteção real que continua
+   intacta com ou sem a unificação, porque o fluxo de ficha nunca cria
+   `Consultation`.
 3. **O risco de dados obrigatórios já está resolvido** em `/patients` — falta
    só parar de reimplementar essa regra (com bug) em `medical-records/page.tsx`.
 4. **O ganho real**: hoje a Agenda e o Atendimento são dois mundos sem ponte
    nenhuma, mesmo o banco já estando pronto pra conectar os dois
-   (`consultation_id`). Isso é a lacuna que realmente vale fechar.
+   (`consultation_id`, que já existe de ponta a ponta no backend). Isso é a
+   lacuna que realmente vale fechar — e fechar ela é *só* trabalho de
+   frontend no Caminho A.
 
-## Próximos passos sugeridos (não implementado ainda — só o relatório foi pedido)
+## Status (2026-07-28): Caminho A implementado
 
-1. Decidir o trade-off da seção 5 (encaixe aparece na Agenda ou não).
-2. Backend: aceitar e persistir `consultation_id` em `POST /medical-records`.
-3. Frontend: botão "Iniciar atendimento" no detalhe da consulta agendada
-   (Agenda), Caminho A.
-4. Frontend: unificar o cadastro de paciente embutido em
-   `medical-records/page.tsx` pra reaproveitar o componente/lógica de
-   `/patients` (corrige o bug do "sempre Emergência").
-5. Se decidido na seção 5: implementar `logWalkInConsultation()` no backend
-   para o registro retroativo de encaixes na Agenda.
+Decisão final: **segurar a unificação mais ampla** (time de produto ainda
+processando a ideia) e implementar só o essencial — Caminho A (linkar ficha
+↔ agendamento) e duas ações que faltavam na Agenda. Encaixe continua exatamente
+como já era: ficha solta, sem criar `Consultation` nenhuma (Caminho B, sem
+mudança).
+
+**O que foi implementado:**
+
+- **Backend** (`consultations.service.ts`/`.controller.ts`/`.module.ts`):
+  novo `PATCH /consultations/:id/no-show` → `ConsultationsService.markNoShow()`:
+  libera recursos reservados, **cria uma `MedicalRecord` de não comparecimento**
+  (`record_type: 'no_show'`, `consultation_id` preenchido, `status: 'closed'`)
+  no prontuário do paciente — histórico legal, conforme pedido — e dispara o
+  evento `CONSULTATION_NO_SHOW` (o handler de WhatsApp já existia, só nunca
+  era emitido por ninguém). Idempotente. 4 testes unitários cobrindo o caso
+  normal, idempotência, paciente sem tutor e paciente não encontrado.
+- **Backend**: `PATCH /consultations/:id/cancel` já existia (não sabíamos),
+  só nunca tinha hook/botão no frontend — resolvido no front, zero mudança
+  de backend.
+- **Frontend** (`calendar/page.tsx`, painel lateral da consulta): três botões
+  novos — **"Iniciar atendimento"** (Caminho A: cria a ficha com
+  `consultation_id` e `patient_id`, navega pro editor da ficha),
+  **"Não compareceu"** (confirmação via `AlertDialog`, explica o que
+  acontece antes de confirmar) e **"Cancelar"** (idem). Status `no_show`
+  agora tem label/cor próprios (`Não Compareceu`, cinza) — antes só existia
+  como valor de filtro no backend, sem representação na UI.
+- **Frontend**: `MedicalRecordCreatePayload` ganhou `consultation_id?: string`;
+  hooks novos `useCancelConsultationMutation`/`useMarkNoShowConsultationMutation`.
+- Verificado ponta a ponta com Playwright (dev server + rotas mockadas): os
+  três botões disparam a chamada certa com o payload certo; suíte completa do
+  backend (131 testes) sem regressão.
+
+**Deixado de fora por decisão explícita** (não é esquecimento):
+
+- Trade-off da Seção 5 (encaixe aparecer na Agenda) — não decidido, não
+  implementado. Encaixe continua sem criar `Consultation`.
+- Unificar o cadastro de paciente embutido em `medical-records/page.tsx`
+  (bug do "sempre Emergência") — não mexido nesta rodada.

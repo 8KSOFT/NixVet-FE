@@ -9,6 +9,17 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DashboardCreateFormDialog } from '@/components/dashboard-create-form-dialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
@@ -36,6 +47,8 @@ import {
   PawPrint,
   ChevronDown,
   ChevronUp,
+  UserX,
+  Ban,
 } from 'lucide-react';
 import { formatTimeBr, formatConsultationWeekdayDate, formatTimeRangeBr } from '@/lib/datetime-br';
 import { useTranslation } from 'react-i18next';
@@ -44,12 +57,15 @@ import type { AvailabilitySlot, Consultation } from '@/app/types/consultation';
 import type { GoogleEvent } from '@/app/types/google-integration';
 import {
   useAvailableSlotsQuery,
+  useCancelConsultationMutation,
   useConsultationQuery,
   useConsultationsQuery,
   useCreateConsultationMutation,
+  useMarkNoShowConsultationMutation,
   useRescheduleConsultationMutation,
   useUpdateConsultationMutation,
 } from '@/hooks/apiHooks/useConsultations';
+import { useCreateMedicalRecordMutation } from '@/hooks/apiHooks/useMedicalRecords';
 import { usePatientsListQuery, useCreatePatientMutation } from '@/hooks/apiHooks/usePatients';
 import { useTutorsListQuery, useCreateTutorMutation } from '@/hooks/apiHooks/useTutors';
 import { useVeterinariansQuery } from '@/hooks/apiHooks/useUsers';
@@ -195,8 +211,14 @@ function CalendarContent() {
   const createConsultation = useCreateConsultationMutation();
   const updateConsultation = useUpdateConsultationMutation();
   const rescheduleConsultation = useRescheduleConsultationMutation();
+  const cancelConsultation = useCancelConsultationMutation();
+  const markNoShowConsultation = useMarkNoShowConsultationMutation();
+  const createRecordFromConsultation = useCreateMedicalRecordMutation();
   const updating = updateConsultation.isPending;
   const rescheduleLoading = rescheduleConsultation.isPending;
+  const cancelling = cancelConsultation.isPending;
+  const markingNoShow = markNoShowConsultation.isPending;
+  const startingAtendimento = createRecordFromConsultation.isPending;
 
   const createTutor = useCreateTutorMutation();
   const createPatient = useCreatePatientMutation();
@@ -323,9 +345,22 @@ function CalendarContent() {
   const getListData = (day: Dayjs) => consultations.filter((c) => dayjs(c.consultation_date).isSame(day, 'day'));
   const getGoogleByDay = (day: Dayjs) => googleEvents.filter((e) => e.start && dayjs(e.start).isSame(day, 'day'));
 
-  const formatStatus = (s?: string) => (s === 'completed' ? 'Realizada' : s === 'cancelled' ? 'Cancelada' : 'Agendada');
+  const formatStatus = (s?: string) =>
+    s === 'completed'
+      ? 'Realizada'
+      : s === 'cancelled'
+        ? 'Cancelada'
+        : s === 'no_show'
+          ? 'Não Compareceu'
+          : 'Agendada';
   const statusColor = (s?: string) =>
-    s === 'completed' ? 'bg-green-500' : s === 'cancelled' ? 'bg-red-500' : 'bg-primary/100';
+    s === 'completed'
+      ? 'bg-green-500'
+      : s === 'cancelled'
+        ? 'bg-red-500'
+        : s === 'no_show'
+          ? 'bg-slate-500'
+          : 'bg-primary/100';
 
   const availabilityDate = useMemo(() => {
     const d = dayjs(formData.consultation_date);
@@ -482,6 +517,44 @@ function CalendarContent() {
       toast.error('Erro');
     }
   };
+
+  // Caminho A da unificação Agenda ↔ Prontuário: cria a ficha já linkada a
+  // este agendamento (consultation_id) em vez de começar do zero.
+  const handleStartAtendimento = async () => {
+    if (!selectedConsultation?.patient?.id) return;
+    try {
+      const record = await createRecordFromConsultation.mutateAsync({
+        patient_id: selectedConsultation.patient.id,
+        consultation_id: selectedConsultation.id,
+      });
+      router.push(`/medical-records/${record.id}`);
+    } catch (e: unknown) {
+      toast.error(getApiErrorMessage(e, 'Erro ao iniciar atendimento'));
+    }
+  };
+
+  const handleMarkNoShow = async () => {
+    if (!selectedConsultation) return;
+    try {
+      await markNoShowConsultation.mutateAsync(selectedConsultation.id);
+      toast.success('Consulta marcada como não comparecimento.');
+      setDetailsVisible(false);
+    } catch (e: unknown) {
+      toast.error(getApiErrorMessage(e, 'Erro ao marcar não comparecimento'));
+    }
+  };
+
+  const handleCancelConsultation = async () => {
+    if (!selectedConsultation) return;
+    try {
+      await cancelConsultation.mutateAsync(selectedConsultation.id);
+      toast.success('Consulta cancelada.');
+      setDetailsVisible(false);
+    } catch (e: unknown) {
+      toast.error(getApiErrorMessage(e, 'Erro ao cancelar consulta'));
+    }
+  };
+
   const handleRescheduleSubmit = async () => {
     if (!selectedConsultation || !rescheduleDate) return;
     try {
@@ -1592,6 +1665,24 @@ function CalendarContent() {
                 <div className="pt-2 border-t flex flex-wrap gap-2">
                   {selectedConsultation?.patient?.id && (
                     <Button
+                      size="sm"
+                      className="gap-1.5 bg-primary"
+                      disabled={
+                        ['cancelled', 'no_show'].includes(selectedConsultation?.status ?? '') ||
+                        startingAtendimento
+                      }
+                      onClick={handleStartAtendimento}
+                    >
+                      {startingAtendimento ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <Stethoscope className="w-3.5 h-3.5" />
+                      )}{' '}
+                      Iniciar atendimento
+                    </Button>
+                  )}
+                  {selectedConsultation?.patient?.id && (
+                    <Button
                       variant="outline"
                       size="sm"
                       className="gap-1.5"
@@ -1606,7 +1697,7 @@ function CalendarContent() {
                     variant="outline"
                     size="sm"
                     className="gap-1.5"
-                    disabled={selectedConsultation?.status === 'cancelled'}
+                    disabled={['cancelled', 'no_show'].includes(selectedConsultation?.status ?? '')}
                     onClick={() => {
                       setRescheduleDate(
                         selectedConsultation
@@ -1623,7 +1714,7 @@ function CalendarContent() {
                   <Button
                     size="sm"
                     className="gap-1.5 bg-primary"
-                    disabled={selectedConsultation?.status === 'completed' || updating}
+                    disabled={['completed', 'cancelled', 'no_show'].includes(selectedConsultation?.status ?? '') || updating}
                     onClick={handleMarkCompleted}
                   >
                     {updating ? (
@@ -1646,6 +1737,75 @@ function CalendarContent() {
                     )}{' '}
                     Pagamento
                   </Button>
+
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-1.5 text-amber-700 hover:text-amber-800"
+                        disabled={
+                          ['completed', 'cancelled', 'no_show'].includes(selectedConsultation?.status ?? '') ||
+                          markingNoShow
+                        }
+                      >
+                        {markingNoShow ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <UserX className="w-3.5 h-3.5" />
+                        )}{' '}
+                        Não compareceu
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Marcar não comparecimento?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Isso libera o horário na agenda e registra uma ficha de não
+                          comparecimento no prontuário do paciente (fica no histórico
+                          permanentemente). O tutor recebe uma mensagem de WhatsApp
+                          oferecendo reagendar.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Voltar</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleMarkNoShow}>Confirmar</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-1.5 text-destructive hover:text-destructive"
+                        disabled={
+                          ['cancelled', 'no_show'].includes(selectedConsultation?.status ?? '') || cancelling
+                        }
+                      >
+                        {cancelling ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Ban className="w-3.5 h-3.5" />
+                        )}{' '}
+                        Cancelar
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Cancelar esta consulta?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          O horário fica liberado na agenda. O agendamento não é
+                          excluído — continua no histórico como cancelado.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Voltar</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleCancelConsultation}>Confirmar</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
               </div>
             )

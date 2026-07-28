@@ -59,6 +59,8 @@ export interface MedicalRecordCreatePayload {
   record_type?: string;
   record_date?: string;
   chief_complaint?: string;
+  /** Linka a ficha a um agendamento existente da Agenda. */
+  consultation_id?: string;
 }
 
 export interface MedicalRecordUpdatePayload {

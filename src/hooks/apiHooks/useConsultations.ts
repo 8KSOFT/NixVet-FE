@@ -97,3 +97,35 @@ export function useRescheduleConsultationMutation() {
     },
   });
 }
+
+/** Cancelamento suave — preserva histórico (status vira 'cancelled'). */
+export function useCancelConsultationMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await api.patch(`/consultations/${id}/cancel`);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: consultationKeys.all });
+    },
+  });
+}
+
+/**
+ * Marca não comparecimento — libera recursos, registra ficha de não
+ * comparecimento no prontuário (histórico legal) e dispara WhatsApp de
+ * reagendamento pro tutor.
+ */
+export function useMarkNoShowConsultationMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await api.patch(`/consultations/${id}/no-show`);
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: consultationKeys.all });
+    },
+  });
+}
