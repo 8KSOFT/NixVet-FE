@@ -246,6 +246,14 @@ export default function MedicalRecordsListPage() {
                         <FolderOpen className="h-5 w-5" />
                       </div>
                       <p className="w-full truncate text-sm font-semibold text-foreground">{group.patient.name}</p>
+                      {/* Sem o tutor, duas pastas de animais homônimos ficam
+                          indistinguíveis. */}
+                      <p
+                        className="w-full truncate text-[11px] text-muted-foreground"
+                        title={group.patient.tutor?.name ?? undefined}
+                      >
+                        {group.patient.tutor?.name ?? 'Sem responsável'}
+                      </p>
                       <p className="text-xs text-muted-foreground">
                         {group.records.length} {group.records.length === 1 ? 'ficha' : 'fichas'}
                       </p>

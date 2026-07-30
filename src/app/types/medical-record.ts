@@ -17,6 +17,8 @@ export interface MedicalRecordPatientRef {
   name: string;
   species?: string;
   breed?: string;
+  /** Desambigua pastas de animais homônimos na listagem de prontuários. */
+  tutor?: { id: string; name: string } | null;
 }
 
 export interface MedicalRecordVetRef {
