@@ -10,7 +10,8 @@ import { useForm } from 'react-hook-form';
 import { Loader2, User } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { getApiErrorMessage } from '@/app/utils/api-error-message';
-import { useProfileQuery, useUpdateProfileMutation } from '@/hooks/apiHooks/useUsers';
+import { useProfileQuery, useUpdateProfileMutation, userKeys } from '@/hooks/apiHooks/useUsers';
+import { ProfilePhotoUploader } from '@/components/shared/profile-photo';
 
 interface ProfileFormValues {
   name: string;
@@ -95,6 +96,14 @@ export default function ProfilePage() {
             </div>
           ) : (
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+              {/* `/users/me` resolve o id pelo token — a tela não precisa carregá-lo. */}
+              <ProfilePhotoUploader
+                target="/users/me"
+                invalidate={[userKeys.all]}
+                label="sua foto"
+                url={profile?.photo_url}
+                name={profile?.name}
+              />
               <div>
                 <Label>{t('profile.name')}</Label>
                 <Input {...register('name', { required: true })} />

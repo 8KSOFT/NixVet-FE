@@ -20,6 +20,7 @@ import {
   useUpdatePatientMutation,
   type PatientPayload,
 } from '@/hooks/apiHooks/usePatients';
+import { ProfilePhoto } from '@/components/shared/profile-photo';
 import { useTutorsListQuery } from '@/hooks/apiHooks/useTutors';
 import { useCreateMedicalRecordMutation } from '@/hooks/apiHooks/useMedicalRecords';
 import {
@@ -372,12 +373,15 @@ function PatientsContent() {
                         onClick={() => handleRowClick(record)}
                       >
                         <TableCell>
-                          <span className="inline-flex items-center gap-2">
-                            {record.name}
-                            {creatingRecordFor === record.id && (
-                              <Loader2 className="w-3.5 h-3.5 shrink-0 animate-spin text-primary" />
-                            )}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <ProfilePhoto url={record.photo_url} name={record.name} className="size-8" />
+                            <span className="inline-flex items-center gap-2">
+                              {record.name}
+                              {creatingRecordFor === record.id && (
+                                <Loader2 className="w-3.5 h-3.5 shrink-0 animate-spin text-primary" />
+                              )}
+                            </span>
+                          </div>
                         </TableCell>
                         <TableCell>{record.species}</TableCell>
                         <TableCell>{record.breed}</TableCell>
@@ -431,17 +435,20 @@ function PatientsContent() {
                     onClick={() => handleRowClick(record)}
                   >
                     <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="truncate font-medium flex items-center gap-2">
-                          {record.name}
-                          {creatingRecordFor === record.id && (
-                            <Loader2 className="w-3.5 h-3.5 shrink-0 animate-spin text-primary" />
-                          )}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {record.species}
-                          {record.breed ? ` · ${record.breed}` : ''}
-                        </p>
+                      <div className="flex min-w-0 items-center gap-2">
+                        <ProfilePhoto url={record.photo_url} name={record.name} className="size-9 shrink-0" />
+                        <div className="min-w-0">
+                          <p className="truncate font-medium flex items-center gap-2">
+                            {record.name}
+                            {creatingRecordFor === record.id && (
+                              <Loader2 className="w-3.5 h-3.5 shrink-0 animate-spin text-primary" />
+                            )}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {record.species}
+                            {record.breed ? ` · ${record.breed}` : ''}
+                          </p>
+                        </div>
                       </div>
                     </div>
 

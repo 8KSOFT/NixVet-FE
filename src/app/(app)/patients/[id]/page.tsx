@@ -14,7 +14,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Loader2, ChevronLeft, BookOpen, FlaskConical, ClipboardList, Clock, FileText } from 'lucide-react';
 import Link from 'next/link';
-import { usePatientQuery, usePatientTimelineQuery } from '@/hooks/apiHooks/usePatients';
+import { patientKeys, usePatientQuery, usePatientTimelineQuery } from '@/hooks/apiHooks/usePatients';
+import { ProfilePhotoUploader } from '@/components/shared/profile-photo';
 
 const typeConfig: Record<string, { label: string; colorClass: string; dotClass: string; icon: React.ReactNode }> = {
   consultation: {
@@ -108,8 +109,17 @@ export default function PatientDetailPage() {
       </div>
 
       <Card className="mb-6">
-        <CardHeader className="flex flex-col items-start gap-2 space-y-0 sm:flex-row sm:items-center sm:justify-between">
-          <CardTitle className="text-foreground">{patient.name}</CardTitle>
+        <CardHeader className="flex flex-col items-start gap-3 space-y-0 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-4">
+            <ProfilePhotoUploader
+              target={`/patients/${id}`}
+              invalidate={[patientKeys.all]}
+              label="foto"
+              url={patient.photo_url}
+              name={patient.name}
+            />
+            <CardTitle className="text-foreground">{patient.name}</CardTitle>
+          </div>
           <Button asChild size="sm" className="w-full bg-primary hover:bg-blue-700 sm:w-auto">
             <Link href={`/medical-records?patient=${id}`}>
               <FileText className="w-4 h-4 mr-1" /> Fichas

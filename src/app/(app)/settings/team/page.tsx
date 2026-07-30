@@ -33,8 +33,10 @@ import {
   useUpdateUserMutation,
   useUserAccessProfilesQuery,
   useSyncUserAccessProfilesMutation,
+  userKeys,
   type UserPayload,
 } from '@/hooks/apiHooks/useUsers';
+import { ProfilePhoto, ProfilePhotoUploader } from '@/components/shared/profile-photo';
 import { useAccessProfilesListQuery } from '@/hooks/apiHooks/useAccessProfiles';
 import { CheckboxMultiSelect } from '@/components/checkbox-multi-select';
 import { ListPagination } from '@/components/list-pagination';
@@ -82,6 +84,7 @@ function TeamContent() {
   const { data: usersPage, isLoading: loading, error: usersError } = useStaffUsersQuery(listPage);
   const forbidden = (usersError as ApiRequestError | null)?.response?.status === 403;
   const users = forbidden ? [] : (usersPage?.items ?? []);
+  const editingUser = users.find((u) => u.id === editingId);
   const listTotal = usersPage?.total ?? 0;
   const listTotalPages = usersPage?.totalPages ?? 1;
 
@@ -277,7 +280,12 @@ function TeamContent() {
               <TableBody>
                 {users.map((user) => (
                   <TableRow className="border-b border-gray-300 h-15" key={user.id}>
-                    <TableCell>{user.name}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <ProfilePhoto url={user.photo_url} name={user.name} className="size-8" />
+                        <span>{user.name}</span>
+                      </div>
+                    </TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>{user.crmv}</TableCell>
                     <TableCell>{user.sipeagro_number}</TableCell>
@@ -322,9 +330,12 @@ function TeamContent() {
             {users.map((user) => (
               <div key={user.id} className="rounded-lg border border-gray-300 bg-white p-4">
                 <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="truncate font-medium">{user.name}</p>
-                    <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+                  <div className="flex min-w-0 items-center gap-2">
+                    <ProfilePhoto url={user.photo_url} name={user.name} className="size-9 shrink-0" />
+                    <div className="min-w-0">
+                      <p className="truncate font-medium">{user.name}</p>
+                      <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+                    </div>
                   </div>
                   <Badge variant={roleBadgeVariant(user.role)} className="shrink-0">
                     {t(`roles.${user.role}`, { defaultValue: user.role })}
@@ -399,6 +410,15 @@ function TeamContent() {
         }
       >
         <form id="team-create-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4 md:space-y-6">
+          {editingId ? (
+            <ProfilePhotoUploader
+              target={`/users/${editingId}`}
+              invalidate={[userKeys.all]}
+              label="foto"
+              url={editingUser?.photo_url}
+              name={editingUser?.name}
+            />
+          ) : null}
           <div className="space-y-2">
             <Label>{t('team.formName')}</Label>
             <Input {...register('name', { required: true })} />

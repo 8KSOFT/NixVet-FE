@@ -35,7 +35,9 @@ import {
   useDeleteTutorMutation,
   useTutorsQuery,
   useUpdateTutorMutation,
+  tutorKeys,
 } from '@/hooks/apiHooks/useTutors';
+import { ProfilePhoto, ProfilePhotoUploader } from '@/components/shared/profile-photo';
 
 const tutorSchema = z.object({
   name: z.string().min(1, 'Obrigatório'),
@@ -112,6 +114,7 @@ export default function OwnersPage() {
 
   const { data: tutorsPage, isLoading: loading } = useTutorsQuery(listPage);
   const tutors = tutorsPage?.items ?? [];
+  const editingTutor = tutors.find((tu) => tu.id === editingId);
   const listTotal = tutorsPage?.total ?? 0;
   const listTotalPages = tutorsPage?.totalPages ?? 1;
 
@@ -307,7 +310,12 @@ export default function OwnersPage() {
               <TableBody>
                 {tutors.map((tutor) => (
                   <TableRow className="border-b border-gray-300 h-15" key={tutor.id}>
-                    <TableCell>{tutor.name}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <ProfilePhoto url={tutor.photo_url} name={tutor.name} className="size-8" />
+                        <span>{tutor.name}</span>
+                      </div>
+                    </TableCell>
                     <TableCell>{tutor.email}</TableCell>
                     <TableCell>{formatPhoneDisplay(tutor.phone)}</TableCell>
                     <TableCell>{formatCpfDisplay(tutor.cpf)}</TableCell>
@@ -354,7 +362,10 @@ export default function OwnersPage() {
           <div className="space-y-3 md:hidden">
             {tutors.map((tutor) => (
               <div key={tutor.id} className="rounded-lg border border-gray-300 bg-white p-4">
-                <p className="truncate font-medium">{tutor.name}</p>
+                <div className="flex items-center gap-2">
+                  <ProfilePhoto url={tutor.photo_url} name={tutor.name} className="size-9 shrink-0" />
+                  <p className="truncate font-medium">{tutor.name}</p>
+                </div>
 
                 <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
                   <div className="col-span-2">
@@ -445,6 +456,16 @@ export default function OwnersPage() {
         }
       >
         <form id="owner-create-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4 md:space-y-6">
+          {/* Só em edição: a foto precisa de um cadastro já criado para ter onde morar. */}
+          {editingId ? (
+            <ProfilePhotoUploader
+              target={`/tutors/${editingId}`}
+              invalidate={[tutorKeys.all]}
+              label="foto"
+              url={editingTutor?.photo_url}
+              name={editingTutor?.name}
+            />
+          ) : null}
           <div className="space-y-2">
             <Label htmlFor="name">Nome *</Label>
             <Input id="name" {...register('name')} placeholder="Nome completo" />

@@ -6,6 +6,8 @@ export interface TeamUserRow {
   specialty?: string;
   sipeagro_number?: string;
   role: string;
+  /** URL pré-assinada da foto de perfil — expira, não guardar. */
+  photo_url?: string | null;
 }
 
 export interface TeamUserFormValues {

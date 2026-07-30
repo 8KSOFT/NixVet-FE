@@ -21,7 +21,8 @@ import {
 } from "lucide-react";
 import { planMeetsRequirement } from "@/lib/plans";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useProfileQuery } from "@/hooks/apiHooks/useUsers";
 import {
   Sheet,
   SheetContent,
@@ -697,6 +698,9 @@ export default function DashboardLayout({
     ? t(`roles.${headerRole}`, { defaultValue: headerRole })
     : t("header.roleUnknown");
 
+  // Foto do usuário logado no avatar do header; sem foto, segue nas iniciais.
+  const { data: headerProfile } = useProfileQuery();
+
   return (
     <div className="flex min-h-screen bg-background">
       <CommandPalette
@@ -815,6 +819,13 @@ export default function DashboardLayout({
                   className="rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <Avatar className="size-9 cursor-pointer border border-border transition-shadow duration-200 hover:ring-2 hover:ring-primary/20">
+                    {headerProfile?.photo_url ? (
+                      <AvatarImage
+                        src={headerProfile.photo_url}
+                        alt={headerProfile.name ?? ""}
+                        className="object-cover"
+                      />
+                    ) : null}
                     <AvatarFallback className="bg-brand-deep text-xs font-semibold text-white">
                       {roleLabel.substring(0, 2).toUpperCase()}
                     </AvatarFallback>

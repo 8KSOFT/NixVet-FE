@@ -16,6 +16,8 @@ export interface PatientRow {
   no_tutor_reason?: string | null;
   tutor?: PatientTutor | null;
   createdAt?: string;
+  /** URL pré-assinada da foto de perfil — expira, não guardar. */
+  photo_url?: string | null;
 }
 
 export interface SupportOption {
@@ -87,4 +89,6 @@ export interface PatientDetail {
   weight: number;
   sex: string;
   tutor?: { name: string } | null;
+  /** URL pré-assinada da foto de perfil — expira, não guardar. */
+  photo_url?: string | null;
 }
