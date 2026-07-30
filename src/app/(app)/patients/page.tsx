@@ -14,13 +14,14 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { API_PAGE_SIZE } from '@/lib/pagination';
 import {
+  patientKeys,
   useCreatePatientMutation,
   useDeletePatientMutation,
   usePatientsQuery,
   useUpdatePatientMutation,
   type PatientPayload,
 } from '@/hooks/apiHooks/usePatients';
-import { ProfilePhoto } from '@/components/shared/profile-photo';
+import { ProfilePhoto, ProfilePhotoUploader } from '@/components/shared/profile-photo';
 import { useTutorsListQuery } from '@/hooks/apiHooks/useTutors';
 import { useCreateMedicalRecordMutation } from '@/hooks/apiHooks/useMedicalRecords';
 import {
@@ -216,6 +217,8 @@ function PatientsContent() {
     if (!startAtendimentoIntent || creatingRecordFor) return;
     handleStartAtendimento(record);
   };
+
+  const editingPatient = patients.find((p) => p.id === editingId);
 
   const handleEdit = (record: PatientRow) => {
     setEditingId(record.id);
@@ -528,6 +531,16 @@ function PatientsContent() {
         }
       >
         <form id="patient-create-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4 md:space-y-6">
+          {editingId ? (
+            <ProfilePhotoUploader
+              target={`/patients/${editingId}`}
+              invalidate={[patientKeys.all]}
+              label="foto"
+              url={editingPatient?.photo_url}
+              name={editingPatient?.name}
+            />
+          ) : null}
+
           {/* Nome */}
           <div className="space-y-2">
             <Label htmlFor="name">Nome *</Label>
