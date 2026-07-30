@@ -47,30 +47,50 @@ export function useUploadProfilePhotoMutation(
       // `fetch` cru de propósito, não o `api`: a URL já carrega a assinatura e
       // mandar o nosso header Authorization junto faz o storage recusar o PUT.
       //
-      // Uma tentativa extra porque a falha observada é `TypeError: Failed to
-      // fetch` — erro de transporte, sem status, que uma segunda tentativa
-      // costuma vencer. Erro com status (403, 413) não é retentado: repetir
-      // não muda o resultado.
+      // Duas estratégias, nesta ordem:
+      //  1. com Content-Type — preserva o mime do objeto, mas é "não simples"
+      //     em CORS, então exige preflight;
+      //  2. blob sem tipo — não manda Content-Type, vira requisição simples e
+      //     dispensa preflight por completo.
+      //
+      // A 2ª existe porque a falha em produção é `TypeError: Failed to fetch`
+      // com preflight respondendo 204 e o PUT morrendo sem status — sintoma
+      // compatível com o preflight sendo aceito e a requisição real barrada.
+      // O curl passa nos dois casos, então não dá para reproduzir fora do
+      // navegador; a alternativa é o app se recuperar sozinho.
+      const semTipo = async () => new Blob([await image.blob.arrayBuffer()]);
+
+      const tentativas: Array<() => Promise<Response>> = [
+        () => fetch(presigned.upload_url, {
+          method: 'PUT', body: image.blob, headers: { 'Content-Type': image.mimeType },
+        }),
+        async () => fetch(presigned.upload_url, { method: 'PUT', body: await semTipo() }),
+      ];
+
       let put: Response | undefined;
-      for (let tentativa = 1; tentativa <= 2; tentativa++) {
+      let ultimoErro: unknown;
+      for (const tentar of tentativas) {
         try {
-          put = await fetch(presigned.upload_url, {
-            method: 'PUT',
-            body: image.blob,
-            headers: { 'Content-Type': image.mimeType },
-          });
+          put = await tentar();
           break;
         } catch (err) {
-          if (tentativa === 2) {
-            throw new Error(
-              'Não foi possível enviar a imagem: a conexão com o servidor de arquivos falhou. Tente de novo.',
-            );
-          }
-          await new Promise((r) => setTimeout(r, 800));
+          ultimoErro = err;
         }
       }
-      if (!put || !put.ok) {
-        throw new Error(`Falha ao enviar a imagem (HTTP ${put?.status ?? 'sem resposta'}).`);
+
+      if (!put) {
+        console.error('[foto] PUT falhou nas duas estratégias', {
+          url: presigned.upload_url,
+          bytes: image.blob.size,
+          mime: image.mimeType,
+          erro: ultimoErro,
+        });
+        throw new Error(
+          'Não foi possível enviar a imagem: a conexão com o servidor de arquivos falhou. Tente de novo.',
+        );
+      }
+      if (!put.ok) {
+        throw new Error(`Falha ao enviar a imagem (HTTP ${put.status}).`);
       }
 
       const { data } = await api.put<ProfilePhotoResult>(`${target}/photo`, {
