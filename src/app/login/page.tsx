@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -299,23 +300,21 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              <a
-                href="#"
+              <Link
+                href="/esqueci-senha"
                 className="mt-4 self-end text-xs font-medium text-gray-400 transition-colors duration-200 hover:text-(--primary-hover) sm:hidden"
-                onClick={(e) => e.preventDefault()}
               >
                 {translation("auth.forgotPassword")}
-              </a>
+              </Link>
 
               <div className="mt-auto flex w-full flex-col gap-6 pt-6 sm:mt-8 sm:gap-8 sm:pt-0">
                 <div className="flex w-full flex-col items-end gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-0">
-                  <a
-                    href="#"
+                  <Link
+                    href="/esqueci-senha"
                     className="hidden text-xs font-medium text-gray-400 transition-colors duration-200 hover:text-(--primary-hover) sm:inline"
-                    onClick={(e) => e.preventDefault()}
                   >
                     {translation("auth.forgotPassword")}
-                  </a>
+                  </Link>
                   <Button
                     type="submit"
                     className="w-full py-3.5 text-base font-medium rounded-full sm:w-35 sm:py-2.5"
