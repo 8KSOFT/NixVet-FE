@@ -101,47 +101,56 @@ export function ProfilePhotoUploader({
   };
 
   return (
-    <div className="flex items-center gap-3">
-      <div className="relative">
-        <ProfilePhoto url={url} name={name} className={cn('size-16', className)} />
+    <div className="flex flex-col items-center gap-1.5">
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+        className="hidden"
+        onChange={handleFile}
+      />
+
+      {/* A própria imagem é o botão: é onde a pessoa procura primeiro.
+          O badge de câmera fica sempre visível, e não só no hover, senão
+          em touch não haveria nenhuma pista de que dá para trocar. */}
+      <button
+        type="button"
+        disabled={busy}
+        onClick={() => inputRef.current?.click()}
+        title={url ? `Trocar ${label}` : `Adicionar ${label}`}
+        aria-label={url ? `Trocar ${label}` : `Adicionar ${label}`}
+        className="group relative rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed"
+      >
+        <ProfilePhoto url={url} name={name} className={cn('size-20', className)} />
+
+        {/* Escurece no hover para deixar claro que a imagem é clicável. */}
+        <span className="absolute inset-0 flex items-center justify-center rounded-full bg-foreground/0 transition-colors group-hover:bg-foreground/35">
+          <Camera className="size-6 text-white opacity-0 transition-opacity group-hover:opacity-100" />
+        </span>
+
+        <span className="absolute -right-0.5 -bottom-0.5 flex size-7 items-center justify-center rounded-full border-2 border-background bg-primary text-primary-foreground shadow-sm">
+          <Camera className="size-3.5" />
+        </span>
+
         {busy ? (
           <span className="absolute inset-0 flex items-center justify-center rounded-full bg-foreground/45">
             <Loader2 className="size-5 animate-spin text-white" />
           </span>
         ) : null}
-      </div>
+      </button>
 
-      <div className="flex flex-col gap-1.5">
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
-          className="hidden"
-          onChange={handleFile}
-        />
+      {url && canRemove ? (
         <Button
           type="button"
           size="sm"
-          variant="outline"
+          variant="ghost"
+          className="h-auto py-1 text-xs text-muted-foreground hover:text-destructive"
           disabled={busy}
-          onClick={() => inputRef.current?.click()}
+          onClick={handleRemove}
         >
-          <Camera className="mr-1 size-4" />
-          {url ? `Trocar ${label}` : `Adicionar ${label}`}
+          <Trash2 className="mr-1 size-3.5" /> Remover
         </Button>
-        {url && canRemove ? (
-          <Button
-            type="button"
-            size="sm"
-            variant="ghost"
-            className="text-destructive hover:text-destructive"
-            disabled={busy}
-            onClick={handleRemove}
-          >
-            <Trash2 className="mr-1 size-4" /> Remover
-          </Button>
-        ) : null}
-      </div>
+      ) : null}
     </div>
   );
 }
