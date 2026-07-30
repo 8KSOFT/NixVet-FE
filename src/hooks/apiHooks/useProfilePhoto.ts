@@ -23,6 +23,56 @@ export interface ProfilePhotoResult {
  */
 export type ProfilePhotoTarget = string;
 
+/** Resultado de uma tentativa de PUT, com o que saiu de fato pela rede. */
+interface ResultadoPut {
+  status: number;
+  enviados: number;
+  total: number;
+  ms: number;
+}
+
+/**
+ * PUT via XMLHttpRequest, e não `fetch`, de propósito.
+ *
+ * O `fetch` só devolve "TypeError: Failed to fetch" quando a conexão morre —
+ * sem status, sem quanto do corpo chegou a sair. O nginx, por sua vez, só
+ * registra requisição completa, então um upload abortado no meio não aparece
+ * em lugar nenhum dos dois lados.
+ *
+ * O XHR expõe `upload.onprogress`, que dá o equivalente cliente do
+ * `$request_length`: com ele dá para dizer se a conexão caiu no primeiro byte
+ * ou no meio do corpo, e separar `error` de `timeout` de `abort`.
+ */
+function putComProgresso(
+  url: string,
+  blob: Blob,
+  mime: string,
+  timeoutMs = 60_000,
+): Promise<ResultadoPut> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    const t0 = performance.now();
+    let enviados = 0;
+
+    const ms = () => Math.round(performance.now() - t0);
+    const falhar = (tipo: string) =>
+      reject(new Error(`${tipo} apos ${enviados}/${blob.size} bytes em ${ms()}ms`));
+
+    xhr.open('PUT', url, true);
+    xhr.setRequestHeader('Content-Type', mime);
+    xhr.timeout = timeoutMs;
+
+    xhr.upload.onprogress = (e) => { enviados = e.loaded; };
+    xhr.onload = () => resolve({ status: xhr.status, enviados, total: blob.size, ms: ms() });
+    xhr.onerror = () => falhar('conexao caiu');
+    xhr.ontimeout = () => falhar('timeout');
+    xhr.onabort = () => falhar('abortado');
+
+    xhr.send(blob);
+  });
+}
+
+
 type InvalidateKeys = readonly (readonly unknown[])[];
 
 /**
@@ -60,25 +110,19 @@ export function useUploadProfilePhotoMutation(
         });
         storagePath = presigned.storage_path;
 
-        const t0 = performance.now();
         try {
-          // `fetch` cru de propósito, não o `api`: a URL já carrega a
-          // assinatura e mandar o nosso Authorization junto faz o storage
-          // recusar o PUT.
-          const put = await fetch(presigned.upload_url, {
-            method: 'PUT',
-            body: image.blob,
-            headers: { 'Content-Type': image.mimeType },
-          });
-          if (!put.ok) throw new Error(`HTTP ${put.status}`);
+          // Sem Authorization: a URL já carrega a assinatura, e mandar o nosso
+          // header junto faz o storage recusar o PUT.
+          const r = await putComProgresso(presigned.upload_url, image.blob, image.mimeType);
+          if (r.status < 200 || r.status >= 300) {
+            throw new Error(`HTTP ${r.status} apos ${r.enviados}/${r.total} bytes`);
+          }
           break;
         } catch (err) {
           ultimoErro = err;
-          // Duração separa "recusado na hora" de "morreu no meio" — é o que o
-          // log do servidor não consegue enxergar hoje.
           console.warn(
-            `[foto] tentativa ${n}/${MAX} falhou apos ${Math.round(performance.now() - t0)}ms`,
-            { bytes: image.blob.size, mime: image.mimeType, erro: err },
+            `[foto] tentativa ${n}/${MAX}: ${(err as Error).message}`,
+            { url: presigned.upload_url, mime: image.mimeType },
           );
           if (n === MAX) {
             throw new Error(
