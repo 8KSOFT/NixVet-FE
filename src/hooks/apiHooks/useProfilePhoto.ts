@@ -2,7 +2,6 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/axios';
-import { getApiBaseUrl } from '@/lib/api-base';
 import type { PreparedImage } from '@/lib/profile-image';
 
 export interface ProfilePhotoResult {
@@ -63,7 +62,10 @@ export function useUploadProfilePhotoMutation(
       if (token) headers.Authorization = `Bearer ${token}`;
       if (tenantId) headers['x-tenant-id'] = decodeURIComponent(tenantId);
 
-      const res = await fetch(`${getApiBaseUrl()}${target}/photo/upload`, {
+      // Caminho RELATIVO de propósito: o rewrite do next.config repassa para a
+      // API. Mantém a requisição same-origin, sem preflight — o padrão que
+      // funciona em produção na plataforma Omni sobre a mesma infra.
+      const res = await fetch(`/api${target}/photo/upload`, {
         method: 'POST',
         headers,
         body: form,
