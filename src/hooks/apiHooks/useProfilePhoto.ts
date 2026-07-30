@@ -38,63 +38,59 @@ export function useUploadProfilePhotoMutation(
   return useMutation({
     // Recebe a imagem já pronta (recortada no diálogo, ou redimensionada no
     // fallback quando o navegador não consegue decodificar para recortar).
+    // Recebe a imagem já pronta (recortada no diálogo, ou redimensionada no
+    // fallback quando o navegador não consegue decodificar para recortar).
     mutationFn: async (image: PreparedImage): Promise<ProfilePhotoResult> => {
-      const { data: presigned } = await api.post<UploadUrlResponse>(`${target}/photo/upload-url`, {
-        mime_type: image.mimeType,
-        size_bytes: image.blob.size,
-      });
-
-      // `fetch` cru de propósito, não o `api`: a URL já carrega a assinatura e
-      // mandar o nosso header Authorization junto faz o storage recusar o PUT.
+      // Os logs do nginx mostram o padrão real: o PUT é abortado no meio, não
+      // recusado — a mesma máquina falha uma vez e passa na seguinte. Por isso
+      // a estratégia é repetir, e não "consertar" a requisição.
       //
-      // Duas estratégias, nesta ordem:
-      //  1. com Content-Type — preserva o mime do objeto, mas é "não simples"
-      //     em CORS, então exige preflight;
-      //  2. blob sem tipo — não manda Content-Type, vira requisição simples e
-      //     dispensa preflight por completo.
-      //
-      // A 2ª existe porque a falha em produção é `TypeError: Failed to fetch`
-      // com preflight respondendo 204 e o PUT morrendo sem status — sintoma
-      // compatível com o preflight sendo aceito e a requisição real barrada.
-      // O curl passa nos dois casos, então não dá para reproduzir fora do
-      // navegador; a alternativa é o app se recuperar sozinho.
-      const semTipo = async () => new Blob([await image.blob.arrayBuffer()]);
-
-      const tentativas: Array<() => Promise<Response>> = [
-        () => fetch(presigned.upload_url, {
-          method: 'PUT', body: image.blob, headers: { 'Content-Type': image.mimeType },
-        }),
-        async () => fetch(presigned.upload_url, { method: 'PUT', body: await semTipo() }),
-      ];
-
-      let put: Response | undefined;
+      // Cada tentativa pede uma URL nova: a assinatura vale 5 min e uma
+      // tentativa que morreu no meio pode ter deixado o objeto num estado que
+      // não convém reaproveitar.
+      const MAX = 3;
+      const espera = [700, 1800];
       let ultimoErro: unknown;
-      for (const tentar of tentativas) {
+      let storagePath = '';
+
+      for (let n = 1; n <= MAX; n++) {
+        const { data: presigned } = await api.post<UploadUrlResponse>(`${target}/photo/upload-url`, {
+          mime_type: image.mimeType,
+          size_bytes: image.blob.size,
+        });
+        storagePath = presigned.storage_path;
+
+        const t0 = performance.now();
         try {
-          put = await tentar();
+          // `fetch` cru de propósito, não o `api`: a URL já carrega a
+          // assinatura e mandar o nosso Authorization junto faz o storage
+          // recusar o PUT.
+          const put = await fetch(presigned.upload_url, {
+            method: 'PUT',
+            body: image.blob,
+            headers: { 'Content-Type': image.mimeType },
+          });
+          if (!put.ok) throw new Error(`HTTP ${put.status}`);
           break;
         } catch (err) {
           ultimoErro = err;
+          // Duração separa "recusado na hora" de "morreu no meio" — é o que o
+          // log do servidor não consegue enxergar hoje.
+          console.warn(
+            `[foto] tentativa ${n}/${MAX} falhou apos ${Math.round(performance.now() - t0)}ms`,
+            { bytes: image.blob.size, mime: image.mimeType, erro: err },
+          );
+          if (n === MAX) {
+            throw new Error(
+              'Não foi possível enviar a imagem depois de 3 tentativas. Verifique a conexão e tente de novo.',
+            );
+          }
+          await new Promise((r) => setTimeout(r, espera[n - 1]));
         }
       }
 
-      if (!put) {
-        console.error('[foto] PUT falhou nas duas estratégias', {
-          url: presigned.upload_url,
-          bytes: image.blob.size,
-          mime: image.mimeType,
-          erro: ultimoErro,
-        });
-        throw new Error(
-          'Não foi possível enviar a imagem: a conexão com o servidor de arquivos falhou. Tente de novo.',
-        );
-      }
-      if (!put.ok) {
-        throw new Error(`Falha ao enviar a imagem (HTTP ${put.status}).`);
-      }
-
       const { data } = await api.put<ProfilePhotoResult>(`${target}/photo`, {
-        storage_path: presigned.storage_path,
+        storage_path: storagePath,
       });
       return data;
     },
