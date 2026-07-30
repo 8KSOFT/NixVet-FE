@@ -2,6 +2,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/axios';
+import { getApiBaseUrl } from '@/lib/api-base';
 import type { PreparedImage } from '@/lib/profile-image';
 
 export interface ProfilePhotoResult {
@@ -44,8 +45,37 @@ export function useUploadProfilePhotoMutation(
       // alguns clientes mandam Content-Type genérico.
       form.append('file', image.blob, `foto.${image.mimeType.split('/')[1] ?? 'jpg'}`);
 
-      const { data } = await api.post<ProfilePhotoResult>(`${target}/photo/upload`, form);
-      return data;
+      // `fetch` cru em vez do `api` (axios) por evidência, não por preferência:
+      // na máquina onde o upload falha, o mesmo POST feito com `fetch` pelo
+      // console completou com 201, e pelo axios morre em ERR_TIMED_OUT sem
+      // chegar ao servidor. Não achamos a causa dessa diferença; o que se sabe
+      // é qual dos dois funciona ali.
+      //
+      // Como não passa pelo axios, os headers que o interceptor injeta são
+      // montados aqui — inclusive o Content-Type, que fica a cargo do browser
+      // para carregar o boundary do multipart.
+      const token = localStorage.getItem('accessToken');
+      const tenantId =
+        localStorage.getItem('tenantId') ??
+        document.cookie.match(/(?:^|; )nixvet_tenant_id=([^;]*)/)?.[1];
+
+      const headers: Record<string, string> = {};
+      if (token) headers.Authorization = `Bearer ${token}`;
+      if (tenantId) headers['x-tenant-id'] = decodeURIComponent(tenantId);
+
+      const res = await fetch(`${getApiBaseUrl()}${target}/photo/upload`, {
+        method: 'POST',
+        headers,
+        body: form,
+      });
+
+      const body = await res.json().catch(() => null);
+      if (!res.ok) {
+        const msg = Array.isArray(body?.message) ? body.message.join(' | ') : body?.message;
+        throw new Error(msg || `Falha ao enviar a imagem (HTTP ${res.status}).`);
+      }
+      // Mesmo envelope { success, message, data } que o interceptor desembrulha.
+      return (body?.data ?? body) as ProfilePhotoResult;
     },
     onSuccess: () => {
       for (const key of invalidate) {
