@@ -11,7 +11,8 @@ import {
   useUploadProfilePhotoMutation,
   type ProfilePhotoTarget,
 } from '@/hooks/apiHooks/useProfilePhoto';
-import { ProfileImageError } from '@/lib/profile-image';
+import { prepareProfileImage, ProfileImageError, type PreparedImage } from '@/lib/profile-image';
+import { ImageCropDialog } from './image-crop-dialog';
 import { cn } from '@/lib/utils';
 
 /** Iniciais do nome — no máximo duas. */
@@ -67,10 +68,23 @@ export function ProfilePhotoUploader({
 }: ProfilePhotoUploaderProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [cropFile, setCropFile] = useState<File | null>(null);
 
   const upload = useUploadProfilePhotoMutation(target, invalidate);
   const remove = useRemoveProfilePhotoMutation(target, invalidate);
   const busy = uploading || remove.isPending;
+
+  const enviar = async (image: PreparedImage) => {
+    setUploading(true);
+    try {
+      await upload.mutateAsync(image);
+      toast.success('Foto atualizada.');
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, 'Erro ao enviar a foto.'));
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -78,16 +92,21 @@ export function ProfilePhotoUploader({
     event.target.value = '';
     if (!file) return;
 
-    setUploading(true);
+    // Só abre o recorte se o navegador conseguir decodificar a imagem. HEIC
+    // fora do Safari não decodifica: nesse caso segue direto, sem recorte,
+    // em vez de travar o upload num diálogo que não renderiza.
     try {
-      await upload.mutateAsync(file);
-      toast.success('Foto atualizada.');
-    } catch (err) {
-      toast.error(
-        err instanceof ProfileImageError ? err.message : getApiErrorMessage(err, 'Erro ao enviar a foto.'),
-      );
-    } finally {
-      setUploading(false);
+      const bmp = await createImageBitmap(file);
+      bmp.close();
+      setCropFile(file);
+    } catch {
+      try {
+        await enviar(await prepareProfileImage(file));
+      } catch (err) {
+        toast.error(
+          err instanceof ProfileImageError ? err.message : getApiErrorMessage(err, 'Erro ao enviar a foto.'),
+        );
+      }
     }
   };
 
@@ -102,6 +121,15 @@ export function ProfilePhotoUploader({
 
   return (
     <div className="flex flex-col items-center gap-1.5">
+      <ImageCropDialog
+        file={cropFile}
+        onCancel={() => setCropFile(null)}
+        onConfirm={(image) => {
+          setCropFile(null);
+          void enviar(image);
+        }}
+      />
+
       <input
         ref={inputRef}
         type="file"

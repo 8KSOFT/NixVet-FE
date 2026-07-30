@@ -2,7 +2,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/axios';
-import { prepareProfileImage } from '@/lib/profile-image';
+import type { PreparedImage } from '@/lib/profile-image';
 
 interface UploadUrlResponse {
   upload_url: string;
@@ -36,9 +36,9 @@ export function useUploadProfilePhotoMutation(
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (file: File): Promise<ProfilePhotoResult> => {
-      const image = await prepareProfileImage(file);
-
+    // Recebe a imagem já pronta (recortada no diálogo, ou redimensionada no
+    // fallback quando o navegador não consegue decodificar para recortar).
+    mutationFn: async (image: PreparedImage): Promise<ProfilePhotoResult> => {
       const { data: presigned } = await api.post<UploadUrlResponse>(`${target}/photo/upload-url`, {
         mime_type: image.mimeType,
         size_bytes: image.blob.size,

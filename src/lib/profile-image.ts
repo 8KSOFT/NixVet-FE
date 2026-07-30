@@ -1,8 +1,9 @@
 /** Teto aceito pelo backend (ProfilePhotoService.MAX_BYTES). */
 export const PROFILE_PHOTO_MAX_BYTES = 5 * 1024 * 1024;
 
-/** Lado máximo do avatar. Acima disso é banda desperdiçada — a tela exibe ~100px. */
-const MAX_SIDE = 512;
+/** Lado do avatar salvo. Acima disso é banda desperdiçada — a tela exibe ~100px. */
+export const PROFILE_PHOTO_OUTPUT_SIZE = 512;
+const MAX_SIDE = PROFILE_PHOTO_OUTPUT_SIZE;
 
 /** Formatos que o backend aceita. */
 const ACCEPTED = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
