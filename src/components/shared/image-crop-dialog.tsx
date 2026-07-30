@@ -192,8 +192,12 @@ export function ImageCropDialog({ file, onCancel, onConfirm }: ImageCropDialogPr
                 onPointerCancel={onPointerUp}
                 onWheel={(e) => aplicarZoom(zoom - e.deltaY * 0.002)}
               />
-              {/* Máscara circular: mostra exatamente o que vira o avatar. */}
-              <div className="pointer-events-none absolute inset-0 rounded-lg shadow-[0_0_0_9999px_rgba(0,0,0,0.45)_inset] [clip-path:circle(50%_at_50%_50%)]" />
+              {/* Máscara circular: escurece o que fica DE FORA do círculo.
+                  Um box-shadow comum (não inset) num elemento circular pinta
+                  para fora dele; o overflow-hidden do pai apara o excesso.
+                  Com `inset` + clip-path acontecia o inverso — o círculo é que
+                  ficava preto, escondendo justamente a área que se quer ver. */}
+              <div className="pointer-events-none absolute inset-0 rounded-full shadow-[0_0_0_9999px_rgba(0,0,0,0.45)]" />
               <div className="pointer-events-none absolute inset-0 rounded-full border-2 border-white/80" />
               {!bitmap && (
                 <div className="absolute inset-0 flex items-center justify-center">

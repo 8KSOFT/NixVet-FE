@@ -45,13 +45,33 @@ export function useUploadProfilePhotoMutation(
       });
 
       // `fetch` cru de propósito, não o `api`: a URL já carrega a assinatura e
-      // mandar o nosso header Authorization junto faz o OCI recusar o PUT.
-      const put = await fetch(presigned.upload_url, {
-        method: 'PUT',
-        body: image.blob,
-        headers: { 'Content-Type': image.mimeType },
-      });
-      if (!put.ok) throw new Error(`Falha ao enviar a imagem (${put.status}).`);
+      // mandar o nosso header Authorization junto faz o storage recusar o PUT.
+      //
+      // Uma tentativa extra porque a falha observada é `TypeError: Failed to
+      // fetch` — erro de transporte, sem status, que uma segunda tentativa
+      // costuma vencer. Erro com status (403, 413) não é retentado: repetir
+      // não muda o resultado.
+      let put: Response | undefined;
+      for (let tentativa = 1; tentativa <= 2; tentativa++) {
+        try {
+          put = await fetch(presigned.upload_url, {
+            method: 'PUT',
+            body: image.blob,
+            headers: { 'Content-Type': image.mimeType },
+          });
+          break;
+        } catch (err) {
+          if (tentativa === 2) {
+            throw new Error(
+              'Não foi possível enviar a imagem: a conexão com o servidor de arquivos falhou. Tente de novo.',
+            );
+          }
+          await new Promise((r) => setTimeout(r, 800));
+        }
+      }
+      if (!put || !put.ok) {
+        throw new Error(`Falha ao enviar a imagem (HTTP ${put?.status ?? 'sem resposta'}).`);
+      }
 
       const { data } = await api.put<ProfilePhotoResult>(`${target}/photo`, {
         storage_path: presigned.storage_path,
