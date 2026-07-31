@@ -18,6 +18,62 @@ export type ProfilePhotoTarget = string;
 
 type InvalidateKeys = readonly (readonly unknown[])[];
 
+/** Headers que o interceptor do axios injetaria (este caminho não passa por ele). */
+function authHeaders(): Record<string, string> {
+  const token = localStorage.getItem('accessToken');
+  const tenantId =
+    localStorage.getItem('tenantId') ??
+    document.cookie.match(/(?:^|; )nixvet_tenant_id=([^;]*)/)?.[1];
+  const h: Record<string, string> = {};
+  if (token) h.Authorization = `Bearer ${token}`;
+  if (tenantId) h['x-tenant-id'] = decodeURIComponent(tenantId);
+  return h;
+}
+
+async function enviar(url: string, init: RequestInit): Promise<ProfilePhotoResult> {
+  const res = await fetch(url, init);
+  const body = await res.json().catch(() => null);
+  if (!res.ok) {
+    const msg = Array.isArray(body?.message) ? body.message.join(' | ') : body?.message;
+    throw new Error(msg || `HTTP ${res.status}`);
+  }
+  return (body?.data ?? body) as ProfilePhotoResult;
+}
+
+function lerComoBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const fr = new FileReader();
+    fr.onerror = () => reject(new Error('falha ao ler a imagem'));
+    fr.onload = () => {
+      const r = String(fr.result);
+      resolve(r.slice(r.indexOf(',') + 1));
+    };
+    fr.readAsDataURL(blob);
+  });
+}
+
+/**
+ * Manda o diagnóstico para o backend. Sem isso, uma falha que morre no cliente
+ * não deixa rastro em lugar nenhum — foi o que travou este bug por horas.
+ */
+function reportar(dados: Record<string, unknown>) {
+  const payload = JSON.stringify({
+    origem: 'upload-foto',
+    ...dados,
+    erroMultipart: (dados.erroMultipart as Error)?.message ?? String(dados.erroMultipart ?? ''),
+    erroBase64: (dados.erroBase64 as Error)?.message ?? String(dados.erroBase64 ?? ''),
+    ua: navigator.userAgent,
+    quando: new Date().toISOString(),
+  });
+  // `keepalive` para o relatório sobreviver se a página for embora em seguida.
+  void fetch('/api/diagnostics/client', {
+    method: 'POST',
+    headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+    body: payload,
+    keepalive: true,
+  }).catch(() => {});
+}
+
 /**
  * Envia a foto para a NOSSA API, que grava no storage.
  *
@@ -39,45 +95,42 @@ export function useUploadProfilePhotoMutation(
 
   return useMutation({
     mutationFn: async (image: PreparedImage): Promise<ProfilePhotoResult> => {
-      const form = new FormData();
-      // O nome do arquivo importa: o multer usa `originalname`, e sem extensão
-      // alguns clientes mandam Content-Type genérico.
-      form.append('file', image.blob, `foto.${image.mimeType.split('/')[1] ?? 'jpg'}`);
+      const headers = authHeaders();
 
-      // `fetch` cru em vez do `api` (axios) por evidência, não por preferência:
-      // na máquina onde o upload falha, o mesmo POST feito com `fetch` pelo
-      // console completou com 201, e pelo axios morre em ERR_TIMED_OUT sem
-      // chegar ao servidor. Não achamos a causa dessa diferença; o que se sabe
-      // é qual dos dois funciona ali.
-      //
-      // Como não passa pelo axios, os headers que o interceptor injeta são
-      // montados aqui — inclusive o Content-Type, que fica a cargo do browser
-      // para carregar o boundary do multipart.
-      const token = localStorage.getItem('accessToken');
-      const tenantId =
-        localStorage.getItem('tenantId') ??
-        document.cookie.match(/(?:^|; )nixvet_tenant_id=([^;]*)/)?.[1];
+      // Estratégia 1: multipart. É o formato natural para arquivo.
+      const t0 = performance.now();
+      try {
+        const form = new FormData();
+        form.append('file', image.blob, `foto.${image.mimeType.split('/')[1] ?? 'jpg'}`);
+        return await enviar(`/api${target}/photo/upload`, { method: 'POST', headers, body: form });
+      } catch (erroMultipart) {
+        const msMultipart = Math.round(performance.now() - t0);
 
-      const headers: Record<string, string> = {};
-      if (token) headers.Authorization = `Bearer ${token}`;
-      if (tenantId) headers['x-tenant-id'] = decodeURIComponent(tenantId);
-
-      // Caminho RELATIVO de propósito: o rewrite do next.config repassa para a
-      // API. Mantém a requisição same-origin, sem preflight — o padrão que
-      // funciona em produção na plataforma Omni sobre a mesma infra.
-      const res = await fetch(`/api${target}/photo/upload`, {
-        method: 'POST',
-        headers,
-        body: form,
-      });
-
-      const body = await res.json().catch(() => null);
-      if (!res.ok) {
-        const msg = Array.isArray(body?.message) ? body.message.join(' | ') : body?.message;
-        throw new Error(msg || `Falha ao enviar a imagem (HTTP ${res.status}).`);
+        // Estratégia 2: base64 num JSON comum — mesma forma das requisições que
+        // nunca falharam neste navegador. Vale a inflação de ~33% no corpo:
+        // em pelo menos um cliente o multipart não chega ao servidor (não
+        // aparece nem no log do nginx) e o JSON chega.
+        const t1 = performance.now();
+        try {
+          const data = await lerComoBase64(image.blob);
+          const r = await enviar(`/api${target}/photo/upload-base64`, {
+            method: 'POST',
+            headers: { ...headers, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mime_type: image.mimeType, data }),
+          });
+          reportar({ target, bytes: image.blob.size, msMultipart, erroMultipart, base64: 'ok' });
+          return r;
+        } catch (erroBase64) {
+          reportar({
+            target, bytes: image.blob.size, msMultipart, erroMultipart,
+            base64: 'falhou', msBase64: Math.round(performance.now() - t1), erroBase64,
+          });
+          throw new Error(
+            `Não foi possível enviar a imagem. multipart: ${(erroMultipart as Error).message}; ` +
+            `base64: ${(erroBase64 as Error).message}`,
+          );
+        }
       }
-      // Mesmo envelope { success, message, data } que o interceptor desembrulha.
-      return (body?.data ?? body) as ProfilePhotoResult;
     },
     onSuccess: () => {
       for (const key of invalidate) {
