@@ -25,6 +25,7 @@ import { toast } from "sonner";
 import type { PatientTimelineEvent } from "@/app/types/patient";
 import dayjs from "dayjs";
 import { usePatientQuery, usePatientTimelineQuery } from "@/hooks/apiHooks/usePatients";
+import { ProfilePhoto } from "@/components/shared/profile-photo";
 import {
   useCreateMedicalRecordMutation,
   useMedicalRecordsByPatientQuery,
@@ -209,9 +210,17 @@ function ProntuarioDetailContent() {
       {/* Cabeçalho do animal */}
       <div className="mb-6 rounded-xl border border-slate-200 bg-white p-4">
         <div className="flex items-center gap-3 sm:items-start sm:gap-4">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary sm:h-14 sm:w-14">
-            <PawPrint className="h-6 w-6 sm:h-7 sm:w-7" />
-          </div>
+          {patient.photo_url ? (
+            <ProfilePhoto
+              url={patient.photo_url}
+              name={patient.name}
+              className="size-12 shrink-0 sm:size-14"
+            />
+          ) : (
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary sm:h-14 sm:w-14">
+              <PawPrint className="h-6 w-6 sm:h-7 sm:w-7" />
+            </div>
+          )}
           <h1 className="min-w-0 truncate text-lg font-extrabold font-['InterDoFigma'] text-slate-900 sm:text-xl">
             {patient.name}
           </h1>

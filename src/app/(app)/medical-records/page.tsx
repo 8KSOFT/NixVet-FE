@@ -277,11 +277,15 @@ export default function MedicalRecordsListPage() {
               })}
             </div>
             <div>
+              {/* A tela mostra PASTAS (uma por animal) mas a API pagina FICHAS.
+                  Contar fichas aqui dizia "1–9 de 9" com 2 pastas na tela.
+                  Enquanto tudo cabe numa página da API, o agrupamento é
+                  completo e a contagem certa é a de pastas. */}
               <ListPagination
                 page={listPage}
                 totalPages={listTotalPages}
-                total={listTotal}
-                pageSize={API_PAGE_SIZE}
+                total={listTotalPages > 1 ? listTotal : patientGroups.length}
+                pageSize={listTotalPages > 1 ? API_PAGE_SIZE : patientGroups.length || 1}
                 onPageChange={setListPage}
                 disabled={loading}
               />
