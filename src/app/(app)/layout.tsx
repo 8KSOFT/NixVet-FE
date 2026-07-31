@@ -50,6 +50,7 @@ import {
 import { useBillingStatus } from "@/hooks/useBillingStatus";
 import { TrialBanner } from "@/components/billing/TrialBanner";
 import { EmailConfirmationBanner } from "@/components/onboarding/EmailConfirmationBanner";
+import { SetupChecklistWidget } from "@/components/onboarding/SetupChecklistWidget";
 import { useOnboardingStatusQuery } from "@/hooks/apiHooks/useOnboarding";
 import { LogoCompactoDynamic } from "@/components/shared/componentizedImages/LogoCompactoDynamic";
 import {
@@ -886,6 +887,7 @@ export default function DashboardLayout({
           {children}
         </main>
       </div>
+      <SetupChecklistWidget />
     </div>
   );
 }
