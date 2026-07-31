@@ -84,14 +84,14 @@ export default function LandingPage() {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 lg:gap-6">
               <Button
                 size="lg"
-                className="group w-60 h-13 p-0 pl-5 text-[16px] rounded-full text-sm font-medium text-brand-deep bg-white shadow-sm hover:bg-white/90 transition-colors active:bg-white/80 sm:w-45"
+                className="group h-13 w-fit p-0 pl-6 pr-2 text-[16px] rounded-full text-sm font-medium text-brand-deep bg-white shadow-sm hover:bg-white/90 transition-colors active:bg-white/80"
               >
                 <Link
                   href="/register"
-                  className="flex w-full items-center justify-between pr-1"
+                  className="flex w-full items-center gap-4"
                 >
-                  <span className="pl-8 sm:pl-0">Começar agora grátis</span>
-                  <div className="flex items-center justify-center size-11 rounded-full bg-brand-deep text-white transition-colors group-hover:bg-brand-deep-dark/80">
+                  <span className="whitespace-nowrap">Começar agora grátis</span>
+                  <div className="flex shrink-0 items-center justify-center size-11 rounded-full bg-brand-deep text-white transition-[filter] duration-200 group-hover:brightness-90">
                     <ArrowRight className="size-8" />
                   </div>
                 </Link>
@@ -302,11 +302,11 @@ export default function LandingPage() {
               asChild
               size="lg"
               variant="secondary"
-              className="group w-60 p-0 pl-5 pr-2 rounded-full flex items-center justify-between text-[20px] text-brand-deep font-medium h-16 shadow-none bg-brand-deep/10 active:bg-brand-deep/30 hover:bg-brand-deep/25 border-none"
+              className="group w-fit p-0 pl-6 pr-2 rounded-full flex items-center gap-4 text-[20px] text-brand-deep font-medium h-16 shadow-none bg-brand-deep/10 active:bg-brand-deep/30 hover:bg-brand-deep/25 border-none"
             >
               <Link href="/register">
                 Começar agora grátis
-                <div className="flex items-center justify-center size-12 rounded-full bg-brand-deep text-white transition-colors group-hover:bg-brand-deep-dark/80">
+                <div className="flex shrink-0 items-center justify-center size-12 rounded-full bg-brand-deep text-white transition-[filter] duration-200 group-hover:brightness-90">
                   <ArrowRight className="size-8" />
                 </div>
               </Link>
