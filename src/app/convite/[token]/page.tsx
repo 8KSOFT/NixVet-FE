@@ -4,10 +4,11 @@ import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from 'sonner';
-import { Lock, Loader2, CheckCircle2 } from 'lucide-react';
+import { Lock, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { establishSession } from '@/lib/session';
 import {
   usePreviewInviteQuery,
   useAcceptInviteMutation,
@@ -23,8 +24,6 @@ export default function AcceptInvitePage() {
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [done, setDone] = useState(false);
-  const [tenantCode, setTenantCode] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,9 +37,14 @@ export default function AcceptInvitePage() {
     }
     try {
       const res = await acceptInvite.mutateAsync({ token, password });
-      const code = (res as { tenantCode?: string } | undefined)?.tenantCode ?? '';
-      setTenantCode(code);
-      setDone(true);
+      if (!res?.access_token || !res?.user) {
+        toast.success('Conta criada! Faça login para entrar.');
+        router.push(`/login?code=${res?.tenantCode ?? ''}`);
+        return;
+      }
+      establishSession(res.access_token, res.user, res.tenantCode);
+      toast.success(`Bem-vindo(a) à equipe, ${res.user.name}!`);
+      router.push('/dashboard');
     } catch (error: unknown) {
       const message =
         (error as { response?: { data?: { message?: string } } })?.response?.data?.message;
@@ -69,19 +73,6 @@ export default function AcceptInvitePage() {
             <Link href="/login" className="mt-4 inline-block text-sm font-semibold text-primary underline">
               Ir para o login
             </Link>
-          </div>
-        ) : done ? (
-          <div className="py-6 text-center">
-            <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-full bg-green-100 text-green-600">
-              <CheckCircle2 className="size-6" />
-            </div>
-            <h1 className="text-lg font-bold text-slate-900">Conta criada!</h1>
-            <p className="mt-2 text-sm text-slate-500">
-              Já pode entrar com seu e-mail e a senha que você acabou de criar.
-            </p>
-            <Button className="mt-5 w-full" onClick={() => router.push(`/login?code=${tenantCode}`)}>
-              Ir para o login
-            </Button>
           </div>
         ) : (
           <>

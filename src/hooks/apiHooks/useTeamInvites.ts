@@ -17,6 +17,8 @@ export interface CreateInvitePayload {
   name: string;
   email: string;
   role: string;
+  /** Aplicados ao usuário de verdade só quando o convite for aceito. */
+  accessProfileIds?: string[];
 }
 
 export const teamInviteKeys = {
@@ -94,11 +96,21 @@ export function usePreviewInviteQuery(token: string) {
   });
 }
 
-/** Rota pública — usada em /convite/[token], sem sessão nenhuma. */
+export interface AcceptInviteResponse {
+  tenantCode: string;
+  access_token: string;
+  user: {
+    tenant_id: string;
+    name: string;
+    [key: string]: unknown;
+  };
+}
+
+/** Rota pública — usada em /convite/[token], sem sessão nenhuma. Já loga automático. */
 export function useAcceptInviteMutation() {
   return useMutation({
     mutationFn: async (payload: { token: string; password: string }) => {
-      const { data } = await api.post('/users/invite/accept', payload);
+      const { data } = await api.post<AcceptInviteResponse>('/users/invite/accept', payload);
       return data;
     },
   });

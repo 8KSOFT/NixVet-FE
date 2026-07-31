@@ -222,13 +222,14 @@ function TeamContent() {
         await syncAccessProfiles.mutateAsync({ id: editingId, profileIds: accessProfileIds ?? [] });
       } else {
         // Sem senha aqui: a pessoa convidada define a própria ao aceitar o
-        // convite por e-mail. Perfis de acesso customizados ficam pra depois
-        // (editar o usuário já criado), já que ainda não existe user pra
-        // vincular.
+        // convite por e-mail. Os perfis de acesso escolhidos agora só são
+        // aplicados de fato quando o convite for aceito (o user ainda não
+        // existe pra vincular).
         await createInvite.mutateAsync({
           name: userValues.name,
           email: userValues.email,
           role: userValues.role,
+          accessProfileIds: accessProfileIds ?? [],
         });
         toast.success(t('team.inviteSent'));
       }
@@ -574,7 +575,6 @@ function TeamContent() {
               <Input {...register('specialty')} />
             </div>
           </div>
-          {editingId && (
           <div className="space-y-2">
             <Label>{t('team.formAccessProfiles')}</Label>
             <p className="text-xs text-muted-foreground">{t('team.formAccessProfilesHint')}</p>
@@ -633,7 +633,6 @@ function TeamContent() {
               <p className="truncate text-xs text-muted-foreground">{selectedProfileLabels.join(', ')}</p>
             )}
           </div>
-          )}
         </form>
       </DashboardCreateFormDialog>
     </div>
