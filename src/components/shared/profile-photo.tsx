@@ -92,6 +92,21 @@ export function ProfilePhotoUploader({
     event.target.value = '';
     if (!file) return;
 
+    // Antes de tudo: o arquivo é legível? Um File pode existir e apontar para
+    // conteúdo que não está no disco — típico de iCloud Drive com "Otimizar
+    // armazenamento", pasta de rede, ou arquivo movido após a seleção. Nesse
+    // caso o upload falha de um jeito que parece problema de rede: o corpo
+    // nunca é montado, então a requisição morre sem chegar ao servidor.
+    try {
+      await file.slice(0, 1024).arrayBuffer();
+    } catch {
+      toast.error(
+        'Não foi possível ler este arquivo. Se ele estiver no iCloud, OneDrive ou numa pasta de rede, ' +
+          'baixe-o para o computador antes de enviar.',
+      );
+      return;
+    }
+
     // Só abre o recorte se o navegador conseguir decodificar a imagem. HEIC
     // fora do Safari não decodifica: nesse caso segue direto, sem recorte,
     // em vez de travar o upload num diálogo que não renderiza.

@@ -118,11 +118,15 @@ export function useUploadProfilePhotoMutation(
             headers: { ...headers, 'Content-Type': 'application/json' },
             body: JSON.stringify({ mime_type: image.mimeType, data }),
           });
-          reportar({ target, bytes: image.blob.size, msMultipart, erroMultipart, base64: 'ok' });
+          reportar({
+            target, bytes: image.blob.size, mime: image.mimeType,
+            msMultipart, erroMultipart, base64: 'ok',
+          });
           return r;
         } catch (erroBase64) {
           reportar({
-            target, bytes: image.blob.size, msMultipart, erroMultipart,
+            target, bytes: image.blob.size, mime: image.mimeType,
+            msMultipart, erroMultipart,
             base64: 'falhou', msBase64: Math.round(performance.now() - t1), erroBase64,
           });
           throw new Error(
