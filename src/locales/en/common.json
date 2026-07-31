@@ -89,7 +89,19 @@
     "formSpecialty": "Specialty",
     "formAccessProfiles": "Access profiles",
     "formAccessProfilesHint": "Defines what permissions the user has, in addition to the role selected above.",
-    "formAccessProfilesEmpty": "No access profiles created yet."
+    "formAccessProfilesEmpty": "No access profiles created yet.",
+    "inviteFormNotice": "They'll receive an email to create their own password.",
+    "inviteTitle": "Pending invites",
+    "inviteEmpty": "No pending invites.",
+    "inviteSent": "Invite sent successfully",
+    "inviteResent": "Invite resent successfully",
+    "inviteCancelled": "Invite cancelled successfully",
+    "inviteError": "Failed to send invite",
+    "inviteResendAction": "Resend",
+    "inviteCancelAction": "Cancel invite",
+    "inviteStatusPending": "Pending",
+    "inviteStatusExpired": "Expired",
+    "confirmCancelInvite": "Cancel this invite?"
   },
   "userMenu": {
     "profile": "My profile",

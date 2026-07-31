@@ -8,7 +8,11 @@ const api = axios.create({
 
 function isPublicAuthRequest(config: { url?: string }) {
   const path = config.url || '';
-  return path.includes('auth/login') || path.includes('auth/register');
+  return (
+    path.includes('auth/login') ||
+    path.includes('auth/register') ||
+    path.includes('users/invite/accept')
+  );
 }
 
 /** Lê um cookie pelo nome. Retorna null se não existir ou se não estiver no browser. */

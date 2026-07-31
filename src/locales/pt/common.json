@@ -89,7 +89,19 @@
     "formSpecialty": "Especialidade",
     "formAccessProfiles": "Perfis de acesso",
     "formAccessProfilesHint": "Define quais permissões o usuário tem, além do papel selecionado acima.",
-    "formAccessProfilesEmpty": "Nenhum perfil de acesso cadastrado ainda."
+    "formAccessProfilesEmpty": "Nenhum perfil de acesso cadastrado ainda.",
+    "inviteFormNotice": "A pessoa vai receber um e-mail para criar a própria senha.",
+    "inviteTitle": "Convites pendentes",
+    "inviteEmpty": "Nenhum convite pendente.",
+    "inviteSent": "Convite enviado com sucesso",
+    "inviteResent": "Convite reenviado com sucesso",
+    "inviteCancelled": "Convite cancelado com sucesso",
+    "inviteError": "Erro ao enviar convite",
+    "inviteResendAction": "Reenviar",
+    "inviteCancelAction": "Cancelar convite",
+    "inviteStatusPending": "Pendente",
+    "inviteStatusExpired": "Expirado",
+    "confirmCancelInvite": "Cancelar este convite?"
   },
   "userMenu": {
     "profile": "Meu Perfil",

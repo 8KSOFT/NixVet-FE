@@ -24,10 +24,9 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { useForm, Controller } from 'react-hook-form';
-import { Plus, Pencil, Trash2, Loader2, ChevronDown, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, Loader2, ChevronDown, X, Mail, Send, XCircle } from 'lucide-react';
 import { API_PAGE_SIZE } from '@/lib/pagination';
 import {
-  useCreateUserMutation,
   useDeleteUserMutation,
   useStaffUsersQuery,
   useUpdateUserMutation,
@@ -36,6 +35,12 @@ import {
   userKeys,
   type UserPayload,
 } from '@/hooks/apiHooks/useUsers';
+import {
+  usePendingInvitesQuery,
+  useCreateInviteMutation,
+  useResendInviteMutation,
+  useCancelInviteMutation,
+} from '@/hooks/apiHooks/useTeamInvites';
 import { ProfilePhoto, ProfilePhotoUploader } from '@/components/shared/profile-photo';
 import { useAccessProfilesListQuery } from '@/hooks/apiHooks/useAccessProfiles';
 import { CheckboxMultiSelect } from '@/components/checkbox-multi-select';
@@ -88,10 +93,14 @@ function TeamContent() {
   const listTotal = usersPage?.total ?? 0;
   const listTotalPages = usersPage?.totalPages ?? 1;
 
-  const createUser = useCreateUserMutation();
   const updateUser = useUpdateUserMutation();
   const deleteUser = useDeleteUserMutation();
   const syncAccessProfiles = useSyncUserAccessProfilesMutation();
+
+  const { data: pendingInvites, isLoading: invitesLoading } = usePendingInvitesQuery();
+  const createInvite = useCreateInviteMutation();
+  const resendInvite = useResendInviteMutation();
+  const cancelInvite = useCancelInviteMutation();
 
   const { data: accessProfiles, isLoading: accessProfilesLoading } = useAccessProfilesListQuery(modalVisible);
   const accessProfileOptions = (accessProfiles ?? []).map((profile) => ({
@@ -206,22 +215,47 @@ function TeamContent() {
   const onSubmit = async (values: TeamUserFormValues) => {
     const { accessProfileIds, ...userValues } = values;
     try {
-      const payload: UserPayload = { ...userValues };
-      let userId = editingId;
       if (editingId) {
+        const payload: UserPayload = { ...userValues };
         if (!payload.password?.trim()) delete payload.password;
         await updateUser.mutateAsync({ id: editingId, payload });
+        await syncAccessProfiles.mutateAsync({ id: editingId, profileIds: accessProfileIds ?? [] });
       } else {
-        const created = await createUser.mutateAsync(payload);
-        userId = created?.id ?? null;
-      }
-      if (userId) {
-        await syncAccessProfiles.mutateAsync({ id: userId, profileIds: accessProfileIds ?? [] });
+        // Sem senha aqui: a pessoa convidada define a própria ao aceitar o
+        // convite por e-mail. Perfis de acesso customizados ficam pra depois
+        // (editar o usuário já criado), já que ainda não existe user pra
+        // vincular.
+        await createInvite.mutateAsync({
+          name: userValues.name,
+          email: userValues.email,
+          role: userValues.role,
+        });
+        toast.success(t('team.inviteSent'));
       }
       setModalVisible(false);
     } catch (error: unknown) {
       console.error('Error saving user:', error);
-      toast.error(getApiErrorMessage(error, t('team.saveError')));
+      toast.error(getApiErrorMessage(error, editingId ? t('team.saveError') : t('team.inviteError')));
+    }
+  };
+
+  const handleResendInvite = async (id: string) => {
+    try {
+      await resendInvite.mutateAsync(id);
+      toast.success(t('team.inviteResent'));
+    } catch (error) {
+      console.error('Error resending invite:', error);
+      toast.error(getApiErrorMessage(error, t('team.inviteError')));
+    }
+  };
+
+  const handleCancelInvite = async (id: string) => {
+    try {
+      await cancelInvite.mutateAsync(id);
+      toast.success(t('team.inviteCancelled'));
+    } catch (error) {
+      console.error('Error cancelling invite:', error);
+      toast.error(getApiErrorMessage(error, t('team.inviteError')));
     }
   };
 
@@ -252,6 +286,62 @@ function TeamContent() {
           <Plus className="w-4 h-4 mr-2" /> {t('team.newMember')}
         </Button>
       </div>
+
+      {!invitesLoading && (pendingInvites?.length ?? 0) > 0 && (
+        <div className="mb-8 rounded-lg border border-blue-100 bg-blue-50/60 p-4">
+          <h2 className="mb-3 flex items-center gap-2 text-sm font-bold text-slate-700">
+            <Mail className="size-4 text-blue-500" /> {t('team.inviteTitle')}
+          </h2>
+          <div className="space-y-2">
+            {(pendingInvites ?? []).map((invite) => {
+              const expired = new Date(invite.expires_at) < new Date();
+              return (
+                <div
+                  key={invite.id}
+                  className="flex flex-col gap-2 rounded-md border border-blue-100 bg-white p-3 text-sm sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate font-medium text-slate-800">{invite.name}</p>
+                    <p className="truncate text-xs text-muted-foreground">{invite.email}</p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <Badge variant={expired ? 'secondary' : 'default'}>
+                      {expired ? t('team.inviteStatusExpired') : t('team.inviteStatusPending')}
+                    </Badge>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="p-0"
+                      title={t('team.inviteResendAction')}
+                      onClick={() => handleResendInvite(invite.id)}
+                    >
+                      <Send className="size-4" />
+                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button type="button" variant="ghost" size="icon" className="p-0" title={t('team.inviteCancelAction')}>
+                          <XCircle className="size-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>{t('team.confirmCancelInvite')}</AlertDialogTitle>
+                          <AlertDialogDescription>{invite.email}</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleCancelInvite(invite.id)}>Confirmar</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <div className="flex justify-center py-8">
@@ -453,14 +543,21 @@ function TeamContent() {
             </div>
           </div>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label>{editingId ? t('team.formPasswordOptional') : t('team.formPassword')}</Label>
-              <Input
-                type="password"
-                {...register('password')}
-                placeholder={editingId ? t('team.passwordPlaceholder') : ''}
-              />
-            </div>
+            {editingId ? (
+              <div className="space-y-2">
+                <Label>{t('team.formPasswordOptional')}</Label>
+                <Input
+                  type="password"
+                  {...register('password')}
+                  placeholder={t('team.passwordPlaceholder')}
+                />
+              </div>
+            ) : (
+              <div className="flex items-start gap-2 rounded-md border border-blue-100 bg-blue-50 p-3 text-xs text-blue-800">
+                <Mail className="mt-0.5 size-3.5 shrink-0" />
+                {t('team.inviteFormNotice')}
+              </div>
+            )}
             <div className="space-y-1">
               <Label>{t('team.formCrmv')}</Label>
               <Input {...register('crmv')} />
@@ -477,6 +574,7 @@ function TeamContent() {
               <Input {...register('specialty')} />
             </div>
           </div>
+          {editingId && (
           <div className="space-y-2">
             <Label>{t('team.formAccessProfiles')}</Label>
             <p className="text-xs text-muted-foreground">{t('team.formAccessProfilesHint')}</p>
@@ -535,6 +633,7 @@ function TeamContent() {
               <p className="truncate text-xs text-muted-foreground">{selectedProfileLabels.join(', ')}</p>
             )}
           </div>
+          )}
         </form>
       </DashboardCreateFormDialog>
     </div>

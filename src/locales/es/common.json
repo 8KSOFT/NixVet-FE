@@ -89,7 +89,19 @@
     "formSpecialty": "Especialidad",
     "formAccessProfiles": "Perfiles de acceso",
     "formAccessProfilesHint": "Define qué permisos tiene el usuario, además del rol seleccionado arriba.",
-    "formAccessProfilesEmpty": "Todavía no hay perfiles de acceso creados."
+    "formAccessProfilesEmpty": "Todavía no hay perfiles de acceso creados.",
+    "inviteFormNotice": "La persona recibirá un correo para crear su propia contraseña.",
+    "inviteTitle": "Invitaciones pendientes",
+    "inviteEmpty": "Sin invitaciones pendientes.",
+    "inviteSent": "Invitación enviada con éxito",
+    "inviteResent": "Invitación reenviada con éxito",
+    "inviteCancelled": "Invitación cancelada con éxito",
+    "inviteError": "Error al enviar invitación",
+    "inviteResendAction": "Reenviar",
+    "inviteCancelAction": "Cancelar invitación",
+    "inviteStatusPending": "Pendiente",
+    "inviteStatusExpired": "Expirado",
+    "confirmCancelInvite": "¿Cancelar esta invitación?"
   },
   "userMenu": {
     "profile": "Mi perfil",
