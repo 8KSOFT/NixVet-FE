@@ -52,6 +52,18 @@ export function usePagedSupportOptionsQuery(discriminator: string | null) {
     queryKey: catalogSupportKeys.list(discriminator ?? ''),
     queryFn: () => fetchAllListPages<SupportOption>('/catalog/support', { discriminator: discriminator ?? '' }),
     enabled: !!discriminator,
+    // Catálogo é estático (272 raças de cão = 6 páginas encadeadas). Com o
+    // staleTime padrão de 30s, reabrir o modal disparava tudo de novo e o
+    // throttler do backend (30 req/10s) respondia 429 — que virava retry, que
+    // reiniciava as 6 páginas do zero, num ciclo que se auto-alimentava.
+    staleTime: Infinity,
+    gcTime: 60 * 60_000,
+    // Repetir depois de 429 só piora: o limite é por janela de tempo.
+    retry: (falhas, erro) => {
+      const status = (erro as { response?: { status?: number } })?.response?.status;
+      if (status === 429 || (status && status >= 400 && status < 500)) return false;
+      return falhas < 2;
+    },
   });
 }
 

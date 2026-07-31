@@ -36,6 +36,14 @@ export default function AppProviders({ children }: { children: React.ReactNode }
           queries: {
             staleTime: 30_000,
             refetchOnWindowFocus: false,
+            // Insistir contra 4xx nao ajuda — 429 em especial vira bola de
+            // neve, porque o limite do backend e por janela de tempo e cada
+            // retry consome a janela seguinte.
+            retry: (falhas, erro) => {
+              const status = (erro as { response?: { status?: number } })?.response?.status;
+              if (status && status >= 400 && status < 500) return false;
+              return falhas < 2;
+            },
           },
         },
         // Endpoints ja migrados para o envelope { success, message, data } tem a mensagem
