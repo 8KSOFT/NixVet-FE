@@ -20,6 +20,8 @@ import {
   Calendar,
   MessageSquare,
   Bot,
+  Gift,
+  CreditCard,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -28,6 +30,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { getApiBaseUrl } from '@/lib/api-base';
 import { establishSession } from '@/lib/session';
+import { LogoColored } from '@/components/shared/componentizedImages/LogoColored';
 import {
   useOnboardingStatusQuery,
   useCompleteOnboardingMutation,
@@ -343,12 +346,14 @@ export default function RegisterPage() {
         {/* ─── Left panel ─── */}
         <div className="flex flex-col justify-between bg-primary px-10 py-12 text-white lg:w-2/5">
           <div>
-            <div className="mb-2 text-2xl font-extrabold tracking-tight">NixVet</div>
-            <div className="text-sm text-blue-200">Software de Gestão Veterinária</div>
+            <div className="mb-2 inline-flex w-fit rounded-xl bg-white px-4 py-2.5 shadow-sm">
+              <LogoColored width="150px" height="32px" />
+            </div>
+            <div className="text-sm text-white/90">Software de Gestão Veterinária</div>
           </div>
 
           <div>
-            <h1 className="mb-3 text-3xl font-extrabold leading-tight">
+            <h1 className="mb-3 font-['InterDoFigma'] text-3xl font-black leading-tight">
               14 dias grátis,<br />sem cartão de crédito
             </h1>
             <p className="mb-8 text-base text-blue-100">
@@ -539,13 +544,25 @@ export default function RegisterPage() {
                       </div>
                     </div>
 
-                    <div className="rounded-lg border border-blue-100 bg-blue-50 p-4 text-sm text-blue-800">
+                    <div className="rounded-lg border border-brand-deep/25 bg-brand-deep/5 p-4 text-sm text-brand-deep-dark">
                       <strong>Resumo do cadastro</strong>
-                      <ul className="mt-2 space-y-1 text-xs text-blue-700">
-                        <li>🏥 <strong>{clinicName}</strong> <span className="text-blue-500">(@{clinicCode})</span></li>
-                        <li>👤 {adminName} — {adminEmail}</li>
-                        <li>🎁 14 dias de acesso completo gratuito</li>
-                        <li>💳 Sem cobrança automática — você escolhe o plano depois</li>
+                      <ul className="mt-2.5 space-y-2 text-xs text-brand-deep-dark">
+                        <li className="flex items-center gap-2">
+                          <Building2 className="size-3.5 shrink-0 text-slate-400" />
+                          <span><strong>{clinicName}</strong> <span className="text-brand-deep">(@{clinicCode})</span></span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <User className="size-3.5 shrink-0 text-slate-400" />
+                          <span>{adminName} — {adminEmail}</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <Gift className="size-3.5 shrink-0 text-slate-400" />
+                          <span>14 dias de acesso completo gratuito</span>
+                        </li>
+                        <li className="flex items-center gap-2">
+                          <CreditCard className="size-3.5 shrink-0 text-slate-400" />
+                          <span>Sem cobrança automática — você escolhe o plano depois</span>
+                        </li>
                       </ul>
                     </div>
 
