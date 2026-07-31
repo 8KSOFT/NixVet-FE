@@ -346,8 +346,8 @@ export default function RegisterPage() {
         {/* ─── Left panel ─── */}
         <div className="flex flex-col justify-between bg-primary px-10 py-12 text-white lg:w-2/5">
           <div>
-            <div className="mb-2 inline-flex w-fit rounded-xl bg-white px-4 py-2.5 shadow-sm">
-              <LogoColored width="150px" height="32px" />
+            <div className="mb-3 w-fit brightness-0 invert">
+              <LogoColored width="170px" height="36px" />
             </div>
             <div className="text-sm text-white/90">Software de Gestão Veterinária</div>
           </div>
