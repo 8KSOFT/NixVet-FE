@@ -41,6 +41,19 @@ export function TrialBanner({ billing }: TrialBannerProps) {
     );
   }
 
+  // Prazo de 48h pra terminar o cadastro guiado expirou sem concluir
+  if (status === 'onboarding_expired') {
+    return (
+      <div className="flex items-center gap-3 border-b border-red-300 bg-red-100 px-5 py-3 text-sm text-red-900">
+        <AlertTriangle className="size-4 shrink-0 text-red-600" />
+        <span className="flex-1">O prazo para terminar o cadastro da clínica expirou. Termine a configuração para liberar o acesso.</span>
+        <Link href="/register" className="shrink-0 rounded-md bg-red-600 px-3 py-1 text-xs font-semibold text-white hover:bg-red-700">
+          Terminar cadastro
+        </Link>
+      </div>
+    );
+  }
+
   // Trial expirado
   if (status === 'trial_expired') {
     return (

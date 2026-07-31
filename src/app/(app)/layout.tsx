@@ -49,6 +49,8 @@ import {
 } from "@/lib/role-permissions";
 import { useBillingStatus } from "@/hooks/useBillingStatus";
 import { TrialBanner } from "@/components/billing/TrialBanner";
+import { EmailConfirmationBanner } from "@/components/onboarding/EmailConfirmationBanner";
+import { useOnboardingStatusQuery } from "@/hooks/apiHooks/useOnboarding";
 import { LogoCompactoDynamic } from "@/components/shared/componentizedImages/LogoCompactoDynamic";
 import {
   useUnreadNotificationsCountQuery,
@@ -622,8 +624,19 @@ export default function DashboardLayout({
   const currentPathname = pathname ?? "";
   const { t } = useTranslation("common");
   const billing = useBillingStatus();
+  const { data: onboardingStatus } = useOnboardingStatusQuery();
 
   const activeKey = getActiveKey(currentPathname);
+
+  // Retomada automática: quem é admin de uma clínica que ainda não terminou
+  // o cadastro guiado (horário/tipos de atendimento obrigatórios) é mandado
+  // de volta pro wizard em vez de navegar num sistema pela metade. Só admin
+  // — um funcionário comum não tem como resolver isso mesmo.
+  useEffect(() => {
+    if (!onboardingStatus || onboardingStatus.complete) return;
+    if (headerRole !== "admin") return;
+    router.replace("/register");
+  }, [onboardingStatus, headerRole, router]);
 
   const setCollapsed = (value: boolean) => {
     setCollapsedState(value);
@@ -867,6 +880,7 @@ export default function DashboardLayout({
         </header>
 
         <TrialBanner billing={billing} />
+        <EmailConfirmationBanner />
 
         <main className="flex-1 p-5 lg:p-8">
           {children}
