@@ -386,27 +386,34 @@ export default function SettingsPage() {
                 <Label>Telefone</Label>
                 <Input {...register('phone')} />
               </div>
-              <div className="flex flex-col gap-2">
-                <Label>Nome da marca (white-label)</Label>
-                <Input {...register('brandName')} placeholder="Ex: Vixen Vet" />
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label>URL do logo</Label>
-                <Input {...register('logoUrl')} placeholder="https://cdn.empresa.com/logo.png" />
-              </div>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="flex flex-col gap-2">
-                  <Label>Cor principal</Label>
-                  <Input {...register('primaryColor')} placeholder="#2563eb" />
+              <div id="identidade-visual" className="flex flex-col gap-4 scroll-mt-24">
+                <Separator />
+                <div>
+                  <h3 className="text-sm font-bold text-foreground">Identidade Visual</h3>
+                  <p className="text-xs text-muted-foreground">Logo, cor, subdomínio e domínio customizado usados no white-label da clínica.</p>
                 </div>
                 <div className="flex flex-col gap-2">
-                  <Label>Subdomínio</Label>
-                  <Input {...register('subdomain')} placeholder="vixen" />
+                  <Label>Nome da marca (white-label)</Label>
+                  <Input {...register('brandName')} placeholder="Ex: Vixen Vet" />
                 </div>
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label>Domínio customizado (opcional)</Label>
-                <Input {...register('customDomain')} placeholder="app.empresa.com.br" />
+                <div className="flex flex-col gap-2">
+                  <Label>URL do logo</Label>
+                  <Input {...register('logoUrl')} placeholder="https://cdn.empresa.com/logo.png" />
+                </div>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <div className="flex flex-col gap-2">
+                    <Label>Cor principal</Label>
+                    <Input {...register('primaryColor')} placeholder="#2563eb" />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <Label>Subdomínio</Label>
+                    <Input {...register('subdomain')} placeholder="vixen" />
+                  </div>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label>Domínio customizado (opcional)</Label>
+                  <Input {...register('customDomain')} placeholder="app.empresa.com.br" />
+                </div>
               </div>
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -471,7 +478,7 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm">
+        <Card id="google-agenda" className="shadow-sm scroll-mt-24">
           <CardHeader>
             <CardTitle>Integração Google Agenda</CardTitle>
           </CardHeader>

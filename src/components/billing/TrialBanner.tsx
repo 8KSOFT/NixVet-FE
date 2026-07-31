@@ -120,14 +120,14 @@ export function TrialBanner({ billing }: TrialBannerProps) {
       );
     }
 
-    // > 7 dias — banner informativo azul
+    // > 7 dias — banner informativo verde
     return (
-      <div className="flex items-center gap-3 border-b border-blue-200 bg-blue-50 px-5 py-3 text-sm text-blue-800">
-        <Info className="size-4 shrink-0 text-blue-500" />
+      <div className="flex items-center gap-3 border-b border-emerald-200 bg-emerald-50 px-5 py-3 text-sm text-emerald-800">
+        <Info className="size-4 shrink-0 text-emerald-600" />
         <span className="flex-1">
           Você está no período de teste — <strong>{daysLeft} dias restantes</strong>.
         </span>
-        <Link href="/billing/upgrade" className={cn('shrink-0 rounded-md bg-blue-600 px-3 py-1 text-xs font-semibold text-white hover:bg-blue-700')}>
+        <Link href="/billing/upgrade" className={cn('shrink-0 rounded-md bg-emerald-600 px-3 py-1 text-xs font-semibold text-white hover:bg-emerald-700')}>
           Ver planos
         </Link>
       </div>

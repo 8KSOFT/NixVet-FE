@@ -70,8 +70,8 @@ export function EmailConfirmationBanner() {
   };
 
   return (
-    <div className="flex flex-col gap-2 border-b border-blue-200 bg-blue-50 px-5 py-3 text-sm text-blue-900 sm:flex-row sm:items-center sm:gap-3">
-      <Mail className="size-4 shrink-0 text-blue-600" />
+    <div className="flex flex-col gap-2 border-b border-emerald-200 bg-emerald-50 px-5 py-3 text-sm text-emerald-900 sm:flex-row sm:items-center sm:gap-3">
+      <Mail className="size-4 shrink-0 text-emerald-600" />
       <span className="flex-1">
         Confirme seu e-mail (<strong>{user.email}</strong>) para liberar convites de equipe e ativação de plano pago.
       </span>
@@ -79,7 +79,7 @@ export function EmailConfirmationBanner() {
         <Button
           size="sm"
           variant="outline"
-          className="shrink-0 border-blue-300 bg-white text-blue-700 hover:bg-blue-100"
+          className="shrink-0 border-emerald-300 bg-white text-emerald-700 hover:bg-emerald-100"
           onClick={handleResend}
           disabled={requestMutation.isPending}
         >
@@ -99,7 +99,7 @@ export function EmailConfirmationBanner() {
           </Button>
           <button
             type="button"
-            className="text-xs text-blue-700 underline underline-offset-2"
+            className="text-xs text-emerald-700 underline underline-offset-2"
             onClick={handleResend}
             disabled={requestMutation.isPending}
           >

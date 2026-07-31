@@ -108,7 +108,7 @@ export function SetupChecklistWidget() {
     {
       key: 'branding',
       label: 'Identidade visual (logo, cor, subdomínio)',
-      href: '/settings',
+      href: '/settings#identidade-visual',
       done: Boolean(tenant?.logo_url || tenant?.primary_color || tenant?.subdomain),
     },
     {
@@ -120,7 +120,7 @@ export function SetupChecklistWidget() {
     {
       key: 'google-calendar',
       label: 'Google Agenda',
-      href: '/settings',
+      href: '/settings#google-agenda',
       done: Boolean(googleStatusQuery.data?.connected),
     },
     {
@@ -141,7 +141,7 @@ export function SetupChecklistWidget() {
   };
 
   return (
-    <div className="fixed bottom-5 right-5 z-40">
+    <div className="fixed bottom-5 right-5 z-40 flex flex-col items-end">
       {open && (
         <div className="mb-3 w-80 rounded-xl border border-slate-200 bg-white p-4 shadow-lg">
           <div className="mb-3 flex items-center justify-between">
@@ -164,6 +164,7 @@ export function SetupChecklistWidget() {
               <li key={item.key}>
                 <Link
                   href={item.href}
+                  onClick={() => setOpen(false)}
                   className={cn(
                     'flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-slate-50',
                     item.done ? 'text-slate-400 line-through' : 'text-slate-700',
@@ -184,9 +185,9 @@ export function SetupChecklistWidget() {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-3 rounded-full bg-primary px-7 py-4 text-lg font-bold text-white shadow-xl transition-transform hover:scale-105 hover:bg-primary/90"
+        className="flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-base font-bold text-white shadow-xl transition-transform hover:scale-105 hover:bg-primary/90"
       >
-        <ClipboardCheck className="size-6" />
+        <ClipboardCheck className="size-5" />
         Configuração {percent}%
       </button>
     </div>
