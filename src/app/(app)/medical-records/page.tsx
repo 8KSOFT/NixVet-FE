@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { Loader2, Plus, Search, UserPlus, PawPrint, FolderOpen, ChevronRight } from 'lucide-react';
 import { API_PAGE_SIZE } from '@/lib/pagination';
 import { ListPagination } from '@/components/list-pagination';
+import { ProfilePhoto } from '@/components/shared/profile-photo';
 import dayjs from 'dayjs';
 import type { MedicalRecord, MedicalRecordPatientRef } from '@/app/types/medical-record';
 import { useCreateMedicalRecordMutation, useMedicalRecordsQuery } from '@/hooks/apiHooks/useMedicalRecords';
@@ -242,9 +243,18 @@ export default function MedicalRecordsListPage() {
                     <div className="absolute -top-2.5 left-0 h-3 w-28 rounded-t-lg border border-b-0 border-gray-300 bg-gray-50 transition-colors duration-200 group-hover:border-primary/40 group-hover:bg-primary/10" />
                     {/* Corpo da pasta */}
                     <div className="relative flex aspect-4/3 flex-col items-center justify-center gap-1.5 rounded-xl rounded-tl-none border border-gray-300 bg-white p-3 text-center shadow-sm transition-all duration-200 group-hover:-translate-y-0.5 group-hover:border-primary/40 group-hover:shadow-md group-focus-visible:ring-2 group-focus-visible:ring-primary/50">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors duration-200 group-hover:bg-primary/15">
-                        <FolderOpen className="h-5 w-5" />
-                      </div>
+                      {/* Foto do pet quando existir; a pasta genérica só quando não há. */}
+                      {group.patient.photo_url ? (
+                        <ProfilePhoto
+                          url={group.patient.photo_url}
+                          name={group.patient.name}
+                          className="size-10 shrink-0"
+                        />
+                      ) : (
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors duration-200 group-hover:bg-primary/15">
+                          <FolderOpen className="h-5 w-5" />
+                        </div>
+                      )}
                       <p className="w-full truncate text-sm font-semibold text-foreground">{group.patient.name}</p>
                       {/* Sem o tutor, duas pastas de animais homônimos ficam
                           indistinguíveis. */}

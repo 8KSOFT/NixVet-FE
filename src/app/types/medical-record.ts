@@ -19,6 +19,8 @@ export interface MedicalRecordPatientRef {
   breed?: string;
   /** Desambigua pastas de animais homônimos na listagem de prontuários. */
   tutor?: { id: string; name: string } | null;
+  /** URL pré-assinada da foto do pet — expira, não guardar. */
+  photo_url?: string | null;
 }
 
 export interface MedicalRecordVetRef {

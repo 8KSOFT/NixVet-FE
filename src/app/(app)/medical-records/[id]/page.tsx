@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ProfilePhoto } from '@/components/shared/profile-photo';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -286,7 +287,15 @@ export default function MedicalRecordDetailPage() {
       {/* Header */}
       <Card>
         <CardHeader className="pb-3">
-          <div className="min-w-0">
+          <div className="flex min-w-0 items-start gap-3">
+            {record.patient?.photo_url ? (
+              <ProfilePhoto
+                url={record.patient.photo_url}
+                name={record.patient.name}
+                className="size-12 shrink-0"
+              />
+            ) : null}
+            <div className="min-w-0">
             <CardTitle className="flex items-center gap-1.5 text-lg text-primary sm:text-xl">
               <FileText className="h-4 w-4 shrink-0 sm:h-5 sm:w-5" />
               <span className="truncate">{record.patient?.name || `Ficha #${id.substring(0, 8)}`}</span>
@@ -294,6 +303,7 @@ export default function MedicalRecordDetailPage() {
             <div className="mt-2 flex flex-wrap items-center gap-1.5">
               <Badge variant="outline" className="text-xs">{record.record_type}</Badge>
               <Badge className={isClosed ? 'bg-green-500 text-white' : 'bg-primary text-white'}>{isClosed ? 'Fechado' : 'Aberto'}</Badge>
+            </div>
             </div>
           </div>
         </CardHeader>

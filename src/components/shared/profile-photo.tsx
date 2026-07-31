@@ -11,7 +11,7 @@ import {
   useUploadProfilePhotoMutation,
   type ProfilePhotoTarget,
 } from '@/hooks/apiHooks/useProfilePhoto';
-import { prepareProfileImage, ProfileImageError, type PreparedImage } from '@/lib/profile-image';
+import type { PreparedImage } from '@/lib/profile-image';
 import { ImageCropDialog } from './image-crop-dialog';
 import { cn } from '@/lib/utils';
 
@@ -110,22 +110,26 @@ export function ProfilePhotoUploader({
       return;
     }
 
-    // Só abre o recorte se o navegador conseguir decodificar a imagem. HEIC
-    // fora do Safari não decodifica: nesse caso segue direto, sem recorte,
-    // em vez de travar o upload num diálogo que não renderiza.
+    // O navegador consegue decodificar? Se não, não dá para recortar NEM
+    // exibir depois — o Chrome não lê HEIC, formato padrão das fotos de
+    // iPhone. Antes o código subia assim mesmo e gravava uma imagem que nunca
+    // aparecia na tela; recusar na hora é melhor do que a foto sumir em
+    // silêncio.
     try {
       const bmp = await createImageBitmap(file);
       bmp.close();
-      setCropFile(file);
     } catch {
-      try {
-        await enviar(await prepareProfileImage(file));
-      } catch (err) {
-        toast.error(
-          err instanceof ProfileImageError ? err.message : getApiErrorMessage(err, 'Erro ao enviar a foto.'),
-        );
-      }
+      const heic = /heic|heif/i.test(file.type) || /\.hei[cf]$/i.test(file.name);
+      toast.error(
+        heic
+          ? 'Fotos em HEIC (padrão do iPhone) não são exibidas neste navegador. Converta para JPEG ou, no iPhone, ' +
+            'ajuste Câmera → Formatos → Mais Compatível.'
+          : 'Não foi possível abrir esta imagem. Tente enviar em JPEG ou PNG.',
+      );
+      return;
     }
+
+    setCropFile(file);
   };
 
   const handleRemove = async () => {
