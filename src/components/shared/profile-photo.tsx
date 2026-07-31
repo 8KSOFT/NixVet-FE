@@ -93,16 +93,19 @@ export function ProfilePhotoUploader({
     if (!file) return;
 
     // Antes de tudo: o arquivo é legível? Um File pode existir e apontar para
-    // conteúdo que não está no disco — típico de iCloud Drive com "Otimizar
-    // armazenamento", pasta de rede, ou arquivo movido após a seleção. Nesse
-    // caso o upload falha de um jeito que parece problema de rede: o corpo
-    // nunca é montado, então a requisição morre sem chegar ao servidor.
+    // conteúdo que não está no disco — Google Drive/iCloud/OneDrive mapeados,
+    // pasta de rede, ou arquivo movido após a seleção. Foi exatamente o caso
+    // que gerou este código: um arquivo no Google Drive mapeado.
+    //
+    // Sem esta checagem o upload falha parecendo problema de rede: o corpo
+    // nunca é montado, a requisição morre sem chegar ao servidor, e o
+    // navegador reporta "Failed to fetch" ou ERR_TIMED_OUT.
     try {
       await file.slice(0, 1024).arrayBuffer();
     } catch {
       toast.error(
-        'Não foi possível ler este arquivo. Se ele estiver no iCloud, OneDrive ou numa pasta de rede, ' +
-          'baixe-o para o computador antes de enviar.',
+        'Não foi possível ler este arquivo. Se ele estiver no Google Drive, iCloud, OneDrive ou numa ' +
+          'pasta de rede, baixe-o para o computador antes de enviar.',
       );
       return;
     }
