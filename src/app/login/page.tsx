@@ -12,7 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { getApiBaseUrl } from "@/lib/api-base";
 import { fetchPublicBranding } from "@/lib/branding";
-import { setTenantCookie } from "@/lib/axios";
+import { establishSession } from "@/lib/session";
 import { detectSubdomainClient } from "@/lib/subdomain";
 import { getApiErrorMessage } from "@/app/utils/api-error-message";
 import { LogoCompactoDynamic } from "@/components/shared/componentizedImages/LogoCompactoDynamic";
@@ -138,11 +138,7 @@ export default function LoginPage() {
         toast.error("Resposta de login inválida.");
         return;
       }
-      localStorage.setItem("accessToken", access_token);
-      localStorage.setItem("tenantId", user.tenant_id);
-      localStorage.setItem("tenantCode", code);
-      localStorage.setItem("user", JSON.stringify(user));
-      setTenantCookie(user.tenant_id);
+      establishSession(access_token, user, code);
 
       toast.success(translation("auth.welcome", { name: user.name }));
       router.push("/dashboard");

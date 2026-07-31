@@ -24,6 +24,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { getApiBaseUrl } from '@/lib/api-base';
+import { establishSession } from '@/lib/session';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -138,7 +139,17 @@ export default function RegisterPage() {
     return true;
   };
 
+  const validateStep3 = () => {
+    const digits = cpfCnpj.replace(/\D/g, '');
+    if (digits.length !== 11 && digits.length !== 14) {
+      toast.error('Informe um CPF ou CNPJ válido.');
+      return false;
+    }
+    return true;
+  };
+
   const handleSubmit = async () => {
+    if (!validateStep3()) return;
     setLoading(true);
     try {
       const res = await fetch(`${getApiBaseUrl()}/billing/register`, {
@@ -150,7 +161,7 @@ export default function RegisterPage() {
           adminName: adminName.trim(),
           adminEmail: adminEmail.trim().toLowerCase(),
           adminPassword,
-          cpfCnpj: cpfCnpj ? cpfCnpj.replace(/\D/g, '') : undefined,
+          cpfCnpj: cpfCnpj.replace(/\D/g, ''),
           phone: phone ? phone.replace(/\D/g, '') : undefined,
         }),
       });
@@ -163,9 +174,17 @@ export default function RegisterPage() {
         return;
       }
 
-      // Envelope novo: { success, message, data }. Ver DOCS/response-phase-4-front.md.
+      // Envelope: { success, message, data: { tenantId, tenantCode, adminEmail, access_token, user } }.
+      const { access_token, user, tenantCode } = data.data ?? {};
+      if (!access_token || !user) {
+        toast.error('Conta criada, mas não foi possível entrar automaticamente. Faça login.');
+        router.push(`/login?code=${clinicCode}`);
+        return;
+      }
+
+      establishSession(access_token, user, tenantCode || clinicCode);
       toast.success(data.message || 'Conta criada! Seus 14 dias de teste começaram.');
-      router.push(`/login?code=${clinicCode}`);
+      router.push('/dashboard');
     } catch {
       toast.error('Erro de conexão. Tente novamente.');
     } finally {
@@ -336,12 +355,12 @@ export default function RegisterPage() {
                 <div>
                   <h2 className="text-xl font-bold text-slate-900">Dados fiscais</h2>
                   <p className="mt-1 text-sm text-slate-500">
-                    Opcional agora — mas obrigatório na hora de contratar um plano. Usado para emissão de NFS-e.
+                    Usado para emissão de NFS-e quando você contratar um plano, e para liberar seus 14 dias grátis.
                   </p>
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="cpfCnpj">CPF ou CNPJ</Label>
+                  <Label htmlFor="cpfCnpj">CPF ou CNPJ *</Label>
                   <div className="relative">
                     <FileText className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
                     <Input
