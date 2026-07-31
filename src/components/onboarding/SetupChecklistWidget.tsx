@@ -184,9 +184,9 @@ export function SetupChecklistWidget() {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2 rounded-full bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-lg hover:bg-primary/90"
+        className="flex items-center gap-3 rounded-full bg-primary px-7 py-4 text-lg font-bold text-white shadow-xl transition-transform hover:scale-105 hover:bg-primary/90"
       >
-        <ClipboardCheck className="size-4" />
+        <ClipboardCheck className="size-6" />
         Configuração {percent}%
       </button>
     </div>
