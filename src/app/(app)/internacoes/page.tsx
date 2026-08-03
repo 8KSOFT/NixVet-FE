@@ -3,12 +3,12 @@
 import React, { useState } from 'react';
 import type { ApiRequestError } from '@/app/types/api-error';
 import type { HospitalizationCreatePayload, HospitalizationFormValues } from '@/app/types/hospitalization';
-import { Plus, Clock } from 'lucide-react';
+import { Plus, Clock, Paperclip, ChevronRight } from 'lucide-react';
 import { DashboardCreateFormDialog } from '@/components/dashboard-create-form-dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { ProfilePhoto } from '@/components/shared/profile-photo';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -117,7 +117,7 @@ function InternacoesPageContent() {
   const discharged = all.filter((h) => h.status !== 'active');
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold">Internações</h1>
@@ -135,7 +135,7 @@ function InternacoesPageContent() {
           <TabsTrigger value="history">Histórico ({discharged.length})</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="active" className="mt-4">
+        <TabsContent value="active" className="mt-8">
           {loading ? (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {Array.from({ length: 6 }).map((_, i) => (
@@ -145,35 +145,69 @@ function InternacoesPageContent() {
           ) : active.length === 0 ? (
             <div className="py-16 text-center text-muted-foreground">Nenhum paciente internado no momento</div>
           ) : (
-            // <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            <div className="flex flex-wrap gap-4">
+            <div className="flex flex-wrap gap-x-6 gap-y-8 pt-3">
               {active.map((h) => {
                 const days = daysInternado(h.admission_date);
                 const { color, label } = semaforo(days, h.status);
+                const photoUrl = h.patient?.photo_url;
                 return (
-                  <Link key={h.id} href={`/internacoes/${h.id}`}>
-                    <Card className="cursor-pointer transition-shadow hover:shadow-md w-100 h-55">
-                      <CardContent className="p-4 space-y-3">
-                        <div className="flex items-start justify-between">
-                          <div className="">
-                            <p className="text-2xl">{speciesEmoji(h.patient?.species ?? '')}</p>
-                            <p className="font-semibold">{h.patient?.name}</p>
-                            <p className="text-xs text-muted-foreground">{h.patient?.species}</p>
+                  <Link
+                    key={h.id}
+                    href={`/internacoes/${h.id}`}
+                    className="group relative block w-72 perspective-[900px] focus-visible:outline-none"
+                  >
+                    {/* Aba da pasta */}
+                    <div className="absolute -top-2.5 left-0 h-3 w-28 rounded-t-lg border border-b-0 border-gray-300 bg-gray-50 transition-colors duration-200 group-hover:border-primary/40 group-hover:bg-primary/10" />
+
+                    {/* Corpo da pasta — dossiê de um caso único, sem fichas
+                        empilhadas (cada internação já é uma pasta por si só).
+                        A capa tomba pra frente no hover, como se abrisse. */}
+                    <div className="relative flex h-72 origin-bottom flex-col justify-between rounded-xl rounded-tl-none border border-gray-300 bg-white p-3.5 shadow-sm transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:translate-y-0.5 group-hover:-rotate-x-14 group-hover:border-primary/40 group-hover:shadow-xl group-focus-visible:ring-2 group-focus-visible:ring-primary/50">
+                      <div>
+                        <div className="flex items-start justify-between gap-2">
+                          {/* Foto do pet feito uma polaroide solta, presa por um
+                              clipe que agarra também a borda de cima da pasta. */}
+                          <div className="relative -mt-9 mb-1 inline-block">
+                            <div className="-rotate-4 rounded-sm bg-white p-1.5 pb-3 shadow-lg ring-1 ring-black/5 transition-transform duration-300 group-hover:-rotate-2">
+                              {photoUrl ? (
+                                <ProfilePhoto
+                                  url={photoUrl}
+                                  name={h.patient?.name}
+                                  className="size-16 shrink-0 rounded-[2px] shadow-none ring-0 saturate-[.85] contrast-105 sepia-[0.08]"
+                                />
+                              ) : (
+                                <div className="flex size-16 shrink-0 items-center justify-center rounded-[2px] bg-primary/10 text-2xl">
+                                  {speciesEmoji(h.patient?.species ?? '')}
+                                </div>
+                              )}
+                            </div>
+                            <Paperclip
+                              className="absolute -top-3.5 -left-3 h-9 w-9 -rotate-42 text-gray-400 drop-shadow transition-transform duration-300 group-hover:-rotate-47"
+                              strokeWidth={1.6}
+                            />
                           </div>
-                          <span className={cn('rounded-full px-2 py-0.5 text-xs font-medium', color)}>{label}</span>
+                          <span className={cn('mt-1 shrink-0 rounded-full px-2 py-0.5 text-xs font-medium', color)}>
+                            {label}
+                          </span>
                         </div>
-                        <div className="space-y-1 text-sm">
-                          {h.box_number && <p className="text-muted-foreground">Box {h.box_number}</p>}
-                          <p className="text-muted-foreground">{h.veterinarian?.name}</p>
-                          <div className="flex items-center gap-1 text-muted-foreground">
+                        <div className="mt-2.5 min-w-0">
+                          <p className="truncate text-sm font-bold leading-tight text-foreground">{h.patient?.name}</p>
+                          <p className="truncate text-[11px] text-muted-foreground">{h.patient?.species}</p>
+                        </div>
+                      </div>
+                      {/* Rodapé em forma de etiqueta da pasta */}
+                      <div className="mt-3 space-y-1 border-t border-dashed border-gray-200 pt-2 text-xs text-muted-foreground">
+                        {h.box_number && <p className="truncate">Box {h.box_number}</p>}
+                        <p className="truncate">{h.veterinarian?.name}</p>
+                        <div className="flex items-center justify-between">
+                          <span className="flex items-center gap-1">
                             <Clock className="size-3" />
-                            <span>
-                              {days} dia{days !== 1 ? 's' : ''}
-                            </span>
-                          </div>
+                            {days} dia{days !== 1 ? 's' : ''}
+                          </span>
+                          <ChevronRight className="h-4 w-4 shrink-0 text-gray-400 transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-primary" />
                         </div>
-                      </CardContent>
-                    </Card>
+                      </div>
+                    </div>
                   </Link>
                 );
               })}
@@ -181,7 +215,7 @@ function InternacoesPageContent() {
           )}
         </TabsContent>
 
-        <TabsContent value="history" className="mt-4">
+        <TabsContent value="history" className="mt-8">
           <div className="overflow-x-auto border border-gray-300 rounded-lg">
             <Table className="min-w-full border-collapse bg-white text-sm">
               <TableHeader>

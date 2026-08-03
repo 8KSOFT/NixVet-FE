@@ -11,7 +11,15 @@ export interface Hospitalization {
   notes?: string | null;
   belongings?: string | null;
   medical_record_id?: string | null;
-  patient: { id: string; name: string; species: string; breed?: string | null; tutor?: { name: string } };
+  patient: {
+    id: string;
+    name: string;
+    species: string;
+    breed?: string | null;
+    tutor?: { name: string };
+    /** URL pré-assinada da foto do pet — expira, não guardar. */
+    photo_url?: string | null;
+  };
   veterinarian: { id: string; name: string };
 }
 

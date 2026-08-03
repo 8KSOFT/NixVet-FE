@@ -94,12 +94,12 @@ export function TrialBanner({ billing }: TrialBannerProps) {
 
     if (daysLeft <= 2) {
       return (
-        <div className="flex items-center gap-3 border-b border-orange-200 bg-orange-50 px-5 py-3 text-sm text-orange-900">
-          <CreditCard className="size-4 shrink-0" />
+        <div className="flex items-center gap-3 border-b border-emerald-200 bg-emerald-50 px-5 py-3 text-sm text-emerald-800">
+          <CreditCard className="size-4 shrink-0 text-emerald-600" />
           <span className="flex-1">
             Seu trial expira em <strong>{daysLeft} {daysLeft === 1 ? 'dia' : 'dias'}</strong>. Escolha um plano para continuar.
           </span>
-          <Link href="/billing/upgrade" className="shrink-0 rounded-md bg-orange-600 px-3 py-1 text-xs font-semibold text-white hover:bg-orange-700">
+          <Link href="/billing/upgrade" className="shrink-0 rounded-md bg-emerald-600 px-3 py-1 text-xs font-semibold text-white hover:bg-emerald-700">
             Ver planos
           </Link>
         </div>
@@ -108,12 +108,12 @@ export function TrialBanner({ billing }: TrialBannerProps) {
 
     if (daysLeft <= 7) {
       return (
-        <div className="flex items-center gap-3 border-b border-yellow-200 bg-yellow-50 px-5 py-3 text-sm text-yellow-900">
-          <CreditCard className="size-4 shrink-0" />
+        <div className="flex items-center gap-3 border-b border-emerald-200 bg-emerald-50 px-5 py-3 text-sm text-emerald-800">
+          <CreditCard className="size-4 shrink-0 text-emerald-600" />
           <span className="flex-1">
             Seu trial expira em <strong>{daysLeft} dias</strong>. Escolha um plano para continuar.
           </span>
-          <Link href="/billing/upgrade" className="shrink-0 rounded-md bg-yellow-600 px-3 py-1 text-xs font-semibold text-white hover:bg-yellow-700">
+          <Link href="/billing/upgrade" className="shrink-0 rounded-md bg-emerald-600 px-3 py-1 text-xs font-semibold text-white hover:bg-emerald-700">
             Ver planos
           </Link>
         </div>

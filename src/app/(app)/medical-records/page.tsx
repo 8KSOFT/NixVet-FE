@@ -10,10 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import { Loader2, Plus, Search, UserPlus, PawPrint, FolderOpen, ChevronRight } from 'lucide-react';
+import { Loader2, Plus, Search, UserPlus, PawPrint, FolderOpen, ChevronRight, Paperclip } from 'lucide-react';
 import { API_PAGE_SIZE } from '@/lib/pagination';
 import { ListPagination } from '@/components/list-pagination';
 import { ProfilePhoto } from '@/components/shared/profile-photo';
+import { cn } from '@/lib/utils';
 import dayjs from 'dayjs';
 import type { MedicalRecord, MedicalRecordPatientRef } from '@/app/types/medical-record';
 import { useCreateMedicalRecordMutation, useMedicalRecordsQuery } from '@/hooks/apiHooks/useMedicalRecords';
@@ -25,6 +26,27 @@ interface PatientRecordGroup {
   patient: MedicalRecordPatientRef;
   records: MedicalRecord[];
 }
+
+const RECORD_TYPE_LABELS: Record<string, string> = {
+  atendimento: 'Atendimento',
+  retorno: 'Retorno',
+  emergencia: 'Emergência',
+  cirurgia: 'Cirurgia',
+  internacao: 'Internação',
+};
+
+// Classes completas (não montadas em runtime) — o Tailwind só gera o CSS de
+// classes que aparecem literalmente no código-fonte. Cada ficha sobe um
+// pouquinho mais que a de baixo — dá pra "contar" quantas tem, sem exagero.
+const FICHA_STACK_HOVER = [
+  'group-hover:-translate-y-5',
+  'group-hover:-translate-y-7',
+  'group-hover:-translate-y-9',
+  'group-hover:-translate-y-11',
+  'group-hover:-translate-y-14',
+];
+const FICHA_STACK_DELAY = ['delay-0', 'delay-75', 'delay-150', 'delay-200', 'delay-300'];
+const JUICY_EASE = 'ease-[cubic-bezier(0.34,1.56,0.64,1)]';
 
 const emptyForm = () => ({
   patient_id: '',
@@ -190,7 +212,7 @@ export default function MedicalRecordsListPage() {
         </Button>
       </div>
 
-      <div className="flex flex-wrap gap-3 mb-4">
+      <div className="flex flex-wrap gap-3 mb-10">
         <div className="flex-1 min-w-50 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-7 h-7" />
           <Input
@@ -230,47 +252,109 @@ export default function MedicalRecordsListPage() {
           <div className="text-center py-12 text-muted-foreground">Nenhum prontuário encontrado.</div>
         ) : (
           <div>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-6 pt-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-6 pt-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
               {patientGroups.map((group) => {
                 const lastUpdated = group.records[0]?.createdAt;
                 return (
                   <Link
                     key={group.patient.id}
                     href={`/medical-records/prontuario/${group.patient.id}`}
-                    className="group relative block focus-visible:outline-none"
+                    className="group relative block perspective-[900px] focus-visible:outline-none"
                   >
                     {/* Aba da pasta */}
                     <div className="absolute -top-2.5 left-0 h-3 w-28 rounded-t-lg border border-b-0 border-gray-300 bg-gray-50 transition-colors duration-200 group-hover:border-primary/40 group-hover:bg-primary/10" />
-                    {/* Corpo da pasta */}
-                    <div className="relative flex aspect-4/3 flex-col items-center justify-center gap-1.5 rounded-xl rounded-tl-none border border-gray-300 bg-white p-3 text-center shadow-sm transition-all duration-200 group-hover:-translate-y-0.5 group-hover:border-primary/40 group-hover:shadow-md group-focus-visible:ring-2 group-focus-visible:ring-primary/50">
-                      {/* Foto do pet quando existir; a pasta genérica só quando não há. */}
-                      {group.patient.photo_url ? (
-                        <ProfilePhoto
-                          url={group.patient.photo_url}
-                          name={group.patient.name}
-                          className="size-10 shrink-0"
-                        />
-                      ) : (
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors duration-200 group-hover:bg-primary/15">
-                          <FolderOpen className="h-5 w-5" />
-                        </div>
-                      )}
-                      <p className="w-full truncate text-sm font-semibold text-foreground">{group.patient.name}</p>
-                      {/* Sem o tutor, duas pastas de animais homônimos ficam
-                          indistinguíveis. */}
-                      <p
-                        className="w-full truncate text-[11px] text-muted-foreground"
-                        title={group.patient.tutor?.name ?? undefined}
+
+                    {/* Fichas dentro da pasta — empilhadas, cada uma subindo um
+                        pouquinho mais que a de baixo no hover (dá pra "contar"
+                        quantas tem, até 5, sem virar bagunça). Ficam atrás do
+                        corpo da pasta em repouso e só sobem um pouco no hover —
+                        levantada discreta, não um leque agressivo. */}
+                    {[...group.records.slice(0, 5).entries()].reverse().map(([i, record]) => (
+                      <div
+                        key={record.id}
+                        className={cn(
+                          'pointer-events-none absolute inset-x-3 top-1 h-9 overflow-hidden rounded-md border border-gray-200 bg-white shadow-sm transition-transform duration-300',
+                          JUICY_EASE,
+                          FICHA_STACK_HOVER[i],
+                          FICHA_STACK_DELAY[i],
+                        )}
                       >
-                        {group.patient.tutor?.name ?? 'Sem responsável'}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {group.records.length} {group.records.length === 1 ? 'ficha' : 'fichas'}
-                      </p>
-                      <p className="text-[11px] text-muted-foreground/70">
-                        {lastUpdated ? dayjs(lastUpdated).format('DD/MM/YYYY') : '—'}
-                      </p>
-                      <ChevronRight className="absolute bottom-2 right-2 h-4 w-4 shrink-0 text-gray-400 transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-primary" />
+                        {/* Headerzinho da ficha — sempre o primeiro a aparecer,
+                            mesmo quando é a única e sobe pouco. */}
+                        <div className="flex h-4 items-center bg-primary/10 px-2">
+                          <p className="truncate text-[9px] font-bold uppercase tracking-wide text-primary/80">
+                            {RECORD_TYPE_LABELS[record.record_type] ?? record.record_type}
+                          </p>
+                        </div>
+                        <div className="px-2 py-1">
+                          <p className="truncate text-[9px] text-muted-foreground">
+                            {dayjs(record.record_date ?? record.createdAt).format('DD/MM/YYYY')}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+
+                    {/* Corpo da pasta — quadrado e alto; a capa tomba pra frente
+                        no hover (gira pela dobra de baixo), como se abrisse. */}
+                    <div
+                      className={cn(
+                        'relative flex aspect-square origin-bottom flex-col justify-between rounded-xl rounded-tl-none border border-gray-300 bg-white p-3.5 shadow-sm transition-all duration-300',
+                        JUICY_EASE,
+                        'group-hover:border-primary/40 group-hover:shadow-xl group-hover:translate-y-0.5 group-hover:-rotate-x-14',
+                        'group-focus-visible:ring-2 group-focus-visible:ring-primary/50',
+                      )}
+                    >
+                      <div>
+                        {/* Foto do pet feito uma polaroide solta, presa por um
+                            clipe que agarra também a borda de cima da pasta. */}
+                        <div className="relative -mt-9 mb-1 inline-block">
+                          <div className="-rotate-4 rounded-sm bg-white p-1.5 pb-3 shadow-lg ring-1 ring-black/5 transition-transform duration-300 group-hover:-rotate-2">
+                            {group.patient.photo_url ? (
+                              <ProfilePhoto
+                                url={group.patient.photo_url}
+                                name={group.patient.name}
+                                className="size-16 shrink-0 rounded-[2px] shadow-none ring-0 saturate-[.85] contrast-105 sepia-[0.08]"
+                              />
+                            ) : (
+                              <div className="flex size-16 shrink-0 items-center justify-center rounded-[2px] bg-primary/10 text-primary">
+                                <FolderOpen className="h-7 w-7" />
+                              </div>
+                            )}
+                          </div>
+                          {/* Clipe de papel — agarra a foto solta e a borda de
+                              cima da pasta ao mesmo tempo. Troque por uma imagem
+                              de clipe própria (ex.: um PNG) se preferir. */}
+                          <Paperclip
+                            className="absolute -top-3.5 -left-3 h-9 w-9 -rotate-42 text-gray-400 drop-shadow transition-transform duration-300 group-hover:-rotate-47"
+                            strokeWidth={1.6}
+                          />
+                        </div>
+                        <div className="mt-2.5 min-w-0">
+                          <p className="truncate text-sm font-bold leading-tight text-foreground">
+                            {group.patient.name}
+                          </p>
+                          {/* Sem o tutor, duas pastas de animais homônimos ficam
+                              indistinguíveis. */}
+                          <p
+                            className="mt-0.5 truncate text-[11px] text-muted-foreground"
+                            title={group.patient.tutor?.name ?? undefined}
+                          >
+                            {group.patient.tutor?.name ?? 'Sem responsável'}
+                          </p>
+                        </div>
+                      </div>
+                      {/* Rodapé em forma de etiqueta da pasta — separado por uma linha pontilhada, como uma perfuração */}
+                      <div className="flex items-end justify-between border-t border-dashed border-gray-200 pt-2">
+                        <div>
+                          <p className="text-xs text-muted-foreground">
+                            {group.records.length} {group.records.length === 1 ? 'ficha' : 'fichas'}
+                          </p>
+                          <p className="text-[11px] text-muted-foreground/70">
+                            {lastUpdated ? dayjs(lastUpdated).format('DD/MM/YYYY') : '—'}
+                          </p>
+                        </div>
+                        <ChevronRight className="h-4 w-4 shrink-0 text-gray-400 transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-primary" />
+                      </div>
                     </div>
                   </Link>
                 );

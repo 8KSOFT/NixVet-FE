@@ -2,12 +2,13 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { CheckCircle2, Loader2 } from 'lucide-react';
+import { CheckCircle2, Circle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import { useActivateBillingMutation, useBillingStatusQuery } from '@/hooks/apiHooks/useBilling';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 import {
   Select,
   SelectContent,
@@ -81,16 +82,22 @@ export default function BillingUpgradePage() {
         </p>
       </div>
 
+      <p className="mb-3 text-center text-sm text-muted-foreground">
+        Clique em um plano abaixo para selecioná-lo.
+      </p>
       <div className="grid w-full max-w-5xl grid-cols-1 gap-6 md:grid-cols-3">
         {PLANS.map((plan) => (
           <Card
             key={plan.id}
             onClick={() => setSelectedPlan(plan.id)}
-            className={`relative cursor-pointer p-6 transition-all duration-200 ${
+            className={cn(
+              'relative cursor-pointer p-6 transition-all duration-200',
               selectedPlan === plan.id
                 ? 'border-primary ring-2 ring-primary shadow-lg'
-                : 'border-border hover:border-primary/40 hover:shadow-md'
-            } ${plan.highlight ? 'border-primary/40 bg-primary/5' : ''}`}
+                : plan.highlight
+                  ? 'border-primary/40 bg-primary/5 hover:border-primary/60 hover:shadow-md'
+                  : 'border-border hover:border-primary/40 hover:shadow-md',
+            )}
           >
             {plan.id === currentPlanId ? (
               <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-foreground px-3 py-0.5 text-xs font-bold text-white shadow">
@@ -101,14 +108,21 @@ export default function BillingUpgradePage() {
                 Mais popular
               </span>
             ) : null}
-            <div className="mb-4">
-              <h2 className="text-xl font-semibold text-foreground">{plan.name}</h2>
-              <div className="mt-1 flex items-end gap-1">
-                <span className="text-4xl font-extrabold text-foreground">
-                  R${plan.price}
-                </span>
-                <span className="mb-1 text-sm text-muted-foreground">/mês</span>
+            <div className="mb-4 flex items-start justify-between gap-2">
+              <div>
+                <h2 className="text-xl font-semibold text-foreground">{plan.name}</h2>
+                <div className="mt-1 flex items-end gap-1">
+                  <span className="text-4xl font-extrabold text-foreground">
+                    R${plan.price}
+                  </span>
+                  <span className="mb-1 text-sm text-muted-foreground">/mês</span>
+                </div>
               </div>
+              {selectedPlan === plan.id ? (
+                <CheckCircle2 className="size-6 shrink-0 text-primary" />
+              ) : (
+                <Circle className="size-6 shrink-0 text-muted-foreground/30" />
+              )}
             </div>
             <ul className="space-y-2">
               {plan.features.map((f) => (
