@@ -38,10 +38,28 @@ export interface WhatsappConversationStats {
   classified_today: number;
 }
 
+export type WhatsappMediaKind = 'image' | 'audio' | 'video' | 'document' | 'sticker';
+
+/**
+ * pending      — mídia identificada, download ainda em andamento
+ * stored       — disponível para ver/baixar (janela de 7 dias)
+ * expired      — passou dos 7 dias; o arquivo saiu do servidor
+ * unavailable  — não foi possível recuperar (a Z-API apaga em 30 dias)
+ */
+export type WhatsappMediaStatus = 'pending' | 'stored' | 'expired' | 'unavailable';
+
 export interface WhatsappMessage {
   id: string;
   direction: 'inbound' | 'outbound';
   body_text: string | null;
+  /** 'text' | 'interactive_reply' | um WhatsappMediaKind. */
+  type?: string;
+  media_status?: WhatsappMediaStatus | null;
+  media_mime?: string | null;
+  media_filename?: string | null;
+  media_size_bytes?: number | null;
+  media_duration_seconds?: number | null;
+  media_expires_at?: string | null;
   created_at?: string;
   createdAt?: string;
 }

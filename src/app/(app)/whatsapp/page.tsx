@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { WhatsappMediaBubble, isMediaMessage } from '@/components/whatsapp-media-bubble';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -624,7 +625,16 @@ export default function WhatsAppPage() {
                                 : 'bg-muted text-foreground',
                             )}
                           >
-                            <div className="text-sm whitespace-pre-wrap">{m.body_text || '—'}</div>
+                            {isMediaMessage(m) ? (
+                              <div className="space-y-1.5">
+                                <WhatsappMediaBubble message={m} />
+                                {m.body_text && !m.body_text.startsWith('[') && (
+                                  <div className="text-sm whitespace-pre-wrap">{m.body_text}</div>
+                                )}
+                              </div>
+                            ) : (
+                              <div className="text-sm whitespace-pre-wrap">{m.body_text || '—'}</div>
+                            )}
                             <div
                               className={cn(
                                 'text-xs mt-1',
