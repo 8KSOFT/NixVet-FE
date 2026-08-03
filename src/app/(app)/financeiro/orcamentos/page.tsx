@@ -1,11 +1,22 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Plus, FileText, CheckCircle, Eye, Trash2 } from 'lucide-react';
+import { Plus, FileText, CheckCircle, Eye, Trash2, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Textarea } from '@/components/ui/textarea';
 import { DashboardCreateFormDialog } from '@/components/dashboard-create-form-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -19,9 +30,11 @@ import { useVeterinariansQuery } from '@/hooks/apiHooks/useUsers';
 import {
   useApproveBudgetMutation,
   useBudgetsQuery,
+  useCancelBudgetMutation,
   useCreateBudgetMutation,
   useDownloadBudgetPdfMutation,
 } from '@/hooks/apiHooks/useBudgets';
+import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import type { Budget, BudgetItem, BudgetItemType, BudgetPayload, BudgetType } from '@/app/types/budget';
 
 type BudgetBadgeVariant = 'secondary' | 'default' | 'destructive';
@@ -66,6 +79,7 @@ const STATUS_LABELS: Record<string, string> = {
   rejected: 'Recusado',
   expired: 'Expirado',
   converted: 'Convertido',
+  cancelled: 'Cancelado',
 };
 
 const STATUS_COLORS: Record<string, BudgetBadgeVariant> = {
@@ -75,7 +89,13 @@ const STATUS_COLORS: Record<string, BudgetBadgeVariant> = {
   rejected: 'destructive',
   expired: 'secondary',
   converted: 'default',
+  cancelled: 'destructive',
 };
+
+/** Só faz sentido cancelar o que ainda não virou internação/consulta nem já foi cancelado. */
+function canCancel(status: string) {
+  return status !== 'cancelled' && status !== 'converted';
+}
 
 function fmt(n: number) {
   return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -90,6 +110,8 @@ function computeTotals(items: BudgetItem[]) {
 export default function OrcamentosPage() {
   const [openNew, setOpenNew] = useState(false);
   const [selected, setSelected] = useState<Budget | null>(null);
+  const [toCancel, setToCancel] = useState<Budget | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
   const { data: patients = [] } = usePatientsListQuery();
   const { data: users = [] } = useVeterinariansQuery();
   const { data: products = [] } = useProductsQuery();
@@ -97,6 +119,7 @@ export default function OrcamentosPage() {
   const { data: budgets = [], isLoading: loading } = useBudgetsQuery();
   const createBudget = useCreateBudgetMutation();
   const approveBudget = useApproveBudgetMutation();
+  const cancelBudget = useCancelBudgetMutation();
   const downloadBudgetPdf = useDownloadBudgetPdfMutation();
 
   const [form, setForm] = useState<BudgetFormValues>({
@@ -167,6 +190,27 @@ export default function OrcamentosPage() {
       await approveBudget.mutateAsync(id);
     } catch {
       toast.error('Erro ao aprovar');
+    }
+  };
+
+  const handleCancel = async () => {
+    if (!toCancel) return;
+    try {
+      const result = await cancelBudget.mutateAsync({
+        id: toCancel.id,
+        reason: cancelReason.trim() || undefined,
+      });
+      const kept = result?.financial?.kept_confirmed ?? 0;
+      toast.success(
+        kept > 0
+          ? `Orçamento cancelado. ${kept} lançamento(s) já confirmado(s) permanecem no financeiro — revise manualmente.`
+          : 'Orçamento cancelado.',
+      );
+      setToCancel(null);
+      setCancelReason('');
+      if (selected?.id === toCancel.id) setSelected(null);
+    } catch (error) {
+      toast.error(getApiErrorMessage(error, 'Erro ao cancelar orçamento'));
     }
   };
 
@@ -301,6 +345,16 @@ export default function OrcamentosPage() {
                               <CheckCircle className="size-4 text-green-600" />
                             </Button>
                           ) : null}
+                          {canCancel(b.status) ? (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setToCancel(b)}
+                              title="Cancelar orçamento"
+                            >
+                              <XCircle className="size-4 text-destructive" />
+                            </Button>
+                          ) : null}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -360,6 +414,16 @@ export default function OrcamentosPage() {
                     {b.status === 'draft' || b.status === 'sent' ? (
                       <Button variant="ghost" size="icon" onClick={() => handleApprove(b.id)} title="Aprovar">
                         <CheckCircle className="size-4 text-green-600" />
+                      </Button>
+                    ) : null}
+                    {canCancel(b.status) ? (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setToCancel(b)}
+                        title="Cancelar orçamento"
+                      >
+                        <XCircle className="size-4 text-destructive" />
                       </Button>
                     ) : null}
                   </div>
@@ -550,8 +614,17 @@ export default function OrcamentosPage() {
                   <span className="font-medium">Tipo:</span> {selected.type}
                 </div>
                 <div>
-                  <span className="font-medium">Status:</span> {STATUS_LABELS[selected.status]}
+                  <span className="font-medium">Status:</span> {STATUS_LABELS[selected.status] ?? selected.status}
                 </div>
+                {selected.status === 'cancelled' && (
+                  <div className="sm:col-span-2 text-destructive">
+                    <span className="font-medium">Cancelado</span>
+                    {selected.cancelled_at
+                      ? ` em ${new Date(selected.cancelled_at).toLocaleDateString('pt-BR')}`
+                      : ''}
+                    {selected.cancellation_reason ? ` — ${selected.cancellation_reason}` : ''}
+                  </div>
+                )}
               </div>
               <div className="overflow-x-auto">
                 <Table>
@@ -610,10 +683,65 @@ export default function OrcamentosPage() {
                   </div>
                 );
               })()}
+
+              {canCancel(selected.status) && (
+                <div className="flex justify-end border-t pt-3">
+                  <Button variant="outline" className="text-destructive" onClick={() => setToCancel(selected)}>
+                    <XCircle className="mr-2 size-4" />
+                    Cancelar Orçamento
+                  </Button>
+                </div>
+              )}
             </div>
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Confirmação de cancelamento */}
+      <AlertDialog
+        open={!!toCancel}
+        onOpenChange={(open) => {
+          if (!open) {
+            setToCancel(null);
+            setCancelReason('');
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Cancelar orçamento #{toCancel?.id.substring(0, 8).toUpperCase()}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              O orçamento fica registrado como cancelado e sai do fluxo de aprovação. Lançamentos
+              financeiros ainda sugeridos são baixados automaticamente; os já confirmados
+              permanecem e precisam ser revisados no financeiro.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-1">
+            <Label htmlFor="cancel-reason">Motivo (opcional)</Label>
+            <Textarea
+              id="cancel-reason"
+              value={cancelReason}
+              maxLength={500}
+              placeholder="Ex.: tutor desistiu do procedimento"
+              onChange={(e) => setCancelReason(e.target.value)}
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={cancelBudget.isPending}>Voltar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                void handleCancel();
+              }}
+              disabled={cancelBudget.isPending}
+            >
+              {cancelBudget.isPending ? 'Cancelando…' : 'Cancelar orçamento'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

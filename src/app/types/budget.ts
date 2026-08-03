@@ -35,6 +35,13 @@ export interface Budget {
   items: BudgetItem[];
   summary?: BudgetSummary;
   created_at: string;
+  cancelled_at?: string | null;
+  cancellation_reason?: string | null;
+}
+
+/** Resultado do cancelamento — `financial` informa o reflexo no financeiro. */
+export interface CancelBudgetResult extends Budget {
+  financial?: { cancelled: number; kept_confirmed: number };
 }
 
 export type BudgetType = 'procedure' | 'hospitalization';

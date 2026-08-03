@@ -2,7 +2,8 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/axios';
-import type { Budget, BudgetPayload } from '@/app/types/budget';
+import type { Budget, BudgetPayload, CancelBudgetResult } from '@/app/types/budget';
+import { financialReportKeys } from './useFinancialReports';
 
 export const budgetKeys = {
   all: ['budgets'] as const,
@@ -41,6 +42,21 @@ export function useApproveBudgetMutation() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: budgetKeys.all });
+    },
+  });
+}
+
+export function useCancelBudgetMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, reason }: { id: string; reason?: string }) => {
+      const { data } = await api.patch<CancelBudgetResult>(`/budgets/${id}/cancel`, { reason });
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: budgetKeys.all });
+      // O cancelamento reflete no financeiro (lançamentos sugeridos são baixados).
+      queryClient.invalidateQueries({ queryKey: financialReportKeys.all });
     },
   });
 }
