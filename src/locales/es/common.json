@@ -40,7 +40,9 @@
     "financeiroReceitas": "Ingresos",
     "financeiroCustos": "Costos de Pago",
     "budgets": "Presupuestos",
-    "financeiroReceita": "Análisis de Ingresos"
+    "financeiroReceita": "Análisis de Ingresos",
+    "help": "Ayuda",
+    "supportAdmin": "Soporte (global)"
   },
   "header": {
     "greeting": "Hola,",

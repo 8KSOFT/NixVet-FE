@@ -218,6 +218,9 @@ function getActiveKey(pathname: string): string {
   if (pathname.includes("/profile")) return "profile";
   if (pathname.includes("/superadmin/finance"))
     return "finance-admin";
+  if (pathname.includes("/superadmin/suporte"))
+    return "support-admin";
+  if (pathname.includes("/ajuda")) return "help";
   if (pathname.includes("/superadmin/clinics"))
     return "clinics-admin";
   if (pathname.includes("/patients")) return "patients";

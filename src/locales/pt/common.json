@@ -40,7 +40,9 @@
     "financeiroReceitas": "Receitas",
     "financeiroCustos": "Custos de Pagamento",
     "budgets": "Orçamentos",
-    "financeiroReceita": "Análise de Receita"
+    "financeiroReceita": "Análise de Receita",
+    "help": "Ajuda",
+    "supportAdmin": "Suporte (global)"
   },
   "header": {
     "greeting": "Olá,",

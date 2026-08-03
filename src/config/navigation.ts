@@ -9,6 +9,8 @@ import {
   TrendingUp,
   CreditCard,
   Package,
+  HelpCircle,
+  LifeBuoy,
 } from "lucide-react";
 import { MenuIconsWhite } from "@/components/MenuIconsWhite";
 import type { PlanId } from "@/lib/plans";
@@ -204,11 +206,23 @@ export const NAV_SECTIONS: NavSection[] = [
         href: "/superadmin/finance",
         labelKey: "nav.financeAdmin",
       },
+      {
+        key: "support-admin",
+        icon: LifeBuoy,
+        href: "/superadmin/suporte",
+        labelKey: "nav.supportAdmin",
+      },
     ],
   },
   {
     sectionKey: "admin",
     items: [
+      {
+        key: "help",
+        icon: HelpCircle,
+        href: "/ajuda",
+        labelKey: "nav.help",
+      },
       {
         key: "settings",
         icon: MenuIconsWhite.configuracoes,
