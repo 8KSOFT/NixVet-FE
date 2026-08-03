@@ -6,6 +6,7 @@ const MENU_BY_ROLE: Record<string, readonly string[]> = {
     'dashboard',
     'clinics-admin',
     'finance-admin',
+    'support-admin',
     'patients',
     'owners',
     'team',
@@ -31,6 +32,7 @@ const MENU_BY_ROLE: Record<string, readonly string[]> = {
     'financeiro-produtos',
     'budgets',
     'products',
+    'help',
     'settings',
   ],
   admin: [
@@ -60,6 +62,7 @@ const MENU_BY_ROLE: Record<string, readonly string[]> = {
     'financeiro-produtos',
     'budgets',
     'products',
+    'help',
     'settings',
   ],
   manager: [
@@ -89,6 +92,7 @@ const MENU_BY_ROLE: Record<string, readonly string[]> = {
     'financeiro-produtos',
     'budgets',
     'products',
+    'help',
     'settings',
   ],
   reception: [
@@ -99,8 +103,9 @@ const MENU_BY_ROLE: Record<string, readonly string[]> = {
     'vaccines',
     'tasks',
     'whatsapp',
+    'help',
   ],
-  intern: ['dashboard', 'patients', 'owners', 'calendar', 'vaccines', 'tasks'],
+  intern: ['dashboard', 'patients', 'owners', 'calendar', 'vaccines', 'tasks', 'help'],
   veterinarian: [
     'dashboard',
     'patients',
@@ -114,6 +119,7 @@ const MENU_BY_ROLE: Record<string, readonly string[]> = {
     'tasks',
     'whatsapp',
     'medical-records',
+    'help',
   ],
 };
 
