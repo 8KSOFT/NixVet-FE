@@ -289,6 +289,8 @@ interface SidebarNavProps {
   onNavigate?: () => void;
   billingPlan: string | null;
   isSuperAdmin: boolean;
+  /** Trial vencido/assinatura suspensa: menu fica visível mas nenhum item navega pro destino real — todos levam pra /billing/upgrade. */
+  blocked?: boolean;
   /** Drawer mobile (Sheet): mostra rodapé com idioma, já que ali some do header. */
   isMobile?: boolean;
 }
@@ -303,13 +305,22 @@ function SidebarNav({
   onNavigate,
   billingPlan,
   isSuperAdmin,
+  blocked = false,
   isMobile = false,
 }: SidebarNavProps) {
   const isNavItemLocked = (key: string) => {
     if (isSuperAdmin) return false;
+    if (blocked) return key !== "help";
     const requiredPlan = NAV_PLAN_REQUIREMENTS[key];
     return !!requiredPlan && !planMeetsRequirement(billingPlan, requiredPlan);
   };
+  /**
+   * Item bloqueado navega pra tela de plano em vez do destino real — cadeado
+   * sozinho, sem link, é menos claro sobre o que fazer. "Ajuda" é exceção:
+   * continua indo pro destino de verdade, é a porta de saída pra quem acha
+   * que o bloqueio está errado (ex.: já pagou) abrir um chamado.
+   */
+  const navHref = (key: string, href: string) => (blocked && key !== "help" ? "/billing/upgrade" : href);
   const { t } = useTranslation("common");
   const medical = variant === "medical";
 
@@ -529,11 +540,11 @@ function SidebarNav({
                               <React.Fragment key={child.key}>
                                 {childIdx > 0 && <ItemDivider />}
                                 <Link
-                                  href={child.href}
+                                  href={navHref(child.key, child.href)}
                                   onClick={() => onNavigate?.()}
-                                  className={linkClass(
-                                    activeKey === child.key,
-                                    true,
+                                  className={cn(
+                                    linkClass(activeKey === child.key, true),
+                                    isNavItemLocked(child.key) && "opacity-50",
                                   )}
                                 >
                                   <child.icon className="size-3.5 shrink-0 stroke-[1.5]" />
@@ -558,9 +569,9 @@ function SidebarNav({
                       {showLeadingDivider && <ItemDivider />}
                       <NavTooltip collapsed={collapsed} label={t(item.labelKey)}>
                         <Link
-                          href={item.href}
+                          href={navHref(item.key, item.href)}
                           onClick={() => onNavigate?.()}
-                          className={cn("my-1", linkClass(isActive))}
+                          className={cn("my-1", linkClass(isActive), isNavItemLocked(item.key) && "opacity-50")}
                         >
                           <Icon
                             className={cn(
@@ -678,16 +689,29 @@ export default function DashboardLayout({
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, []);
 
+  // Bloqueado de verdade (não superadmin, status carregado e vencido/suspenso).
+  // Usado tanto pro redirect quanto pra trocar `children` por uma tela de
+  // bloqueio NO MESMO RENDER — só o redirect (useEffect) sempre deixava a
+  // página real desenhar por um instante antes de trocar de rota, e nesse
+  // instante ela tentava carregar dados que a API já barra (402), sobrando
+  // toast de erro genérico + tabela vazia. Trocando o conteúdo já no render,
+  // não sobra brecha nenhuma pra esse flash.
+  const isBillingBlocked =
+    headerRole !== "superadmin" &&
+    !billing.loading &&
+    (billing.status === "trial_expired" || billing.status === "suspended");
+  // /billing/upgrade (resolver o bloqueio) e /ajuda (pedir ajuda se acha que
+  // o bloqueio está errado — ex.: já pagou) continuam acessíveis mesmo
+  // bloqueado. Sem isso, quem precisa abrir um chamado pra se destravar
+  // ficava preso do mesmo jeito.
+  const isOnUpgradePage = currentPathname.includes("/billing/upgrade");
+  const isAllowedWhileBlocked = isOnUpgradePage || currentPathname.includes("/ajuda");
+
   useEffect(() => {
-    if (headerRole === "superadmin") return;
-    if (
-      !billing.loading &&
-      (billing.status === "trial_expired" || billing.status === "suspended") &&
-      !currentPathname.includes("/billing/upgrade")
-    ) {
+    if (isBillingBlocked && !isAllowedWhileBlocked) {
       router.replace("/billing/upgrade");
     }
-  }, [billing.loading, billing.status, currentPathname, router, headerRole]);
+  }, [isBillingBlocked, isAllowedWhileBlocked, router]);
 
   useEffect(() => {
     fetchPublicBranding().then((branding) => {
@@ -760,6 +784,7 @@ export default function DashboardLayout({
           variant="medical"
           billingPlan={billing.billingPlan}
           isSuperAdmin={headerRole === "superadmin"}
+          blocked={isBillingBlocked}
         />
       </aside>
 
@@ -785,6 +810,7 @@ export default function DashboardLayout({
             onNavigate={() => setMobileNavOpen(false)}
             billingPlan={billing.billingPlan}
             isSuperAdmin={headerRole === "superadmin"}
+            blocked={isBillingBlocked}
             isMobile
           />
         </SheetContent>
@@ -903,7 +929,19 @@ export default function DashboardLayout({
         <EmailConfirmationBanner />
 
         <main className="flex-1 p-5 lg:p-8">
-          {children}
+          {isBillingBlocked && !isAllowedWhileBlocked ? (
+            // Nunca desenha a página real aqui — ela dispararia suas próprias
+            // buscas de dados, que a API já barra com 402, sobrando toast de
+            // erro genérico + tabela vazia até o redirect (abaixo) trocar de
+            // rota. Essa troca já acontece no mesmo render, então isto só
+            // aparece por um instante bem curto.
+            <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3 text-center text-muted-foreground">
+              <Lock className="size-8 opacity-60" />
+              <p className="text-sm">Redirecionando para a escolha de plano…</p>
+            </div>
+          ) : (
+            children
+          )}
         </main>
       </div>
       <SetupChecklistWidget />
