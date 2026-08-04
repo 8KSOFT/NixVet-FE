@@ -3,7 +3,7 @@
 import React from 'react';
 import type {
   PatientTimelineEvent,
-  TimelineConsultationData,
+  TimelineMedicalRecordData,
   TimelineExamRequestData,
   TimelinePrescriptionData,
   TimelineVaccineData,
@@ -12,17 +12,26 @@ import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, ChevronLeft, BookOpen, FlaskConical, ClipboardList, Clock, FileText } from 'lucide-react';
+import { Loader2, ChevronLeft, BookOpen, FlaskConical, ClipboardList, FileText } from 'lucide-react';
 import Link from 'next/link';
 import { patientKeys, usePatientQuery, usePatientTimelineQuery } from '@/hooks/apiHooks/usePatients';
 import { ProfilePhotoUploader } from '@/components/shared/profile-photo';
 
+const RECORD_TYPE_LABELS: Record<string, string> = {
+  atendimento: 'Atendimento',
+  retorno: 'Retorno',
+  emergencia: 'Emergência',
+  cirurgia: 'Cirurgia',
+  internacao: 'Internação',
+  no_show: 'Não Compareceu',
+};
+
 const typeConfig: Record<string, { label: string; colorClass: string; dotClass: string; icon: React.ReactNode }> = {
-  consultation: {
-    label: 'Consulta',
+  medical_record: {
+    label: 'Ficha',
     colorClass: 'border-blue-400',
     dotClass: 'bg-blue-100 text-primary',
-    icon: <Clock className="w-4 h-4" />,
+    icon: <FileText className="w-4 h-4" />,
   },
   vaccine: {
     label: 'Vacina',
@@ -44,8 +53,8 @@ const typeConfig: Record<string, { label: string; colorClass: string; dotClass: 
   },
 };
 
-function getConsultationData(event: PatientTimelineEvent): TimelineConsultationData {
-  return event.data as TimelineConsultationData;
+function getMedicalRecordData(event: PatientTimelineEvent): TimelineMedicalRecordData {
+  return event.data as TimelineMedicalRecordData;
 }
 
 function getVaccineData(event: PatientTimelineEvent): TimelineVaccineData {
@@ -154,7 +163,18 @@ export default function PatientDetailPage() {
                   dotClass: 'bg-muted text-muted-foreground',
                   icon: null,
                 };
-                const dateStr = new Date(ev.date).toLocaleString('pt-BR');
+                // Ficha usa o rótulo do tipo de atendimento (Atendimento,
+                // Retorno...) em vez do genérico "Ficha", e não tem hora
+                // (record_date é só data) — mostrar "00:00" seria ruído.
+                const isRecordEvent = ev.type === 'medical_record';
+                const label = isRecordEvent
+                  ? (RECORD_TYPE_LABELS[getMedicalRecordData(ev).record_type ?? ''] ?? meta.label)
+                  : meta.label;
+                const dateStr = isRecordEvent
+                  ? new Date(ev.date).toLocaleDateString('pt-BR')
+                  : new Date(ev.date).toLocaleString('pt-BR');
+                const isFirst = idx === 0;
+                const isLast = idx === sortedEvents.length - 1;
                 return (
                   <div key={ev.id} className="flex gap-3">
                     <div className="flex flex-col items-center">
@@ -166,20 +186,42 @@ export default function PatientDetailPage() {
                       {idx < sortedEvents.length - 1 && <div className="w-px flex-1 bg-gray-200 my-1" />}
                     </div>
                     <div className="pb-4 flex-1 pt-1">
-                      <div className="font-medium text-foreground">
-                        {meta.label} — <span className="text-muted-foreground font-normal">{dateStr}</span>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="font-medium text-foreground">
+                          {label} — <span className="text-muted-foreground font-normal">{dateStr}</span>
+                        </div>
+                        {/* Marca o topo (mais recente) e o fim (início do
+                            histórico) — a lista lê de cima pra baixo, do mais
+                            novo pro mais antigo, e sem essas âncoras isso não
+                            fica óbvio à primeira vista. */}
+                        {isFirst && (
+                          <span
+                            className="mt-0.5 shrink-0 bg-primary py-1 pl-2.5 pr-4 text-[10px] font-bold uppercase tracking-wide whitespace-nowrap text-primary-foreground"
+                            style={{
+                              clipPath:
+                                'polygon(0% 50%, 10px 0%, 100% 0%, calc(100% - 10px) 50%, 100% 100%, 10px 100%)',
+                            }}
+                          >
+                            Mais recente
+                          </span>
+                        )}
+                        {isLast && !isFirst && (
+                          <Badge variant="outline" className="mt-0.5 shrink-0 whitespace-nowrap text-muted-foreground">
+                            Início
+                          </Badge>
+                        )}
                       </div>
                       {ev.data && Object.keys(ev.data).length > 0 && (
                         <div className="text-sm text-muted-foreground mt-1">
-                          {ev.type === 'consultation' && (
+                          {ev.type === 'medical_record' && (
                             <>
                               {(() => {
-                                const consultationData = getConsultationData(ev);
+                                const recordData = getMedicalRecordData(ev);
                                 return (
                                   <>
-                                    Status: <Badge variant="outline">{String(consultationData.status ?? '—')}</Badge>
-                                    {consultationData.observations && (
-                                      <div className="mt-1">{consultationData.observations}</div>
+                                    Status: <Badge variant="outline">{String(recordData.status ?? '—')}</Badge>
+                                    {recordData.chief_complaint && (
+                                      <div className="mt-1">{recordData.chief_complaint}</div>
                                     )}
                                   </>
                                 );

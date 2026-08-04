@@ -47,9 +47,10 @@ export interface SupportOptionsListEnvelope {
   content?: SupportOption[];
 }
 
-export interface TimelineConsultationData {
+export interface TimelineMedicalRecordData {
+  record_type?: string;
+  chief_complaint?: string;
   status?: string;
-  observations?: string;
 }
 
 export interface TimelineVaccineData {
@@ -67,7 +68,7 @@ export interface TimelinePrescriptionData {
 }
 
 export type TimelineEventData =
-  | TimelineConsultationData
+  | TimelineMedicalRecordData
   | TimelineVaccineData
   | TimelineExamRequestData
   | TimelinePrescriptionData

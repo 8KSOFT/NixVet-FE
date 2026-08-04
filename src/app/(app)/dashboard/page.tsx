@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -20,11 +20,22 @@ import { useDashboardMetricsQuery } from "@/hooks/apiHooks/useDashboardMetrics";
 import { useConsultationsQuery } from "@/hooks/apiHooks/useConsultations";
 import { usePatientsListQuery } from "@/hooks/apiHooks/usePatients";
 import { useClinicalTasksQuery } from "@/hooks/apiHooks/useClinicalTasks";
+import { getStoredUserRole } from "@/lib/role-permissions";
 import { Badge } from "@/components/ui/badge";
 import { ListChecks } from "lucide-react";
 
+/** Cargos com visão gerencial — os únicos que veem receita no dashboard. */
+const MANAGEMENT_ROLES = new Set(["superadmin", "admin", "manager"]);
+
 export default function DashboardPage() {
   const { t, i18n } = useTranslation("common");
+  // Lê depois do mount (localStorage não existe no server) — mesmo padrão
+  // usado no layout pra headerRole/menuAllow.
+  const [userRole, setUserRole] = useState<string | null>(null);
+  useEffect(() => {
+    setUserRole(getStoredUserRole());
+  }, []);
+  const isManager = !!userRole && MANAGEMENT_ROLES.has(userRole.toLowerCase());
   const locale = useMemo(() => {
     const l = i18n.language?.split("-")[0];
     if (l === "en") return "en-US";
@@ -129,6 +140,7 @@ export default function DashboardPage() {
 
   const statCards = useMemo(
     () => [
+      // "revenue" é filtrado logo abaixo pra quem não tem cargo de gestão.
       {
         key: "today",
         label: t("dashboardHome.statsToday"),
@@ -209,8 +221,8 @@ export default function DashboardPage() {
         valueColor: "text-sky-700",
         href: "/whatsapp",
       },
-    ],
-    [t, stats],
+    ].filter((card) => card.key !== "revenue" || isManager),
+    [t, stats, isManager],
   );
 
   const statusTextClass = (statusKey: string) => {

@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import { Loader2, Plus, Search, UserPlus, PawPrint, FolderOpen, ChevronRight, Paperclip } from 'lucide-react';
+import { Loader2, Plus, Search, UserPlus, PawPrint, FolderOpen, ChevronRight } from 'lucide-react';
 import { API_PAGE_SIZE } from '@/lib/pagination';
 import { ListPagination } from '@/components/list-pagination';
 import { ProfilePhoto } from '@/components/shared/profile-photo';
@@ -36,14 +36,16 @@ const RECORD_TYPE_LABELS: Record<string, string> = {
 };
 
 // Classes completas (não montadas em runtime) — o Tailwind só gera o CSS de
-// classes que aparecem literalmente no código-fonte. Cada ficha sobe um
-// pouquinho mais que a de baixo — dá pra "contar" quantas tem, sem exagero.
+// classes que aparecem literalmente no código-fonte. A mais recente (índice 0,
+// a que fica na frente) sobe o bastante pra ficar bem legível; as de trás
+// ficam bem juntinhas umas das outras, só espiando por cima — sem isso o
+// topo da pilha ficava alto demais e encostava no elemento acima da grade.
 const FICHA_STACK_HOVER = [
-  'group-hover:-translate-y-5',
   'group-hover:-translate-y-7',
+  'group-hover:-translate-y-8',
   'group-hover:-translate-y-9',
+  'group-hover:-translate-y-10',
   'group-hover:-translate-y-11',
-  'group-hover:-translate-y-14',
 ];
 const FICHA_STACK_DELAY = ['delay-0', 'delay-75', 'delay-150', 'delay-200', 'delay-300'];
 const JUICY_EASE = 'ease-[cubic-bezier(0.34,1.56,0.64,1)]';
@@ -261,8 +263,15 @@ export default function MedicalRecordsListPage() {
                     href={`/medical-records/prontuario/${group.patient.id}`}
                     className="group relative block perspective-[900px] focus-visible:outline-none"
                   >
-                    {/* Aba da pasta */}
-                    <div className="absolute -top-2.5 left-0 h-3 w-28 rounded-t-lg border border-b-0 border-gray-300 bg-gray-50 transition-colors duration-200 group-hover:border-primary/40 group-hover:bg-primary/10" />
+                    {/* Aba da pasta — o nome do pet mora nela, como numa pasta
+                        de arquivo de verdade. Gradiente simulando luz vindo de
+                        cima: mais clara no topo, mais escura perto da borda da
+                        pasta (onde ela "entra" por baixo, fazendo sombra). */}
+                    <div className="absolute -top-3.5 left-2 flex h-4 w-3/8 items-center rounded-t-2xl border border-b-0 border-gray-400 bg-linear-to-b from-gray-100 from-45% to-gray-300 px-3 transition-colors duration-200 group-hover:border-primary/40 group-hover:from-primary/15 group-hover:to-primary/30">
+                      <p className="truncate text-xs font-bold text-foreground transition-colors duration-200 group-hover:text-primary">
+                        {group.patient.name}
+                      </p>
+                    </div>
 
                     {/* Fichas dentro da pasta — empilhadas, cada uma subindo um
                         pouquinho mais que a de baixo no hover (dá pra "contar"
@@ -294,53 +303,83 @@ export default function MedicalRecordsListPage() {
                       </div>
                     ))}
 
-                    {/* Corpo da pasta — quadrado e alto; a capa tomba pra frente
-                        no hover (gira pela dobra de baixo), como se abrisse. */}
+                    {/* Corpo da pasta — quase quadrado, um pouco mais baixo que
+                        largo; a capa tomba pra frente no hover (gira pela
+                        dobra de baixo), como se abrisse. */}
                     <div
                       className={cn(
-                        'relative flex aspect-square origin-bottom flex-col justify-between rounded-xl rounded-tl-none border border-gray-300 bg-white p-3.5 shadow-sm transition-all duration-300',
+                        'relative flex aspect-9/8 origin-bottom flex-col justify-between rounded-xl rounded-tl-none border border-gray-300 bg-white p-3.5 shadow-sm transition-all duration-300',
                         JUICY_EASE,
                         'group-hover:border-primary/40 group-hover:shadow-xl group-hover:translate-y-0.5 group-hover:-rotate-x-14',
                         'group-focus-visible:ring-2 group-focus-visible:ring-primary/50',
                       )}
                     >
                       <div>
-                        {/* Foto do pet feito uma polaroide solta, presa por um
-                            clipe que agarra também a borda de cima da pasta. */}
-                        <div className="relative -mt-9 mb-1 inline-block">
-                          <div className="-rotate-4 rounded-sm bg-white p-1.5 pb-3 shadow-lg ring-1 ring-black/5 transition-transform duration-300 group-hover:-rotate-2">
-                            {group.patient.photo_url ? (
-                              <ProfilePhoto
-                                url={group.patient.photo_url}
-                                name={group.patient.name}
-                                className="size-16 shrink-0 rounded-[2px] shadow-none ring-0 saturate-[.85] contrast-105 sepia-[0.08]"
-                              />
-                            ) : (
-                              <div className="flex size-16 shrink-0 items-center justify-center rounded-[2px] bg-primary/10 text-primary">
-                                <FolderOpen className="h-7 w-7" />
-                              </div>
-                            )}
+                        {/* Tutor (esquerda, no topo) e foto (direita) na mesma
+                            linha — items-start pra o tutor não ser empurrado
+                            pra baixo pela altura da foto. */}
+                        <div className="flex items-start justify-between gap-2">
+                          {/* Tutor — o nome do pet já está na aba, então aqui só
+                              precisa do responsável mesmo (evita repetir). Visual
+                              de adesivo de etiqueta, com a linha de escrever o
+                              nome. */}
+                          <div className="min-w-0 rounded-[3px] border border-gray-200 bg-white px-2 pt-1.5 pb-1 shadow-sm">
+                            <p
+                              className="truncate border-b border-dashed border-gray-300 pb-0.5 text-[10px] font-medium text-muted-foreground"
+                              title={group.patient.tutor?.name ?? undefined}
+                            >
+                              {group.patient.tutor?.name ?? 'Sem responsável'}
+                            </p>
                           </div>
-                          {/* Clipe de papel — agarra a foto solta e a borda de
-                              cima da pasta ao mesmo tempo. Troque por uma imagem
-                              de clipe própria (ex.: um PNG) se preferir. */}
-                          <Paperclip
-                            className="absolute -top-3.5 -left-3 h-9 w-9 -rotate-42 text-gray-400 drop-shadow transition-transform duration-300 group-hover:-rotate-47"
-                            strokeWidth={1.6}
-                          />
-                        </div>
-                        <div className="mt-2.5 min-w-0">
-                          <p className="truncate text-sm font-bold leading-tight text-foreground">
-                            {group.patient.name}
-                          </p>
-                          {/* Sem o tutor, duas pastas de animais homônimos ficam
-                              indistinguíveis. */}
-                          <p
-                            className="mt-0.5 truncate text-[11px] text-muted-foreground"
-                            title={group.patient.tutor?.name ?? undefined}
-                          >
-                            {group.patient.tutor?.name ?? 'Sem responsável'}
-                          </p>
+
+                          {/* Foto do pet feito uma polaroide solta, presa por um
+                              clipe que agarra também a borda de cima da pasta —
+                              no canto direito, pra não tapar a aba da pasta nem
+                              o rótulo das fichas empilhadas (que saem à esquerda). */}
+                          <div className="relative -mt-6 mb-1 inline-block shrink-0">
+                            {/* Clipe — espiral interna, por trás da foto (é por
+                                isso que fica antes dela no DOM: o wire real de
+                                um clipe passa por trás do papel nessa volta). */}
+                            <svg
+                              viewBox="0 0 24 32"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2.5"
+                              strokeLinecap="round"
+                              className="absolute -top-3 -right-2 h-7 w-5 rotate-3 text-gray-400 transition-transform duration-300 group-hover:rotate-6"
+                            >
+                              <rect x="7" y="7" width="8" height="16" rx="4" />
+                            </svg>
+
+                            <div className="-rotate-4 rounded-sm bg-white p-1.5 pb-3 shadow-lg ring-1 ring-black/20 transition-transform duration-300 group-hover:-rotate-2">
+                              {group.patient.photo_url ? (
+                                <ProfilePhoto
+                                  url={group.patient.photo_url}
+                                  name={group.patient.name}
+                                  className="size-16 shrink-0 rounded-xs shadow-none ring-0 saturate-[.85] contrast-105 sepia-[0.08]"
+                                />
+                              ) : (
+                                <div className="flex size-16 shrink-0 items-center justify-center rounded-xs bg-primary/10 text-primary">
+                                  <FolderOpen className="h-7 w-7" />
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Clipe — espiral externa, por cima da foto e da
+                                borda da pasta (o wire volta pra frente aqui).
+                                Troque as duas partes por uma imagem de clipe
+                                própria (ex.: um PNG) se preferir. */}
+                            <svg
+                              viewBox="0 0 24 32"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2.5"
+                              strokeLinecap="round"
+                              className="absolute -top-3 -right-2 h-7 w-5 rotate-3 text-gray-400 drop-shadow transition-transform duration-300 group-hover:rotate-6"
+                            >
+                              <rect x="3" y="3" width="14" height="27" rx="7" />
+                            </svg>
+                          </div>
                         </div>
                       </div>
                       {/* Rodapé em forma de etiqueta da pasta — separado por uma linha pontilhada, como uma perfuração */}

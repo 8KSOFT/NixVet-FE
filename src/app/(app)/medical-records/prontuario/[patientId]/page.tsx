@@ -22,7 +22,7 @@ import {
   LayoutGrid,
 } from "lucide-react";
 import { toast } from "sonner";
-import type { PatientTimelineEvent } from "@/app/types/patient";
+import type { PatientTimelineEvent, TimelineMedicalRecordData } from "@/app/types/patient";
 import dayjs from "dayjs";
 import { usePatientQuery, usePatientTimelineQuery } from "@/hooks/apiHooks/usePatients";
 import { ProfilePhoto } from "@/components/shared/profile-photo";
@@ -37,10 +37,10 @@ const typeConfig: Record<
   string,
   { label: string; dotClass: string; icon: React.ReactNode }
 > = {
-  consultation: {
-    label: "Consulta",
+  medical_record: {
+    label: "Ficha",
     dotClass: "bg-blue-100 text-primary",
-    icon: <Clock className="w-3.5 h-3.5" />,
+    icon: <FileText className="w-3.5 h-3.5" />,
   },
   vaccine: {
     label: "Vacina",
@@ -176,13 +176,13 @@ function ProntuarioDetailContent() {
     );
   }
 
+  // Tutor vira a etiqueta adesiva do cabeçalho — o resto continua em badges.
   const info = [
     { label: "Espécie", value: patient.species },
     { label: "Raça", value: patient.breed },
     { label: "Idade", value: `${patient.age} ano(s)` },
     { label: "Peso", value: `${patient.weight} kg` },
     { label: "Sexo", value: patient.sex },
-    { label: "Tutor", value: patient.tutor?.name ?? "—" },
   ];
 
   return (
@@ -207,30 +207,75 @@ function ProntuarioDetailContent() {
         </Button>
       </div>
 
-      {/* Cabeçalho do animal */}
-      <div className="mb-6 rounded-xl border border-slate-200 bg-white p-4">
-        <div className="flex items-center gap-3 sm:items-start sm:gap-4">
-          {patient.photo_url ? (
-            <ProfilePhoto
-              url={patient.photo_url}
-              name={patient.name}
-              className="size-12 shrink-0 sm:size-14"
-            />
-          ) : (
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary sm:h-14 sm:w-14">
-              <PawPrint className="h-6 w-6 sm:h-7 sm:w-7" />
-            </div>
-          )}
-          <h1 className="min-w-0 truncate text-lg font-extrabold font-['InterDoFigma'] text-slate-900 sm:text-xl">
-            {patient.name}
-          </h1>
+      {/* Cabeçalho do animal — mesmo visual de dossiê da listagem de
+          prontuários e de internações: nome na aba da pasta, foto em
+          polaroide presa por um clipe, tutor em etiqueta adesiva. */}
+      <div className="relative mb-6">
+        {/* Aba da pasta */}
+        <div className="absolute -top-3.5 left-2 flex h-4 w-fit max-w-[70%] items-center rounded-t-2xl border border-b-0 border-gray-400 bg-linear-to-b from-gray-100 from-45% to-gray-300 px-3">
+          <h1 className="min-w-0 truncate text-xs font-bold text-foreground">{patient.name}</h1>
         </div>
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {info.map((f) => (
-            <Badge key={f.label} variant="secondary" className="font-normal text-muted-foreground">
-              {f.label}: <span className="ml-1 text-slate-900">{f.value}</span>
-            </Badge>
-          ))}
+
+        <div className="rounded-xl rounded-tl-none border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="flex items-start justify-between gap-2">
+            {/* Tutor — etiqueta adesiva, largura fixa; nomes grandes truncam. */}
+            <div className="w-40 min-w-0 rounded-[3px] border border-gray-200 bg-white px-2 pt-1.5 pb-1 shadow-sm">
+              <p
+                className="truncate border-b border-dashed border-gray-300 pb-0.5 text-[10px] font-medium text-muted-foreground"
+                title={patient.tutor?.name ?? undefined}
+              >
+                {patient.tutor?.name ?? "Sem tutor"}
+              </p>
+            </div>
+
+            {/* Foto do pet em polaroide, presa por um clipe (espiral atrás e
+                na frente da foto) que agarra também a borda de cima da pasta. */}
+            <div className="relative -mt-6 mb-1 inline-block shrink-0">
+              <svg
+                viewBox="0 0 24 32"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                className="absolute -top-3 -right-2 h-7 w-5 rotate-3 text-gray-400"
+              >
+                <rect x="7" y="7" width="8" height="16" rx="4" />
+              </svg>
+
+              <div className="-rotate-4 rounded-sm bg-white p-1.5 pb-3 shadow-lg ring-1 ring-black/20">
+                {patient.photo_url ? (
+                  <ProfilePhoto
+                    url={patient.photo_url}
+                    name={patient.name}
+                    className="size-16 shrink-0 rounded-xs shadow-none ring-0 saturate-[.85] contrast-105 sepia-[0.08]"
+                  />
+                ) : (
+                  <div className="flex size-16 shrink-0 items-center justify-center rounded-xs bg-primary/10 text-primary">
+                    <PawPrint className="h-7 w-7" />
+                  </div>
+                )}
+              </div>
+
+              <svg
+                viewBox="0 0 24 32"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                className="absolute -top-3 -right-2 h-7 w-5 rotate-3 text-gray-400 drop-shadow"
+              >
+                <rect x="3" y="3" width="14" height="27" rx="7" />
+              </svg>
+            </div>
+          </div>
+
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {info.map((f) => (
+              <Badge key={f.label} variant="secondary" className="font-normal text-muted-foreground">
+                {f.label}: <span className="ml-1 text-slate-900">{f.value}</span>
+              </Badge>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -321,6 +366,17 @@ function ProntuarioDetailContent() {
                         dotClass: "bg-muted text-muted-foreground",
                         icon: null,
                       };
+                      // Ficha usa o rótulo do tipo de atendimento (Atendimento,
+                      // Retorno...) em vez do rótulo genérico "Ficha", e não
+                      // tem hora (record_date é só data) — mostrar "00:00"
+                      // seria ruído.
+                      const isRecordEvent = ev.type === "medical_record";
+                      const label = isRecordEvent
+                        ? recordTypeLabel((ev.data as TimelineMedicalRecordData).record_type ?? "")
+                        : meta.label;
+                      const dateFormat = isRecordEvent ? "DD/MM/YYYY" : "DD/MM/YYYY HH:mm";
+                      const isFirst = idx === 0;
+                      const isLast = idx === sortedEvents.length - 1;
                       return (
                         <div key={ev.id} className="flex gap-3">
                           <div className="flex flex-col items-center">
@@ -333,13 +389,35 @@ function ProntuarioDetailContent() {
                               <div className="my-1 w-px flex-1 bg-slate-200" />
                             )}
                           </div>
-                          <div className="flex-1 pb-4 pt-0.5">
-                            <div className="text-sm font-medium text-slate-900">
-                              {meta.label}
+                          <div className="flex flex-1 items-start justify-between gap-2 pb-4 pt-0.5">
+                            <div>
+                              <div className="text-sm font-medium text-slate-900">
+                                {label}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {dayjs(ev.date).format(dateFormat)}
+                              </div>
                             </div>
-                            <div className="text-xs text-muted-foreground">
-                              {dayjs(ev.date).format("DD/MM/YYYY HH:mm")}
-                            </div>
+                            {/* Marca o topo (mais recente) e o fim (início do
+                                histórico) — a lista lê de cima pra baixo, do
+                                mais novo pro mais antigo, e sem essas âncoras
+                                isso não fica óbvio à primeira vista. */}
+                            {isFirst && (
+                              <span
+                                className="mt-0.5 shrink-0 bg-primary py-1 pl-2.5 pr-4 text-[10px] font-bold uppercase tracking-wide whitespace-nowrap text-primary-foreground"
+                                style={{
+                                  clipPath:
+                                    "polygon(0% 50%, 10px 0%, 100% 0%, calc(100% - 10px) 50%, 100% 100%, 10px 100%)",
+                                }}
+                              >
+                                Mais recente
+                              </span>
+                            )}
+                            {isLast && !isFirst && (
+                              <Badge variant="outline" className="mt-0.5 shrink-0 whitespace-nowrap text-muted-foreground">
+                                Início
+                              </Badge>
+                            )}
                           </div>
                         </div>
                       );
