@@ -82,10 +82,10 @@ export function TrialBanner({ billing }: TrialBannerProps) {
   if (status === 'trial') {
     if (daysLeft === null || daysLeft <= 0) {
       return (
-        <div className="flex items-center gap-3 border-b border-orange-200 bg-orange-50 px-5 py-3 text-sm text-orange-900">
-          <AlertTriangle className="size-4 shrink-0 text-orange-500" />
+        <div className="flex items-center gap-3 border-b border-emerald-200 bg-emerald-50 px-5 py-3 text-sm text-emerald-800">
+          <AlertTriangle className="size-4 shrink-0 text-emerald-600" />
           <span className="flex-1">Trial expira hoje. Escolha um plano para continuar.</span>
-          <Link href="/billing/upgrade" className="shrink-0 rounded-md bg-orange-600 px-3 py-1 text-xs font-semibold text-white hover:bg-orange-700">
+          <Link href="/billing/upgrade" className="shrink-0 rounded-md bg-emerald-600 px-3 py-1 text-xs font-semibold text-white hover:bg-emerald-700">
             Ver planos
           </Link>
         </div>

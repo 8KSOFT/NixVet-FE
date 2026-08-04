@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useLayoutEffect, useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
@@ -20,6 +21,7 @@ import {
   ChevronsRight,
 } from "lucide-react";
 import { planMeetsRequirement } from "@/lib/plans";
+import { clearTenantCookie } from "@/lib/axios";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useProfileQuery } from "@/hooks/apiHooks/useUsers";
@@ -627,6 +629,7 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const currentPathname = pathname ?? "";
   const { t } = useTranslation("common");
+  const queryClient = useQueryClient();
   const billing = useBillingStatus();
   const { data: onboardingStatus } = useOnboardingStatusQuery();
 
@@ -703,10 +706,23 @@ export default function DashboardLayout({
     setHeaderRole(role);
   }, [pathname]);
 
+  // Limpeza completa de propósito: cache do React Query fica em memória e
+  // sobrevive a um router.push (é o mesmo processo JS) — sem isso, trocar de
+  // conta (ex.: superadmin → admin de outro tenant) podia mostrar por um
+  // instante (ou até indefinidamente, dentro do staleTime) dados em cache da
+  // sessão anterior. window.location.href força reload completo, garantindo
+  // que absolutamente nenhum estado em memória sobreviva à troca de sessão —
+  // o mesmo caminho que o logout automático por 401 já usava (src/lib/axios.ts).
   const handleLogout = () => {
+    queryClient.clear();
     if (typeof window !== "undefined") {
       localStorage.removeItem("accessToken");
       localStorage.removeItem("tenantId");
+      localStorage.removeItem("tenantCode");
+      localStorage.removeItem("user");
+      clearTenantCookie();
+      window.location.href = "/login";
+      return;
     }
     router.push("/login");
   };
