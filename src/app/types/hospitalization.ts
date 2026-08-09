@@ -4,7 +4,11 @@ export interface Hospitalization {
   diagnosis?: string | null;
   admission_date: string;
   actual_discharge_date?: string | null;
+  /** active | discharged | transferred | deceased */
   status: string;
+  /** Gravidade clínica informada pelo veterinário: stable | attention | critical. */
+  severity?: 'stable' | 'attention' | 'critical';
+  severity_updated_at?: string | null;
   box_number: string | null;
   payment_source: string;
   daily_rate: number;

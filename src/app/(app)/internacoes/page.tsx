@@ -33,11 +33,40 @@ function daysInternado(admissionDate: string): number {
   return Math.ceil(ms / (1000 * 60 * 60 * 24));
 }
 
-function semaforo(days: number, status: string): { color: string; label: string } {
-  if (status !== 'active') return { color: 'bg-gray-200 text-gray-600', label: 'Alta' };
-  if (days > 7) return { color: 'bg-red-100 text-red-700 border border-red-200', label: 'Crítico' };
-  if (days >= 3) return { color: 'bg-yellow-100 text-yellow-700 border border-yellow-200', label: 'Atenção' };
-  return { color: 'bg-green-100 text-green-700 border border-green-200', label: 'Estável' };
+/** Rótulos dos status vindos do enum do backend. */
+const STATUS_LABELS: Record<string, string> = {
+  active: 'Internado',
+  discharged: 'Alta',
+  transferred: 'Transferido',
+  deceased: 'Óbito',
+};
+
+const SEVERITY_LABELS: Record<string, string> = {
+  stable: 'Estável',
+  attention: 'Atenção',
+  critical: 'Crítico',
+};
+
+const SEVERITY_STYLES: Record<string, string> = {
+  stable: 'bg-green-100 text-green-700 border border-green-200',
+  attention: 'bg-yellow-100 text-yellow-700 border border-yellow-200',
+  critical: 'bg-red-100 text-red-700 border border-red-200',
+};
+
+/**
+ * Selo de gravidade — vem do campo `severity`, informado pelo veterinário.
+ *
+ * Antes isto era calculado só pelos dias desde a admissão, o que dizia o
+ * oposto da realidade com frequência: recuperação tranquila no oitavo dia
+ * aparecia "Crítico", e um caso grave admitido hoje aparecia "Estável". Tempo
+ * de internação continua na tela, mas como informação neutra no rodapé.
+ */
+function severityBadge(severity: string | undefined, status: string): { color: string; label: string } {
+  if (status !== 'active') {
+    return { color: 'bg-gray-200 text-gray-600', label: STATUS_LABELS[status] ?? status };
+  }
+  const key = severity ?? 'stable';
+  return { color: SEVERITY_STYLES[key] ?? SEVERITY_STYLES.stable, label: SEVERITY_LABELS[key] ?? key };
 }
 
 function speciesEmoji(species: string) {
@@ -148,7 +177,7 @@ function InternacoesPageContent() {
             <div className="flex flex-wrap gap-x-6 gap-y-8 pt-3">
               {active.map((h) => {
                 const days = daysInternado(h.admission_date);
-                const { color, label } = semaforo(days, h.status);
+                const { color, label } = severityBadge(h.severity, h.status);
                 const photoUrl = h.patient?.photo_url;
                 return (
                   <Link
@@ -298,7 +327,9 @@ function InternacoesPageContent() {
                       <TableCell>{new Date(h.admission_date).toLocaleDateString('pt-BR')}</TableCell>
                       <TableCell className="text-muted-foreground">{h.status === 'discharged' ? '—' : ''}</TableCell>
                       <TableCell>
-                        <Badge variant={h.status === 'discharged' ? 'secondary' : 'default'}>{h.status}</Badge>
+                        <Badge variant={h.status === 'discharged' ? 'secondary' : 'default'}>
+                          {STATUS_LABELS[h.status] ?? h.status}
+                        </Badge>
                       </TableCell>
                       <TableCell className="text-muted-foreground">{h.veterinarian?.name}</TableCell>
                     </TableRow>

@@ -18,6 +18,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { getStoredUserRole } from '@/lib/role-permissions';
 import { toast } from 'sonner';
+import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import { PlanUpgradeGate } from '@/components/billing/PlanUpgradeGate';
 import type { Hospitalization } from '@/app/types/hospitalization';
 import {
@@ -37,6 +38,7 @@ import {
   useHospitalizationEvolutionsQuery,
   useHospitalizationMedicationsQuery,
   useHospitalizationQuery,
+  useSetSeverityMutation,
   useHospitalizationSbarReportsQuery,
   useHospitalizationVisitsQuery,
   useLinkMedicalRecordMutation,
@@ -105,6 +107,26 @@ function ResumoTab({ h, canSee }: { h: Hospitalization; canSee: boolean }) {
     </div>
   );
 }
+
+/** Rótulos do enum de status vindo do backend. */
+const HOSP_STATUS_LABELS: Record<string, string> = {
+  active: 'Internado',
+  discharged: 'Alta',
+  transferred: 'Transferido',
+  deceased: 'Óbito',
+};
+
+const SEVERITY_LABELS: Record<string, string> = {
+  stable: 'Estável',
+  attention: 'Atenção',
+  critical: 'Crítico',
+};
+
+const SEVERITY_STYLES: Record<string, string> = {
+  stable: 'bg-green-100 text-green-700 border border-green-200',
+  attention: 'bg-yellow-100 text-yellow-700 border border-yellow-200',
+  critical: 'bg-red-100 text-red-700 border border-red-200',
+};
 
 function CustosTab({ hospitalizationId, status }: { hospitalizationId: string; status: string }) {
   const { data: costs = [], isLoading: loadingCosts } = useHospitalizationCostsQuery(hospitalizationId);
@@ -1031,6 +1053,7 @@ function HospitalizationDetailPageContent() {
   const params = useParams<{ id: string }>();
   const hospitalizationId = typeof params?.id === 'string' ? params.id : '';
   const { data: h, isLoading: loading } = useHospitalizationQuery(hospitalizationId);
+  const setSeverity = useSetSeverityMutation();
   const [openDischarge, setOpenDischarge] = useState(false);
   const [dischargeForm, setDischargeForm] = useState({
     actual_discharge_date: new Date().toISOString().slice(0, 16),
@@ -1081,7 +1104,14 @@ function HospitalizationDetailPageContent() {
           <div className="min-w-0">
             <h1 className="truncate text-lg font-bold sm:text-xl">{h.patient?.name}</h1>
             <div className="mt-2 flex flex-wrap items-center gap-1.5">
-              <Badge variant={h.status === 'active' ? 'default' : 'secondary'}>{h.status}</Badge>
+              <Badge variant={h.status === 'active' ? 'default' : 'secondary'}>
+                {HOSP_STATUS_LABELS[h.status] ?? h.status}
+              </Badge>
+              {h.status === 'active' && (
+                <span className={cn('rounded-full px-2 py-0.5 text-xs font-medium', SEVERITY_STYLES[h.severity ?? 'stable'])}>
+                  {SEVERITY_LABELS[h.severity ?? 'stable']}
+                </span>
+              )}
             </div>
           </div>
         </CardHeader>
@@ -1095,7 +1125,42 @@ function HospitalizationDetailPageContent() {
             </Badge>
           </div>
           {h.status === 'active' && (
-            <div className="flex flex-col gap-2 border-t border-border/60 pt-3 sm:flex-row sm:justify-end">
+            <div className="flex flex-col gap-3 border-t border-border/60 pt-3 sm:flex-row sm:items-end sm:justify-between">
+              {/* Gravidade é avaliação clínica: quem está cuidando define, e o
+                  backend carimba autor e data para a passagem de plantão. */}
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-muted-foreground">Gravidade clínica</label>
+                <div className="flex items-center gap-2">
+                  <Select
+                    value={h.severity ?? 'stable'}
+                    onValueChange={(v) =>
+                      setSeverity.mutate(
+                        { id: hospitalizationId, severity: v as 'stable' | 'attention' | 'critical' },
+                        {
+                          onSuccess: () => toast.success('Gravidade atualizada.'),
+                          onError: (e) => toast.error(getApiErrorMessage(e, 'Erro ao atualizar gravidade')),
+                        },
+                      )
+                    }
+                  >
+                    <SelectTrigger className="w-44">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(SEVERITY_LABELS).map(([k, label]) => (
+                        <SelectItem key={k} value={k}>
+                          {label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {h.severity_updated_at && (
+                    <span className="text-[11px] text-muted-foreground">
+                      desde {new Date(h.severity_updated_at).toLocaleString('pt-BR')}
+                    </span>
+                  )}
+                </div>
+              </div>
               <Button variant="destructive" onClick={() => setOpenDischarge(true)} className="w-full sm:w-auto">
                 <LogOut className="mr-2 size-4" />
                 Registrar Alta

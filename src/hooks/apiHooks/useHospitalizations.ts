@@ -121,6 +121,20 @@ export function useLinkMedicalRecordMutation() {
 
 /* ---- Custos ---- */
 
+/** Define a gravidade clínica da internação (endpoint carimba autor e data). */
+export function useSetSeverityMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, severity }: { id: string; severity: 'stable' | 'attention' | 'critical' }) => {
+      const { data } = await api.patch(`/hospitalizations/${id}/severity`, { severity });
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: hospitalizationKeys.all });
+    },
+  });
+}
+
 export function useHospitalizationCostsQuery(hospitalizationId: string) {
   return useQuery({
     queryKey: hospitalizationKeys.costs(hospitalizationId),
