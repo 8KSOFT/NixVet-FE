@@ -23,11 +23,10 @@ export const metadata: Metadata = {
   title: "NixVet - Sistema Veterinário",
   description: "Gestão clínica veterinária profissional",
   manifest: "/manifest.json",
-  icons: {
-    icon: [{ url: "/logo.svg", type: "image/svg+xml" }],
-    shortcut: "/logo.svg",
-    apple: "/logo.svg",
-  },
+  // Sem bloco `icons` de propósito: os arquivos `app/favicon.ico`, `app/icon.png`
+  // e `app/apple-icon.png` são detectados pelo Next e viram as tags <link>
+  // automaticamente. O bloco anterior apontava para `/logo.svg`, que não existe
+  // em `public/` — por isso o navegador caía no favicon padrão do Next.
 };
 
 export default function RootLayout({
