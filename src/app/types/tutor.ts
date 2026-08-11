@@ -8,6 +8,12 @@ export interface Tutor {
   cep: string;
   /** URL pré-assinada da foto de perfil — expira, não guardar. */
   photo_url?: string | null;
+  /**
+   * Cadastro criado só com nome e telefone — pelo chatbot ou pelo vet em
+   * atendimento de campo, onde parar para pedir CPF trava o trabalho. A marca
+   * cai sozinha quando a clínica completa os dados que faltam.
+   */
+  incomplete_profile?: boolean;
 }
 
 export interface TutorPayload {

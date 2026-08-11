@@ -112,7 +112,10 @@ export default function OwnersPage() {
     resolver: zodResolver(tutorSchema),
   });
 
-  const { data: tutorsPage, isLoading: loading } = useTutorsQuery(listPage);
+  const [somentePendentes, setSomentePendentes] = useState(false);
+  const { data: tutorsPage, isLoading: loading } = useTutorsQuery(listPage, {
+    incomplete: somentePendentes,
+  });
   const tutors = tutorsPage?.items ?? [];
   const editingTutor = tutors.find((tu) => tu.id === editingId);
   const listTotal = tutorsPage?.total ?? 0;
@@ -279,6 +282,35 @@ export default function OwnersPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center mb-8">
         <h1 className="text-2xl font-extrabold font-['InterDoFigma'] flex items-center gap-2">{t('owners.title')}</h1>
         <div className="flex flex-wrap items-center gap-2">
+          <div className="flex rounded-md border border-gray-300 bg-white p-0.5">
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-pressed={!somentePendentes}
+              className={!somentePendentes ? 'bg-slate-100 font-semibold' : 'text-slate-500'}
+              onClick={() => {
+                setSomentePendentes(false);
+                setListPage(1);
+              }}
+            >
+              {t('owners.pendingAll')}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-pressed={somentePendentes}
+              title={t('owners.pendingHint')}
+              className={somentePendentes ? 'bg-amber-100 font-semibold text-amber-900' : 'text-slate-500'}
+              onClick={() => {
+                // Volta para a primeira página: a página 3 da lista completa
+                // quase nunca existe na lista filtrada, e cairia em "vazio".
+                setSomentePendentes(true);
+                setListPage(1);
+              }}
+            >
+              {t('owners.pendingFilter')}
+            </Button>
+          </div>
           <Button onClick={handleAdd} className="w-full bg-primary hover:bg-brand-deep/80 sm:w-auto">
             <Plus className="w-4 h-4 mr-2" /> {t('owners.createButton')}
           </Button>
@@ -291,7 +323,7 @@ export default function OwnersPage() {
         </div>
       ) : tutors.length === 0 ? (
         <div className="rounded-lg border border-gray-300 bg-white py-8 text-center text-sm text-slate-500">
-          {t('owners.empty')}
+          {somentePendentes ? t('owners.pendingEmpty') : t('owners.empty')}
         </div>
       ) : (
         <>
@@ -314,6 +346,11 @@ export default function OwnersPage() {
                       <div className="flex items-center gap-2">
                         <ProfilePhoto url={tutor.photo_url} name={tutor.name} className="size-8" />
                         <span>{tutor.name}</span>
+                        {tutor.incomplete_profile && (
+                          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900">
+                            {t('owners.pendingBadge')}
+                          </span>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell>{tutor.email}</TableCell>
@@ -365,6 +402,11 @@ export default function OwnersPage() {
                 <div className="flex items-center gap-2">
                   <ProfilePhoto url={tutor.photo_url} name={tutor.name} className="size-9 shrink-0" />
                   <p className="truncate font-medium">{tutor.name}</p>
+                  {tutor.incomplete_profile && (
+                    <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900">
+                      {t('owners.pendingBadge')}
+                    </span>
+                  )}
                 </div>
 
                 <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">

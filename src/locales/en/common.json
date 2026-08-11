@@ -239,6 +239,11 @@
     "confirmDeleteTitle": "Confirm deletion",
     "confirmDeleteDescription": "Are you sure you want to remove owner {{name}}? This action cannot be undone.",
     "remove": "Remove",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "pendingFilter": "Records to complete",
+    "pendingAll": "All",
+    "pendingBadge": "Incomplete record",
+    "pendingEmpty": "No pending records — all up to date.",
+    "pendingHint": "Records created by the chatbot or during field visits, still missing tax ID, e-mail, postcode or address."
   }
 }

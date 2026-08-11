@@ -238,6 +238,11 @@
     "confirmDeleteTitle": "Confirmar eliminación",
     "confirmDeleteDescription": "¿Está seguro que desea eliminar al responsable {{name}}? Esta acción no puede deshacerse.",
     "remove": "Eliminar",
-    "cancel": "Cancelar"
+    "cancel": "Cancelar",
+    "pendingFilter": "Registros por completar",
+    "pendingAll": "Todos",
+    "pendingBadge": "Registro incompleto",
+    "pendingEmpty": "Ningún registro pendiente — todo al día.",
+    "pendingHint": "Registros creados por el chatbot o en atención de campo, aún sin CPF, correo, código postal o dirección."
   }
 }
