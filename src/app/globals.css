@@ -24,6 +24,11 @@
 }
 
 :root {
+  /* Plataforma não tem modo escuro pronto — força os controles nativos do
+     navegador (inputs, selects, scrollbars) a sempre renderizar no claro,
+     mesmo com o SO em dark mode. Sem isso, essas peças ficam escuras e
+     destoam do resto do layout, que é sempre claro. */
+  color-scheme: light;
   --app-header-h: 4rem;
   --app-sidebar-w: 260px;
   --app-sidebar-w-collapsed: 72px;

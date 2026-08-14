@@ -379,6 +379,14 @@ function SidebarNav({
   const mainSections = visibleSections.filter((s) => !BOTTOM_SECTION_KEYS.has(s.sectionKey));
   const bottomSections = visibleSections.filter((s) => BOTTOM_SECTION_KEYS.has(s.sectionKey));
 
+  // bloco "Admin" do rodapé vem recolhido por padrão — abre sozinho se algum item dele estiver ativo
+  const adminSectionKeys = bottomSections.flatMap((s) => s.items.map((i) => i.key));
+  const [adminOpen, setAdminOpen] = useState(() => adminSectionKeys.includes(activeKey));
+  React.useEffect(() => {
+    if (adminSectionKeys.includes(activeKey)) setAdminOpen(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeKey]);
+
   const renderSectionItems = (section: NavSection) => (
     <div key={section.sectionKey} className="flex flex-col gap-0.5">
       {section.items.map((item) => {
@@ -549,16 +557,33 @@ function SidebarNav({
           )}
         >
           {!collapsed && (
-            <span
+            <button
+              type="button"
+              onClick={() => setAdminOpen((prev) => !prev)}
               className={cn(
-                "px-0.5 text-[10.5px] font-bold tracking-[.06em] uppercase",
+                "flex items-center justify-between px-0.5 text-[10.5px] font-bold tracking-[.06em] uppercase",
                 medical ? "text-white/55" : "text-muted-foreground/60",
               )}
             >
-              Admin
-            </span>
+              <span>Admin</span>
+              <ChevronDown
+                className={cn(
+                  "size-3 shrink-0 transition-transform duration-300 ease-out",
+                  adminOpen && "rotate-180",
+                )}
+              />
+            </button>
           )}
-          {bottomSections.map(renderSectionItems)}
+          <div
+            className={cn(
+              "flex flex-col gap-2 overflow-hidden transition-[max-height,opacity] duration-500 ease-in-out will-change-[max-height,opacity]",
+              collapsed || adminOpen
+                ? "max-h-[999px] opacity-100 pointer-events-auto"
+                : "max-h-0 opacity-0 pointer-events-none",
+            )}
+          >
+            {bottomSections.map(renderSectionItems)}
+          </div>
         </div>
       )}
 
