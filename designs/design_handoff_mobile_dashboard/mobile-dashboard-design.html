@@ -1,0 +1,75 @@
+<!-- @dsCard group="Mobile" viewport="411x900" name="Dashboard mobile" subtitle="Cards com destaque e gráficos" -->
+<!DOCTYPE html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../../styles.css">
+<style>
+*{margin:0;box-sizing:border-box}
+body{background:#2b2b2b;display:flex;justify-content:center;padding:24px 0;font-family:var(--font-sans)}
+.phone{width:411px;background:#fff;border-radius:28px;overflow:hidden;display:flex;flex-direction:column;min-height:900px}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:18px 20px 10px}
+.icon-btn{width:38px;height:38px;border-radius:10px;border:1px solid var(--line);background:#fff;display:flex;align-items:center;justify-content:center;color:var(--ink-2)}
+.topbar-right{display:flex;gap:8px;align-items:center}
+.avatar{width:36px;height:36px;border-radius:50%;background:var(--brand-600);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center}
+h1{font-size:26px;font-weight:800;letter-spacing:-0.02em;color:var(--ink);padding:8px 20px 16px}
+.wrap{padding:0 20px 20px;display:flex;flex-direction:column;gap:12px}
+.hero{background:var(--brand-600);border-radius:var(--radius-lg);padding:20px;display:flex;flex-direction:column;gap:4px;position:relative;overflow:hidden}
+.hero-top{display:flex;justify-content:space-between;align-items:flex-start}
+.hero-label{font-size:13px;color:rgba(255,255,255,.8);font-weight:600}
+.hero-value{font-size:38px;font-weight:800;color:#fff;letter-spacing:-0.02em}
+.hero-delta{font-size:12.5px;color:#d3f0e2;font-weight:600;display:flex;align-items:center;gap:4px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.card{background:#fff;border:1px solid var(--line);border-radius:var(--radius-lg);padding:15px;display:flex;flex-direction:column;gap:8px}
+.card-top{display:flex;align-items:center;justify-content:space-between}
+.chip{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center}
+.chip svg{width:16px;height:16px}
+.value{font-size:22px;font-weight:800;color:var(--ink);letter-spacing:-0.01em}
+.label{font-size:12px;color:var(--ink-2);line-height:1.3}
+.section-head{display:flex;align-items:center;justify-content:space-between;padding:4px 20px 12px;margin-top:auto}
+.section-head h2{font-size:16px;font-weight:700;color:var(--ink)}
+.section-head a{font-size:13px;font-weight:600;color:var(--brand-600);text-decoration:none}
+.fab-space{padding:0 20px 20px}
+.fab{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--brand-600);color:#fff;font-weight:700;font-size:13.5px;border-radius:999px;padding:13px 20px;box-shadow:0 8px 20px rgba(14,158,110,.3)}
+</style></head><body>
+<div class="phone">
+<div class="topbar">
+<div class="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg></div>
+<div class="topbar-right">
+<div class="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg></div>
+<div class="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg></div>
+<div class="avatar">AD</div>
+</div>
+</div>
+<h1>Visão geral</h1>
+<div class="wrap">
+
+<div class="hero">
+<div class="hero-top">
+<div><div class="hero-label">Atendimentos hoje</div><div class="hero-value">4</div></div>
+<svg width="90" height="40" viewBox="0 0 90 40"><polyline points="0,30 15,26 30,28 45,14 60,18 75,6 90,10" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/></svg>
+</div>
+<div class="hero-delta"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#d3f0e2" stroke-width="3"><path d="M6 15l6-6 6 6"/></svg>+2 vs. ontem</div>
+</div>
+
+<div class="grid">
+<div class="card">
+<div class="card-top"><div class="chip" style="background:#fdeef5"><svg viewBox="0 0 24 24" fill="none" stroke="#c2417a" stroke-width="2"><path d="M12 21s-7-4.5-9.3-9A5 5 0 0 1 12 6a5 5 0 0 1 9.3 6c-2.3 4.5-9.3 9-9.3 9z"/></svg></div>
+<svg width="46" height="24" viewBox="0 0 46 24"><rect x="0" y="14" width="6" height="10" rx="1.5" fill="#f6d3e2"/><rect x="10" y="8" width="6" height="16" rx="1.5" fill="#f6d3e2"/><rect x="20" y="4" width="6" height="20" rx="1.5" fill="#c2417a"/><rect x="30" y="10" width="6" height="14" rx="1.5" fill="#f6d3e2"/><rect x="40" y="2" width="6" height="22" rx="1.5" fill="#c2417a"/></svg></div>
+<div class="value">10</div><div class="label">Novos pacientes (mês)</div>
+</div>
+<div class="card">
+<div class="card-top"><div class="chip" style="background:var(--blue-bg)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 6.5v11M9.5 15.5c0 1.2 1.1 2 2.5 2s2.5-.8 2.5-2-1.1-1.8-2.5-2-2.5-.8-2.5-2 1.1-2 2.5-2 2.5.8 2.5 2"/></svg></div>
+<svg width="46" height="24" viewBox="0 0 46 24"><polyline points="0,20 10,16 20,18 30,8 46,4" fill="none" stroke="var(--blue)" stroke-width="2" stroke-linecap="round"/></svg></div>
+<div class="value">R$725</div><div class="label">Receita do mês</div>
+</div>
+<div class="card">
+<div class="card-top"><div class="chip" style="background:var(--line-2)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--ink-2)" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg></div></div>
+<div class="value">0</div><div class="label">Canceladas (mês)</div>
+</div>
+<div class="card">
+<div class="card-top"><div class="chip" style="background:var(--warn-bg)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--warn)" stroke-width="2"><path d="M21 11.5a8.4 8.4 0 0 1-8.9 8.4 8.5 8.5 0 0 1-4.3-1.1L3 20l1.2-4.8A8.4 8.4 0 1 1 21 11.5z"/></svg></div></div>
+<div class="value">0</div><div class="label">Conversas não respondidas</div>
+</div>
+</div>
+</div>
+<div class="section-head"><h2>Consultas de hoje</h2><a href="#">Ver agenda</a></div>
+<div class="fab-space"><div class="fab"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" width="15" height="15"><path d="M20 6L9 17l-5-5"/></svg>Configuração 25%</div></div>
+</div>
+</body></html>

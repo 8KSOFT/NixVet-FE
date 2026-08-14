@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import { Loader2, Plus, Search, UserPlus, PawPrint, FolderOpen, ChevronRight } from 'lucide-react';
+import { Loader2, Plus, Search, UserPlus, PawPrint, ChevronRight } from 'lucide-react';
 import { API_PAGE_SIZE } from '@/lib/pagination';
 import { ListPagination } from '@/components/list-pagination';
 import { ProfilePhoto } from '@/components/shared/profile-photo';
@@ -336,7 +336,7 @@ export default function MedicalRecordsListPage() {
                               clipe que agarra também a borda de cima da pasta —
                               no canto direito, pra não tapar a aba da pasta nem
                               o rótulo das fichas empilhadas (que saem à esquerda). */}
-                          <div className="relative -mt-6 mb-1 inline-block shrink-0">
+                          <div className="relative -mt-4 mb-1 inline-block shrink-0">
                             {/* Clipe — espiral interna, por trás da foto (é por
                                 isso que fica antes dela no DOM: o wire real de
                                 um clipe passa por trás do papel nessa volta). */}
@@ -346,12 +346,12 @@ export default function MedicalRecordsListPage() {
                               stroke="currentColor"
                               strokeWidth="2.5"
                               strokeLinecap="round"
-                              className="absolute -top-3 -right-2 h-7 w-5 rotate-3 text-gray-400 transition-transform duration-300 group-hover:rotate-6"
+                              className="absolute -top-3 right-1 h-7 w-5 rotate-3 text-gray-400 transition-transform duration-300 group-hover:rotate-6"
                             >
                               <rect x="7" y="7" width="8" height="16" rx="4" />
                             </svg>
 
-                            <div className="-rotate-4 rounded-sm bg-white p-1.5 pb-3 shadow-lg ring-1 ring-black/20 transition-transform duration-300 group-hover:-rotate-2">
+                            <div className="-rotate-7 rounded-sm bg-white pt-1 pr-1.5 pb-3 pl-1.5 shadow-lg ring-1 ring-black/20 transition-transform duration-300 group-hover:-rotate-4">
                               {group.patient.photo_url ? (
                                 <ProfilePhoto
                                   url={group.patient.photo_url}
@@ -359,8 +359,14 @@ export default function MedicalRecordsListPage() {
                                   className="size-16 shrink-0 rounded-xs shadow-none ring-0 saturate-[.85] contrast-105 sepia-[0.08]"
                                 />
                               ) : (
-                                <div className="flex size-16 shrink-0 items-center justify-center rounded-xs bg-primary/10 text-primary">
-                                  <FolderOpen className="h-7 w-7" />
+                                <div
+                                  className="flex size-16 shrink-0 items-center justify-center rounded-xs"
+                                  style={{
+                                    backgroundImage:
+                                      'repeating-linear-gradient(45deg,#eef2f0,#eef2f0 6px,#e2e8e5 6px,#e2e8e5 12px)',
+                                  }}
+                                >
+                                  <PawPrint className="size-6 text-wa-ink-3" />
                                 </div>
                               )}
                             </div>
@@ -375,7 +381,7 @@ export default function MedicalRecordsListPage() {
                               stroke="currentColor"
                               strokeWidth="2.5"
                               strokeLinecap="round"
-                              className="absolute -top-3 -right-2 h-7 w-5 rotate-3 text-gray-400 drop-shadow transition-transform duration-300 group-hover:rotate-6"
+                              className="absolute -top-3 right-1 h-7 w-5 rotate-3 text-gray-400 drop-shadow transition-transform duration-300 group-hover:rotate-6"
                             >
                               <rect x="3" y="3" width="14" height="27" rx="7" />
                             </svg>

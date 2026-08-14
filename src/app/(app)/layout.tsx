@@ -66,6 +66,7 @@ import {
   NAV_PLAN_REQUIREMENTS,
   NAV_SECTIONS,
   getVisibleNavSections,
+  type NavSection,
 } from "@/config/navigation";
 import { CommandPalette } from "@/components/command-palette";
 import { QuickCreateMenu } from "@/components/quick-create-menu";
@@ -117,13 +118,13 @@ function NotificationsBell() {
   return (
     <>
       <Button
-        variant="ghost"
+        variant="outline"
         size="icon"
-        className="relative text-muted-foreground transition-colors duration-200 hover:text-primary"
+        className="relative size-8.5 rounded-wa border-wa-line bg-white text-wa-ink-2 shadow-none hover:bg-wa-line-2 hover:text-wa-ink"
         onClick={() => setOpen(true)}
         aria-label={t("notifications.title")}
       >
-        <Bell className="size-5" />
+        <Bell className="size-4" />
         {unreadCount > 0 && (
           <span className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-card">
             {unreadCount > 9 ? "9+" : unreadCount}
@@ -354,14 +355,14 @@ function SidebarNav({
 
   const linkClass = (isActive: boolean, isChild = false) =>
     cn(
-      "flex items-center gap-2.5 rounded-sm px-3 transition-colors duration-150",
-      isChild ? "py-1.5 text-xs" : "py-2 text-sm font-medium",
+      "flex items-center gap-2.5 rounded-wa transition-colors duration-150",
+      isChild ? "px-3 py-1.5 text-xs" : "px-2.5 py-2.25 text-[13.5px] font-medium",
       medical
         ? isActive
-          ? "bg-black/20 text-white"
+          ? "bg-white/12 text-white"
           : isChild
-            ? "text-white/55 hover:bg-white/10 hover:text-white"
-            : "text-white/80 hover:bg-white/10 hover:text-white"
+            ? "text-white/55 hover:bg-white/6 hover:text-white"
+            : "text-white/85 hover:bg-white/6 hover:text-white"
         : isActive
           ? "bg-primary/12 text-primary font-medium"
           : isChild
@@ -370,31 +371,126 @@ function SidebarNav({
       collapsed && "justify-center px-2",
     );
 
-  // Divisor reto e discreto ENTRE opções consecutivas (não uma borda no próprio
-  // item, que herdava o rounded-sm e virava um arco em vez de linha reta).
-  // Some sozinho antes do 1º item de cada lista, então nunca "separa o nada".
-  const ItemDivider = () => (
-    <div className={cn("mx-3 h-px", medical ? "bg-white/8" : "bg-border")} />
-  );
-
   // filtra seções e itens por permissão (mesma checagem usada no Command Palette e no "+ Novo")
   const visibleSections = getVisibleNavSections(NAV_SECTIONS, menuAllow);
+  // superadmin/configurações renderizam fora da área de scroll (ver abaixo),
+  // pra ficarem sempre ancoradas no rodapé da sidebar — e não só "o último
+  // item da lista", que soma vazio no meio quando o menu principal é curto.
+  const mainSections = visibleSections.filter((s) => !BOTTOM_SECTION_KEYS.has(s.sectionKey));
+  const bottomSections = visibleSections.filter((s) => BOTTOM_SECTION_KEYS.has(s.sectionKey));
 
-  // Cada seção "de contexto" (não-superadmin) agora vira seu próprio bloco com
-  // fundo discreto — o próprio fundo já separa um contexto do outro, então o
-  // divisor entre itens reseta a cada bloco (não precisa de linha na borda).
-  // O cluster superadmin/admin continua sem fundo próprio ("separadinho" mas
-  // como uma lista só), então mantém o divisor contínuo entre suas seções.
-  const noLeadingDividerKeys = new Set<string>();
-  visibleSections.forEach((section, si) => {
-    const isBottom = BOTTOM_SECTION_KEYS.has(section.sectionKey);
-    const prevIsBottom = BOTTOM_SECTION_KEYS.has(visibleSections[si - 1]?.sectionKey ?? "");
-    section.items.forEach((item, itemIdx) => {
-      if (itemIdx === 0 && !(isBottom && prevIsBottom)) {
-        noLeadingDividerKeys.add(item.key);
-      }
-    });
-  });
+  const renderSectionItems = (section: NavSection) => (
+    <div key={section.sectionKey} className="flex flex-col gap-0.5">
+      {section.items.map((item) => {
+        if (item.type === "group") {
+          const isOpen = openGroups.has(item.key);
+          const groupActive =
+            activeKey === item.key ||
+            item.children.some((c) => c.key === activeKey);
+          const visibleChildren = item.children.filter((c) =>
+            menuAllow.has(c.key),
+          );
+
+          return (
+            <React.Fragment key={item.key}>
+            <div>
+              {/* cabeçalho do grupo */}
+              <NavTooltip collapsed={collapsed} label={t(item.labelKey)}>
+                <button
+                  type="button"
+                  onClick={() => toggleGroup(item.key)}
+                  className={cn(
+                    linkClass(groupActive && !isOpen),
+                    "w-full",
+                    collapsed && "justify-center",
+                  )}
+                >
+                  <item.icon
+                    className={cn(
+                      "shrink-0 stroke-[1.5]",
+                      collapsed ? "size-5" : "size-5",
+                    )}
+                  />
+                  {!collapsed && (
+                    <>
+                      <span className="flex-1 text-left text-xs">
+                        {t(item.labelKey)}
+                      </span>
+                      <ChevronDown
+                        className={cn(
+                          "size-3.5 shrink-0 transition-transform duration-300 ease-out",
+                          isOpen && "rotate-180",
+                        )}
+                      />
+                    </>
+                  )}
+                </button>
+              </NavTooltip>
+
+              {/* filhos */}
+              {!collapsed && (
+                <div
+                  className={cn(
+                    "ml-3 mt-0.5 overflow-hidden border-l pl-2.5 border-white/6 transition-[max-height,opacity] duration-500 ease-in-out will-change-[max-height,opacity]",
+                    isOpen
+                      ? "max-h-[999px] opacity-100 pointer-events-auto"
+                      : "max-h-0 opacity-0 pointer-events-none",
+                  )}
+                >
+                  {visibleChildren.map((child) => (
+                    <React.Fragment key={child.key}>
+                      <Link
+                        href={navHref(child.key, child.href)}
+                        onClick={() => onNavigate?.()}
+                        className={cn(
+                          linkClass(activeKey === child.key, true),
+                          isNavItemLocked(child.key) && "opacity-50",
+                        )}
+                      >
+                        <child.icon className="size-3.5 shrink-0 stroke-[1.5]" />
+                        <span className="flex-1">{t(child.labelKey)}</span>
+                        {isNavItemLocked(child.key) && (
+                          <Lock className="size-3 shrink-0 opacity-60" />
+                        )}
+                      </Link>
+                    </React.Fragment>
+                  ))}
+                </div>
+              )}
+            </div>
+            </React.Fragment>
+          );
+        }
+
+        const Icon = item.icon;
+        const isActive = activeKey === item.key;
+        return (
+          <React.Fragment key={item.key}>
+            <NavTooltip collapsed={collapsed} label={t(item.labelKey)}>
+              <Link
+                href={navHref(item.key, item.href)}
+                onClick={() => onNavigate?.()}
+                className={cn(linkClass(isActive), isNavItemLocked(item.key) && "opacity-50")}
+              >
+                <Icon
+                  className={cn(
+                    "shrink-0 stroke-[1.5]",
+                    collapsed ? "size-5" : "size-5",
+                  )}
+                />
+                {!collapsed && (
+                  <span className="flex-1 text-[12px]">{t(item.labelKey)}</span>
+                )}
+                {!collapsed && isNavItemLocked(item.key) && (
+                  <Lock className="size-3 shrink-0 opacity-60" />
+                )}
+              </Link>
+            </NavTooltip>
+          </React.Fragment>
+        );
+      })}
+    </div>
+  );
 
   return (
     <div className="flex flex-col h-full">
@@ -407,8 +503,8 @@ function SidebarNav({
         >
           {!collapsed && (
             <div className="flex min-w-0 items-center gap-2">
-              <LogoCompactoDynamic width="30" height="30" />
-              <h1 className="h-6 font-heading leading-7 text-[25px] tracking-tight scale-y-85">
+              <LogoCompactoDynamic width="22" height="22" />
+              <h1 className="font-heading text-[17px] font-bold leading-none tracking-tight">
                 <span className="text-white">{brandName.substring(0, 6)}</span>
                 <span className="text-white/60">
                   {brandName.substring(6, 9)}
@@ -437,165 +533,34 @@ function SidebarNav({
       </div>
 
       <ScrollArea className="flex-1 min-h-0 overflow-y-auto py-2 ">
-        {/* pb generoso + safe-area p/ o último item não ficar sob a barra do navegador/home indicator */}
-        <nav className="flex flex-col gap-2 px-4 pt-2 pb-10 [padding-bottom:calc(2.5rem+env(safe-area-inset-bottom))]">
-          {visibleSections.map((section, si) => {
-            const isBottom = BOTTOM_SECTION_KEYS.has(section.sectionKey);
-            const isFirstBottomSection =
-              isBottom && !BOTTOM_SECTION_KEYS.has(visibleSections[si - 1]?.sectionKey ?? "");
-            return (
-            <div key={section.sectionKey}>
-              {/* separador antes do bloco superadmin/configurações (só uma vez, mesmo se superadmin estiver oculto).
-                  Leva o rótulo "Admin" em vez de duplicar linha com o divisor entre itens. */}
-              {isFirstBottomSection && (
-                <div className="mx-3 mb-2 flex items-center gap-2">
-                  {!collapsed && (
-                    <span
-                      className={cn(
-                        "text-[10px] font-semibold tracking-wide uppercase",
-                        medical ? "text-white/40" : "text-muted-foreground/60",
-                      )}
-                    >
-                      Admin
-                    </span>
-                  )}
-                  <div
-                    className={cn(
-                      "h-px flex-1",
-                      medical ? "bg-white/10" : "bg-border",
-                    )}
-                  />
-                </div>
-              )}
-
-              {/* Cada contexto (não-superadmin) ganha um fundo discreto — mesma
-                  cor da sidebar, só um pouco mais claro — pra "agrupar"
-                  visualmente sem introduzir uma cor nova. */}
-              <div
-                className={cn(
-                  "flex flex-col",
-                  !isBottom && "rounded-lg p-1",
-                  !isBottom && (medical ? "bg-white/5" : "bg-black/3"),
-                )}
-              >
-                {section.items.map((item) => {
-                  const showLeadingDivider = !noLeadingDividerKeys.has(item.key);
-                  if (item.type === "group") {
-                    const isOpen = openGroups.has(item.key);
-                    const groupActive =
-                      activeKey === item.key ||
-                      item.children.some((c) => c.key === activeKey);
-                    const visibleChildren = item.children.filter((c) =>
-                      menuAllow.has(c.key),
-                    );
-
-                    return (
-                      <React.Fragment key={item.key}>
-                        {showLeadingDivider && <ItemDivider />}
-                      <div className="my-1">
-                        {/* cabeçalho do grupo */}
-                        <NavTooltip collapsed={collapsed} label={t(item.labelKey)}>
-                          <button
-                            type="button"
-                            onClick={() => toggleGroup(item.key)}
-                            className={cn(
-                              linkClass(groupActive && !isOpen),
-                              "w-full",
-                              collapsed && "justify-center",
-                            )}
-                          >
-                            <item.icon
-                              className={cn(
-                                "shrink-0 stroke-[1.5]",
-                                collapsed ? "size-5" : "size-5",
-                              )}
-                            />
-                            {!collapsed && (
-                              <>
-                                <span className="flex-1 text-left text-xs">
-                                  {t(item.labelKey)}
-                                </span>
-                                <ChevronDown
-                                  className={cn(
-                                    "size-3.5 shrink-0 transition-transform duration-300 ease-out",
-                                    isOpen && "rotate-180",
-                                  )}
-                                />
-                              </>
-                            )}
-                          </button>
-                        </NavTooltip>
-
-                        {/* filhos */}
-                        {!collapsed && (
-                          <div
-                            className={cn(
-                              "ml-3 mt-0.5 overflow-hidden border-l pl-2.5 border-white/10 transition-[max-height,opacity] duration-500 ease-in-out will-change-[max-height,opacity]",
-                              isOpen
-                                ? "max-h-[999px] opacity-100 pointer-events-auto"
-                                : "max-h-0 opacity-0 pointer-events-none",
-                            )}
-                          >
-                            {visibleChildren.map((child, childIdx) => (
-                              <React.Fragment key={child.key}>
-                                {childIdx > 0 && <ItemDivider />}
-                                <Link
-                                  href={navHref(child.key, child.href)}
-                                  onClick={() => onNavigate?.()}
-                                  className={cn(
-                                    linkClass(activeKey === child.key, true),
-                                    isNavItemLocked(child.key) && "opacity-50",
-                                  )}
-                                >
-                                  <child.icon className="size-3.5 shrink-0 stroke-[1.5]" />
-                                  <span className="flex-1">{t(child.labelKey)}</span>
-                                  {isNavItemLocked(child.key) && (
-                                    <Lock className="size-3 shrink-0 opacity-60" />
-                                  )}
-                                </Link>
-                              </React.Fragment>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      </React.Fragment>
-                    );
-                  }
-
-                  const Icon = item.icon;
-                  const isActive = activeKey === item.key;
-                  return (
-                    <React.Fragment key={item.key}>
-                      {showLeadingDivider && <ItemDivider />}
-                      <NavTooltip collapsed={collapsed} label={t(item.labelKey)}>
-                        <Link
-                          href={navHref(item.key, item.href)}
-                          onClick={() => onNavigate?.()}
-                          className={cn("my-1", linkClass(isActive), isNavItemLocked(item.key) && "opacity-50")}
-                        >
-                          <Icon
-                            className={cn(
-                              "shrink-0 stroke-[1.5]",
-                              collapsed ? "size-5" : "size-5",
-                            )}
-                          />
-                          {!collapsed && (
-                            <span className="flex-1 text-[12px]">{t(item.labelKey)}</span>
-                          )}
-                          {!collapsed && isNavItemLocked(item.key) && (
-                            <Lock className="size-3 shrink-0 opacity-60" />
-                          )}
-                        </Link>
-                      </NavTooltip>
-                    </React.Fragment>
-                  );
-                })}
-              </div>
-            </div>
-            );
-          })}
+        <nav className="flex flex-col gap-2 px-4 pt-2 pb-3">
+          {mainSections.map(renderSectionItems)}
         </nav>
       </ScrollArea>
+
+      {/* superadmin/configurações — bloco fixo ancorado no rodapé da sidebar
+          (fora da área de scroll), como no mockup. pb generoso + safe-area p/
+          o último item não ficar sob a barra do navegador/home indicator no mobile. */}
+      {bottomSections.length > 0 && (
+        <div
+          className={cn(
+            "flex shrink-0 flex-col gap-2 border-t px-4 pt-4 [padding-bottom:calc(0.75rem+env(safe-area-inset-bottom))]",
+            medical ? "border-white/5" : "border-border",
+          )}
+        >
+          {!collapsed && (
+            <span
+              className={cn(
+                "px-0.5 text-[10.5px] font-bold tracking-[.06em] uppercase",
+                medical ? "text-white/55" : "text-muted-foreground/60",
+              )}
+            >
+              Admin
+            </span>
+          )}
+          {bottomSections.map(renderSectionItems)}
+        </div>
+      )}
 
       {/* No mobile o LanguageSwitcher some do header (evita estourar a largura da
           tela) — reaparece aqui, no rodapé do drawer. */}
@@ -769,7 +734,7 @@ export default function DashboardLayout({
       {/* Desktop sidebar — painel sólido (menos camadas que card + sombra) */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 border-r border-brand-deep bg-brand-deep text-sidebar-foreground transition-[width] duration-200 ease-out",
+          "fixed inset-y-0 left-0 z-50 border-r border-wa-brand-600 bg-wa-brand-600 text-sidebar-foreground transition-[width] duration-200 ease-out",
           collapsed ? "w-(--app-sidebar-w-collapsed)" : "w-(--app-sidebar-w)",
           "hidden md:flex flex-col",
         )}
@@ -793,7 +758,7 @@ export default function DashboardLayout({
           side="left"
           // h-dvh (viewport dinâmico): 100vh no mobile inclui a área atrás da
           // barra do navegador e cortava o final do menu.
-          className="w-[min(100%,280px)] h-dvh border-0 bg-brand-deep p-0 text-sidebar-foreground shadow-none [&>button]:text-white [&>button]:ring-offset-sidebar"
+          className="w-[min(100%,280px)] h-dvh border-0 bg-wa-brand-600 p-0 text-sidebar-foreground shadow-none [&>button]:text-white [&>button]:ring-offset-sidebar"
         >
           <SheetHeader className="sr-only">
             <SheetTitle>Menu</SheetTitle>
@@ -826,31 +791,28 @@ export default function DashboardLayout({
         )}
       >
         {/* Header — só borda, sem sombra (composição mais leve) */}
-        <header className="sticky top-0 z-40 flex h-(--app-header-h) items-center justify-between gap-2 border-b-2 border-border bg-card/95 px-4 backdrop-blur-sm supports-backdrop-filter:bg-card/90 lg:px-6">
-          <div className="flex items-center gap-1">
+        <header className="sticky top-0 z-40 flex h-(--app-header-h) items-center justify-between gap-3 border-b border-wa-line bg-card px-4 lg:px-6">
+          <div className="flex min-w-0 flex-1 items-center gap-2">
             <Button
               variant="ghost"
               size="icon"
-              className="text-muted-foreground lg:hidden md:hidden"
+              className="shrink-0 text-muted-foreground lg:hidden md:hidden"
               onClick={() => setMobileNavOpen(true)}
               aria-label="Abrir menu"
             >
               <Menu className="size-5" />
             </Button>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              className="hidden items-center gap-2 text-muted-foreground transition-colors duration-200 hover:text-primary sm:inline-flex"
+            <button
+              type="button"
               onClick={() => setCommandPaletteOpen(true)}
+              className="hidden max-w-85 flex-1 items-center gap-2.5 rounded-wa border border-wa-line bg-wa-line-2 px-3 py-2 text-wa-ink-3 transition-colors duration-150 hover:border-wa-brand-500/40 sm:flex"
             >
-              <Search className="size-4" />
-              <span className="text-sm">Buscar</span>
-              <kbd className="ml-1 rounded border border-border bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+              <Search className="size-4 shrink-0" />
+              <span className="flex-1 text-left text-[13.5px]">Buscar</span>
+              <kbd className="rounded-[5px] border border-wa-line bg-white px-1.5 py-0.5 text-[11px] font-semibold text-wa-ink-2">
                 Ctrl+K
               </kbd>
-            </Button>
+            </button>
             <Button
               variant="ghost"
               size="icon"
@@ -860,14 +822,17 @@ export default function DashboardLayout({
             >
               <Search className="size-5" />
             </Button>
+          </div>
+
+          <div className="flex shrink-0 items-center gap-2.5">
             <QuickCreateMenu menuAllow={menuAllow} variant="header" />
             {/* Some do header no mobile (evita estourar a largura da tela) —
                 reaparece no rodapé do drawer de navegação mobile. */}
-            <LanguageSwitcher className="hidden sm:flex" />
+            <LanguageSwitcher variant="wa" className="hidden sm:flex" />
             <NotificationsBell />
-            <span className="hidden text-sm text-muted-foreground sm:inline">
+            <span className="hidden text-[13.5px] text-wa-ink-2 sm:inline">
               {t("header.greeting")}{" "}
-              <strong className="font-medium text-foreground">
+              <strong className="font-semibold text-wa-ink">
                 {roleLabel}
               </strong>
             </span>
@@ -877,7 +842,7 @@ export default function DashboardLayout({
                   type="button"
                   className="rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
-                  <Avatar className="size-9 cursor-pointer border border-border transition-shadow duration-200 hover:ring-2 hover:ring-primary/20">
+                  <Avatar className="size-8 cursor-pointer transition-shadow duration-200 hover:ring-2 hover:ring-wa-brand-500/25">
                     {headerProfile?.photo_url ? (
                       <AvatarImage
                         src={headerProfile.photo_url}
@@ -885,7 +850,7 @@ export default function DashboardLayout({
                         className="object-cover"
                       />
                     ) : null}
-                    <AvatarFallback className="bg-brand-deep text-xs font-semibold text-white">
+                    <AvatarFallback className="bg-wa-brand-600 text-[12.5px] font-bold text-white">
                       {roleLabel.substring(0, 2).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
@@ -928,7 +893,7 @@ export default function DashboardLayout({
         <EmailConfirmationBanner />
         <TrialBanner billing={billing} />
 
-        <main className="flex-1 p-5 lg:p-8">
+        <main className="flex-1 px-5 lg:px-8 pt-(--app-main-py) pb-(--app-main-py)">
           {isBillingBlocked && !isAllowedWhileBlocked ? (
             // Nunca desenha a página real aqui — ela dispararia suas próprias
             // buscas de dados, que a API já barra com 402, sobrando toast de

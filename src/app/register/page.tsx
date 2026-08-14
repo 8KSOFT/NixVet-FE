@@ -11,16 +11,16 @@ import {
   Phone,
   FileText,
   Clock,
-  ClipboardList,
+  ClipboardCheck,
   ChevronRight,
   ChevronLeft,
   CheckCircle2,
+  Check,
   Loader2,
   Stethoscope,
   Calendar,
   MessageSquare,
   Bot,
-  Gift,
   CreditCard,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -28,6 +28,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
+import { cn } from '@/lib/utils';
 import { getApiBaseUrl } from '@/lib/api-base';
 import { establishSession } from '@/lib/session';
 import { LogoColored } from '@/components/shared/componentizedImages/LogoColored';
@@ -97,30 +99,175 @@ const DEFAULT_APPOINTMENT_TYPES: AppointmentTypeDraft[] = [
   { name: 'Avaliação Pré-cirúrgica', duration_minutes: 30, checked: true },
 ];
 
-// ─── Step indicator ───────────────────────────────────────────────────────────
+// ─── Tela de transição final (build "inteligente" da plataforma) ─────────────
 
-function StepDot({ step, current }: { step: number; current: number }) {
-  const done = current > step;
-  const active = current === step;
+const TRANSITION_MESSAGES = [
+  'Configurando sua clínica...',
+  'Organizando a agenda...',
+  'Cadastrando os tipos de atendimento...',
+  'Ativando WhatsApp e IA clínica...',
+  'Preparando seu painel...',
+];
+
+const TRANSITION_STEP_MS = 750;
+
+/**
+ * Tela cheia que substitui o wizard ao clicar em "Entrar no sistema" — dá a
+ * sensação de que o sistema está "construindo" a plataforma da clínica antes
+ * de abrir o dashboard, em vez de um corte seco entre telas. `onDone` dispara
+ * quando a sequência visual termina (o cadastro em si já rodou em paralelo).
+ */
+function OnboardingTransition({ onDone }: { onDone: () => void }) {
+  const [msgIndex, setMsgIndex] = useState(0);
+  const [phase, setPhase] = useState<'building' | 'reveal'>('building');
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setMsgIndex((i) => Math.min(i + 1, TRANSITION_MESSAGES.length - 1));
+    }, TRANSITION_STEP_MS);
+    const revealAt = TRANSITION_MESSAGES.length * TRANSITION_STEP_MS + 200;
+    const t1 = setTimeout(() => setPhase('reveal'), revealAt);
+    const t2 = setTimeout(onDone, revealAt + 1500);
+    return () => {
+      clearInterval(interval);
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
-    <div className="flex flex-col items-center gap-1">
-      <div
-        className={`flex size-7 items-center justify-center rounded-full border-2 text-xs font-bold transition-all ${
-          done
-            ? 'border-green-500 bg-green-500 text-white'
-            : active
-            ? 'border-primary bg-primary text-white'
-            : 'border-slate-200 bg-white text-slate-400'
-        }`}
-      >
-        {done ? <CheckCircle2 className="size-3.5" /> : step}
-      </div>
+    <div className="fixed inset-0 z-200 flex flex-col items-center justify-center bg-linear-to-br from-wa-brand-700 via-wa-brand-600 to-wa-brand-700 px-6 text-center text-white">
+      {phase === 'building' ? (
+        <>
+          <div className="relative flex size-20 items-center justify-center">
+            <span className="absolute inset-0 rounded-full bg-white/10" />
+            <span className="absolute inset-0 animate-spin rounded-full border-2 border-white/20 border-t-white/90 [animation-duration:1.1s]" />
+            <Building2 className="size-8" strokeWidth={1.75} />
+          </div>
+          <p className="mt-6 text-lg font-bold" aria-live="polite">
+            {TRANSITION_MESSAGES[msgIndex]}
+          </p>
+          <div className="mt-6 h-1.5 w-64 max-w-full overflow-hidden rounded-full bg-white/20">
+            <div
+              className="h-full rounded-full bg-white transition-all duration-700 ease-out"
+              style={{ width: `${((msgIndex + 1) / TRANSITION_MESSAGES.length) * 100}%` }}
+            />
+          </div>
+        </>
+      ) : (
+        <div
+          className="flex flex-col items-center gap-3"
+          style={{ animation: 'wa-modal-pop 500ms cubic-bezier(.34,1.56,.64,1)' }}
+        >
+          <div className="flex size-18 items-center justify-center rounded-full bg-white/12">
+            <CheckCircle2 className="size-9" strokeWidth={1.75} />
+          </div>
+          <p className="text-2xl font-extrabold">Pronto!</p>
+          <p className="text-sm text-white/80">Sua plataforma está pronta.</p>
+        </div>
+      )}
     </div>
   );
 }
 
+// ─── Primitivos de UI que faltavam (seguindo os tokens wa-* já usados no
+// resto do app — ver design_handoff_whatsapp_inbox) ───────────────────────────
+
 const STEP_LABELS = ['Clínica', 'Responsável', 'Fiscal', 'Horário', 'Atendimentos', 'Pronto'];
-const TOTAL_STEPS = STEP_LABELS.length;
+
+/** Stepper de progresso: círculos numerados + linha de conexão que preenche
+ * conforme as etapas são concluídas, com anel de destaque na etapa ativa. */
+function Stepper({ current }: { current: number }) {
+  return (
+    <div className="mb-9 flex items-start">
+      {STEP_LABELS.map((label, idx) => {
+        const s = idx + 1;
+        const done = s < current;
+        const active = s === current;
+        return (
+          <div key={label} className="relative flex flex-1 flex-col items-center gap-[7px]">
+            {idx < STEP_LABELS.length - 1 && (
+              <div
+                className={cn(
+                  'absolute top-[15px] left-[calc(50%+15px)] -z-10 h-0.5 w-[calc(100%-30px)] transition-colors',
+                  done ? 'bg-wa-brand-600' : 'bg-wa-line',
+                )}
+              />
+            )}
+            <div
+              className={cn(
+                'flex size-[30px] shrink-0 items-center justify-center rounded-full border-2 text-[12.5px] font-bold transition-all',
+                done || active
+                  ? 'border-wa-brand-600 bg-wa-brand-600 text-white'
+                  : 'border-wa-line bg-white text-wa-ink-3',
+                active && 'shadow-[0_0_0_4px_var(--wa-brand-50)]',
+              )}
+            >
+              {done ? <Check className="size-3.5" strokeWidth={3} /> : s}
+            </div>
+            <span
+              className={cn(
+                'text-[11px] font-semibold whitespace-nowrap',
+                done || active ? 'text-wa-brand-700' : 'text-wa-ink-3',
+              )}
+            >
+              {label}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Label de campo com marcador de obrigatório/opcional, no padrão do handoff. */
+function FieldLabel({
+  htmlFor,
+  required,
+  optional,
+  children,
+}: {
+  htmlFor?: string;
+  required?: boolean;
+  optional?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Label htmlFor={htmlFor} className="mb-2 flex items-center gap-1 text-[13px] font-semibold text-wa-ink">
+      {children}
+      {required && <span className="text-wa-brand-600">*</span>}
+      {optional && <span className="font-normal text-wa-ink-3">{optional}</span>}
+    </Label>
+  );
+}
+
+/** Input "pill" com ícone à esquerda — compõe o <Input> já existente, só
+ * movendo a moldura (borda/fundo/foco) para o wrapper para caber o ícone. */
+function IconInput({
+  icon,
+  className,
+  wrapperClassName,
+  ...props
+}: React.ComponentProps<typeof Input> & { icon?: React.ReactNode; wrapperClassName?: string }) {
+  return (
+    <div
+      className={cn(
+        'flex items-center gap-2.5 rounded-wa border-[1.5px] border-wa-line bg-[#fbfcfb] px-3.5 py-3 transition-colors focus-within:border-wa-brand-500 focus-within:bg-white focus-within:shadow-[0_0_0_3px_var(--wa-brand-50)]',
+        wrapperClassName,
+      )}
+    >
+      {icon && <span className="flex shrink-0 items-center text-wa-ink-3 [&>svg]:size-4">{icon}</span>}
+      <Input
+        className={cn(
+          'h-auto min-h-0 w-full border-0 bg-transparent p-0 text-[14.5px] text-wa-ink shadow-none placeholder:text-wa-ink-3 focus:ring-0 focus-visible:ring-0',
+          className,
+        )}
+        {...props}
+      />
+    </div>
+  );
+}
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
@@ -128,6 +275,7 @@ export default function RegisterPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [transitioning, setTransitioning] = useState(false);
 
   // Step 1 — Clínica
   const [clinicName, setClinicName] = useState('');
@@ -158,6 +306,10 @@ export default function RegisterPage() {
   const [appointmentTypes, setAppointmentTypes] = useState<AppointmentTypeDraft[]>(
     DEFAULT_APPOINTMENT_TYPES,
   );
+  // Nomes já criados no servidor nesta sessão — se o usuário voltar do step 6
+  // e reenviar, o create de tipo de atendimento é um INSERT sem proteção
+  // contra duplicata no backend, então filtramos aqui pra não recriar.
+  const [createdTypeNames, setCreatedTypeNames] = useState<Set<string>>(new Set());
 
   // Retomada automática: quem já tem sessão (voltou depois de fechar o
   // navegador no meio do cadastro) pula direto pra etapa que falta, em vez
@@ -220,81 +372,12 @@ export default function RegisterPage() {
     return true;
   };
 
-  const handleSubmit = async () => {
-    if (!validateStep3()) return;
-    setLoading(true);
-    try {
-      const res = await fetch(`${getApiBaseUrl()}/billing/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          clinicName: clinicName.trim(),
-          clinicCode: clinicCode.trim(),
-          adminName: adminName.trim(),
-          adminEmail: adminEmail.trim().toLowerCase(),
-          adminPassword,
-          cpfCnpj: cpfCnpj.replace(/\D/g, ''),
-          phone: phone ? phone.replace(/\D/g, '') : undefined,
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        const msg = Array.isArray(data.message) ? data.message[0] : data.message;
-        toast.error(msg ?? 'Erro ao criar conta. Tente novamente.');
-        return;
-      }
-
-      // Envelope: { success, message, data: { tenantId, tenantCode, adminEmail, access_token, user } }.
-      const { access_token, user, tenantCode } = data.data ?? {};
-      if (!access_token || !user) {
-        toast.error('Conta criada, mas não foi possível entrar automaticamente. Faça login.');
-        router.push(`/login?code=${clinicCode}`);
-        return;
-      }
-
-      establishSession(access_token, user, tenantCode || clinicCode);
-      toast.success('Clínica criada! Falta só terminar a configuração.');
-      setStep(4);
-    } catch {
-      toast.error('Erro de conexão. Tente novamente.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleStep4Submit = async () => {
+  const validateStep4 = () => {
     if (!weekdayOpen || !weekdayClose) {
       toast.error('Informe o horário de segunda a sexta.');
-      return;
+      return false;
     }
-    try {
-      await saveBusinessHoursBatch.mutateAsync({
-        days: [1, 2, 3, 4, 5],
-        open_time: weekdayOpen,
-        close_time: weekdayClose,
-        is_closed: false,
-        is_24h: false,
-      });
-      await saveBusinessHoursBatch.mutateAsync({
-        days: [6],
-        open_time: saturdayOpen,
-        close_time: saturdayClose,
-        is_closed: !worksSaturday,
-        is_24h: false,
-      });
-      await saveBusinessHoursBatch.mutateAsync({
-        days: [0],
-        open_time: sundayOpen,
-        close_time: sundayClose,
-        is_closed: !worksSunday,
-        is_24h: false,
-      });
-      setStep(5);
-    } catch {
-      toast.error('Não foi possível salvar o horário. Tente novamente.');
-    }
+    return true;
   };
 
   const toggleAppointmentType = (index: number) => {
@@ -310,196 +393,339 @@ export default function RegisterPage() {
     );
   };
 
-  const handleStep5Submit = async () => {
-    const selected = appointmentTypes.filter((t) => t.checked);
-    if (selected.length === 0) {
+  const validateStep5 = () => {
+    if (appointmentTypes.filter((t) => t.checked).length === 0) {
       toast.error('Selecione ao menos um tipo de atendimento.');
-      return;
+      return false;
     }
-    try {
-      for (const t of selected) {
-        await createAppointmentType.mutateAsync({
-          name: t.name,
-          duration_minutes: t.duration_minutes,
-        });
-      }
-      setStep(6);
-    } catch {
-      toast.error('Não foi possível salvar os tipos de atendimento. Tente novamente.');
-    }
+    return true;
   };
 
+  /** Melhor esforço pra mandar o usuário de volta pro campo certo quando o
+   * cadastro falha por dado inválido (CPF/e-mail/código já em uso etc.). */
+  function guessRegisterErrorStep(message: string | undefined): number {
+    const m = (message ?? '').toLowerCase();
+    if (m.includes('cpf') || m.includes('cnpj')) return 3;
+    if (m.includes('e-mail') || m.includes('email')) return 2;
+    return 1;
+  }
+
+  // Único ponto que efetivamente submete coisa no servidor — dispara só aqui,
+  // ao clicar em "Entrar no sistema". Steps 1-5 só guardam estado local
+  // (setStep), pra ir e voltar por eles nunca duplicar cadastro. Se algo
+  // falhar, volta pro step responsável com a mensagem de erro real, em vez de
+  // travar na tela final. Se um passo anterior já criou a conta (ex.: usuário
+  // retomou depois de fechar o navegador no meio), pula direto pro
+  // horário/atendimentos em vez de recriar a conta.
   const handleFinish = async () => {
+    setLoading(true);
     try {
+      const hasSession =
+        typeof window !== 'undefined' && !!localStorage.getItem('accessToken');
+
+      if (!hasSession) {
+        if (!validateStep1()) { setStep(1); return; }
+        if (!validateStep2()) { setStep(2); return; }
+        if (!validateStep3()) { setStep(3); return; }
+
+        const res = await fetch(`${getApiBaseUrl()}/billing/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            clinicName: clinicName.trim(),
+            clinicCode: clinicCode.trim(),
+            adminName: adminName.trim(),
+            adminEmail: adminEmail.trim().toLowerCase(),
+            adminPassword,
+            cpfCnpj: cpfCnpj.replace(/\D/g, ''),
+            phone: phone ? phone.replace(/\D/g, '') : undefined,
+          }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          const msg = Array.isArray(data.message) ? data.message[0] : data.message;
+          toast.error(msg ?? 'Erro ao criar conta. Tente novamente.');
+          setStep(guessRegisterErrorStep(msg));
+          return;
+        }
+
+        // Envelope: { success, message, data: { tenantId, tenantCode, adminEmail, access_token, user } }.
+        const { access_token, user, tenantCode } = data.data ?? {};
+        if (!access_token || !user) {
+          toast.error('Conta criada, mas não foi possível entrar automaticamente. Faça login.');
+          router.push(`/login?code=${clinicCode}`);
+          return;
+        }
+
+        establishSession(access_token, user, tenantCode || clinicCode);
+      }
+
+      if (!validateStep4()) { setStep(4); return; }
+      if (!validateStep5()) { setStep(5); return; }
+
+      const selected = appointmentTypes.filter((t) => t.checked);
+      const typesToCreate = selected.filter((t) => !createdTypeNames.has(t.name));
+
+      // allSettled (não all) de propósito: se um tipo falhar no meio, os que
+      // já foram criados não podem ser recriados numa nova tentativa — o
+      // create de tipo de atendimento é um INSERT sem proteção contra
+      // duplicata no backend. Horário é upsert por dia, seguro de repetir.
+      const results = await Promise.allSettled([
+        saveBusinessHoursBatch.mutateAsync({
+          days: [1, 2, 3, 4, 5],
+          open_time: weekdayOpen,
+          close_time: weekdayClose,
+          is_closed: false,
+          is_24h: false,
+        }),
+        saveBusinessHoursBatch.mutateAsync({
+          days: [6],
+          open_time: saturdayOpen,
+          close_time: saturdayClose,
+          is_closed: !worksSaturday,
+          is_24h: false,
+        }),
+        saveBusinessHoursBatch.mutateAsync({
+          days: [0],
+          open_time: sundayOpen,
+          close_time: sundayClose,
+          is_closed: !worksSunday,
+          is_24h: false,
+        }),
+        ...typesToCreate.map((t) =>
+          createAppointmentType
+            .mutateAsync({ name: t.name, duration_minutes: t.duration_minutes })
+            .then(() => t.name),
+        ),
+      ]);
+
+      const [hoursWeekday, hoursSaturday, hoursSunday, ...typeResults] = results;
+      const newlyCreated = typeResults
+        .filter((r): r is PromiseFulfilledResult<string> => r.status === 'fulfilled')
+        .map((r) => r.value);
+      if (newlyCreated.length > 0) {
+        setCreatedTypeNames((prev) => new Set([...prev, ...newlyCreated]));
+      }
+
+      if ([hoursWeekday, hoursSaturday, hoursSunday].some((r) => r.status === 'rejected')) {
+        toast.error('Não foi possível salvar o horário de funcionamento. Tente novamente.');
+        setStep(4);
+        return;
+      }
+      if (typeResults.some((r) => r.status === 'rejected')) {
+        toast.error('Não foi possível salvar um dos tipos de atendimento. Tente novamente.');
+        setStep(5);
+        return;
+      }
+
       await completeOnboarding.mutateAsync();
-      toast.success('Sua clínica está pronta! Enviamos um código para confirmar seu e-mail.');
-      router.push('/dashboard');
+      setTransitioning(true);
     } catch {
       toast.error('Não foi possível concluir o cadastro. Tente novamente.');
+    } finally {
+      setLoading(false);
     }
   };
 
+  const handleTransitionDone = () => {
+    // Sinaliza pro dashboard que ele acabou de "nascer" do onboarding, pra
+    // ele fazer sua própria entrada suave (fade + highlight) em vez de
+    // simplesmente aparecer — a troca de rota em si é sempre um corte seco.
+    try {
+      sessionStorage.setItem('nixvet:just-onboarded', '1');
+    } catch {
+      // sessionStorage indisponível (modo privado etc.) — sem problema, o
+      // dashboard só deixa de mostrar a entrada especial.
+    }
+    router.push('/dashboard');
+  };
+
+  if (transitioning) {
+    return <OnboardingTransition onDone={handleTransitionDone} />;
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      <div className="mx-auto flex min-h-screen max-w-6xl flex-col lg:flex-row">
+    <div className="flex min-h-screen items-center justify-center bg-wa-bg p-4 lg:p-8">
+      <div className="flex min-h-180 w-full max-w-275 flex-col overflow-hidden rounded-[20px] bg-white shadow-[0_30px_60px_-20px_rgba(10,40,25,0.25)] lg:flex-row">
 
         {/* ─── Left panel ─── */}
-        <div className="flex flex-col justify-between bg-primary px-10 py-12 text-white lg:w-2/5">
-          <div>
-            <div className="mb-3 w-fit brightness-0 invert">
-              <LogoColored width="170px" height="36px" />
+        <div className="relative flex flex-col overflow-hidden bg-linear-to-br from-wa-brand-600 to-wa-brand-700 px-10 py-11 text-white lg:w-[380px] lg:shrink-0">
+          <div
+            className="pointer-events-none absolute inset-0 opacity-50"
+            style={{
+              backgroundImage: 'radial-gradient(rgba(255,255,255,.09) 1.5px, transparent 1.5px)',
+              backgroundSize: '22px 22px',
+            }}
+          />
+          <div className="pointer-events-none absolute -right-35 -bottom-35 size-85 rounded-full bg-white/8" />
+
+          <div className="relative z-10 flex flex-1 flex-col">
+            <div>
+              <div className="mb-3 w-fit brightness-0 invert">
+                <LogoColored width="170px" height="36px" />
+              </div>
+              <div className="text-[13.5px] text-white/75">Software de Gestão Veterinária</div>
             </div>
-            <div className="text-sm text-white/90">Software de Gestão Veterinária</div>
-          </div>
 
-          <div>
-            <h1 className="mb-3 font-['InterDoFigma'] text-3xl font-black leading-tight">
-              14 dias grátis,<br />sem cartão de crédito
-            </h1>
-            <p className="mb-8 text-base text-blue-100">
-              Tudo que sua clínica precisa em um só lugar. Configure em minutos e comece a atender.
+            <div className="mt-auto">
+              <div className="mb-4.5 inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-white/15 px-3 py-1.25 text-xs font-semibold">
+                <Check className="size-3.25" strokeWidth={3} />
+                14 dias grátis, sem cartão
+              </div>
+              <h1 className="text-[32px] font-extrabold leading-[1.15] tracking-[-0.02em]">
+                Configure sua clínica em minutos
+              </h1>
+              <p className="mt-3 max-w-75 text-[14.5px] leading-relaxed text-white/80">
+                Tudo que sua clínica precisa em um só lugar. Comece a atender ainda hoje.
+              </p>
+
+              <ul className="mt-7 flex flex-col gap-3.5">
+                {FEATURES.map(({ icon: Icon, text }) => (
+                  <li key={text} className="flex items-center gap-3 text-sm font-medium">
+                    <div className="flex size-8 shrink-0 items-center justify-center rounded-[9px] bg-white/16">
+                      <Icon className="size-4" />
+                    </div>
+                    {text}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <p className="mt-8 text-[13px] text-white/75">
+              Já tem conta?{' '}
+              <Link href="/login" className="font-bold text-white underline underline-offset-2">
+                Fazer login
+              </Link>
             </p>
-
-            <ul className="space-y-4">
-              {FEATURES.map(({ icon: Icon, text }) => (
-                <li key={text} className="flex items-center gap-3">
-                  <div className="flex size-8 items-center justify-center rounded-full bg-white/15">
-                    <Icon className="size-4" />
-                  </div>
-                  <span className="text-sm text-blue-50">{text}</span>
-                </li>
-              ))}
-            </ul>
           </div>
-
-          <p className="text-xs text-blue-300">
-            Já tem conta?{' '}
-            <Link href="/login" className="font-semibold text-white underline underline-offset-2">
-              Fazer login
-            </Link>
-          </p>
         </div>
 
         {/* ─── Right panel ─── */}
-        <div className="flex flex-1 flex-col items-center justify-center px-6 py-12">
-          <div className="w-full max-w-md">
+        <div className="flex flex-1 flex-col overflow-y-auto px-6 py-10 sm:px-14">
+          <div className="mx-auto flex min-h-180 w-full max-w-115 flex-1 flex-col">
 
             {showLoadingGate ? (
-              <div className="flex flex-col items-center justify-center gap-3 py-24 text-slate-500">
+              <div className="flex flex-1 flex-col items-center justify-center gap-3 text-wa-ink-3">
                 <Loader2 className="size-6 animate-spin" />
                 <p className="text-sm">Carregando...</p>
               </div>
             ) : (
               <>
-                {/* Step indicator */}
-                <div className="mb-8 flex items-center justify-center gap-0">
-                  {Array.from({ length: TOTAL_STEPS }, (_, i) => i + 1).map((s) => (
-                    <React.Fragment key={s}>
-                      <div className="flex flex-col items-center gap-1">
-                        <StepDot step={s} current={step} />
-                        <span className={`text-[10px] font-medium ${step === s ? 'text-primary' : 'text-slate-400'}`}>
-                          {STEP_LABELS[s - 1]}
-                        </span>
-                      </div>
-                      {s < TOTAL_STEPS && (
-                        <div className={`mb-4 h-px w-6 ${step > s ? 'bg-green-400' : 'bg-slate-200'}`} />
-                      )}
-                    </React.Fragment>
-                  ))}
-                </div>
+                <Stepper current={step} />
 
                 {/* ── Step 1: Clínica ── */}
                 {step === 1 && (
-                  <div className="space-y-5">
-                    <div>
-                      <h2 className="text-xl font-bold text-slate-900">Dados da clínica</h2>
-                      <p className="mt-1 text-sm text-slate-500">Como sua clínica aparecerá no sistema.</p>
-                    </div>
+                  <div className="flex flex-1 flex-col">
+                    <h2 className="text-[23px] font-extrabold tracking-[-0.01em] text-wa-ink">Dados da clínica</h2>
+                    <p className="mt-1.5 text-sm leading-normal text-wa-ink-2">Como sua clínica aparecerá no sistema.</p>
 
-                    <div className="space-y-1.5">
-                      <Label htmlFor="clinicName">Nome da clínica *</Label>
-                      <div className="relative">
-                        <Building2 className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-                        <Input
+                    <div className="mt-7 flex flex-col gap-5">
+                      <div>
+                        <FieldLabel htmlFor="clinicName" required>Nome da clínica</FieldLabel>
+                        <IconInput
                           id="clinicName"
-                          className="pl-9"
+                          icon={<Building2 />}
                           placeholder="Ex: Clínica Vet São Francisco"
                           value={clinicName}
                           onChange={(e) => handleClinicNameChange(e.target.value)}
                         />
                       </div>
-                    </div>
 
-                    <div className="space-y-1.5">
-                      <Label htmlFor="clinicCode">
-                        Código de acesso *
-                        <span className="ml-1 text-xs text-slate-400">(usado no login)</span>
-                      </Label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">@</span>
-                        <Input
+                      <div>
+                        <FieldLabel htmlFor="clinicCode" required optional="(usado no login)">Código de acesso</FieldLabel>
+                        <IconInput
                           id="clinicCode"
-                          className="pl-7 font-mono text-sm"
+                          icon={<span className="text-sm font-semibold">@</span>}
+                          className="font-mono"
                           placeholder="saofrancisco"
                           value={clinicCode}
                           onChange={(e) => handleCodeChange(e.target.value)}
                         />
+                        <p className="mt-1.5 text-xs text-wa-ink-3">Apenas letras minúsculas e números, sem espaços.</p>
                       </div>
-                      <p className="text-xs text-slate-400">Apenas letras minúsculas e números, sem espaços.</p>
                     </div>
 
-                    <Button className="w-full" onClick={() => validateStep1() && setStep(2)}>
-                      Continuar <ChevronRight className="ml-1 size-4" />
-                    </Button>
+                    <div className="mt-auto flex gap-3 pt-7">
+                      <Button
+                        className="flex-1 gap-1.5 rounded-wa text-[14.5px] font-bold shadow-[0_8px_18px_-6px_rgba(18,179,127,0.45)]"
+                        onClick={() => validateStep1() && setStep(2)}
+                      >
+                        Continuar <ChevronRight className="size-3.75" strokeWidth={2.5} />
+                      </Button>
+                    </div>
                   </div>
                 )}
 
                 {/* ── Step 2: Responsável ── */}
                 {step === 2 && (
-                  <div className="space-y-5">
-                    <div>
-                      <h2 className="text-xl font-bold text-slate-900">Dados do responsável</h2>
-                      <p className="mt-1 text-sm text-slate-500">Será a conta administradora da clínica.</p>
-                    </div>
+                  <div className="flex flex-1 flex-col">
+                    <h2 className="text-[23px] font-extrabold tracking-[-0.01em] text-wa-ink">Dados do responsável</h2>
+                    <p className="mt-1.5 text-sm leading-normal text-wa-ink-2">Será a conta administradora da clínica.</p>
 
-                    <div className="space-y-1.5">
-                      <Label htmlFor="adminName">Nome completo *</Label>
-                      <div className="relative">
-                        <User className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-                        <Input id="adminName" className="pl-9" placeholder="Dr. João Silva" value={adminName} onChange={(e) => setAdminName(e.target.value)} />
+                    <div className="mt-7 flex flex-col gap-5">
+                      <div>
+                        <FieldLabel htmlFor="adminName" required>Nome completo</FieldLabel>
+                        <IconInput
+                          id="adminName"
+                          icon={<User />}
+                          placeholder="Dr. João Silva"
+                          value={adminName}
+                          onChange={(e) => setAdminName(e.target.value)}
+                        />
+                      </div>
+
+                      <div>
+                        <FieldLabel htmlFor="adminEmail" required>E-mail</FieldLabel>
+                        <IconInput
+                          id="adminEmail"
+                          type="email"
+                          icon={<Mail />}
+                          placeholder="joao@clinica.com.br"
+                          value={adminEmail}
+                          onChange={(e) => setAdminEmail(e.target.value)}
+                        />
+                      </div>
+
+                      <div>
+                        <FieldLabel htmlFor="adminPassword" required>Senha</FieldLabel>
+                        <IconInput
+                          id="adminPassword"
+                          type="password"
+                          icon={<Lock />}
+                          placeholder="Mínimo 6 caracteres"
+                          value={adminPassword}
+                          onChange={(e) => setAdminPassword(e.target.value)}
+                        />
+                      </div>
+
+                      <div>
+                        <FieldLabel htmlFor="confirmPassword" required>Confirmar senha</FieldLabel>
+                        <IconInput
+                          id="confirmPassword"
+                          type="password"
+                          icon={<Lock />}
+                          placeholder="Repita a senha"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                        />
                       </div>
                     </div>
 
-                    <div className="space-y-1.5">
-                      <Label htmlFor="adminEmail">E-mail *</Label>
-                      <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-                        <Input id="adminEmail" type="email" className="pl-9" placeholder="joao@clinica.com.br" value={adminEmail} onChange={(e) => setAdminEmail(e.target.value)} />
-                      </div>
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <Label htmlFor="adminPassword">Senha *</Label>
-                      <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-                        <Input id="adminPassword" type="password" className="pl-9" placeholder="Mínimo 6 caracteres" value={adminPassword} onChange={(e) => setAdminPassword(e.target.value)} />
-                      </div>
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <Label htmlFor="confirmPassword">Confirmar senha *</Label>
-                      <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-                        <Input id="confirmPassword" type="password" className="pl-9" placeholder="Repita a senha" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
-                      </div>
-                    </div>
-
-                    <div className="flex gap-3">
-                      <Button variant="outline" className="flex-1" onClick={() => setStep(1)}>
-                        <ChevronLeft className="mr-1 size-4" /> Voltar
+                    <div className="mt-auto flex gap-3 pt-7">
+                      <Button
+                        variant="outline"
+                        className="flex-1 gap-1.5 rounded-wa border-[1.5px] border-wa-line text-[14.5px] font-bold text-wa-ink"
+                        onClick={() => setStep(1)}
+                      >
+                        <ChevronLeft className="size-3.75" strokeWidth={2.5} /> Voltar
                       </Button>
-                      <Button className="flex-1" onClick={() => validateStep2() && setStep(3)}>
-                        Continuar <ChevronRight className="ml-1 size-4" />
+                      <Button
+                        className="flex-1 gap-1.5 rounded-wa text-[14.5px] font-bold shadow-[0_8px_18px_-6px_rgba(18,179,127,0.45)]"
+                        onClick={() => validateStep2() && setStep(3)}
+                      >
+                        Continuar <ChevronRight className="size-3.75" strokeWidth={2.5} />
                       </Button>
                     </div>
                   </div>
@@ -507,36 +733,30 @@ export default function RegisterPage() {
 
                 {/* ── Step 3: Dados fiscais ── */}
                 {step === 3 && (
-                  <div className="space-y-5">
-                    <div>
-                      <h2 className="text-xl font-bold text-slate-900">Dados fiscais</h2>
-                      <p className="mt-1 text-sm text-slate-500">
-                        Usado para emissão de NFS-e quando você contratar um plano, e para liberar seus 14 dias grátis.
-                      </p>
-                    </div>
+                  <div className="flex flex-1 flex-col">
+                    <h2 className="text-[23px] font-extrabold tracking-[-0.01em] text-wa-ink">Dados fiscais</h2>
+                    <p className="mt-1.5 text-sm leading-normal text-wa-ink-2">
+                      Usado para emissão de NFS-e quando você contratar um plano, e para liberar seus 14 dias grátis.
+                    </p>
 
-                    <div className="space-y-1.5">
-                      <Label htmlFor="cpfCnpj">CPF ou CNPJ *</Label>
-                      <div className="relative">
-                        <FileText className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-                        <Input
+                    <div className="mt-7 flex flex-col gap-5">
+                      <div>
+                        <FieldLabel htmlFor="cpfCnpj" required>CPF ou CNPJ</FieldLabel>
+                        <IconInput
                           id="cpfCnpj"
-                          className="pl-9"
+                          icon={<FileText />}
                           placeholder="000.000.000-00 ou 00.000.000/0001-00"
                           value={cpfCnpj}
                           onChange={(e) => setCpfCnpj(formatCpfCnpj(e.target.value))}
                         />
+                        <p className="mt-1.5 text-xs text-wa-ink-3">Cada CPF/CNPJ só pode ter um período de teste gratuito.</p>
                       </div>
-                      <p className="text-xs text-slate-400">Cada CPF/CNPJ só pode ter um período de teste gratuito.</p>
-                    </div>
 
-                    <div className="space-y-1.5">
-                      <Label htmlFor="phone">Telefone / WhatsApp</Label>
-                      <div className="relative">
-                        <Phone className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-                        <Input
+                      <div>
+                        <FieldLabel htmlFor="phone" optional="(opcional)">Telefone / WhatsApp</FieldLabel>
+                        <IconInput
                           id="phone"
-                          className="pl-9"
+                          icon={<Phone />}
                           placeholder="(51) 99999-9999"
                           value={phone}
                           onChange={(e) => setPhone(formatPhone(e.target.value))}
@@ -544,115 +764,136 @@ export default function RegisterPage() {
                       </div>
                     </div>
 
-                    <div className="rounded-lg border border-brand-deep/25 bg-brand-deep/5 p-4 text-sm text-brand-deep-dark">
-                      <strong>Resumo do cadastro</strong>
-                      <ul className="mt-2.5 space-y-2 text-xs text-brand-deep-dark">
-                        <li className="flex items-center gap-2">
-                          <Building2 className="size-3.5 shrink-0 text-slate-400" />
-                          <span><strong>{clinicName}</strong> <span className="text-brand-deep">(@{clinicCode})</span></span>
-                        </li>
-                        <li className="flex items-center gap-2">
-                          <User className="size-3.5 shrink-0 text-slate-400" />
-                          <span>{adminName} — {adminEmail}</span>
-                        </li>
-                        <li className="flex items-center gap-2">
-                          <Gift className="size-3.5 shrink-0 text-slate-400" />
-                          <span>14 dias de acesso completo gratuito</span>
-                        </li>
-                        <li className="flex items-center gap-2">
-                          <CreditCard className="size-3.5 shrink-0 text-slate-400" />
-                          <span>Sem cobrança automática — você escolhe o plano depois</span>
-                        </li>
-                      </ul>
-                    </div>
-
-                    <div className="flex gap-3">
-                      <Button variant="outline" className="flex-1" onClick={() => setStep(2)}>
-                        <ChevronLeft className="mr-1 size-4" /> Voltar
+                    <div className="mt-auto flex gap-3 pt-7">
+                      <Button
+                        variant="outline"
+                        className="flex-1 gap-1.5 rounded-wa border-[1.5px] border-wa-line text-[14.5px] font-bold text-wa-ink"
+                        onClick={() => setStep(2)}
+                      >
+                        <ChevronLeft className="size-3.75" strokeWidth={2.5} /> Voltar
                       </Button>
-                      <Button className="flex-1" onClick={handleSubmit} disabled={loading}>
-                        {loading ? (
-                          <><Loader2 className="mr-2 size-4 animate-spin" /> Criando conta...</>
-                        ) : (
-                          <>Continuar <ChevronRight className="ml-1 size-4" /></>
-                        )}
+                      <Button
+                        className="flex-1 gap-1.5 rounded-wa text-[14.5px] font-bold shadow-[0_8px_18px_-6px_rgba(18,179,127,0.45)]"
+                        onClick={() => validateStep3() && setStep(4)}
+                      >
+                        Continuar <ChevronRight className="size-3.75" strokeWidth={2.5} />
                       </Button>
                     </div>
 
-                    <p className="text-center text-xs text-slate-400">
+                    <p className="mt-4 max-w-115 text-xs leading-relaxed text-wa-ink-3">
                       Ao criar sua conta você concorda com os{' '}
-                      <span className="text-primary underline cursor-pointer">Termos de Uso</span>
+                      <span className="font-semibold text-wa-brand-600 underline cursor-pointer">Termos de Uso</span>
                       {' '}e{' '}
-                      <span className="text-primary underline cursor-pointer">Política de Privacidade</span>.
+                      <span className="font-semibold text-wa-brand-600 underline cursor-pointer">Política de Privacidade</span>.
                     </p>
                   </div>
                 )}
 
                 {/* ── Step 4: Horário de funcionamento ── */}
                 {step === 4 && (
-                  <div className="space-y-5">
-                    <div>
-                      <h2 className="text-xl font-bold text-slate-900">Horário de funcionamento</h2>
-                      <p className="mt-1 text-sm text-slate-500">
-                        Sem isso, ninguém consegue marcar consulta — a agenda fica vazia. Dá pra ajustar depois em Configurações.
-                      </p>
-                    </div>
+                  <div className="flex flex-1 flex-col">
+                    <h2 className="text-[23px] font-extrabold tracking-[-0.01em] text-wa-ink">Horário de funcionamento</h2>
+                    <p className="mt-1.5 text-sm leading-normal text-wa-ink-2">
+                      Sem isso, ninguém consegue marcar consulta: a agenda fica vazia. Dá pra ajustar depois em Configurações.
+                    </p>
 
-                    <div className="rounded-lg border border-slate-200 p-4">
-                      <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
-                        <Clock className="size-4 text-slate-400" /> Segunda a sexta
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <Input type="time" value={weekdayOpen} onChange={(e) => setWeekdayOpen(e.target.value)} />
-                        <span className="text-sm text-slate-400">até</span>
-                        <Input type="time" value={weekdayClose} onChange={(e) => setWeekdayClose(e.target.value)} />
-                      </div>
-                    </div>
-
-                    <div className="rounded-lg border border-slate-200 p-4">
-                      <label className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
-                        <Checkbox checked={worksSaturday} onCheckedChange={(v) => setWorksSaturday(v === true)} />
-                        Abre aos sábados
-                      </label>
-                      {worksSaturday && (
-                        <div className="flex items-center gap-3">
-                          <Input type="time" value={saturdayOpen} onChange={(e) => setSaturdayOpen(e.target.value)} />
-                          <span className="text-sm text-slate-400">até</span>
-                          <Input type="time" value={saturdayClose} onChange={(e) => setSaturdayClose(e.target.value)} />
+                    <div className="mt-7 flex flex-col gap-5">
+                      <div className="rounded-wa border-[1.5px] border-wa-line bg-[#fbfcfb] px-4 py-3.5">
+                        <div className="flex items-center gap-2 text-sm font-semibold text-wa-ink">
+                          <Clock className="size-4 shrink-0 text-wa-brand-600" />
+                          Segunda a sexta
                         </div>
-                      )}
-                    </div>
-
-                    <div className="rounded-lg border border-slate-200 p-4">
-                      <label className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
-                        <Checkbox checked={worksSunday} onCheckedChange={(v) => setWorksSunday(v === true)} />
-                        Abre aos domingos
-                      </label>
-                      {worksSunday && (
-                        <div className="flex items-center gap-3">
-                          <Input type="time" value={sundayOpen} onChange={(e) => setSundayOpen(e.target.value)} />
-                          <span className="text-sm text-slate-400">até</span>
-                          <Input type="time" value={sundayClose} onChange={(e) => setSundayClose(e.target.value)} />
+                        <div className="mt-3 flex items-center gap-2 text-[13.5px] text-wa-ink-2">
+                          <Input
+                            type="time"
+                            value={weekdayOpen}
+                            onChange={(e) => setWeekdayOpen(e.target.value)}
+                            className="h-9 min-h-9 w-full min-w-0 flex-1 rounded-[7px] border-wa-line bg-white px-2.5 py-1.5 text-[13.5px] text-wa-ink shadow-none sm:h-9"
+                          />
+                          <span className="shrink-0">até</span>
+                          <Input
+                            type="time"
+                            value={weekdayClose}
+                            onChange={(e) => setWeekdayClose(e.target.value)}
+                            className="h-9 min-h-9 w-full min-w-0 flex-1 rounded-[7px] border-wa-line bg-white px-2.5 py-1.5 text-[13.5px] text-wa-ink shadow-none sm:h-9"
+                          />
                         </div>
-                      )}
+                      </div>
+
+                      <div
+                        className={cn(
+                          'rounded-wa border-[1.5px] px-4 py-3.5 transition-colors',
+                          worksSaturday ? 'border-wa-brand-500 bg-wa-brand-50' : 'border-wa-line bg-[#fbfcfb]',
+                        )}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-semibold text-wa-ink">Abre aos sábados</span>
+                          <Switch checked={worksSaturday} onCheckedChange={(v) => setWorksSaturday(v === true)} />
+                        </div>
+                        {worksSaturday && (
+                          <div className="mt-3 flex items-center gap-2 text-[13.5px] text-wa-ink-2">
+                            <Input
+                              type="time"
+                              value={saturdayOpen}
+                              onChange={(e) => setSaturdayOpen(e.target.value)}
+                              className="h-9 min-h-9 w-full min-w-0 flex-1 rounded-[7px] border-wa-line bg-white px-2.5 py-1.5 text-[13.5px] text-wa-ink shadow-none sm:h-9"
+                            />
+                            <span className="shrink-0">até</span>
+                            <Input
+                              type="time"
+                              value={saturdayClose}
+                              onChange={(e) => setSaturdayClose(e.target.value)}
+                              className="h-9 min-h-9 w-full min-w-0 flex-1 rounded-[7px] border-wa-line bg-white px-2.5 py-1.5 text-[13.5px] text-wa-ink shadow-none sm:h-9"
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      <div
+                        className={cn(
+                          'rounded-wa border-[1.5px] px-4 py-3.5 transition-colors',
+                          worksSunday ? 'border-wa-brand-500 bg-wa-brand-50' : 'border-wa-line bg-[#fbfcfb]',
+                        )}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-semibold text-wa-ink">Abre aos domingos</span>
+                          <Switch checked={worksSunday} onCheckedChange={(v) => setWorksSunday(v === true)} />
+                        </div>
+                        {worksSunday && (
+                          <div className="mt-3 flex items-center gap-2 text-[13.5px] text-wa-ink-2">
+                            <Input
+                              type="time"
+                              value={sundayOpen}
+                              onChange={(e) => setSundayOpen(e.target.value)}
+                              className="h-9 min-h-9 w-full min-w-0 flex-1 rounded-[7px] border-wa-line bg-white px-2.5 py-1.5 text-[13.5px] text-wa-ink shadow-none sm:h-9"
+                            />
+                            <span className="shrink-0">até</span>
+                            <Input
+                              type="time"
+                              value={sundayClose}
+                              onChange={(e) => setSundayClose(e.target.value)}
+                              className="h-9 min-h-9 w-full min-w-0 flex-1 rounded-[7px] border-wa-line bg-white px-2.5 py-1.5 text-[13.5px] text-wa-ink shadow-none sm:h-9"
+                            />
+                          </div>
+                        )}
+                      </div>
                     </div>
 
-                    <div className="flex gap-3">
+                    <div className="mt-auto flex gap-3 pt-7">
                       {!resuming && (
-                        <Button variant="outline" className="flex-1" onClick={() => setStep(3)}>
-                          <ChevronLeft className="mr-1 size-4" /> Voltar
+                        <Button
+                          variant="outline"
+                          className="flex-1 gap-1.5 rounded-wa border-[1.5px] border-wa-line text-[14.5px] font-bold text-wa-ink"
+                          onClick={() => setStep(3)}
+                        >
+                          <ChevronLeft className="size-3.75" strokeWidth={2.5} /> Voltar
                         </Button>
                       )}
                       <Button
-                        className="flex-1"
-                        onClick={handleStep4Submit}
-                        disabled={saveBusinessHoursBatch.isPending}
+                        className="flex-1 gap-1.5 rounded-wa text-[14.5px] font-bold shadow-[0_8px_18px_-6px_rgba(18,179,127,0.45)]"
+                        onClick={() => validateStep4() && setStep(5)}
                       >
-                        {saveBusinessHoursBatch.isPending ? (
-                          <><Loader2 className="mr-2 size-4 animate-spin" /> Salvando...</>
-                        ) : (
-                          <>Continuar <ChevronRight className="ml-1 size-4" /></>
-                        )}
+                        Continuar <ChevronRight className="size-3.75" strokeWidth={2.5} />
                       </Button>
                     </div>
                   </div>
@@ -660,50 +901,47 @@ export default function RegisterPage() {
 
                 {/* ── Step 5: Tipos de atendimento ── */}
                 {step === 5 && (
-                  <div className="space-y-5">
-                    <div>
-                      <h2 className="text-xl font-bold text-slate-900">Tipos de atendimento</h2>
-                      <p className="mt-1 text-sm text-slate-500">
-                        O &ldquo;cardápio&rdquo; de serviços que aparece na hora de marcar consulta. Já sugerimos os mais comuns — ajuste como preferir.
-                      </p>
-                    </div>
+                  <div className="flex flex-1 flex-col">
+                    <h2 className="text-[23px] font-extrabold tracking-[-0.01em] text-wa-ink">Tipos de atendimento</h2>
+                    <p className="mt-1.5 text-sm leading-normal text-wa-ink-2">
+                      A &ldquo;lista&rdquo; de serviços que aparece na hora de marcar consulta. Já sugerimos os mais comuns. Pode ajustar depois.
+                    </p>
 
-                    <div className="space-y-2">
+                    <div className="mt-7 flex flex-col gap-2.5">
                       {appointmentTypes.map((t, i) => (
                         <div
                           key={t.name}
-                          className="flex items-center gap-3 rounded-lg border border-slate-200 p-3"
+                          className="flex items-center gap-3 rounded-wa border-[1.5px] border-wa-line bg-[#fbfcfb] px-4 py-3"
                         >
                           <Checkbox checked={t.checked} onCheckedChange={() => toggleAppointmentType(i)} />
-                          <span className="flex-1 text-sm font-medium text-slate-700">{t.name}</span>
+                          <span className="flex-1 text-sm font-semibold text-wa-ink">{t.name}</span>
                           <Input
                             type="number"
                             min={5}
                             step={5}
-                            className="w-20 text-center"
                             value={t.duration_minutes}
                             disabled={!t.checked}
                             onChange={(e) => updateAppointmentTypeDuration(i, e.target.value)}
+                            className="h-9 w-13.5 min-h-9 rounded-[7px] border-wa-line bg-white px-2.5 py-1.5 text-center text-[13.5px] text-wa-ink shadow-none sm:h-9"
                           />
-                          <span className="text-xs text-slate-400">min</span>
+                          <span className="text-xs text-wa-ink-3">min</span>
                         </div>
                       ))}
                     </div>
 
-                    <div className="flex gap-3">
-                      <Button variant="outline" className="flex-1" onClick={() => setStep(4)}>
-                        <ChevronLeft className="mr-1 size-4" /> Voltar
+                    <div className="mt-auto flex gap-3 pt-7">
+                      <Button
+                        variant="outline"
+                        className="flex-1 gap-1.5 rounded-wa border-[1.5px] border-wa-line text-[14.5px] font-bold text-wa-ink"
+                        onClick={() => setStep(4)}
+                      >
+                        <ChevronLeft className="size-3.75" strokeWidth={2.5} /> Voltar
                       </Button>
                       <Button
-                        className="flex-1"
-                        onClick={handleStep5Submit}
-                        disabled={createAppointmentType.isPending}
+                        className="flex-1 gap-1.5 rounded-wa text-[14.5px] font-bold shadow-[0_8px_18px_-6px_rgba(18,179,127,0.45)]"
+                        onClick={() => validateStep5() && setStep(6)}
                       >
-                        {createAppointmentType.isPending ? (
-                          <><Loader2 className="mr-2 size-4 animate-spin" /> Salvando...</>
-                        ) : (
-                          <>Continuar <ChevronRight className="ml-1 size-4" /></>
-                        )}
+                        Continuar <ChevronRight className="size-3.75" strokeWidth={2.5} />
                       </Button>
                     </div>
                   </div>
@@ -711,24 +949,58 @@ export default function RegisterPage() {
 
                 {/* ── Step 6: Conclusão ── */}
                 {step === 6 && (
-                  <div className="space-y-5 text-center">
-                    <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-green-100 text-green-600">
-                      <ClipboardList className="size-7" />
-                    </div>
-                    <div>
-                      <h2 className="text-xl font-bold text-slate-900">Tudo pronto!</h2>
-                      <p className="mt-1 text-sm text-slate-500">
-                        Sua clínica já está configurada. Vamos te enviar um código por e-mail para confirmar sua conta — enquanto isso, pode usar o sistema normalmente.
+                  <div className="flex flex-1 flex-col justify-center">
+                    <div className="mx-auto max-w-115 text-center">
+                      <div className="mx-auto mb-4.5 flex size-16 items-center justify-center rounded-2xl bg-wa-brand-50">
+                        <ClipboardCheck className="size-7.5 text-wa-brand-600" />
+                      </div>
+                      <h2 className="text-[23px] font-extrabold tracking-[-0.01em] text-wa-ink">Tudo pronto!</h2>
+                      <p className="mx-auto mt-2.5 text-sm leading-normal text-wa-ink-2">
+                        Revise as etapas anteriores se precisar. Ao confirmar, criamos sua clínica e enviamos um código por e-mail para validar sua conta.
                       </p>
                     </div>
 
-                    <Button className="w-full" onClick={handleFinish} disabled={completeOnboarding.isPending}>
-                      {completeOnboarding.isPending ? (
-                        <><Loader2 className="mr-2 size-4 animate-spin" /> Concluindo...</>
-                      ) : (
-                        'Entrar no sistema'
-                      )}
-                    </Button>
+                    <div className="mx-auto mt-6 flex max-w-115 flex-col gap-2.5 rounded-xl border border-wa-brand-100 bg-wa-brand-50 px-4.5 py-4 text-left">
+                      <div className="text-[13.5px] font-bold text-wa-brand-700">Resumo</div>
+                      <div className="flex items-center gap-2.25 text-[13px] text-wa-ink">
+                        <Building2 className="size-3.75 shrink-0 text-wa-brand-600" />
+                        <span>{clinicName} (@{clinicCode})</span>
+                      </div>
+                      <div className="flex items-center gap-2.25 text-[13px] text-wa-ink">
+                        <User className="size-3.75 shrink-0 text-wa-brand-600" />
+                        <span>{adminName} · {adminEmail}</span>
+                      </div>
+                      <div className="flex items-center gap-2.25 text-[13px] text-wa-ink">
+                        <Calendar className="size-3.75 shrink-0 text-wa-brand-600" />
+                        <span>14 dias de acesso completo gratuito</span>
+                      </div>
+                      <div className="flex items-center gap-2.25 text-[13px] text-wa-ink">
+                        <CreditCard className="size-3.75 shrink-0 text-wa-brand-600" />
+                        <span>Sem cobrança automática. Você escolhe o plano depois</span>
+                      </div>
+                    </div>
+
+                    <div className="mt-8 flex justify-center gap-3">
+                      <Button
+                        variant="outline"
+                        className="gap-1.5 rounded-wa border-[1.5px] border-wa-line px-6 text-[14.5px] font-bold text-wa-ink"
+                        onClick={() => setStep(5)}
+                        disabled={loading}
+                      >
+                        <ChevronLeft className="size-3.75" strokeWidth={2.5} /> Voltar
+                      </Button>
+                      <Button
+                        className="gap-1.5 rounded-wa px-7 text-[14.5px] font-bold shadow-[0_8px_18px_-6px_rgba(18,179,127,0.45)]"
+                        onClick={handleFinish}
+                        disabled={loading}
+                      >
+                        {loading ? (
+                          <><Loader2 className="size-4 animate-spin" /> Entrando...</>
+                        ) : (
+                          'Entrar no sistema'
+                        )}
+                      </Button>
+                    </div>
                   </div>
                 )}
               </>

@@ -1,10 +1,23 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { CheckCircle, XCircle, Clock, Wallet, Plus } from 'lucide-react';
+import {
+  CheckCircle,
+  XCircle,
+  Clock,
+  Wallet,
+  Plus,
+  TrendingUp,
+  TrendingDown,
+  Search,
+  Banknote,
+  QrCode,
+  CreditCard,
+  Barcode,
+  ArrowLeftRight,
+  Download,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Dialog,
@@ -20,17 +33,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import type { FinancialEntry, FinancialEntryStatus, PaymentOption } from '@/app/types/financial-report';
 import {
@@ -39,6 +45,7 @@ import {
   useCreateEntryMutation,
   useExportEntriesMutation,
   useFinancialEntriesQuery,
+  useFinancialEntriesSummaryQuery,
   usePaymentOptionsMutation,
 } from '@/hooks/apiHooks/useFinancialReports';
 
@@ -76,6 +83,26 @@ const METHOD_LABELS: Record<string, string> = {
   credit_installment: 'Crédito parcelado',
   boleto: 'Boleto',
   transfer: 'Transferência',
+};
+
+const METHOD_ICONS: Record<string, React.ElementType> = {
+  cash: Banknote,
+  pix: QrCode,
+  debit: CreditCard,
+  credit_1x: CreditCard,
+  credit_2_6x: CreditCard,
+  credit_7_12x: CreditCard,
+  credit_installment: CreditCard,
+  boleto: Barcode,
+  transfer: ArrowLeftRight,
+};
+
+/** "Sugerido via X" — de onde o lançamento automático veio. */
+const ORIGIN_LABELS: Record<string, string> = {
+  consultation: 'Sugerido via agenda',
+  hospitalization: 'Sugerido via internação',
+  budget: 'Sugerido via orçamento',
+  product_sale: 'Sugerido via venda',
 };
 
 // Tipos de lançamento manual e categorias por tipo.
@@ -125,6 +152,20 @@ function fmt(n: number | null | undefined) {
   return Number(n ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
+function fmtCompact(n: number | null | undefined) {
+  return Number(n ?? 0).toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    maximumFractionDigits: 0,
+  });
+}
+
+function fmtPct(n: number | null) {
+  if (n === null) return null;
+  const abs = Math.round(Math.abs(n));
+  return `${n >= 0 ? '↑' : '↓'} ${abs}% vs. período anterior`;
+}
+
 function methodLabel(m: string) {
   return METHOD_LABELS[m] ?? m;
 }
@@ -139,12 +180,6 @@ function monthStartISO() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
 }
 
-const STATUS_TABS: { key: Status; label: string }[] = [
-  { key: 'suggested', label: 'Sugeridos' },
-  { key: 'confirmed', label: 'Confirmados' },
-  { key: 'cancelled', label: 'Cancelados' },
-];
-
 const EMPTY_FORM = {
   type: 'expense',
   category: '',
@@ -155,6 +190,159 @@ const EMPTY_FORM = {
   payment_source: 'particular',
   description: '',
 };
+
+// ─── Primitivos que faltavam (seguindo os tokens wa-* já usados no app) ──────
+
+/** Card de resumo — chip de ícone + rótulo + valor + variação. O card
+ * "result" (Resultado do período) ganha o tratamento sólido em destaque. */
+function StatCard({
+  label,
+  value,
+  icon: Icon,
+  delta,
+  deltaTone,
+  tone,
+  loading,
+}: {
+  label: string;
+  value: string;
+  icon: React.ElementType;
+  delta?: string | null;
+  deltaTone?: 'in' | 'out' | 'neutral';
+  tone: 'in' | 'out' | 'warn' | 'result';
+  loading: boolean;
+}) {
+  if (tone === 'result') {
+    return (
+      <div className="flex flex-col gap-2.5 rounded-xl bg-wa-brand-600 px-5 py-4.5">
+        <div className="flex items-center justify-between">
+          <span className="text-[13px] font-medium text-white/85">{label}</span>
+          <div className="flex size-7.5 shrink-0 items-center justify-center rounded-lg bg-white/16">
+            <Icon className="size-3.75 text-white" />
+          </div>
+        </div>
+        {loading ? (
+          <Skeleton className="h-7.5 w-28 bg-white/20" />
+        ) : (
+          <span className="text-[26px] font-extrabold tracking-[-0.01em] text-white">{value}</span>
+        )}
+        {delta && <span className="text-xs font-semibold text-wa-brand-100">{delta}</span>}
+      </div>
+    );
+  }
+
+  const chip = tone === 'in' ? 'bg-wa-in-bg' : tone === 'out' ? 'bg-wa-out-bg' : 'bg-wa-warn-bg';
+  const iconColor = tone === 'in' ? 'text-wa-in' : tone === 'out' ? 'text-wa-out' : 'text-wa-warn';
+  const deltaColor =
+    deltaTone === 'in' ? 'text-wa-in' : deltaTone === 'out' ? 'text-wa-out' : 'text-wa-ink-3';
+
+  return (
+    <div className="flex flex-col gap-2.5 rounded-xl border border-wa-line bg-white px-5 py-4.5">
+      <div className="flex items-center justify-between">
+        <span className="text-[13px] font-medium text-wa-ink-2">{label}</span>
+        <div className={cn('flex size-7.5 shrink-0 items-center justify-center rounded-lg', chip)}>
+          <Icon className={cn('size-3.75', iconColor)} />
+        </div>
+      </div>
+      {loading ? (
+        <Skeleton className="h-7.5 w-24" />
+      ) : (
+        <span className="text-[26px] font-extrabold tracking-[-0.01em] text-wa-ink">{value}</span>
+      )}
+      {delta && <span className={cn('text-xs font-semibold', deltaColor)}>{delta}</span>}
+    </div>
+  );
+}
+
+/** Mini-card compacto (scroll horizontal no mobile) — mesma info do StatCard, sem delta. */
+function MiniStat({
+  label,
+  value,
+  icon: Icon,
+  tone,
+  loading,
+}: {
+  label: string;
+  value: string;
+  icon: React.ElementType;
+  tone: 'in' | 'out' | 'warn';
+  loading: boolean;
+}) {
+  const chip = tone === 'in' ? 'bg-wa-in-bg' : tone === 'out' ? 'bg-wa-out-bg' : 'bg-wa-warn-bg';
+  const iconColor = tone === 'in' ? 'text-wa-in' : tone === 'out' ? 'text-wa-out' : 'text-wa-warn';
+  return (
+    <div className="flex w-37.5 shrink-0 flex-col gap-2 rounded-xl border border-wa-line bg-white px-3.5 py-3.25">
+      <div className="flex items-center justify-between">
+        <span className="text-[11.5px] font-medium text-wa-ink-2">{label}</span>
+        <div className={cn('flex size-6.5 shrink-0 items-center justify-center rounded-[7px]', chip)}>
+          <Icon className={cn('size-3.25', iconColor)} />
+        </div>
+      </div>
+      {loading ? <Skeleton className="h-5.5 w-16" /> : <span className="text-lg font-extrabold text-wa-ink">{value}</span>}
+    </div>
+  );
+}
+
+/** Badge de categoria — verde para receita, vermelho para custo/despesa. */
+function CategoryBadge({ category, type }: { category: string; type: string }) {
+  const isIn = type === 'revenue';
+  return (
+    <span
+      className={cn(
+        'inline-flex w-fit items-center rounded-full px-2.5 py-1 text-xs font-semibold whitespace-nowrap',
+        isIn ? 'bg-wa-in-bg text-wa-in' : 'bg-wa-out-bg text-wa-out',
+      )}
+    >
+      {CATEGORY_LABELS[category] ?? category}
+    </span>
+  );
+}
+
+/** Valor com sinal e cor conforme o tipo (entrada/saída). */
+function EntryAmount({ entry, status, className }: { entry: FinancialEntry; status: Status; className?: string }) {
+  const isIn = entry.type === 'revenue';
+  const amount = status === 'confirmed' ? entry.net_amount : (entry.base_amount ?? entry.gross_amount);
+  return (
+    <span className={cn('font-bold tabular-nums whitespace-nowrap', isIn ? 'text-wa-in' : 'text-wa-out', className)}>
+      {isIn ? '+ ' : '− '}
+      {fmt(amount)}
+    </span>
+  );
+}
+
+/** Ícone + rótulo da forma de pagamento. */
+function PaymentMethodTag({ method }: { method: string }) {
+  const Icon = METHOD_ICONS[method] ?? Banknote;
+  return (
+    <span className="inline-flex items-center gap-1.5 text-[12.5px] text-wa-ink-2">
+      <Icon className="size-3.5 shrink-0" />
+      {methodLabel(method)}
+    </span>
+  );
+}
+
+/** Pill "Confirmar" — dispara o dialog de confirmação já existente. */
+function ConfirmButton({ onClick, full }: { onClick: () => void; full?: boolean }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'inline-flex items-center justify-center gap-1.5 rounded-[8px] border border-wa-brand-100 bg-wa-brand-50 px-2.75 py-1.5 text-xs font-semibold text-wa-brand-600 transition-colors hover:bg-wa-brand-100',
+        full && 'w-full py-2.25 text-[12.5px]',
+      )}
+    >
+      <CheckCircle className="size-3.5" />
+      Confirmar
+    </button>
+  );
+}
+
+const STATUS_TABS: { key: Status; label: string; icon: React.ElementType }[] = [
+  { key: 'suggested', label: 'Sugeridos', icon: Clock },
+  { key: 'confirmed', label: 'Confirmados', icon: CheckCircle },
+  { key: 'cancelled', label: 'Cancelados', icon: XCircle },
+];
 
 export default function LancamentosPage() {
   const [status, setStatus] = useState<Status>('suggested');
@@ -196,6 +384,8 @@ export default function LancamentosPage() {
   const { data: page, isLoading: loading } = useFinancialEntriesQuery(filters);
   const entries = page?.rows ?? [];
   const total = page?.count ?? 0;
+
+  const { data: summary, isLoading: summaryLoading } = useFinancialEntriesSummaryQuery(fromDate, toDate);
 
   const clearFilters = () => {
     setFromDate(monthStartISO());
@@ -339,61 +529,155 @@ export default function LancamentosPage() {
     }
   };
 
+  const emptyMessage =
+    status === 'suggested' ? 'Nenhum lançamento sugerido.' : status === 'confirmed' ? 'Nenhum lançamento confirmado.' : 'Nenhum lançamento cancelado.';
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 pb-6">
+      {/* ── Header ── */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Lançamentos Financeiros</h1>
-          <p className="text-sm text-muted-foreground">
+          <h1 className="text-2xl font-bold text-wa-ink">Lançamentos Financeiros</h1>
+          <p className="mt-1 text-sm text-wa-ink-2">
             Lançamentos sugeridos automaticamente; confirme a forma de pagamento usada para registrar o valor real.
           </p>
         </div>
-        <Button onClick={openCreate}>
-          <Plus className="mr-2 size-4" />
+        <Button
+          onClick={openCreate}
+          className="hidden shrink-0 gap-1.5 rounded-wa font-bold shadow-[0_8px_18px_-6px_rgba(18,179,127,0.45)] md:inline-flex"
+        >
+          <Plus className="size-4" />
           Lançamento
         </Button>
       </div>
 
-      <div className="flex gap-2">
-        {STATUS_TABS.map((tab) => (
-          <Button
-            key={tab.key}
-            variant={status === tab.key ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setStatus(tab.key)}
-          >
-            {tab.key === 'suggested' && <Clock className="mr-2 size-4" />}
-            {tab.key === 'confirmed' && <CheckCircle className="mr-2 size-4" />}
-            {tab.key === 'cancelled' && <XCircle className="mr-2 size-4" />}
-            {tab.label}
-          </Button>
-        ))}
+      {/* ── Mobile: hero (Resultado) + mini-cards em scroll horizontal ── */}
+      <div className="flex flex-col gap-3 md:hidden">
+        <StatCard
+          tone="result"
+          label="Resultado do período"
+          value={fmt(summary?.result)}
+          delta={fmtPct(summary?.result_diff_pct ?? null)}
+          icon={Wallet}
+          loading={summaryLoading}
+        />
+        <div className="-mx-4 flex gap-2.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <MiniStat tone="in" label="Receitas" value={fmtCompact(summary?.revenue)} icon={TrendingUp} loading={summaryLoading} />
+          <MiniStat tone="out" label="Despesas" value={fmtCompact(summary?.expense)} icon={TrendingDown} loading={summaryLoading} />
+          <MiniStat tone="warn" label="Pendentes" value={String(summary?.pending_count ?? 0)} icon={Clock} loading={summaryLoading} />
+        </div>
       </div>
 
-      {/* Filtros avançados */}
-      <div className="flex flex-wrap items-end gap-3">
-        <div>
-          <Label className="text-xs text-muted-foreground">De</Label>
+      {/* ── Desktop: 4 cards de resumo ── */}
+      <div className="hidden gap-3.5 md:grid md:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          tone="in"
+          label="Receitas do período"
+          value={fmt(summary?.revenue)}
+          delta={fmtPct(summary?.revenue_diff_pct ?? null)}
+          deltaTone="in"
+          icon={TrendingUp}
+          loading={summaryLoading}
+        />
+        <StatCard
+          tone="out"
+          label="Despesas do período"
+          value={fmt(summary?.expense)}
+          delta={fmtPct(summary?.expense_diff_pct ?? null)}
+          deltaTone="out"
+          icon={TrendingDown}
+          loading={summaryLoading}
+        />
+        <StatCard
+          tone="warn"
+          label="Pendentes de confirmação"
+          value={String(summary?.pending_count ?? 0)}
+          delta={summary ? `${fmt(summary.pending_amount)} em sugestões` : undefined}
+          deltaTone="neutral"
+          icon={Clock}
+          loading={summaryLoading}
+        />
+        <StatCard
+          tone="result"
+          label="Resultado do período"
+          value={fmt(summary?.result)}
+          delta={fmtPct(summary?.result_diff_pct ?? null)}
+          icon={Wallet}
+          loading={summaryLoading}
+        />
+      </div>
+
+      {/* ── Tabs ── */}
+      <div className="flex gap-2 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {STATUS_TABS.map((tab) => {
+          const active = status === tab.key;
+          return (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => setStatus(tab.key)}
+              className={cn(
+                'inline-flex shrink-0 items-center gap-1.75 rounded-wa border px-4 py-2.25 text-[13.5px] font-semibold transition-colors',
+                active
+                  ? 'border-wa-brand-600 bg-wa-brand-600 text-white'
+                  : 'border-wa-line bg-white text-wa-ink-2 hover:bg-wa-line-2',
+              )}
+            >
+              <tab.icon className="size-3.75" />
+              {tab.label}
+              {tab.key === 'suggested' && summary && summary.pending_count > 0 && (
+                <span
+                  className={cn(
+                    'rounded-full px-1.75 py-0.25 text-[11.5px] font-bold',
+                    active ? 'bg-white/25 text-white' : 'bg-wa-line-2 text-wa-ink-2',
+                  )}
+                >
+                  {summary.pending_count}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ── Busca (mobile) ── */}
+      <div className="md:hidden">
+        <div className="flex items-center gap-2 rounded-wa border border-wa-line bg-white px-3.5 py-2.5">
+          <Search className="size-3.75 shrink-0 text-wa-ink-3" />
+          <input
+            type="text"
+            value={search}
+            onChange={(ev) => setSearch(ev.target.value)}
+            placeholder="Buscar na descrição..."
+            className="w-full border-none bg-transparent text-[13px] text-wa-ink outline-none placeholder:text-wa-ink-3"
+          />
+        </div>
+      </div>
+
+      {/* ── Filtros (desktop) ── */}
+      <div className="hidden flex-wrap items-end gap-3.5 rounded-xl border border-wa-line bg-white p-4.5 md:flex">
+        <div className="flex flex-col gap-1.5">
+          <Label className="text-xs font-semibold text-wa-ink-2">De</Label>
           <Input
             type="date"
-            className="w-[150px]"
+            className="h-9.5 w-37.5 rounded-[9px] border-wa-line text-[13.5px]"
             value={fromDate}
             onChange={(ev) => setFromDate(ev.target.value)}
           />
         </div>
-        <div>
-          <Label className="text-xs text-muted-foreground">Até</Label>
+        <div className="flex flex-col gap-1.5">
+          <Label className="text-xs font-semibold text-wa-ink-2">Até</Label>
           <Input
             type="date"
-            className="w-[150px]"
+            className="h-9.5 w-37.5 rounded-[9px] border-wa-line text-[13.5px]"
             value={toDate}
             onChange={(ev) => setToDate(ev.target.value)}
           />
         </div>
-        <div>
-          <Label className="text-xs text-muted-foreground">Tipo</Label>
+        <div className="flex flex-col gap-1.5">
+          <Label className="text-xs font-semibold text-wa-ink-2">Tipo</Label>
           <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="w-[170px]">
+            <SelectTrigger className="h-9.5 w-42.5 rounded-[9px] border-wa-line text-[13.5px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -404,10 +688,10 @@ export default function LancamentosPage() {
             </SelectContent>
           </Select>
         </div>
-        <div>
-          <Label className="text-xs text-muted-foreground">Categoria</Label>
+        <div className="flex flex-col gap-1.5">
+          <Label className="text-xs font-semibold text-wa-ink-2">Categoria</Label>
           <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-            <SelectTrigger className="w-[190px]">
+            <SelectTrigger className="h-9.5 w-47.5 rounded-[9px] border-wa-line text-[13.5px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -418,129 +702,190 @@ export default function LancamentosPage() {
             </SelectContent>
           </Select>
         </div>
-        <div className="min-w-[200px] flex-1">
-          <Label className="text-xs text-muted-foreground">Busca</Label>
+        <div className="flex min-w-50 flex-1 flex-col gap-1.5">
+          <Label className="text-xs font-semibold text-wa-ink-2">Busca</Label>
           <Input
             type="text"
+            className="h-9.5 rounded-[9px] border-wa-line text-[13.5px]"
             placeholder="Buscar na descrição..."
             value={search}
             onChange={(ev) => setSearch(ev.target.value)}
           />
         </div>
-        <Button variant="ghost" size="sm" onClick={clearFilters}>
+        <button
+          type="button"
+          onClick={clearFilters}
+          className="pb-2.25 text-[13px] font-semibold whitespace-nowrap text-wa-ink-2 hover:text-wa-ink"
+        >
           Limpar filtros
-        </Button>
-        <Button variant="outline" size="sm" onClick={exportList}>
-          ↓ Exportar (.xlsx)
-        </Button>
+        </button>
+        <button
+          type="button"
+          onClick={exportList}
+          className="inline-flex h-9.5 items-center gap-1.75 rounded-[9px] border border-wa-line bg-white px-3.5 text-[13px] font-semibold whitespace-nowrap text-wa-ink hover:bg-wa-line-2"
+        >
+          <Download className="size-3.5" />
+          Exportar (.xlsx)
+        </button>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm font-medium">
-            {STATUS_TABS.find((t) => t.key === status)?.label}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="space-y-2">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Skeleton key={i} className="h-10 w-full" />
-              ))}
-            </div>
-          ) : entries.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">
-              Nenhum lançamento {status === 'suggested' ? 'sugerido' : status === 'confirmed' ? 'confirmado' : 'cancelado'}.
-            </p>
-          ) : (
-            <div className="overflow-x-auto">
-            <Table className="min-w-full border-collapse bg-white text-sm">
-              <TableHeader>
-                <TableRow className="border-b border-gray-300 h-15">
-                  <TableHead>Data</TableHead>
-                  <TableHead>Categoria</TableHead>
-                  <TableHead>Descrição</TableHead>
-                  <TableHead className="text-right">
-                    {status === 'confirmed' ? 'Recebido' : 'Valor à vista'}
-                  </TableHead>
-                  {status === 'confirmed' && <TableHead>Forma</TableHead>}
-                  <TableHead className="text-right">Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {entries.map((e) => (
-                  <TableRow className="border-b border-gray-300 h-15" key={e.id}>
-                    <TableCell>{new Date(e.entry_date).toLocaleDateString('pt-BR')}</TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">{CATEGORY_LABELS[e.category] ?? e.category}</Badge>
-                    </TableCell>
-                    <TableCell className="max-w-[280px] truncate">{e.description ?? '—'}</TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {status === 'confirmed' ? fmt(e.net_amount) : fmt(e.base_amount ?? e.gross_amount)}
-                    </TableCell>
-                    {status === 'confirmed' && <TableCell>{methodLabel(e.payment_method)}</TableCell>}
-                    <TableCell className="text-right">
-                      {status === 'suggested' ? (
-                        <div className="flex items-center justify-end gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="p-0"
-                            title="Confirmar"
-                            aria-label="Confirmar"
-                            onClick={() => openConfirm(e)}
-                          >
-                            <CheckCircle className="size-4 text-green-600" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="p-0"
-                            title="Cancelar"
-                            aria-label="Cancelar"
-                            onClick={() => cancelEntry(e)}
-                          >
-                            <XCircle className="size-4" />
-                          </Button>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">—</span>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-            </div>
-          )}
+      {/* ── Desktop: tabela ── */}
+      <div className="hidden overflow-hidden rounded-xl border border-wa-line bg-white md:block">
+        <div className="flex items-center justify-between border-b border-wa-line-2 px-5 py-4">
+          <h2 className="text-[15px] font-bold text-wa-ink">{STATUS_TABS.find((t) => t.key === status)?.label}</h2>
+          <span className="rounded-full bg-wa-line-2 px-2.25 py-0.5 text-[12.5px] text-wa-ink-3">
+            {total} lançamento{total === 1 ? '' : 's'}
+          </span>
+        </div>
 
-          {!loading && total > 0 && (
-            <div className="mt-3 flex items-center justify-between text-sm text-muted-foreground">
-              <span>
-                Exibindo {entries.length} de {total} lançamento{total === 1 ? '' : 's'}
-              </span>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={offset === 0}
-                  onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))}
-                >
-                  Anterior
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={offset + PAGE_SIZE >= total}
-                  onClick={() => setOffset(offset + PAGE_SIZE)}
-                >
-                  Próximo
-                </Button>
-              </div>
+        {loading ? (
+          <div className="space-y-2 p-5">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="h-10 w-full" />
+            ))}
+          </div>
+        ) : entries.length === 0 ? (
+          <p className="py-10 text-center text-sm text-wa-ink-3">{emptyMessage}</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr>
+                  <th className="border-b border-wa-line-2 px-5 py-2.75 text-left text-xs font-semibold tracking-wide text-wa-ink-3 uppercase">Descrição</th>
+                  <th className="border-b border-wa-line-2 px-5 py-2.75 text-left text-xs font-semibold tracking-wide text-wa-ink-3 uppercase">Categoria</th>
+                  <th className="border-b border-wa-line-2 px-5 py-2.75 text-left text-xs font-semibold tracking-wide text-wa-ink-3 uppercase">Data</th>
+                  {status === 'confirmed' && (
+                    <th className="border-b border-wa-line-2 px-5 py-2.75 text-left text-xs font-semibold tracking-wide text-wa-ink-3 uppercase">Forma de pagamento</th>
+                  )}
+                  <th className="border-b border-wa-line-2 px-5 py-2.75 text-right text-xs font-semibold tracking-wide text-wa-ink-3 uppercase">
+                    {status === 'confirmed' ? 'Recebido' : 'Valor à vista'}
+                  </th>
+                  <th className="border-b border-wa-line-2 px-5 py-2.75" />
+                </tr>
+              </thead>
+              <tbody>
+                {entries.map((e) => {
+                  const origin = e.reference_type ? ORIGIN_LABELS[e.reference_type] : null;
+                  return (
+                    <tr key={e.id} className="last:[&>td]:border-b-0">
+                      <td className="border-b border-wa-line-2 px-5 py-3.5">
+                        <div className="text-[13.5px] font-semibold text-wa-ink">{e.description ?? '—'}</div>
+                        {origin && <div className="mt-0.5 text-xs text-wa-ink-3">{origin}</div>}
+                      </td>
+                      <td className="border-b border-wa-line-2 px-5 py-3.5">
+                        <CategoryBadge category={e.category} type={e.type} />
+                      </td>
+                      <td className="border-b border-wa-line-2 px-5 py-3.5 text-[13.5px] text-wa-ink">
+                        {new Date(e.entry_date).toLocaleDateString('pt-BR')}
+                      </td>
+                      {status === 'confirmed' && (
+                        <td className="border-b border-wa-line-2 px-5 py-3.5">
+                          <PaymentMethodTag method={e.payment_method} />
+                        </td>
+                      )}
+                      <td className="border-b border-wa-line-2 px-5 py-3.5 text-right">
+                        <EntryAmount entry={e} status={status} />
+                      </td>
+                      <td className="border-b border-wa-line-2 px-5 py-3.5 text-right">
+                        {status === 'suggested' ? (
+                          <div className="flex items-center justify-end gap-2">
+                            <ConfirmButton onClick={() => openConfirm(e)} />
+                            <button
+                              type="button"
+                              onClick={() => cancelEntry(e)}
+                              title="Cancelar"
+                              aria-label="Cancelar"
+                              className="text-wa-ink-3 transition-colors hover:text-wa-out"
+                            >
+                              <XCircle className="size-4" />
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-wa-ink-3">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {!loading && total > 0 && (
+          <div className="flex items-center justify-between border-t border-wa-line-2 px-5 py-3.5 text-sm text-wa-ink-2">
+            <span>
+              Exibindo {entries.length} de {total} lançamento{total === 1 ? '' : 's'}
+            </span>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))}>
+                Anterior
+              </Button>
+              <Button variant="outline" size="sm" disabled={offset + PAGE_SIZE >= total} onClick={() => setOffset(offset + PAGE_SIZE)}>
+                Próximo
+              </Button>
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </div>
+        )}
+      </div>
+
+      {/* ── Mobile: lista de cards ── */}
+      <div className="flex flex-col gap-2.5 pb-16 md:hidden">
+        {loading ? (
+          Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)
+        ) : entries.length === 0 ? (
+          <p className="py-10 text-center text-sm text-wa-ink-3">{emptyMessage}</p>
+        ) : (
+          entries.map((e) => {
+            const origin = e.reference_type ? ORIGIN_LABELS[e.reference_type] : null;
+            return (
+              <div key={e.id} className="rounded-xl border border-wa-line bg-white p-3.5">
+                <div className="flex items-start justify-between gap-2.5">
+                  <div className="min-w-0">
+                    <div className="truncate text-[13.5px] font-bold text-wa-ink">{e.description ?? '—'}</div>
+                    <div className="mt-0.5 truncate text-[11.5px] text-wa-ink-3">
+                      {origin ?? new Date(e.entry_date).toLocaleDateString('pt-BR')}
+                      {origin ? ` · ${new Date(e.entry_date).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}` : ''}
+                    </div>
+                  </div>
+                  <EntryAmount entry={e} status={status} className="text-[15px]" />
+                </div>
+                <div className="mt-2.5 flex flex-wrap items-center gap-2.5">
+                  <CategoryBadge category={e.category} type={e.type} />
+                  <PaymentMethodTag method={e.payment_method} />
+                </div>
+                {status === 'suggested' ? (
+                  <ConfirmButton full onClick={() => openConfirm(e)} />
+                ) : null}
+              </div>
+            );
+          })
+        )}
+
+        {!loading && total > PAGE_SIZE && (
+          <div className="flex items-center justify-between pt-1 text-sm text-wa-ink-2">
+            <span>Exibindo {entries.length} de {total}</span>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))}>
+                Anterior
+              </Button>
+              <Button variant="outline" size="sm" disabled={offset + PAGE_SIZE >= total} onClick={() => setOffset(offset + PAGE_SIZE)}>
+                Próximo
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── FAB (mobile) — no desktop o botão do header já cobre isso ── */}
+      <button
+        type="button"
+        onClick={openCreate}
+        className="fixed right-5 bottom-20 z-30 flex items-center gap-1.75 rounded-full bg-wa-brand-600 px-5 py-3.25 text-[13.5px] font-bold text-white shadow-[0_8px_20px_rgba(18,179,127,0.35)] transition-colors hover:bg-wa-brand-700 md:hidden"
+      >
+        <Plus className="size-4" />
+        Lançamento
+      </button>
 
       <Dialog open={!!confirmEntry} onOpenChange={(o) => !o && setConfirmEntry(null)}>
         <DialogContent className="max-w-lg">

@@ -1,0 +1,191 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../../styles.css">
+<style>
+*{margin:0;box-sizing:border-box;font-family:var(--font-sans)}
+body{background:#eef2f0;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px}
+.shell{width:1100px;height:720px;display:flex;background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 30px 60px -20px rgba(10,40,25,.25)}
+.side{width:380px;background:linear-gradient(160deg,var(--brand-600),var(--brand-700));position:relative;padding:44px 40px;display:flex;flex-direction:column;color:#fff;overflow:hidden}
+.side::before{content:"";position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.09) 1.5px,transparent 1.5px);background-size:22px 22px;opacity:.5}
+.side::after{content:"";position:absolute;width:340px;height:340px;border-radius:50%;background:rgba(255,255,255,.08);right:-140px;bottom:-140px}
+.side>*{position:relative;z-index:1}
+.brand{display:flex;align-items:center;gap:10px;font-size:19px;font-weight:800;letter-spacing:-0.01em}
+.brand svg{width:26px;height:26px}
+.tagline{font-size:13.5px;color:rgba(255,255,255,.75);margin-top:5px}
+.hero-copy{margin-top:auto}
+.badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);padding:5px 12px;border-radius:999px;font-size:12px;font-weight:600;margin-bottom:18px}
+h1.hero{font-size:32px;font-weight:800;line-height:1.15;letter-spacing:-0.02em}
+.hero-sub{font-size:14.5px;color:rgba(255,255,255,.8);margin-top:12px;line-height:1.5;max-width:300px}
+.feats{list-style:none;margin-top:28px;display:flex;flex-direction:column;gap:14px}
+.feats li{display:flex;align-items:center;gap:12px;font-size:14px;font-weight:500}
+.feats .ic{width:32px;height:32px;border-radius:9px;background:rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.feats svg{width:16px;height:16px}
+.login-link{margin-top:32px;font-size:13px;color:rgba(255,255,255,.75)}
+.login-link a{color:#fff;font-weight:700;text-decoration:underline}
+.form-area{flex:1;padding:40px 56px;display:flex;flex-direction:column;overflow-y:auto}
+.stepper{display:flex;align-items:flex-start;margin-bottom:36px}
+.step{display:flex;flex-direction:column;align-items:center;gap:7px;flex:1;position:relative}
+.step .dot{width:30px;height:30px;border-radius:50%;background:#fff;border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:700;color:var(--ink-3);transition:all .2s}
+.step .lbl{font-size:11px;font-weight:600;color:var(--ink-3);white-space:nowrap}
+.step.done .dot{background:var(--brand-600);border-color:var(--brand-600);color:#fff}
+.step.active .dot{background:var(--brand-600);border-color:var(--brand-600);color:#fff;box-shadow:0 0 0 4px var(--brand-50)}
+.step.active .lbl,.step.done .lbl{color:var(--brand-700)}
+.step .bar{position:absolute;top:15px;left:calc(50% + 15px);width:calc(100% - 30px);height:2px;background:var(--line);z-index:-1}
+.step.done .bar{background:var(--brand-600)}
+.step:last-child .bar{display:none}
+h2.title{font-size:23px;font-weight:800;color:var(--ink);letter-spacing:-0.01em}
+.subtitle{font-size:14px;color:var(--ink-2);margin-top:6px;line-height:1.5;max-width:460px}
+.fields{margin-top:28px;display:flex;flex-direction:column;gap:20px;max-width:460px}
+label{font-size:13px;font-weight:600;color:var(--ink);display:flex;gap:4px;margin-bottom:8px}
+label .req{color:var(--brand-600)}
+label .opt{font-weight:400;color:var(--ink-3)}
+.input{display:flex;align-items:center;gap:10px;border:1.5px solid var(--line);border-radius:10px;padding:12px 14px;background:#fbfcfb;transition:border-color .15s,box-shadow .15s}
+.input:focus-within{border-color:var(--brand-500);box-shadow:0 0 0 3px var(--brand-50);background:#fff}
+.input svg{width:16px;height:16px;color:var(--ink-3);flex-shrink:0}
+.input input{border:none;outline:none;background:transparent;font-size:14.5px;color:var(--ink);width:100%;font-family:var(--font-sans)}
+.hint{font-size:12px;color:var(--ink-3);margin-top:6px}
+.summary{background:var(--brand-50);border:1px solid var(--brand-100);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:10px;text-align:left}
+.summary .h{font-size:13.5px;font-weight:700;color:var(--brand-700)}
+.summary .row{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--ink)}
+.summary .row svg{width:15px;height:15px;color:var(--brand-600);flex-shrink:0}
+.check-row{display:flex;align-items:center;justify-content:space-between;border:1.5px solid var(--line);border-radius:10px;padding:14px 16px;background:#fbfcfb}
+.check-row.on{border-color:var(--brand-500);background:var(--brand-50)}
+.check-row .lbl2{font-size:14px;font-weight:600;color:var(--ink)}
+.switch{width:38px;height:22px;border-radius:999px;background:var(--line);position:relative;cursor:pointer;flex-shrink:0}
+.switch.on{background:var(--brand-600)}
+.switch::after{content:"";position:absolute;width:16px;height:16px;border-radius:50%;background:#fff;top:3px;left:3px;transition:left .15s}
+.switch.on::after{left:19px}
+.time-row{display:flex;align-items:center;gap:12px;border:1.5px solid var(--line);border-radius:10px;padding:14px 16px;background:#fbfcfb}
+.time-row svg{width:16px;height:16px;color:var(--brand-600)}
+.time-row .lbl2{font-size:14px;font-weight:600;color:var(--ink);flex-shrink:0}
+.time-in{display:flex;align-items:center;gap:8px;margin-left:auto;font-size:13.5px;color:var(--ink-2)}
+.time-in input{border:1px solid var(--line);border-radius:7px;padding:6px 9px;font-size:13.5px;font-family:var(--font-sans);color:var(--ink);width:78px}
+.svc-row{display:flex;align-items:center;gap:12px;border:1.5px solid var(--line);border-radius:10px;padding:12px 16px;background:#fbfcfb}
+.svc-row input[type=checkbox]{width:18px;height:18px;accent-color:var(--brand-600)}
+.svc-row .lbl2{font-size:14px;font-weight:600;color:var(--ink);flex:1}
+.svc-row .dur{border:1px solid var(--line);border-radius:7px;padding:6px 10px;width:54px;font-size:13.5px;text-align:center;font-family:var(--font-sans)}
+.svc-row .unit{font-size:12.5px;color:var(--ink-3)}
+.done-wrap{max-width:460px;text-align:center;margin:20px auto 0}
+.done-ic{width:64px;height:64px;border-radius:16px;background:var(--brand-50);display:flex;align-items:center;justify-content:center;margin:0 auto 18px}
+.done-ic svg{width:30px;height:30px;color:var(--brand-600)}
+.actions{margin-top:auto;padding-top:28px;display:flex;gap:12px;max-width:460px}
+.btn{border:none;border-radius:10px;font-size:14.5px;font-weight:700;padding:13px 22px;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;font-family:var(--font-sans);transition:filter .15s}
+.btn:hover{filter:brightness(.97)}
+.btn-primary{background:var(--brand-600);color:#fff;flex:1;box-shadow:0 8px 18px -6px rgba(14,158,110,.45)}
+.btn-secondary{background:#fff;color:var(--ink);border:1.5px solid var(--line)}
+.legal{font-size:12px;color:var(--ink-3);margin-top:16px;max-width:460px;line-height:1.5}
+.legal a{color:var(--brand-600);font-weight:600}
+.step-body{display:none}
+.step-body.active{display:flex;flex-direction:column;flex:1}
+</style></head><body>
+<div class="shell">
+<div class="side">
+<div class="brand"><svg viewBox="0 0 24 24" fill="#fff"><circle cx="7" cy="7" r="4.2"/><circle cx="17" cy="7" r="4.2"/><circle cx="7" cy="17" r="4.2"/><circle cx="17" cy="17" r="4.2"/></svg>NixVetApp</div>
+<div class="tagline">Software de Gestão Veterinária</div>
+<div class="hero-copy">
+<div class="badge"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>14 dias grátis, sem cartão</div>
+<h1 class="hero">Configure sua clínica em minutos</h1>
+<div class="hero-sub">Tudo que sua clínica precisa em um só lugar. Comece a atender ainda hoje.</div>
+<ul class="feats">
+<li><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M12 2v20M2 12h20"/></svg></div>Prontuário eletrônico completo</li>
+<li><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg></div>Agenda e lembretes automáticos</li>
+<li><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M21 11.5a8.4 8.4 0 0 1-8.9 8.4 8.5 8.5 0 0 1-4.3-1.1L3 20l1.2-4.8A8.4 8.4 0 1 1 21 11.5z"/></svg></div>WhatsApp integrado</li>
+<li><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M12 2a5 5 0 0 0-5 5c0 2 1 3 1 5v2h8v-2c0-2 1-3 1-5a5 5 0 0 0-5-5z"/><path d="M9 19h6M10 22h4"/></svg></div>IA clínica e chatbot inteligente</li>
+</ul>
+</div>
+<div class="login-link">Já tem conta? <a href="#">Fazer login</a></div>
+</div>
+
+<div class="form-area">
+<div class="stepper" id="stepper"></div>
+
+<div class="step-body active" data-step="0">
+<h2 class="title">Dados da clínica</h2>
+<div class="subtitle">Como sua clínica aparecerá no sistema.</div>
+<div class="fields">
+<div><label>Nome da clínica <span class="req">*</span></label><div class="input"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/></svg><input value="testador 01"></div></div>
+<div><label>Código de acesso <span class="req">*</span><span class="opt">(usado no login)</span></label><div class="input"><span style="color:var(--ink-3);font-weight:600">@</span><input value="testador01"></div><div class="hint">Apenas letras minúsculas e números, sem espaços.</div></div>
+</div>
+<div class="actions"><button class="btn btn-primary" onclick="go(1)">Continuar<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M9 6l6 6-6 6"/></svg></button></div>
+</div>
+
+<div class="step-body" data-step="1">
+<h2 class="title">Dados do responsável</h2>
+<div class="subtitle">Será a conta administradora da clínica.</div>
+<div class="fields">
+<div><label>Nome completo <span class="req">*</span></label><div class="input"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg><input value="testador 02"></div></div>
+<div><label>E-mail <span class="req">*</span></label><div class="input"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg><input value="testador@teste.com"></div></div>
+<div><label>Senha <span class="req">*</span></label><div class="input"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><input type="password" value="12345678"></div></div>
+<div><label>Confirmar senha <span class="req">*</span></label><div class="input"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><input type="password" value="12345678"></div></div>
+</div>
+<div class="actions"><button class="btn btn-secondary" onclick="go(0)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 6l-6 6 6 6"/></svg>Voltar</button><button class="btn btn-primary" onclick="go(2)">Continuar<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M9 6l6 6-6 6"/></svg></button></div>
+</div>
+
+<div class="step-body" data-step="2">
+<h2 class="title">Dados fiscais</h2>
+<div class="subtitle">Usado para emissão de NFS-e quando você contratar um plano, e para liberar seus 14 dias grátis.</div>
+<div class="fields">
+<div><label>CPF ou CNPJ <span class="req">*</span></label><div class="input"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v15H6z"/><path d="M14 2v5h5"/></svg><input placeholder="000.000.000-00 ou 00.000.000/0001-00"></div><div class="hint">Cada CPF/CNPJ só pode ter um período de teste gratuito.</div></div>
+<div><label>Telefone / WhatsApp <span class="opt">(opcional)</span></label><div class="input"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.4 8.4 0 0 1-8.9 8.4 8.5 8.5 0 0 1-4.3-1.1L3 20l1.2-4.8A8.4 8.4 0 1 1 21 11.5z"/></svg><input placeholder="(51) 99999-9999"></div></div>
+</div>
+<div class="actions"><button class="btn btn-secondary" onclick="go(1)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 6l-6 6 6 6"/></svg>Voltar</button><button class="btn btn-primary" onclick="go(3)">Continuar<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M9 6l6 6-6 6"/></svg></button></div>
+<div class="legal">Ao criar sua conta você concorda com os <a href="#">Termos de Uso</a> e <a href="#">Política de Privacidade</a>.</div>
+</div>
+
+<div class="step-body" data-step="3">
+<h2 class="title">Horário de funcionamento</h2>
+<div class="subtitle">Sem isso, ninguém consegue marcar consulta: a agenda fica vazia. Dá pra ajustar depois em Configurações.</div>
+<div class="fields">
+<div class="time-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg><span class="lbl2">Segunda a sexta</span><div class="time-in"><input value="08:00">até<input value="18:00"></div></div>
+<div class="check-row"><span class="lbl2">Abre aos sábados</span><div class="switch" onclick="this.classList.toggle('on');this.parentElement.classList.toggle('on')"></div></div>
+<div class="check-row"><span class="lbl2">Abre aos domingos</span><div class="switch" onclick="this.classList.toggle('on');this.parentElement.classList.toggle('on')"></div></div>
+</div>
+<div class="actions"><button class="btn btn-secondary" onclick="go(2)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 6l-6 6 6 6"/></svg>Voltar</button><button class="btn btn-primary" onclick="go(4)">Continuar<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M9 6l6 6-6 6"/></svg></button></div>
+</div>
+
+<div class="step-body" data-step="4">
+<h2 class="title">Tipos de atendimento</h2>
+<div class="subtitle">A "lista" de serviços que aparece na hora de marcar consulta. Já sugerimos os mais comuns. Pode ajustar depois.</div>
+<div class="fields">
+<div class="svc-row"><input type="checkbox" checked><span class="lbl2">Consulta Clínica</span><input class="dur" value="30"><span class="unit">min</span></div>
+<div class="svc-row"><input type="checkbox" checked><span class="lbl2">Retorno</span><input class="dur" value="20"><span class="unit">min</span></div>
+<div class="svc-row"><input type="checkbox" checked><span class="lbl2">Vacinação</span><input class="dur" value="15"><span class="unit">min</span></div>
+<div class="svc-row"><input type="checkbox" checked><span class="lbl2">Curativo</span><input class="dur" value="20"><span class="unit">min</span></div>
+<div class="svc-row"><input type="checkbox" checked><span class="lbl2">Avaliação Pré-cirúrgica</span><input class="dur" value="30"><span class="unit">min</span></div>
+</div>
+<div class="actions"><button class="btn btn-secondary" onclick="go(3)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 6l-6 6 6 6"/></svg>Voltar</button><button class="btn btn-primary" onclick="go(5)">Continuar<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M9 6l6 6-6 6"/></svg></button></div>
+</div>
+
+<div class="step-body" data-step="5">
+<div class="done-wrap">
+<div class="done-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h11"/></svg></div>
+<h2 class="title">Tudo pronto!</h2>
+<div class="subtitle" style="margin:10px auto 0">Revise as etapas anteriores se precisar. Ao confirmar, criamos sua clínica e enviamos um código por e-mail para validar sua conta.</div>
+</div>
+<div class="summary" style="max-width:460px;margin:24px auto 0">
+<div class="h">Resumo</div>
+<div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="5" width="16" height="16" rx="2"/></svg>testador 02 (@testador02)</div>
+<div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>testador 02 · testador@teste.com</div>
+<div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/></svg>14 dias de acesso completo gratuito</div>
+<div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18"/></svg>Sem cobrança automática. Você escolhe o plano depois</div>
+</div>
+<div class="actions" style="margin-top:32px;max-width:none;justify-content:center"><button class="btn btn-secondary" style="flex:none" onclick="go(4)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 6l-6 6 6 6"/></svg>Voltar</button><button class="btn btn-primary" style="flex:none" onclick="go(5)">Entrar no sistema</button></div>
+</div>
+
+</div>
+</div>
+<script>
+const labels=["Clínica","Responsável","Fiscal","Horário","Atendimentos","Pronto"];
+const stepper=document.getElementById('stepper');
+stepper.innerHTML=labels.map((l,i)=>`<div class="step" data-i="${i}"><div class="bar"></div><div class="dot">${i+1}</div><div class="lbl">${l}</div></div>`).join('');
+function go(i){
+  document.querySelectorAll('.step-body').forEach(s=>s.classList.toggle('active',+s.dataset.step===i));
+  document.querySelectorAll('.step').forEach(s=>{
+    const n=+s.dataset.i;
+    s.classList.toggle('done',n<i);
+    s.classList.toggle('active',n===i);
+    if(n<i)s.querySelector('.dot').innerHTML='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>';
+    else s.querySelector('.dot').textContent=n+1;
+  });
+}
+go(0);
+</script>
+</body></html>

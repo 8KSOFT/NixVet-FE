@@ -17,6 +17,18 @@ export interface FinancialEntry {
   description: string | null;
 }
 
+/** Resumo do período para os cards de destaque da tela de Lançamentos. */
+export interface FinancialEntriesSummary {
+  revenue: number;
+  revenue_diff_pct: number | null;
+  expense: number;
+  expense_diff_pct: number | null;
+  result: number;
+  result_diff_pct: number | null;
+  pending_count: number;
+  pending_amount: number;
+}
+
 export interface PaymentOption {
   method: string;
   fee_percentage: number;

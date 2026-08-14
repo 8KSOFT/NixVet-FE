@@ -1,0 +1,158 @@
+<!-- @dsCard group="Web" viewport="1920x1080" name="Lançamentos Financeiros" subtitle="Tela com resumo e tabela" -->
+<!DOCTYPE html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../../styles.css">
+<style>
+*{margin:0;box-sizing:border-box;font-family:var(--font-sans)}
+body{display:flex;background:var(--bg)}
+.sidebar{width:248px;background:var(--brand-600);color:#fff;display:flex;flex-direction:column;padding:20px 14px;flex-shrink:0}
+.logo{display:flex;align-items:center;gap:9px;font-size:17px;font-weight:700;padding:0 6px 18px}
+.logo svg{width:22px;height:22px}
+.newbtn{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);border-radius:10px;padding:10px;text-align:center;font-weight:600;font-size:14px;margin-bottom:14px}
+.nav{display:flex;flex-direction:column;gap:2px;font-size:14px}
+.nav a{display:flex;align-items:center;gap:10px;color:#fff;text-decoration:none;padding:9px 10px;border-radius:9px;opacity:.88}
+.nav a svg{width:16px;height:16px;flex-shrink:0}
+.nav a.active{background:rgba(255,255,255,.16);opacity:1;font-weight:600}
+.sub{display:flex;flex-direction:column;gap:1px;padding-left:26px;margin-top:2px}
+.sub a{padding:7px 10px;font-size:13.5px}
+.main{flex:1;display:flex;flex-direction:column;min-width:0}
+.topbar{display:flex;align-items:center;gap:14px;padding:16px 32px;border-bottom:1px solid var(--line)}
+.search{flex:0 0 340px;display:flex;align-items:center;gap:8px;background:#eef1ef;border-radius:999px;padding:9px 14px;color:var(--ink-3);font-size:13.5px}
+.search kbd{margin-left:auto;background:#fff;border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:11px;color:var(--ink-2)}
+.icon-btn{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:#fff;display:flex;align-items:center;justify-content:center;color:var(--ink-2)}
+.lang{display:flex;background:#eef1ef;border-radius:9px;padding:3px;font-size:12.5px;font-weight:600;color:var(--ink-3)}
+.lang span{padding:5px 10px;border-radius:7px}
+.lang span.on{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.spacer{flex:1}
+.user{display:flex;align-items:center;gap:10px;font-size:13.5px;color:var(--ink-2)}
+.avatar{width:32px;height:32px;border-radius:50%;background:var(--brand-600);color:#fff;font-size:11.5px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.content{padding:28px 32px;flex:1;overflow:auto}
+.head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:22px}
+h1{font-size:26px;font-weight:800;color:var(--ink);letter-spacing:-0.01em}
+.head p{font-size:13.5px;color:var(--ink-2);margin-top:5px}
+.btn-primary{background:var(--brand-600);color:#fff;border:none;border-radius:10px;padding:11px 18px;font-size:14px;font-weight:700;display:flex;align-items:center;gap:7px;cursor:pointer;box-shadow:0 8px 18px -6px rgba(14,158,110,.4)}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px}
+.stat{background:#fff;border:1px solid var(--line);border-radius:var(--radius-lg);padding:18px 20px;display:flex;flex-direction:column;gap:10px}
+.stat-top{display:flex;align-items:center;justify-content:space-between}
+.stat .lbl{font-size:13px;color:var(--ink-2);font-weight:500}
+.stat .chip{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center}
+.stat .chip svg{width:15px;height:15px}
+.stat .val{font-size:26px;font-weight:800;color:var(--ink);letter-spacing:-0.01em}
+.stat .delta{font-size:12px;font-weight:600;display:flex;align-items:center;gap:3px}
+.stat.result{background:var(--brand-600);border:none}
+.stat.result .lbl,.stat.result .val{color:#fff}
+.stat.result .delta{color:#d3f0e2}
+.tabs{display:flex;gap:8px;margin-bottom:18px}
+.tab{display:flex;align-items:center;gap:7px;padding:9px 16px;border-radius:10px;border:1px solid var(--line);background:#fff;font-size:13.5px;font-weight:600;color:var(--ink-2)}
+.tab svg{width:15px;height:15px}
+.tab.on{background:var(--brand-600);color:#fff;border-color:var(--brand-600)}
+.filters{display:flex;align-items:flex-end;gap:14px;background:#fff;border:1px solid var(--line);border-radius:var(--radius-lg);padding:16px 18px;margin-bottom:18px}
+.f{display:flex;flex-direction:column;gap:6px}
+.f label{font-size:12px;font-weight:600;color:var(--ink-2)}
+.f input,.f select{border:1px solid var(--line);border-radius:9px;padding:9px 11px;font-size:13.5px;font-family:var(--font-sans);color:var(--ink)}
+.f.grow{flex:1}
+.f.grow input{width:100%}
+.linkbtn{font-size:13px;font-weight:600;color:var(--ink-2);white-space:nowrap;padding-bottom:9px}
+.export{display:flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:9px;padding:9px 14px;font-size:13px;font-weight:600;color:var(--ink);background:#fff;white-space:nowrap}
+.panel{background:#fff;border:1px solid var(--line);border-radius:var(--radius-lg);overflow:hidden}
+.panel-head{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--line-2)}
+.panel-head h2{font-size:15px;font-weight:700;color:var(--ink)}
+.panel-head .count{font-size:12.5px;color:var(--ink-3);background:var(--line-2);padding:2px 9px;border-radius:999px}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:12px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.03em;padding:11px 20px;border-bottom:1px solid var(--line-2)}
+td{padding:14px 20px;font-size:13.5px;color:var(--ink);border-bottom:1px solid var(--line-2)}
+tr:last-child td{border-bottom:none}
+.desc{font-weight:600}
+.desc-sub{font-size:12px;color:var(--ink-3);margin-top:2px}
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px}
+.badge.in{background:#e3f7ee;color:#0a7350}
+.badge.out{background:#fdeef0;color:#b4394a}
+.amt{font-weight:700}
+.amt.in{color:#0a7350}
+.amt.out{color:#b4394a}
+.pay{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink-2)}
+.pay svg{width:14px;height:14px}
+.confirm{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--brand-600);border:1px solid var(--brand-100);background:var(--brand-50);border-radius:8px;padding:6px 11px}
+.fab{position:fixed;bottom:24px;right:32px;display:flex;align-items:center;gap:8px;background:var(--brand-600);color:#fff;font-weight:700;font-size:13.5px;border-radius:999px;padding:13px 20px;box-shadow:0 8px 20px rgba(14,158,110,.3)}
+</style></head><body>
+<div class="sidebar">
+<div class="logo"><svg viewBox="0 0 24 24" fill="#fff"><circle cx="7" cy="7" r="4.2"/><circle cx="17" cy="7" r="4.2"/><circle cx="7" cy="17" r="4.2"/><circle cx="17" cy="17" r="4.2"/></svg>NixVetApp</div>
+<div class="newbtn">+ Novo</div>
+<div class="nav">
+<a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Dashboard</a>
+<a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>Agenda</a>
+<a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-4.5-9.3-9A5 5 0 0 1 12 6a5 5 0 0 1 9.3 6c-2.3 4.5-9.3 9-9.3 9z"/></svg>Pacientes</a>
+<a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>Responsáveis</a>
+<a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v15H6z"/><path d="M14 2v5h5M9 13h6M9 17h6"/></svg>Prontuário</a>
+<a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M9 7h6M9 11h6M9 15h3"/></svg>Prescrição</a>
+<a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 2v6L4 20a1 1 0 0 0 1 2h14a1 1 0 0 0 1-2l-5-12V2"/><path d="M9 2h6"/></svg>Exames</a>
+<a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 18v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6M3 18h18M5 10V6h6v4"/></svg>Internações</a>
+<a href="#" style="font-weight:600;opacity:1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18M7 15l4-6 3 3 5-7"/></svg>Financeiro<svg style="margin-left:auto;width:13px;height:13px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg></a>
+<div class="sub">
+<a href="#" style="opacity:.85">DRE / Dashboard</a>
+<a href="#" class="active">Lançamentos</a>
+<a href="#" style="opacity:.85">Contas a Pagar</a>
+<a href="#" style="opacity:.85">Receitas</a>
+<a href="#" style="opacity:.85">Custos de Pagamento</a>
+<a href="#" style="opacity:.85">Orçamentos</a>
+<a href="#" style="opacity:.85">Análise de Receita</a>
+<a href="#" style="opacity:.85">Planos / A Receber</a>
+<a href="#" style="opacity:.85">Fluxo de Caixa</a>
+</div>
+</div>
+</div>
+
+<div class="main">
+<div class="topbar">
+<div class="search"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>Buscar<kbd>Ctrl+K</kbd></div>
+<div class="icon-btn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></div>
+<div class="icon-btn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg></div>
+<div class="lang"><span class="on">PT</span><span>EN</span><span>ES</span></div>
+<div class="spacer"></div>
+<div class="user">Olá, Administrador<div class="avatar">AD</div></div>
+</div>
+
+<div class="content">
+<div class="head">
+<div><h1>Lançamentos Financeiros</h1><p>Lançamentos sugeridos automaticamente; confirme a forma de pagamento usada para registrar o valor real.</p></div>
+<button class="btn-primary"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>Lançamento</button>
+</div>
+
+<div class="stats">
+<div class="stat"><div class="stat-top"><span class="lbl">Receitas do período</span><div class="chip" style="background:#e3f7ee"><svg viewBox="0 0 24 24" fill="none" stroke="#0a7350" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg></div></div><div class="val">R$ 18.420</div><div class="delta" style="color:#0a7350">↑ 12% vs. período anterior</div></div>
+<div class="stat"><div class="stat-top"><span class="lbl">Despesas do período</span><div class="chip" style="background:#fdeef0"><svg viewBox="0 0 24 24" fill="none" stroke="#b4394a" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg></div></div><div class="val">R$ 6.980</div><div class="delta" style="color:#b4394a">↑ 4% vs. período anterior</div></div>
+<div class="stat"><div class="stat-top"><span class="lbl">Pendentes de confirmação</span><div class="chip" style="background:var(--warn-bg)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--warn)" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div></div><div class="val">7</div><div class="delta" style="color:var(--ink-3)">R$ 2.150 em sugestões</div></div>
+<div class="stat result"><div class="stat-top"><span class="lbl">Resultado do período</span><div class="chip" style="background:rgba(255,255,255,.16)"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg></div></div><div class="val">R$ 11.440</div><div class="delta">↑ 22% vs. período anterior</div></div>
+</div>
+
+<div class="tabs">
+<div class="tab on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>Sugeridos <span style="background:rgba(255,255,255,.25);border-radius:999px;padding:1px 7px;font-size:11.5px">7</span></div>
+<div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Confirmados</div>
+<div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg>Cancelados</div>
+</div>
+
+<div class="filters">
+<div class="f"><label>De</label><input type="date" value="2026-08-01"></div>
+<div class="f"><label>Até</label><input type="date" value="2026-08-14"></div>
+<div class="f"><label>Tipo</label><select><option>Todos</option></select></div>
+<div class="f"><label>Categoria</label><select><option>Todas</option></select></div>
+<div class="f grow"><label>Busca</label><input placeholder="Buscar na descrição..."></div>
+<div class="linkbtn">Limpar filtros</div>
+<div class="export"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 21h16"/></svg>Exportar (.xlsx)</div>
+</div>
+
+<div class="panel">
+<div class="panel-head"><h2>Sugeridos</h2><span class="count">7 lançamentos</span></div>
+<table>
+<thead><tr><th>Descrição</th><th>Categoria</th><th>Data</th><th>Forma de pagamento</th><th style="text-align:right">Valor</th><th></th></tr></thead>
+<tbody>
+<tr><td><div class="desc">Consulta — Rex (Carlos Silva)</div><div class="desc-sub">Sugerido via agenda</div></td><td><span class="badge in">Consulta</span></td><td>14/08/2026</td><td><span class="pay"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M2 10h20"/></svg>Cartão</span></td><td style="text-align:right" class="amt in">+ R$ 180,00</td><td><div class="confirm"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>Confirmar</div></td></tr>
+<tr><td><div class="desc">Vacinação — Mia (Ana Torres)</div><div class="desc-sub">Sugerido via agenda</div></td><td><span class="badge in">Vacinação</span></td><td>13/08/2026</td><td><span class="pay"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C7 7 4 10.5 4 14a8 8 0 0 0 16 0c0-3.5-3-7-8-12z"/></svg>Pix</span></td><td style="text-align:right" class="amt in">+ R$ 95,00</td><td><div class="confirm"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>Confirmar</div></td></tr>
+<tr><td><div class="desc">Compra de insumos — Farmavet</div><div class="desc-sub">Sugerido via nota fiscal</div></td><td><span class="badge out">Fornecedores</span></td><td>12/08/2026</td><td><span class="pay"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M2 10h20"/></svg>Boleto</span></td><td style="text-align:right" class="amt out">− R$ 420,00</td><td><div class="confirm"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>Confirmar</div></td></tr>
+<tr><td><div class="desc">Retorno — Thor (Julia Prado)</div><div class="desc-sub">Sugerido via agenda</div></td><td><span class="badge in">Retorno</span></td><td>11/08/2026</td><td><span class="pay"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C7 7 4 10.5 4 14a8 8 0 0 0 16 0c0-3.5-3-7-8-12z"/></svg>Pix</span></td><td style="text-align:right" class="amt in">+ R$ 60,00</td><td><div class="confirm"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>Confirmar</div></td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+
+<div class="fab"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" width="15" height="15"><path d="M20 6L9 17l-5-5"/></svg>Configuração 25%</div>
+</body></html>

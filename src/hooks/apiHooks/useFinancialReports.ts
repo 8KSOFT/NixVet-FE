@@ -10,8 +10,8 @@ import type {
   DREComparison,
   FinancialEntriesFilters,
   FinancialEntriesPage,
+  FinancialEntriesSummary,
   FinancialEntry,
-  FinancialEntryStatus,
   FinancialKPIs,
   MonthlyDRE,
   PaymentMethodCostData,
@@ -24,6 +24,7 @@ import type {
 export const financialReportKeys = {
   all: ['financial-reports'] as const,
   entries: (filters: FinancialEntriesFilters) => [...financialReportKeys.all, 'entries', filters] as const,
+  entriesSummary: (from: string, to: string) => [...financialReportKeys.all, 'entries-summary', from, to] as const,
   dre: (period: string) => [...financialReportKeys.all, 'dre', period] as const,
   dreComparison: (period: string, compare: DRECompareMode) =>
     [...financialReportKeys.all, 'dre-comparison', period, compare] as const,
@@ -94,6 +95,20 @@ export function useFinancialEntriesQuery(filters: FinancialEntriesFilters) {
         offset: Number(data.offset) || 0,
       };
     },
+  });
+}
+
+/** Resumo do período (receitas, despesas, pendentes, resultado) — cards de destaque. */
+export function useFinancialEntriesSummaryQuery(from: string, to: string) {
+  return useQuery({
+    queryKey: financialReportKeys.entriesSummary(from, to),
+    queryFn: async () => {
+      const { data } = await api.get<FinancialEntriesSummary>(
+        `/financial-reports/entries/summary?from=${from}&to=${to}`,
+      );
+      return data;
+    },
+    enabled: !!from && !!to,
   });
 }
 
