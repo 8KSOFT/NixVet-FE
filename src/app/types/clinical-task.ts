@@ -5,7 +5,7 @@ export interface ClinicalTask {
   task_type: string;
   due_date: string | null;
   status: string;
-  Patient?: { name: string };
+  patient?: { name: string; photo_url?: string | null };
 }
 
 export interface ClinicalTaskPayload {

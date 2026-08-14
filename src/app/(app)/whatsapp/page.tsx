@@ -12,7 +12,7 @@ import { WhatsappMediaBubble, isMediaMessage } from '@/components/whatsapp-media
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { Send, Bot, Loader2, MessageSquare, Lightbulb, Clock, AlertTriangle, User, Archive, ArchiveRestore, CheckCheck, Tag, X, MessageSquareText } from 'lucide-react';
+import { Send, Bot, Loader2, MessageSquare, Lightbulb, Clock, AlertTriangle, User, Archive, ArchiveRestore, CheckCheck, Tag, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -194,8 +194,6 @@ export default function WhatsAppPage() {
   const archiveLoading = archiveMutation.isPending || unarchiveMutation.isPending;
   const classifyMutation = useClassifyConversationMutation();
   const classifyLoading = classifyMutation.isPending;
-  const closeQuickMutation = useCloseConversationMutation();
-  const closeQuickLoading = closeQuickMutation.isPending;
 
   const handleSuggestReply = async () => {
     if (!messages.length) {
@@ -260,16 +258,6 @@ export default function WhatsAppPage() {
       setSelectedId(null);
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao desarquivar conversa'));
-    }
-  };
-
-  const handleQuickClose = async (classification: string) => {
-    if (!selectedId) return;
-    try {
-      await closeQuickMutation.mutateAsync({ conversationId: selectedId, classification, note: '' });
-      setSelectedId(null);
-    } catch {
-      toast.error('Erro ao encerrar conversa');
     }
   };
 
@@ -473,12 +461,12 @@ export default function WhatsAppPage() {
               )}
             </div>
             {selectedConv && (
-              <div className="flex gap-2 flex-wrap">
+              <div className="grid grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap">
                 {/* Assumir / Retomar Bot */}
                 {selectedConv.ai_paused ? (
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button size="sm" variant="outline" onClick={handleResumeAi} disabled={aiActionLoading}>
+                      <Button size="sm" variant="outline" className="w-full sm:w-auto" onClick={handleResumeAi} disabled={aiActionLoading}>
                         {aiActionLoading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Bot className="w-4 h-4 mr-1" />}
                         Retomar Bot
                       </Button>
@@ -488,7 +476,7 @@ export default function WhatsAppPage() {
                 ) : (
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button size="sm" variant="outline" onClick={handlePauseAi} disabled={aiActionLoading}>
+                      <Button size="sm" variant="outline" className="w-full sm:w-auto" onClick={handlePauseAi} disabled={aiActionLoading}>
                         {aiActionLoading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <User className="w-4 h-4 mr-1" />}
                         Assumir
                       </Button>
@@ -502,7 +490,7 @@ export default function WhatsAppPage() {
                   <div className="relative">
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button size="sm" variant="outline" onClick={() => setClassifyPopover((v) => !v)} disabled={classifyLoading}>
+                        <Button size="sm" variant="outline" className="w-full" onClick={() => setClassifyPopover((v) => !v)} disabled={classifyLoading}>
                           {classifyLoading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Tag className="w-4 h-4 mr-1" />}
                           Classificar
                         </Button>
@@ -533,48 +521,30 @@ export default function WhatsAppPage() {
                   </div>
                 )}
 
-                {/* Encerrar: escolher classificação já encerra na hora */}
+                {/* Encerrar: só abre o modal de confirmação — nada executa direto no clique,
+                    já teve dropdown de execução imediata aqui e era fácil encerrar sem querer. */}
                 {!selectedConv.archived_at && (
-                  <div className="flex items-center gap-1">
-                    <Select value="" onValueChange={handleQuickClose} disabled={closeQuickLoading}>
-                      <SelectTrigger
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
                         size="sm"
-                        className="w-auto border-green-300 text-green-700 hover:bg-green-50 data-[placeholder]:text-green-700 [&_svg]:text-green-700"
+                        variant="outline"
+                        className="w-full border-green-300 text-green-700 hover:bg-green-50 hover:text-green-800 sm:w-auto"
+                        onClick={() => setCloseDialogOpen(true)}
                       >
-                        {closeQuickLoading ? (
-                          <Loader2 className="w-4 h-4 animate-spin mr-1" />
-                        ) : (
-                          <CheckCheck className="w-4 h-4 mr-1" />
-                        )}
-                        <SelectValue placeholder="Encerrar..." />
-                      </SelectTrigger>
-                      <SelectContent align="end">
-                        {CLASSIFICATIONS.map((c) => (
-                          <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="shrink-0 text-muted-foreground"
-                          onClick={() => setCloseDialogOpen(true)}
-                        >
-                          <MessageSquareText className="w-4 h-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Encerrar com observação</TooltipContent>
-                    </Tooltip>
-                  </div>
+                        <CheckCheck className="w-4 h-4 mr-1" />
+                        Encerrar
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Encerrar conversa (escolher classificação e observação)</TooltipContent>
+                  </Tooltip>
                 )}
 
                 {/* Arquivar / Desarquivar */}
                 {selectedConv.archived_at ? (
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button size="sm" variant="outline" onClick={handleUnarchive} disabled={archiveLoading}>
+                      <Button size="sm" variant="outline" className="w-full sm:w-auto" onClick={handleUnarchive} disabled={archiveLoading}>
                         {archiveLoading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <ArchiveRestore className="w-4 h-4 mr-1" />}
                         Desarquivar
                       </Button>
@@ -584,7 +554,7 @@ export default function WhatsAppPage() {
                 ) : (
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button size="sm" variant="outline" onClick={handleArchive} disabled={archiveLoading}>
+                      <Button size="sm" variant="outline" className="w-full sm:w-auto" onClick={handleArchive} disabled={archiveLoading}>
                         {archiveLoading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Archive className="w-4 h-4 mr-1" />}
                         Arquivar
                       </Button>

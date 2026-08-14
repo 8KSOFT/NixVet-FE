@@ -4,6 +4,7 @@ import React, { Suspense, useEffect, useState } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import type { ApiRequestError } from '@/app/types/api-error';
 import { Button } from '@/components/ui/button';
+import { ProfilePhoto } from '@/components/shared/profile-photo';
 import { DashboardCreateFormDialog } from '@/components/dashboard-create-form-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -121,7 +122,12 @@ function TasksContent() {
                 <TableBody>
                   {list.map((task) => (
                     <TableRow className="border-b border-gray-300 h-15" key={task.id}>
-                      <TableCell>{task.Patient?.name}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <ProfilePhoto url={task.patient?.photo_url} name={task.patient?.name} className="size-8" />
+                          <span>{task.patient?.name}</span>
+                        </div>
+                      </TableCell>
                       <TableCell>{task.task_type}</TableCell>
                       <TableCell>{task.due_date}</TableCell>
                       <TableCell>
@@ -154,9 +160,12 @@ function TasksContent() {
               {list.map((task) => (
                 <div key={task.id} className="rounded-lg border border-gray-300 bg-white p-4">
                   <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="truncate font-medium">{task.Patient?.name}</p>
-                      <p className="truncate text-xs text-muted-foreground">{task.task_type}</p>
+                    <div className="flex min-w-0 items-center gap-2">
+                      <ProfilePhoto url={task.patient?.photo_url} name={task.patient?.name} className="size-8 shrink-0" />
+                      <div className="min-w-0">
+                        <p className="truncate font-medium">{task.patient?.name}</p>
+                        <p className="truncate text-xs text-muted-foreground">{task.task_type}</p>
+                      </div>
                     </div>
                     <Badge variant={task.status === 'completed' ? 'default' : 'secondary'} className="shrink-0">
                       {task.status}

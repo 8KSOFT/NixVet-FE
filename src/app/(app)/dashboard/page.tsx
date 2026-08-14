@@ -433,7 +433,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium text-slate-900">{task.task_type}</p>
-                  <p className="truncate text-xs text-muted-foreground">{task.Patient?.name ?? t("dashboardHome.na")}</p>
+                  <p className="truncate text-xs text-muted-foreground">{task.patient?.name ?? t("dashboardHome.na")}</p>
                 </div>
                 <Badge variant="secondary" className="shrink-0">
                   {task.due_date ? new Date(task.due_date).toLocaleDateString(locale) : "Sem prazo"}

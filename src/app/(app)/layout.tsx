@@ -925,8 +925,8 @@ export default function DashboardLayout({
           </div>
         </header>
 
-        <TrialBanner billing={billing} />
         <EmailConfirmationBanner />
+        <TrialBanner billing={billing} />
 
         <main className="flex-1 p-5 lg:p-8">
           {isBillingBlocked && !isAllowedWhileBlocked ? (
