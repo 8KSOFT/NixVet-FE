@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ProfilePhoto } from '@/components/shared/profile-photo';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,8 +19,15 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
-import { Loader2, ChevronLeft, Save, Lock, Syringe, Paperclip, FileText, Pill, FlaskConical, Activity, ImageIcon, AlertTriangle, Sparkles, Info, Plus, ChevronDown, Undo2, Trash2, Stethoscope } from 'lucide-react';
+import { Loader2, ChevronLeft, Save, Lock, Syringe, Paperclip, FileText, Pill, FlaskConical, Activity, ImageIcon, AlertTriangle, AlertCircle, Sparkles, Info, Plus, ChevronDown, Undo2, Trash2, Stethoscope, Calendar, User, PawPrint, MessageCircle } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import dayjs from 'dayjs';
 import { useQueryClient } from '@tanstack/react-query';
@@ -55,6 +61,61 @@ function formatMedicationsSummary(medications: unknown): string {
     return names.length > 0 ? names.join(', ') : '—';
   }
   return '—';
+}
+
+const CLINICAL_TABS = [
+  { value: 'clinical', label: 'Clínico', icon: Activity },
+  { value: 'prescriptions', label: 'Prescrições', icon: Pill },
+  { value: 'exams', label: 'Exames', icon: FlaskConical },
+  { value: 'vaccines', label: 'Vacinas', icon: Syringe },
+  { value: 'attachments', label: 'Anexos', icon: ImageIcon },
+] as const;
+
+/** Rótulo pequeno maiúsculo acima de cada seção da ficha — dá pro olho
+ * escanear rapidamente o que é o quê, em vez de tudo com o mesmo peso. */
+function SectionEyebrow({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="mb-2.5 pl-0.5 text-[11px] font-bold tracking-[.06em] text-wa-ink-3 uppercase">
+      {children}
+    </div>
+  );
+}
+
+/** Campo numérico com unidade sufixa dentro do próprio input (kg, °C, bpm...)
+ * em vez de label separado — reduz ruído visual no card de Exame físico. */
+function UnitField({
+  label,
+  unit,
+  value,
+  onChange,
+  disabled,
+  step,
+}: {
+  label: string;
+  unit: string;
+  value: string;
+  onChange: (value: string) => void;
+  disabled?: boolean;
+  step?: string;
+}) {
+  return (
+    <div className="space-y-1">
+      <Label>{label}</Label>
+      <div className="relative">
+        <Input
+          type="number"
+          step={step}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          disabled={disabled}
+          className="pr-11"
+        />
+        <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs font-semibold text-muted-foreground">
+          {unit}
+        </span>
+      </div>
+    </div>
+  );
 }
 
 export default function MedicalRecordDetailPage() {
@@ -95,6 +156,12 @@ export default function MedicalRecordDetailPage() {
     heart_rate: '', respiratory_rate: '', capillary_refill_time: '',
     team_notes: '',
   });
+
+  // Aba ativa (Clínico/Prescrições/Exames/Vacinas/Anexos) — controlada pra
+  // poder ser trocada tanto pela linha de tabs (desktop) quanto pelo
+  // dropdown (mobile, onde 5 abas não cabem numa tela estreita sem cortar).
+  const [clinicalTab, setClinicalTab] = useState('clinical');
+  const activeTabMeta = CLINICAL_TABS.find(t => t.value === clinicalTab) ?? CLINICAL_TABS[0];
 
   // Card de exame físico colapsável (2.4)
   const [examOpen, setExamOpen] = useState(true);
@@ -265,7 +332,7 @@ export default function MedicalRecordDetailPage() {
   const isClosed = record.status === 'closed';
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pb-24 sm:pb-4">
       {/* Banner de internação ativa (2.2) */}
       {activeHosp && (
         <div className="flex items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 sm:px-4 sm:py-3 sm:text-sm">
@@ -277,210 +344,253 @@ export default function MedicalRecordDetailPage() {
         </div>
       )}
 
-      {/* Back */}
+      {/* Back — volta pro prontuário do paciente (a "pasta" de onde a ficha
+          foi aberta), não pra listagem geral de prontuários. */}
       <Button asChild variant="ghost" size="sm">
-        <Link href="/medical-records">
+        <Link href={record.patient_id ? `/medical-records/prontuario/${record.patient_id}` : '/medical-records'}>
           <ChevronLeft className="w-4 h-4 mr-1" /> Voltar
         </Link>
       </Button>
 
-      {/* Header */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex min-w-0 items-start gap-3">
-            {record.patient?.photo_url ? (
-              <ProfilePhoto
-                url={record.patient.photo_url}
-                name={record.patient.name}
-                className="size-12 shrink-0"
-              />
-            ) : null}
+      {/* Header — card de identidade da ficha: ícone de documento (não a foto
+          do pet, que já é o protagonista do cabeçalho do Prontuário), nome +
+          badge de status, pills de metadados com ícone, ações à direita. */}
+      <div className="rounded-2xl border border-wa-line bg-white p-4.5 sm:p-6.5">
+        <div className="flex flex-wrap items-start justify-between gap-3.5">
+          <div className="flex min-w-0 items-center gap-2.75 sm:items-start sm:gap-3">
+            <div className="flex size-9.5 shrink-0 items-center justify-center rounded-[11px] bg-wa-brand-50 sm:size-10.5">
+              <FileText className="size-4.5 text-wa-brand-700 sm:size-5" />
+            </div>
             <div className="min-w-0">
-            <CardTitle className="flex items-center gap-1.5 text-lg text-primary sm:text-xl">
-              <FileText className="h-4 w-4 shrink-0 sm:h-5 sm:w-5" />
-              <span className="truncate">{record.patient?.name || `Ficha #${id.substring(0, 8)}`}</span>
-            </CardTitle>
-            <div className="mt-2 flex flex-wrap items-center gap-1.5">
-              <Badge variant="outline" className="text-xs">{record.record_type}</Badge>
-              <Badge className={isClosed ? 'bg-green-500 text-white' : 'bg-primary text-white'}>{isClosed ? 'Fechado' : 'Aberto'}</Badge>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="truncate text-lg font-extrabold tracking-[-0.01em] text-wa-ink sm:text-xl">
+                  {record.patient?.name || `Ficha #${id.substring(0, 8)}`}
+                </span>
+                <span
+                  className={cn(
+                    'shrink-0 rounded-full px-2.75 py-0.75 text-xs font-bold whitespace-nowrap',
+                    isClosed ? 'bg-wa-line-2 text-wa-ink-2' : 'bg-wa-in-bg text-wa-in',
+                  )}
+                >
+                  {isClosed ? 'Fechado' : 'Aberto'}
+                </span>
+              </div>
+              <div className="mt-0.5 text-[12.5px] text-wa-ink-3">Ficha de atendimento</div>
             </div>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex flex-wrap items-center gap-1.5">
-            <Badge variant="secondary" className="font-normal text-muted-foreground">
-              {record.patient?.species || '—'}
-              {record.patient?.breed ? ` · ${record.patient.breed}` : ''}
-            </Badge>
-            <Badge variant="secondary" className="font-normal text-muted-foreground">
-              {dayjs(record.record_date).format('DD/MM/YYYY')}
-            </Badge>
-            <Badge variant="secondary" className="max-w-40 truncate font-normal text-muted-foreground">
-              {record.veterinarian?.name || 'Sem veterinário'}
-            </Badge>
           </div>
 
+          {/* Desktop: ações no cabeçalho. No mobile viram a barra fixa no rodapé. */}
           {!isClosed && (
-            <div className="flex flex-col gap-2 border-t border-border/60 pt-3 sm:flex-row sm:justify-end">
-              <Button size="sm" onClick={handleSave} disabled={saving} className="w-full bg-primary hover:bg-blue-700 sm:w-auto">
-                {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Save className="h-4 w-4 mr-1" />} Salvar
+            <div className="hidden shrink-0 gap-2.5 sm:flex">
+              <Button
+                size="sm"
+                onClick={handleSave}
+                disabled={saving}
+                className="rounded-[10px] bg-wa-brand-600 font-bold shadow-[0_8px_18px_-6px_rgba(18,179,127,0.4)] hover:bg-wa-brand-700"
+              >
+                {saving ? <Loader2 className="mr-1 size-4 animate-spin" /> : <Save className="mr-1 size-4" />} Salvar
               </Button>
-              <Button size="sm" onClick={handleClose} disabled={saving} variant="outline" className="w-full border-green-500 text-green-600 hover:bg-green-50 sm:w-auto">
-                <Lock className="h-4 w-4 mr-1" /> Fechar ficha
+              <Button
+                size="sm"
+                onClick={handleClose}
+                disabled={saving}
+                variant="outline"
+                className="rounded-[10px] border-[1.5px] border-wa-line text-wa-ink"
+              >
+                <Lock className="mr-1 size-4" /> Fechar ficha
               </Button>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
 
-      <Tabs defaultValue="clinical">
-        <TabsList className="mb-1 grid h-auto! w-full grid-cols-1 gap-1 sm:grid-cols-5">
-          <TabsTrigger value="clinical" className="h-auto! w-full justify-start whitespace-normal px-3 py-2 text-left leading-snug sm:justify-center sm:text-center">
-            <Activity className="w-4 h-4 mr-2 shrink-0 sm:mr-1" /> Clínico
-          </TabsTrigger>
-          <TabsTrigger value="prescriptions" className="h-auto! w-full justify-start whitespace-normal px-3 py-2 text-left leading-snug sm:justify-center sm:text-center">
-            <Pill className="w-4 h-4 mr-2 shrink-0 sm:mr-1" /> Prescrições
-          </TabsTrigger>
-          <TabsTrigger value="exams" className="h-auto! w-full justify-start whitespace-normal px-3 py-2 text-left leading-snug sm:justify-center sm:text-center">
-            <FlaskConical className="w-4 h-4 mr-2 shrink-0 sm:mr-1" /> Exames
-          </TabsTrigger>
-          <TabsTrigger value="vaccines" className="h-auto! w-full justify-start whitespace-normal px-3 py-2 text-left leading-snug sm:justify-center sm:text-center">
-            <Syringe className="w-4 h-4 mr-2 shrink-0 sm:mr-1" /> Vacinas
-          </TabsTrigger>
-          <TabsTrigger value="attachments" className="h-auto! w-full justify-start whitespace-normal px-3 py-2 text-left leading-snug sm:justify-center sm:text-center">
-            <ImageIcon className="w-4 h-4 mr-2 shrink-0 sm:mr-1" /> Anexos
-          </TabsTrigger>
+        <div className="mt-4 flex flex-wrap items-center gap-2 sm:mt-4.5">
+          <span className="inline-flex items-center gap-1.75 rounded-[9px] border border-wa-line-2 bg-wa-bg px-3 py-1.75 text-[12.5px] font-semibold text-wa-ink-2">
+            <PawPrint className="size-3.5 shrink-0 text-wa-ink-3" />
+            {record.patient?.species || '—'}
+            {record.patient?.breed ? ` · ${record.patient.breed}` : ''}
+          </span>
+          <span className="inline-flex items-center gap-1.75 rounded-[9px] border border-wa-line-2 bg-wa-bg px-3 py-1.75 text-[12.5px] font-semibold text-wa-ink-2">
+            <Calendar className="size-3.5 shrink-0 text-wa-ink-3" />
+            {dayjs(record.record_date).format('DD/MM/YYYY')}
+          </span>
+          <span className="inline-flex max-w-52 items-center gap-1.75 rounded-[9px] border border-wa-line-2 bg-wa-bg px-3 py-1.75 text-[12.5px] font-semibold text-wa-ink-2">
+            <User className="size-3.5 shrink-0 text-wa-ink-3" />
+            <span className="truncate">{record.veterinarian?.name || 'Sem veterinário'}</span>
+          </span>
+        </div>
+      </div>
+
+      <Tabs value={clinicalTab} onValueChange={setClinicalTab}>
+        {/* Desktop: mesma grade que preenche a largura toda usada no
+            prontuário (abas viram colunas iguais em vez de ficarem
+            agrupadas à esquerda). */}
+        <TabsList className="mb-1 hidden h-auto! w-full grid-cols-5 gap-1 sm:grid">
+          {CLINICAL_TABS.map(({ value, label, icon: Icon }) => (
+            <TabsTrigger key={value} value={value} className="w-full justify-center gap-1.5 px-4 py-2.25 text-[13.5px] whitespace-nowrap">
+              <Icon className="size-3.75 shrink-0" /> {label}
+            </TabsTrigger>
+          ))}
         </TabsList>
 
+        {/* Mobile: dropdown estilizado no lugar do scroll horizontal — 5
+            abas com ícone+texto não cabem numa tela de ~400px sem cortar. */}
+        <div className="mb-4 sm:hidden">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                className="flex w-full items-center justify-between gap-2 rounded-xl border border-wa-line bg-white px-4 py-3"
+              >
+                <span className="flex items-center gap-2 text-[13.5px] font-bold text-wa-ink">
+                  <activeTabMeta.icon className="size-4 shrink-0 text-wa-brand-600" />
+                  {activeTabMeta.label}
+                </span>
+                <ChevronDown className="size-4 shrink-0 text-wa-ink-3" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="w-(--radix-dropdown-menu-trigger-width)">
+              {CLINICAL_TABS.map(({ value, label, icon: Icon }) => (
+                <DropdownMenuItem key={value} onClick={() => setClinicalTab(value)} className="gap-2 py-2.25 text-[13.5px]">
+                  <Icon className="size-4 shrink-0 text-wa-ink-3" /> {label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
         {/* Clinical */}
-        <TabsContent value="clinical">
-          <Card>
-            <CardContent className="pt-4 space-y-4">
-              <div className="space-y-1">
-                <Label>Queixa principal</Label>
-                <Textarea rows={2} value={form.chief_complaint} onChange={e => setForm(p => ({ ...p, chief_complaint: e.target.value }))} disabled={isClosed} />
-              </div>
-
-              {/* Anamnese + Formatar com IA (2.6) */}
-              <div className="space-y-1">
-                <Label>Anamnese</Label>
-                <Textarea rows={3} value={form.anamnesis} onChange={e => setForm(p => ({ ...p, anamnesis: e.target.value }))} disabled={isClosed} placeholder="Histórico do paciente, evolução dos sintomas..." />
-                {!isClosed && (
-                  <div className="flex items-center gap-2 pt-1">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={handleFormatAnamnese}
-                      disabled={formattingAi || !form.anamnesis}
-                    >
-                      {formattingAi ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <Sparkles className="h-3 w-3 mr-1" />}
-                      Formatar com IA
-                    </Button>
-                    {originalAnamnese != null && (
-                      <Button type="button" variant="ghost" size="sm" onClick={handleUndoAnamnese}>
-                        <Undo2 className="h-3 w-3 mr-1" /> Desfazer
-                      </Button>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Exame Físico estruturado, colapsável (2.4) */}
-              <div className="rounded-lg bg-muted/40">
-                <button
-                  type="button"
-                  onClick={() => setExamOpen(o => !o)}
-                  className="flex w-full items-center justify-between px-4 py-3 text-left"
-                >
-                  <span className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                    <Stethoscope className="h-4 w-4" /> Exame Físico
-                  </span>
-                  <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${examOpen ? 'rotate-180' : ''}`} />
-                </button>
-                {examOpen && (
-                  <div className="grid grid-cols-2 gap-3 px-4 pb-4 sm:gap-4 lg:grid-cols-4">
-                    {/* Vitais — campos curtos, 2 por linha em mobile */}
-                    <div className="space-y-1">
-                      <Label>Peso (kg)</Label>
-                      <Input type="number" step="0.01" value={form.weight_kg} onChange={e => setForm(p => ({ ...p, weight_kg: e.target.value }))} disabled={isClosed} />
-                    </div>
-                    <div className="space-y-1">
-                      <Label>Temp. (°C)</Label>
-                      <Input type="number" step="0.1" value={form.temperature_c} onChange={e => setForm(p => ({ ...p, temperature_c: e.target.value }))} disabled={isClosed} />
-                    </div>
-                    <div className="space-y-1">
-                      <Label>FC (bpm)</Label>
-                      <Input type="number" value={form.heart_rate} onChange={e => setForm(p => ({ ...p, heart_rate: e.target.value }))} disabled={isClosed} />
-                    </div>
-                    <div className="space-y-1">
-                      <Label>FR (mpm)</Label>
-                      <Input type="number" value={form.respiratory_rate} onChange={e => setForm(p => ({ ...p, respiratory_rate: e.target.value }))} disabled={isClosed} />
-                    </div>
-                    <div className="space-y-1">
-                      <Label>TPC (s)</Label>
-                      <Input type="number" step="0.1" value={form.capillary_refill_time} onChange={e => setForm(p => ({ ...p, capillary_refill_time: e.target.value }))} disabled={isClosed} />
-                    </div>
-                    <div className="space-y-1">
-                      <Label>Hidratação</Label>
-                      <Select value={form.hydration || '_none'} onValueChange={v => setForm(p => ({ ...p, hydration: v === '_none' ? '' : v }))} disabled={isClosed}>
-                        <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="_none">—</SelectItem>
-                          <SelectItem value="Normal">Normal</SelectItem>
-                          <SelectItem value="Leve">Leve</SelectItem>
-                          <SelectItem value="Moderada">Moderada</SelectItem>
-                          <SelectItem value="Grave">Grave</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Descritivos — precisam de mais espaço, linha inteira */}
-                    <div className="col-span-2 space-y-1">
-                      <Label>Linfonodos</Label>
-                      <Input value={form.lymph_nodes} onChange={e => setForm(p => ({ ...p, lymph_nodes: e.target.value }))} disabled={isClosed} />
-                    </div>
-                    <div className="col-span-2 space-y-1">
-                      <Label>Mucosas</Label>
-                      <Input value={form.mucous_membranes} onChange={e => setForm(p => ({ ...p, mucous_membranes: e.target.value }))} disabled={isClosed} placeholder="ex.: róseas, pálidas" />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-1">
-                <Label>Diagnóstico Presuntivo</Label>
-                <Textarea rows={2} value={form.diagnosis} onChange={e => setForm(p => ({ ...p, diagnosis: e.target.value }))} disabled={isClosed} />
-              </div>
-
-              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                {/* Notas da Equipe (2.7) */}
-                <div className="space-y-1">
-                  <div className="flex items-center gap-1">
-                    <Label>Notas da Equipe</Label>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
-                        </TooltipTrigger>
-                        <TooltipContent className="max-w-xs">
-                          Espaço para registrar observações internas importantes, recomendações operacionais
-                          ou informações úteis para a equipe clínica.
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </div>
-                  <Textarea rows={3} value={form.team_notes} onChange={e => setForm(p => ({ ...p, team_notes: e.target.value }))} disabled={isClosed} />
+        <TabsContent value="clinical" className="space-y-5">
+          {/* Motivo da consulta */}
+          <div>
+            <SectionEyebrow>Motivo da consulta</SectionEyebrow>
+            <div className="rounded-2xl border border-wa-line bg-white p-4.5 sm:p-6">
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label>Queixa principal</Label>
+                  <Input value={form.chief_complaint} onChange={e => setForm(p => ({ ...p, chief_complaint: e.target.value }))} disabled={isClosed} />
                 </div>
 
-                <div className="space-y-1">
-                  <Label>Observações</Label>
-                  <Textarea rows={3} value={form.observations} onChange={e => setForm(p => ({ ...p, observations: e.target.value }))} disabled={isClosed} />
+                {/* Anamnese + Formatar com IA (2.6) */}
+                <div className="space-y-1.5">
+                  <Label>Anamnese</Label>
+                  <Textarea rows={3} value={form.anamnesis} onChange={e => setForm(p => ({ ...p, anamnesis: e.target.value }))} disabled={isClosed} placeholder="Histórico do paciente, evolução dos sintomas..." />
+                  {!isClosed && (
+                    <div className="flex items-center gap-2 pt-1">
+                      <button
+                        type="button"
+                        onClick={handleFormatAnamnese}
+                        disabled={formattingAi || !form.anamnesis}
+                        className="inline-flex items-center gap-1.75 rounded-[9px] border border-wa-brand-100 bg-wa-brand-50 px-3.5 py-2 text-[12.5px] font-bold text-wa-brand-700 transition-colors hover:bg-wa-brand-100 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {formattingAi ? <Loader2 className="size-3.5 animate-spin" /> : <Sparkles className="size-3.5" />}
+                        Formatar com IA
+                      </button>
+                      {originalAnamnese != null && (
+                        <Button type="button" variant="ghost" size="sm" onClick={handleUndoAnamnese}>
+                          <Undo2 className="h-3 w-3 mr-1" /> Desfazer
+                        </Button>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
+
+          {/* Exame físico — cabeçalho tintado pra destacar como bloco de dados
+              estruturados, colapsável (2.4) */}
+          <div>
+            <SectionEyebrow>Exame físico</SectionEyebrow>
+            <div className="overflow-hidden rounded-2xl border border-wa-line bg-white">
+              <button
+                type="button"
+                onClick={() => setExamOpen(o => !o)}
+                className="flex w-full items-center justify-between border-b border-wa-brand-100 bg-wa-brand-50 px-4.5 py-3.25 text-left sm:px-6"
+              >
+                <span className="flex items-center gap-2.25 text-sm font-bold text-wa-brand-700">
+                  <Stethoscope className="size-4 shrink-0" /> Sinais vitais e avaliação
+                </span>
+                <ChevronDown className={cn('size-3.75 shrink-0 text-wa-brand-600 transition-transform', examOpen && 'rotate-180')} />
+              </button>
+              {examOpen && (
+                <div className="grid grid-cols-2 gap-4 p-4.5 sm:grid-cols-4 sm:gap-4.5 sm:p-6">
+                  <UnitField label="Peso" unit="kg" step="0.01" value={form.weight_kg} onChange={v => setForm(p => ({ ...p, weight_kg: v }))} disabled={isClosed} />
+                  <UnitField label="Temperatura" unit="°C" step="0.1" value={form.temperature_c} onChange={v => setForm(p => ({ ...p, temperature_c: v }))} disabled={isClosed} />
+                  <UnitField label="Freq. cardíaca" unit="bpm" value={form.heart_rate} onChange={v => setForm(p => ({ ...p, heart_rate: v }))} disabled={isClosed} />
+                  <UnitField label="Freq. respiratória" unit="mpm" value={form.respiratory_rate} onChange={v => setForm(p => ({ ...p, respiratory_rate: v }))} disabled={isClosed} />
+                  <UnitField label="TPC" unit="s" step="0.1" value={form.capillary_refill_time} onChange={v => setForm(p => ({ ...p, capillary_refill_time: v }))} disabled={isClosed} />
+                  <div className="space-y-1">
+                    <Label>Hidratação</Label>
+                    <Select value={form.hydration || '_none'} onValueChange={v => setForm(p => ({ ...p, hydration: v === '_none' ? '' : v }))} disabled={isClosed}>
+                      <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="_none">—</SelectItem>
+                        <SelectItem value="Normal">Normal</SelectItem>
+                        <SelectItem value="Leve">Leve</SelectItem>
+                        <SelectItem value="Moderada">Moderada</SelectItem>
+                        <SelectItem value="Grave">Grave</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Descritivos — precisam de mais espaço, meia linha (linha inteira em telas menores) */}
+                  <div className="col-span-2 space-y-1">
+                    <Label>Linfonodos</Label>
+                    <Input value={form.lymph_nodes} onChange={e => setForm(p => ({ ...p, lymph_nodes: e.target.value }))} disabled={isClosed} placeholder="—" />
+                  </div>
+                  <div className="col-span-2 space-y-1">
+                    <Label>Mucosas</Label>
+                    <Input value={form.mucous_membranes} onChange={e => setForm(p => ({ ...p, mucous_membranes: e.target.value }))} disabled={isClosed} placeholder="ex.: róseas, pálidas" />
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Avaliação — diagnóstico presuntivo em destaque: é a conclusão clínica da ficha */}
+          <div>
+            <SectionEyebrow>Avaliação</SectionEyebrow>
+            <div className="rounded-2xl border-[1.5px] border-wa-brand-100 bg-linear-to-b from-wa-brand-50 to-white p-4.5 sm:p-6">
+              <Label className="mb-2 flex items-center gap-1.75 text-wa-brand-700">
+                <AlertCircle className="size-3.75 shrink-0" /> Diagnóstico presuntivo
+              </Label>
+              <Textarea rows={2} className="bg-white" value={form.diagnosis} onChange={e => setForm(p => ({ ...p, diagnosis: e.target.value }))} disabled={isClosed} />
+            </div>
+          </div>
+
+          {/* Complementar — notas internas / observações pro tutor: cards
+              tracejados sinalizam que são secundários em relação ao resto */}
+          <div>
+            <SectionEyebrow>Complementar</SectionEyebrow>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5">
+              <div className="rounded-2xl border border-dashed border-wa-line bg-[#fbfcfb] p-4.5 sm:p-5">
+                <div className="mb-2 flex items-center gap-1.25">
+                  <Label className="mb-0 flex items-center gap-1.25 font-semibold text-wa-ink-2">
+                    <Info className="size-3.25 shrink-0 text-wa-ink-3" /> Notas da equipe (interno)
+                  </Label>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="h-3.5 w-3.5 shrink-0 cursor-help text-muted-foreground" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs">
+                        Espaço para registrar observações internas importantes, recomendações operacionais
+                        ou informações úteis para a equipe clínica.
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                <Textarea rows={3} className="bg-white" value={form.team_notes} onChange={e => setForm(p => ({ ...p, team_notes: e.target.value }))} disabled={isClosed} placeholder="Visível apenas para a equipe" />
+              </div>
+
+              <div className="rounded-2xl border border-dashed border-wa-line bg-[#fbfcfb] p-4.5 sm:p-5">
+                <Label className="mb-2 flex items-center gap-1.25 font-semibold text-wa-ink-2">
+                  <MessageCircle className="size-3.25 shrink-0 text-wa-ink-3" /> Observações para o tutor
+                </Label>
+                <Textarea rows={3} className="bg-white" value={form.observations} onChange={e => setForm(p => ({ ...p, observations: e.target.value }))} disabled={isClosed} />
+              </div>
+            </div>
+          </div>
         </TabsContent>
 
         {/* Prescriptions */}
@@ -712,6 +822,30 @@ export default function MedicalRecordDetailPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Barra de ações fixa no rodapé — mobile só, substitui os botões do
+          cabeçalho (que ficam ocultos abaixo do breakpoint desktop). Fica
+          colada acima da faixa reservada pro SetupChecklistWidget (68px),
+          pra não sobrepor nem ficar sobreposta por ele. */}
+      {!isClosed && (
+        <div className="fixed inset-x-0 bottom-17 z-30 flex gap-2.5 border-t border-wa-line bg-white p-3 sm:hidden">
+          <Button
+            onClick={handleClose}
+            disabled={saving}
+            variant="outline"
+            className="flex-1 rounded-[9px] border-[1.5px] border-wa-line text-wa-ink"
+          >
+            <Lock className="mr-1 size-3.75" /> Fechar
+          </Button>
+          <Button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex-1 rounded-[9px] bg-wa-brand-600 font-bold hover:bg-wa-brand-700"
+          >
+            {saving ? <Loader2 className="mr-1 size-3.75 animate-spin" /> : <Save className="mr-1 size-3.75" />} Salvar
+          </Button>
+        </div>
+      )}
 
       {/* Vaccine modal */}
       <DashboardCreateFormDialog

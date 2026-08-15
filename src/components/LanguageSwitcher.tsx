@@ -12,14 +12,18 @@ const LANGUAGE_LABELS: Record<AppLanguage, string> = {
 
 interface LanguageSwitcherProps {
   className?: string;
-  /** "subtle": translúcido, para usar sobre fundos escuros/coloridos (ex.: rodapé do drawer da sidebar). */
-  variant?: 'default' | 'subtle';
+  /**
+   * "subtle": translúcido, para usar sobre fundos escuros/coloridos (ex.: rodapé do drawer da sidebar).
+   * "wa": trilho cinza claro com aba ativa branca + sombra sutil (navbar do redesign do WhatsApp).
+   */
+  variant?: 'default' | 'subtle' | 'wa';
 }
 
 export default function LanguageSwitcher({ className, variant = 'default' }: LanguageSwitcherProps) {
   const { i18n, t } = useTranslation('common');
   const currentLang = ((i18n.language || 'pt').split('-')[0]) as AppLanguage;
   const subtle = variant === 'subtle';
+  const wa = variant === 'wa';
 
   return (
     <div
@@ -27,7 +31,7 @@ export default function LanguageSwitcher({ className, variant = 'default' }: Lan
       aria-label={t('language.label')}
       className={cn(
         'inline-flex items-center gap-0.5 rounded-full p-0.5',
-        subtle ? 'bg-white/5' : 'border border-border bg-muted',
+        subtle ? 'bg-white/5' : wa ? 'rounded-wa bg-wa-line-2 p-[3px]' : 'border border-border bg-muted',
         className,
       )}
     >
@@ -42,14 +46,19 @@ export default function LanguageSwitcher({ className, variant = 'default' }: Lan
             title={t(`language.${code}`)}
             onClick={() => void i18n.changeLanguage(code)}
             className={cn(
-              'rounded-full px-2.5 py-1 text-xs font-medium transition-colors duration-150',
+              'text-xs font-medium transition-colors duration-150',
+              wa ? 'rounded-[7px] px-2.5 py-1.5 text-[12.5px] font-semibold' : 'rounded-full px-2.5 py-1',
               subtle
                 ? active
                   ? 'bg-white/15 text-white'
                   : 'text-white/50 hover:text-white/80'
-                : active
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground',
+                : wa
+                  ? active
+                    ? 'bg-white text-wa-ink shadow-[0_1px_2px_rgba(0,0,0,.08)]'
+                    : 'text-wa-ink-3 hover:text-wa-ink-2'
+                  : active
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground',
             )}
           >
             {LANGUAGE_LABELS[code]}

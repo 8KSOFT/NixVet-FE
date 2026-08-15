@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -22,10 +22,83 @@ import { usePatientsListQuery } from "@/hooks/apiHooks/usePatients";
 import { useClinicalTasksQuery } from "@/hooks/apiHooks/useClinicalTasks";
 import { getStoredUserRole } from "@/lib/role-permissions";
 import { Badge } from "@/components/ui/badge";
-import { ListChecks } from "lucide-react";
+import { ListChecks, PawPrint, DollarSign, XCircle, MessageCircle, ArrowUp } from "lucide-react";
+
+/** Sparkline fina (linha, sem eixo/label) — usada no card de destaque e nos mini-gráficos do grid. */
+function Sparkline({
+  data,
+  color,
+  width = 90,
+  height = 40,
+}: {
+  data: number[];
+  color: string;
+  width?: number;
+  height?: number;
+}) {
+  const safeData = data.map((v) => (Number.isFinite(v) ? v : 0));
+  if (safeData.length < 2) return null;
+  const max = Math.max(...safeData, 1);
+  const min = Math.min(...safeData, 0);
+  const range = max - min || 1;
+  const stepX = width / (safeData.length - 1);
+  const points = safeData
+    .map((v, i) => {
+      const x = i * stepX;
+      const y = height - ((v - min) / range) * (height - 6) - 3;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(" ");
+  return (
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} fill="none" aria-hidden="true">
+      <polyline points={points} stroke={color} strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" opacity={0.95} />
+    </svg>
+  );
+}
+
+/** Mini barras (magnitude por período) — o(s) pico(s) real(is) ganham a cor forte, o resto a cor clara. */
+function MiniBars({
+  data,
+  colorLight,
+  colorDark,
+  width = 46,
+  height = 24,
+}: {
+  data: number[];
+  colorLight: string;
+  colorDark: string;
+  width?: number;
+  height?: number;
+}) {
+  const safeData = data.map((v) => (Number.isFinite(v) ? v : 0));
+  if (safeData.length === 0) return null;
+  const max = Math.max(...safeData, 1);
+  const barW = 6;
+  const gap = safeData.length > 1 ? (width - safeData.length * barW) / (safeData.length - 1) : 0;
+  return (
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} fill="none" aria-hidden="true">
+      {safeData.map((v, i) => {
+        const h = Math.max((v / max) * height, 3);
+        const x = i * (barW + gap);
+        const y = height - h;
+        const isPeak = v === max && v > 0;
+        return <rect key={i} x={x} y={y} width={barW} height={h} rx={1.5} fill={isPeak ? colorDark : colorLight} />;
+      })}
+    </svg>
+  );
+}
 
 /** Cargos com visão gerencial — os únicos que veem receita no dashboard. */
 const MANAGEMENT_ROLES = new Set(["superadmin", "admin", "manager"]);
+
+/** Abrevia valores grandes (ex.: "R$50 mil") — o card do grid mobile tem
+ * largura fixa e "R$50000.00" por extenso não cabe em 22px. */
+function formatCompactCurrency(value: number, prefix: string): string {
+  if (value >= 10000) {
+    return `${prefix}${new Intl.NumberFormat("pt-BR", { notation: "compact", maximumFractionDigits: 1 }).format(value)}`;
+  }
+  return `${prefix}${value.toFixed(2)}`;
+}
 
 export default function DashboardPage() {
   const { t, i18n } = useTranslation("common");
@@ -34,6 +107,24 @@ export default function DashboardPage() {
   const [userRole, setUserRole] = useState<string | null>(null);
   useEffect(() => {
     setUserRole(getStoredUserRole());
+  }, []);
+
+  // Quem acabou de sair do wizard de onboarding ganha uma entrada suave
+  // (fade + leve subida + halo que se dissolve) em vez de o dashboard só
+  // "aparecer" depois do corte seco da navegação. useLayoutEffect (não
+  // useEffect) pra decidir antes do primeiro paint e não piscar o conteúdo
+  // sem animação por um frame.
+  const [justOnboarded, setJustOnboarded] = useState(false);
+  useLayoutEffect(() => {
+    try {
+      if (sessionStorage.getItem("nixvet:just-onboarded") === "1") {
+        sessionStorage.removeItem("nixvet:just-onboarded");
+        setJustOnboarded(true);
+      }
+    } catch {
+      // sessionStorage indisponível (modo privado etc.) — só não tem a
+      // entrada especial, o dashboard renderiza normalmente.
+    }
   }, []);
   const isManager = !!userRole && MANAGEMENT_ROLES.has(userRole.toLowerCase());
   const locale = useMemo(() => {
@@ -101,6 +192,63 @@ export default function DashboardPage() {
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [metrics, consultations, patients]);
+
+  // Série real (não ilustrativa) dos últimos 7 dias de consultas — alimenta a
+  // sparkline do card de destaque e o texto "vs. ontem" do dashboard mobile.
+  const last7DaysConsultationCounts = useMemo(() => {
+    const days: { ymd: string; count: number }[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      days.push({ ymd: localYMD(d), count: 0 });
+    }
+    const byDay = new Map(days.map((d) => [d.ymd, d]));
+    consultations.forEach((c) => {
+      if (!c.consultation_date) return;
+      const bucket = byDay.get(localYMD(new Date(c.consultation_date)));
+      if (bucket) bucket.count += 1;
+    });
+    return days.map((d) => d.count);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [consultations]);
+
+  const heroDelta =
+    last7DaysConsultationCounts[6] - last7DaysConsultationCounts[5];
+
+  // Novos pacientes e receita do mês, quebrados em 5 períodos reais (do dia 1
+  // até hoje) — alimenta as mini barras/linha dos cards do grid mobile.
+  const monthBuckets = useMemo(() => {
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const bucketCount = 5;
+    const totalMs = Math.max(now.getTime() - monthStart.getTime(), 1);
+    const bucketMs = totalMs / bucketCount;
+    const bucketIndex = (d: Date) =>
+      Math.min(bucketCount - 1, Math.max(0, Math.floor((d.getTime() - monthStart.getTime()) / bucketMs)));
+
+    const patientBuckets = new Array(bucketCount).fill(0);
+    patients.forEach((p) => {
+      if (!p.createdAt) return;
+      const d = new Date(p.createdAt);
+      if (d < monthStart || d > now) return;
+      patientBuckets[bucketIndex(d)] += 1;
+    });
+
+    const revenueBuckets = new Array(bucketCount).fill(0);
+    consultations.forEach((c) => {
+      if (!c.consultation_date) return;
+      // price vem como string em algumas respostas (coluna DECIMAL do Postgres
+      // sem cast) — somar sem converter virava concatenação de string e, depois
+      // de acumulado, um NaN silencioso na sparkline.
+      const price = Number(c.price);
+      if (!Number.isFinite(price) || price <= 0) return;
+      const d = new Date(c.consultation_date);
+      if (d < monthStart || d > now) return;
+      revenueBuckets[bucketIndex(d)] += price;
+    });
+
+    return { patientBuckets, revenueBuckets };
+  }, [patients, consultations]);
 
   const recentAppointments = useMemo(() => {
     const todayStr = localYMD(new Date());
@@ -232,53 +380,115 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="mx-auto space-y-10 px-4 sm:px-6 lg:px-8">
-      <h2 className="text-[30px] font-['InterDoFigma'] font-extrabold text-foreground mb-18">
+    <div
+      className="relative mx-auto space-y-10 px-4 sm:px-6 lg:px-8"
+      style={justOnboarded ? { animation: "nix-fade-up 700ms cubic-bezier(0.16,1,0.3,1) both" } : undefined}
+    >
+      {justOnboarded && (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -top-10 left-1/2 -z-10 h-90 w-90 -translate-x-1/2 rounded-full bg-wa-brand-500/25 blur-3xl"
+          style={{ animation: "nix-onboard-glow 1.6s ease-out forwards" }}
+        />
+      )}
+
+      <h2 className="text-[26px] sm:text-[30px] font-['InterDoFigma'] font-extrabold text-foreground mb-6">
         {t("dashboardHome.title")}
       </h2>
 
-      {/* Mobile: todas as métricas, cartão compacto (ícone/número/label empilhado), altura padrão */}
-      <div className="grid grid-cols-2 gap-3 sm:hidden">
-        {statCards.map((card) => {
-          const Icon = card.icon;
-          const cardContent = (
-            <Card
-              className={cn(
-                "m-0 h-full w-full p-0 rounded-xl border border-gray-300",
-                card.href && "cursor-pointer hover:shadow-md",
-              )}
-            >
-              <CardContent className="flex h-full flex-col gap-2 p-3">
-                <div className="h-8 w-8 shrink-0">
-                  <Icon />
-                </div>
-                {loading ? (
-                  <div className="space-y-2">
-                    <Skeleton className="h-6 w-10" />
-                    <Skeleton className="h-3 w-20" />
-                  </div>
-                ) : (
-                  <div>
-                    <p className="font-extrabold font-['InterDoFigma'] text-2xl leading-none">
-                      {card.value}
-                    </p>
-                    <p className="mt-1 text-xs text-muted-foreground">{card.label}</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          );
-
-          return card.href ? (
-            <Link key={card.key} href={card.href} className="block h-full">
-              {cardContent}
-            </Link>
-          ) : (
-            <div key={card.key} className="h-full">
-              {cardContent}
+      {/* Mobile: card de destaque (hero, com sparkline real dos últimos 7 dias)
+          + grid 2 colunas com mini-gráficos reais (barras/linha) */}
+      <div className="flex flex-col gap-3 sm:hidden">
+        {loading ? (
+          <>
+            <Skeleton className="h-28 w-full rounded-wa-lg" />
+            <div className="grid grid-cols-2 gap-3">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-24 w-full rounded-wa-lg" />
+              ))}
             </div>
-          );
-        })}
+          </>
+        ) : (
+          <>
+            <div className="relative flex flex-col gap-1 overflow-hidden rounded-wa-lg bg-wa-brand-600 p-5">
+              <div className="flex items-start justify-between">
+                <div>
+                  <div className="text-[13px] font-semibold text-white/80">{t("dashboardHome.statsToday")}</div>
+                  <div className="text-[38px] leading-none font-extrabold tracking-tight text-white">
+                    {stats.appointmentsToday}
+                  </div>
+                </div>
+                <Sparkline data={last7DaysConsultationCounts} color="#ffffff" />
+              </div>
+              <div className="mt-1 flex items-center gap-1 text-[12.5px] font-semibold text-wa-brand-100">
+                <ArrowUp className={cn("size-3", heroDelta < 0 && "rotate-180")} />
+                {heroDelta > 0 ? "+" : ""}
+                {heroDelta} vs. ontem
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-2 rounded-wa-lg border border-wa-line bg-card p-3.75">
+                <div className="flex items-center justify-between">
+                  <div className="flex size-8 items-center justify-center rounded-[9px] bg-wa-pink-bg text-wa-pink">
+                    <PawPrint className="size-4" />
+                  </div>
+                  <MiniBars data={monthBuckets.patientBuckets} colorLight="var(--wa-pink-soft)" colorDark="var(--wa-pink)" />
+                </div>
+                <div>
+                  <div className="text-[22px] leading-none font-extrabold tracking-tight text-wa-ink">
+                    {stats.newPatientsMonth}
+                  </div>
+                  <div className="mt-1 text-xs leading-snug text-wa-ink-2">{t("dashboardHome.statsNewPatients")}</div>
+                </div>
+              </div>
+
+              {isManager && (
+                <div className="flex flex-col gap-2 rounded-wa-lg border border-wa-line bg-card p-3.75">
+                  <div className="flex items-center justify-between">
+                    <div className="flex size-8 items-center justify-center rounded-[9px] bg-wa-blue-bg text-wa-blue">
+                      <DollarSign className="size-4" />
+                    </div>
+                    <Sparkline data={monthBuckets.revenueBuckets} color="var(--wa-blue)" width={46} height={24} />
+                  </div>
+                  <div>
+                    <div className="text-[22px] leading-none font-extrabold tracking-tight text-wa-ink">
+                      {formatCompactCurrency(stats.revenueMonth, t("dashboardHome.currencyPrefix"))}
+                    </div>
+                    <div className="mt-1 text-xs leading-snug text-wa-ink-2">{t("dashboardHome.statsRevenue")}</div>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex flex-col gap-2 rounded-wa-lg border border-wa-line bg-card p-3.75">
+                <div className="flex size-8 items-center justify-center rounded-[9px] bg-wa-line-2 text-wa-ink-2">
+                  <XCircle className="size-4" />
+                </div>
+                <div>
+                  <div className="text-[22px] leading-none font-extrabold tracking-tight text-wa-ink">
+                    {stats.cancelledThisMonth}
+                  </div>
+                  <div className="mt-1 text-xs leading-snug text-wa-ink-2">{t("dashboardHome.statsCancelled")}</div>
+                </div>
+              </div>
+
+              <Link
+                href="/whatsapp"
+                className="flex flex-col gap-2 rounded-wa-lg border border-wa-line bg-card p-3.75"
+              >
+                <div className="flex size-8 items-center justify-center rounded-[9px] bg-wa-warn-bg text-wa-warn">
+                  <MessageCircle className="size-4" />
+                </div>
+                <div>
+                  <div className="text-[22px] leading-none font-extrabold tracking-tight text-wa-ink">
+                    {stats.unansweredConversations}
+                  </div>
+                  <div className="mt-1 text-xs leading-snug text-wa-ink-2">{t("dashboardHome.statsWhatsApp")}</div>
+                </div>
+              </Link>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Tablet / desktop: todas as métricas, cartão completo */}
@@ -331,7 +541,7 @@ export default function DashboardPage() {
 
       <div>
         <div className="px-2 mb-8 mt-4 flex items-center justify-between">
-          <h3 className="text-[20px] font-bold text-slate-900">
+          <h3 className="text-base sm:text-[20px] font-bold text-slate-900">
             {t("dashboardHome.tableTitle")}
           </h3>
           <Link href="/calendar" className="text-sm font-medium text-primary hover:underline">
@@ -433,7 +643,7 @@ export default function DashboardPage() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium text-slate-900">{task.task_type}</p>
-                  <p className="truncate text-xs text-muted-foreground">{task.Patient?.name ?? t("dashboardHome.na")}</p>
+                  <p className="truncate text-xs text-muted-foreground">{task.patient?.name ?? t("dashboardHome.na")}</p>
                 </div>
                 <Badge variant="secondary" className="shrink-0">
                   {task.due_date ? new Date(task.due_date).toLocaleDateString(locale) : "Sem prazo"}

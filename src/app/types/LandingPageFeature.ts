@@ -1,7 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 
 export interface LandingPageFeature {
-  iconBackgroundClassName: string;
+  icon: LucideIcon;
   title: string;
   description: string;
 }

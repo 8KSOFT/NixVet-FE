@@ -41,12 +41,12 @@ export function QuickCreateMenu({ menuAllow, variant = "sidebar", collapsed = fa
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button
-            variant="ghost"
+            variant="outline"
             size="icon"
-            className="text-muted-foreground transition-colors duration-200 hover:text-primary"
+            className="size-8.5 rounded-wa border-wa-line bg-white text-wa-ink-2 shadow-none hover:bg-wa-line-2 hover:text-wa-ink"
             aria-label="Criar novo"
           >
-            <Plus className="size-5" />
+            <Plus className="size-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-64">
@@ -69,13 +69,13 @@ export function QuickCreateMenu({ menuAllow, variant = "sidebar", collapsed = fa
         <Button
           variant="ghost"
           className={cn(
-            "w-full justify-center gap-2 text-white/70 hover:bg-white/10 hover:text-white",
+            "w-full justify-center gap-1.5 rounded-wa border border-white/7 bg-white/5 py-2.25 text-[13.5px] font-semibold text-white hover:bg-white/10 hover:text-white",
             collapsed && "px-0",
           )}
           title={collapsed ? "Novo" : undefined}
         >
-          <Plus className="size-4 shrink-0" />
-          {!collapsed && <span className="text-sm">Novo</span>}
+          <Plus className="size-3.5 shrink-0" />
+          {!collapsed && <span>Novo</span>}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-64">

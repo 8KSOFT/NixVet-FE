@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import type { ApiRequestError } from '@/app/types/api-error';
 import type { HospitalizationCreatePayload, HospitalizationFormValues } from '@/app/types/hospitalization';
-import { Plus, Clock, ChevronRight } from 'lucide-react';
+import { Plus, Clock, ChevronRight, PawPrint } from 'lucide-react';
 import { DashboardCreateFormDialog } from '@/components/dashboard-create-form-dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -67,14 +67,6 @@ function severityBadge(severity: string | undefined, status: string): { color: s
   }
   const key = severity ?? 'stable';
   return { color: SEVERITY_STYLES[key] ?? SEVERITY_STYLES.stable, label: SEVERITY_LABELS[key] ?? key };
-}
-
-function speciesEmoji(species: string) {
-  const s = species.toLowerCase();
-  if (s.includes('can') || s.includes('dog') || s.includes('cachorro')) return '🐕';
-  if (s.includes('fel') || s.includes('cat') || s.includes('gato')) return '🐈';
-  if (s.includes('rab') || s.includes('coelho')) return '🐇';
-  return '🐾';
 }
 
 function getApiErrorMessage(error: unknown, fallbackMessage: string): string {
@@ -228,7 +220,7 @@ function InternacoesPageContent() {
                             {/* Foto do pet feito uma polaroide solta, presa por
                                 um clipe que agarra também a borda de cima da
                                 pasta — no canto direito, pra não tapar a aba. */}
-                            <div className="relative -mt-6 mb-1 inline-block">
+                            <div className="relative -mt-4 mb-1 inline-block">
                               {/* Clipe — espiral interna, por trás da foto. */}
                               <svg
                                 viewBox="0 0 24 32"
@@ -236,7 +228,7 @@ function InternacoesPageContent() {
                                 stroke="currentColor"
                                 strokeWidth="2.5"
                                 strokeLinecap="round"
-                                className="absolute -top-3 -right-2 h-7 w-5 rotate-3 text-gray-400 transition-transform duration-300 group-hover:rotate-6"
+                                className="absolute -top-3 right-1 h-7 w-5 rotate-3 text-gray-400 transition-transform duration-300 group-hover:rotate-6"
                               >
                                 <rect x="7" y="7" width="8" height="16" rx="4" />
                               </svg>
@@ -249,8 +241,14 @@ function InternacoesPageContent() {
                                     className="size-16 shrink-0 rounded-xs shadow-none ring-0 saturate-[.85] contrast-105 sepia-[0.08]"
                                   />
                                 ) : (
-                                  <div className="flex size-16 shrink-0 items-center justify-center rounded-xs bg-primary/10 text-2xl">
-                                    {speciesEmoji(h.patient?.species ?? '')}
+                                  <div
+                                    className="flex size-16 shrink-0 items-center justify-center rounded-xs"
+                                    style={{
+                                      backgroundImage:
+                                        'repeating-linear-gradient(45deg,#eef2f0,#eef2f0 6px,#e2e8e5 6px,#e2e8e5 12px)',
+                                    }}
+                                  >
+                                    <PawPrint className="size-6 text-wa-ink-3" />
                                   </div>
                                 )}
                               </div>
@@ -263,7 +261,7 @@ function InternacoesPageContent() {
                                 stroke="currentColor"
                                 strokeWidth="2.5"
                                 strokeLinecap="round"
-                                className="absolute -top-3 -right-2 h-7 w-5 rotate-3 text-gray-400 drop-shadow transition-transform duration-300 group-hover:rotate-6"
+                                className="absolute -top-3 right-1 h-7 w-5 rotate-3 text-gray-400 drop-shadow transition-transform duration-300 group-hover:rotate-6"
                               >
                                 <rect x="3" y="3" width="14" height="27" rx="7" />
                               </svg>

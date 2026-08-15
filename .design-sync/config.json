@@ -1,0 +1,33 @@
+{
+  "projectId": "76829b8e-6825-434b-851c-8f07ba37befe",
+  "pkg": "nixvet-ui",
+  "globalName": "NixVetUI",
+  "shape": "package",
+  "srcDir": "src/components",
+  "entry": "src/components/.nixvet-ui-entry-placeholder.js",
+  "tsconfig": "tsconfig.json",
+  "buildCmd": "node .design-sync/scripts/build-css.mjs",
+  "cssEntry": ".design-sync/build/tailwind.css",
+  "extraFonts": [".design-sync/build/brand-fonts.css"],
+  "provider": {
+    "component": "AppProviders"
+  },
+  "readmeHeader": ".design-sync/conventions.md",
+  "overrides": {
+    "AlertDialog": { "cardMode": "single", "viewport": "480x360" },
+    "Dialog": { "cardMode": "single", "viewport": "520x420" },
+    "DropdownMenu": { "cardMode": "single", "viewport": "280x340" },
+    "Select": { "cardMode": "single", "viewport": "280x320" },
+    "Sheet": { "cardMode": "single", "viewport": "480x560" },
+    "Popover": { "cardMode": "single", "viewport": "340x280" },
+    "Tooltip": { "cardMode": "single", "viewport": "260x160" },
+    "Table": { "cardMode": "column" },
+    "Sidebar": { "cardMode": "single", "viewport": "900x560" },
+    "NavigationMenu": { "cardMode": "single", "viewport": "640x320" }
+  },
+  "libOverrides": {
+    "bundle.mjs": "The synthesized entry transitively pulls in Next.js client internals (next/link, next/image, next/navigation) and app modules (src/lib/axios.ts) that reference a bare `process` global (process.env.NEXT_PUBLIC_*, process.env.__NEXT_*, process.platform, process.nextTick), which Next's webpack provides at build time but esbuild's browser bundle leaves unresolved, crashing every preview with 'process is not defined'. Fork adds `inject: [process-shim.mjs]` only; IIFE/header/footer contract unchanged.",
+    "process-shim.mjs": "esbuild inject target for bundle.mjs's fork above — provides a minimal `process` global (env/platform/nextTick) so Next.js client internals pulled into the synthesized entry don't crash at bundle-init.",
+    "source-kit.mjs": "The synth-entry fallback wrote `export * from <file>` for every source file, which does not re-export default exports. AppProviders/Logo/LanguageSwitcher/LegalDocumentShell are `export default function X()` and were silently missing from window.NixVetUI (broke cfg.provider — AppProviders resolved to undefined). Fork additionally emits `export { default as Name } from <file>` for files with a recoverable default export name; nothing else changed."
+  }
+}

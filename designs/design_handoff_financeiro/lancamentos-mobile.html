@@ -1,0 +1,94 @@
+<!-- @dsCard group="Mobile" viewport="411x900" name="Lançamentos Financeiros Mobile" subtitle="Resumo e lista responsiva" -->
+<!DOCTYPE html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../../styles.css">
+<style>
+*{margin:0;box-sizing:border-box}
+body{background:#2b2b2b;display:flex;justify-content:center;padding:24px 0;font-family:var(--font-sans)}
+.phone{width:411px;background:#f6f8f7;border-radius:28px;overflow:hidden;display:flex;flex-direction:column;min-height:900px}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:18px 20px 6px;background:#fff}
+.icon-btn{width:38px;height:38px;border-radius:10px;border:1px solid var(--line);background:#fff;display:flex;align-items:center;justify-content:center;color:var(--ink-2)}
+.avatar{width:34px;height:34px;border-radius:50%;background:var(--brand-600);color:#fff;font-size:11.5px;font-weight:700;display:flex;align-items:center;justify-content:center}
+h1{font-size:22px;font-weight:800;letter-spacing:-0.02em;color:var(--ink);padding:14px 20px 4px;background:#fff}
+.sub{font-size:12.5px;color:var(--ink-2);padding:0 20px 16px;background:#fff;line-height:1.4}
+.scroll{flex:1;overflow-y:auto;padding-bottom:90px}
+.wrap{padding:16px 20px;display:flex;flex-direction:column;gap:12px}
+.hero{background:var(--brand-600);border-radius:var(--radius-lg);padding:18px 20px;color:#fff;display:flex;flex-direction:column;gap:4px}
+.hero .lbl{font-size:12.5px;color:rgba(255,255,255,.8);font-weight:600}
+.hero .val{font-size:32px;font-weight:800;letter-spacing:-0.02em}
+.hero .delta{font-size:12px;font-weight:600;color:#d3f0e2;display:flex;align-items:center;gap:4px}
+.scrollrow{display:flex;gap:10px;overflow-x:auto;padding:0 20px 4px;scrollbar-width:none}
+.scrollrow::-webkit-scrollbar{display:none}
+.mini{flex:0 0 150px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:13px 14px;display:flex;flex-direction:column;gap:8px}
+.mini .top{display:flex;align-items:center;justify-content:space-between}
+.chip{width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center}
+.chip svg{width:13px;height:13px}
+.mini .val{font-size:18px;font-weight:800;color:var(--ink)}
+.mini .lbl{font-size:11.5px;color:var(--ink-2)}
+.tabs{display:flex;gap:8px;padding:4px 20px 0}
+.tab{padding:8px 14px;border-radius:9px;border:1px solid var(--line);background:#fff;font-size:12.5px;font-weight:600;color:var(--ink-2);white-space:nowrap;display:flex;align-items:center;gap:6px}
+.tab.on{background:var(--brand-600);color:#fff;border-color:var(--brand-600)}
+.search{margin:14px 20px 0;display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 13px;font-size:13px;color:var(--ink-3)}
+.list{display:flex;flex-direction:column;gap:10px;padding:12px 20px 0}
+.item{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px}
+.item-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.desc{font-size:13.5px;font-weight:700;color:var(--ink)}
+.desc-sub{font-size:11.5px;color:var(--ink-3);margin-top:2px}
+.amt{font-size:15px;font-weight:800;white-space:nowrap}
+.amt.in{color:#0a7350}
+.amt.out{color:#b4394a}
+.item-meta{display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px}
+.badge.in{background:#e3f7ee;color:#0a7350}
+.badge.out{background:#fdeef0;color:#b4394a}
+.pay{font-size:11.5px;color:var(--ink-3);display:flex;align-items:center;gap:4px}
+.confirm{margin-top:10px;width:100%;display:flex;align-items:center;justify-content:center;gap:6px;font-size:12.5px;font-weight:700;color:var(--brand-700);background:var(--brand-50);border:1px solid var(--brand-100);border-radius:9px;padding:9px}
+.fab{position:fixed;bottom:20px;right:20px;display:flex;align-items:center;gap:7px;background:var(--brand-600);color:#fff;font-weight:700;font-size:12.5px;border-radius:999px;padding:12px 18px;box-shadow:0 8px 20px rgba(14,158,110,.35)}
+</style></head><body>
+<div class="phone">
+<div class="topbar">
+<div class="icon-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg></div>
+<div class="avatar">AD</div>
+</div>
+<h1>Lançamentos</h1>
+<div class="sub">Confirme a forma de pagamento para registrar o valor real.</div>
+<div class="scroll">
+<div class="wrap">
+<div class="hero"><span class="lbl">Resultado do período</span><span class="val">R$ 11.440</span><span class="delta">↑ 22% vs. período anterior</span></div>
+</div>
+<div class="scrollrow">
+<div class="mini"><div class="top"><span class="lbl">Receitas</span><div class="chip" style="background:#e3f7ee"><svg viewBox="0 0 24 24" fill="none" stroke="#0a7350" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg></div></div><div class="val">R$ 18.420</div></div>
+<div class="mini"><div class="top"><span class="lbl">Despesas</span><div class="chip" style="background:#fdeef0"><svg viewBox="0 0 24 24" fill="none" stroke="#b4394a" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg></div></div><div class="val">R$ 6.980</div></div>
+<div class="mini"><div class="top"><span class="lbl">Pendentes</span><div class="chip" style="background:var(--warn-bg)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--warn)" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div></div><div class="val">7</div></div>
+</div>
+<div class="tabs">
+<div class="tab on"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>Sugeridos (7)</div>
+<div class="tab">Confirmados</div>
+<div class="tab">Cancelados</div>
+</div>
+<div class="search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>Buscar na descrição...</div>
+<div class="list">
+<div class="item">
+<div class="item-top"><div><div class="desc">Consulta — Rex</div><div class="desc-sub">Carlos Silva · 14/08</div></div><div class="amt in">+ R$ 180</div></div>
+<div class="item-meta"><span class="badge in">Consulta</span><span class="pay"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M2 10h20"/></svg>Cartão</span></div>
+<div class="confirm"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>Confirmar</div>
+</div>
+<div class="item">
+<div class="item-top"><div><div class="desc">Vacinação — Mia</div><div class="desc-sub">Ana Torres · 13/08</div></div><div class="amt in">+ R$ 95</div></div>
+<div class="item-meta"><span class="badge in">Vacinação</span><span class="pay"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C7 7 4 10.5 4 14a8 8 0 0 0 16 0c0-3.5-3-7-8-12z"/></svg>Pix</span></div>
+<div class="confirm"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>Confirmar</div>
+</div>
+<div class="item">
+<div class="item-top"><div><div class="desc">Insumos — Farmavet</div><div class="desc-sub">Fornecedores · 12/08</div></div><div class="amt out">− R$ 420</div></div>
+<div class="item-meta"><span class="badge out">Fornecedores</span><span class="pay"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M2 10h20"/></svg>Boleto</span></div>
+<div class="confirm"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>Confirmar</div>
+</div>
+<div class="item">
+<div class="item-top"><div><div class="desc">Retorno — Thor</div><div class="desc-sub">Julia Prado · 11/08</div></div><div class="amt in">+ R$ 60</div></div>
+<div class="item-meta"><span class="badge in">Retorno</span><span class="pay"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C7 7 4 10.5 4 14a8 8 0 0 0 16 0c0-3.5-3-7-8-12z"/></svg>Pix</span></div>
+<div class="confirm"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>Confirmar</div>
+</div>
+</div>
+</div>
+</div>
+<div class="fab"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" width="14" height="14"><path d="M12 5v14M5 12h14"/></svg>Lançamento</div>
+</div>
+</body></html>

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Poppins } from "next/font/google";
 import AppProviders from '@/components/AppProviders';
 import "./globals.css";
@@ -27,6 +27,12 @@ export const metadata: Metadata = {
   // e `app/apple-icon.png` são detectados pelo Next e viram as tags <link>
   // automaticamente. O bloco anterior apontava para `/logo.svg`, que não existe
   // em `public/` — por isso o navegador caía no favicon padrão do Next.
+};
+
+// Plataforma ainda não tem modo escuro — ignora o tema do SO e mantém a UI
+// nativa do navegador (inputs, scrollbars) sempre no claro.
+export const viewport: Viewport = {
+  colorScheme: "light",
 };
 
 export default function RootLayout({

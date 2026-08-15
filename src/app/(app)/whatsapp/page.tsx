@@ -5,14 +5,29 @@ import type { ApiRequestError } from '@/app/types/api-error';
 import type { ThreadStatus } from '@/app/types/whatsapp-conversation';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { WhatsappMediaBubble, isMediaMessage } from '@/components/whatsapp-media-bubble';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { Send, Bot, Loader2, MessageSquare, Lightbulb, Clock, AlertTriangle, User, Archive, ArchiveRestore, CheckCheck, Tag, X, MessageSquareText } from 'lucide-react';
+import {
+  Send,
+  Bot,
+  Loader2,
+  MessageSquare,
+  Lightbulb,
+  Clock,
+  AlertTriangle,
+  User,
+  Archive,
+  ArchiveRestore,
+  Check,
+  Tag,
+  X,
+  ChevronDown,
+  ChevronLeft,
+} from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -40,14 +55,56 @@ import 'dayjs/locale/pt-br';
 dayjs.extend(relativeTime);
 dayjs.locale('pt-br');
 
+/** Badge pílula (ícone + rótulo, 12px semibold) — usada nos cabeçalhos e na lista. */
+function Pill({ icon: Icon, label, fg, bg }: { icon: React.ElementType; label: string; fg: string; bg: string }) {
+  return (
+    <span
+      className="inline-flex items-center gap-1.25 rounded-full px-2.25 py-0.75 text-xs font-semibold"
+      style={{ color: fg, background: bg }}
+    >
+      <Icon className="size-2.75" style={{ color: fg }} />
+      {label}
+    </span>
+  );
+}
+
 function ClassificationBadge({ classification }: { classification: string | null | undefined }) {
   const info = classificationInfo(classification);
   if (!info) return null;
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium ${info.badgeClass}`}>
-      <Tag className="w-2.5 h-2.5" /> {info.label}
+    <span className={cn('inline-flex items-center gap-1.25 rounded-full px-2.25 py-0.75 text-xs font-semibold', info.badgeClass)}>
+      <Tag className="size-2.75" />
+      {info.label}
     </span>
   );
+}
+
+/** Pílula "Atendimento humano" — para cabeçalhos (mesmo tratamento das demais badges). */
+function HumanBadge({ paused }: { paused: boolean | undefined }) {
+  if (!paused) return null;
+  return <Pill icon={User} label="Atendimento humano" fg="var(--wa-warn)" bg="var(--wa-warn-bg)" />;
+}
+
+/** Indicador "Atendimento humano" só-texto — usado na linha da lista de conversas. */
+function HumanFlag({ paused }: { paused: boolean | undefined }) {
+  if (!paused) return null;
+  return (
+    <span className="inline-flex items-center gap-1.25 text-xs font-semibold text-wa-warn">
+      <User className="size-3" />
+      Atendimento humano
+    </span>
+  );
+}
+
+function ThreadStatusBadge({ status }: { status: ThreadStatus | undefined }) {
+  if (!status || status === 'resolved') return null;
+  if (status === 'waiting_clinic') {
+    return <Pill icon={AlertTriangle} label="Não respondido" fg="#c0522f" bg="#fdece5" />;
+  }
+  if (status === 'waiting_tutor') {
+    return <Pill icon={Clock} label="Aguardando resposta do responsável" fg="var(--wa-warn)" bg="var(--wa-warn-bg)" />;
+  }
+  return null;
 }
 
 function CloseConversationDialog({
@@ -92,10 +149,10 @@ function CloseConversationDialog({
                 type="button"
                 onClick={() => setClassification(c.value)}
                 className={cn(
-                  'rounded-lg border px-3 py-2 text-sm font-medium text-left transition-all',
+                  'rounded-wa border px-3 py-2 text-sm font-medium text-left transition-all',
                   classification === c.value
                     ? `${c.badgeClass} ring-2 ring-offset-1 ring-current`
-                    : 'border-border hover:bg-muted',
+                    : 'border-wa-line hover:bg-wa-line-2',
                 )}
               >
                 {c.label}
@@ -114,7 +171,7 @@ function CloseConversationDialog({
           </div>
         </div>
         <DialogFooter>
-          <button type="button" onClick={() => onOpenChange(false)} className="px-4 py-2 text-sm rounded-md border hover:bg-muted">Cancelar</button>
+          <button type="button" onClick={() => onOpenChange(false)} className="px-4 py-2 text-sm rounded-wa border hover:bg-wa-line-2">Cancelar</button>
           <Button onClick={handleClose} disabled={!classification || loading}>
             {loading && <Loader2 className="size-4 animate-spin mr-1" />}
             Encerrar conversa
@@ -123,34 +180,6 @@ function CloseConversationDialog({
       </DialogContent>
     </Dialog>
   );
-}
-
-function AiPausedTag({ paused }: { paused: boolean | undefined }) {
-  if (!paused) return null;
-  return (
-    <Badge variant="outline" className="border-orange-400 text-orange-600 gap-1 m-0">
-      <User className="w-3 h-3" /> Atendimento humano
-    </Badge>
-  );
-}
-
-function ThreadStatusTag({ status }: { status: ThreadStatus | undefined }) {
-  if (!status || status === 'resolved') return null;
-  if (status === 'waiting_clinic') {
-    return (
-      <Badge variant="destructive" className="m-0">
-        Não respondido
-      </Badge>
-    );
-  }
-  if (status === 'waiting_tutor') {
-    return (
-      <Badge className="bg-blue-100 text-primary hover:bg-blue-100 m-0">
-        Aguardando resposta do responsável
-      </Badge>
-    );
-  }
-  return null;
 }
 
 function getApiErrorMessage(error: unknown, fallbackMessage: string): string {
@@ -164,8 +193,72 @@ function getApiErrorMessage(error: unknown, fallbackMessage: string): string {
   return responseMessage ?? typedError.message ?? fallbackMessage;
 }
 
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+  suffix,
+  tone = 'ink',
+}: {
+  icon: React.ElementType;
+  label: string;
+  value: React.ReactNode;
+  suffix?: string;
+  tone?: 'ink' | 'brand';
+}) {
+  return (
+    <div className="flex flex-1 flex-col gap-2.5 rounded-wa-lg border border-wa-line bg-card p-4.5 sm:px-5">
+      <div className="flex items-center gap-2 text-[13px] font-medium text-wa-ink-2">
+        <span
+          className={cn(
+            'flex size-6.5 items-center justify-center rounded-lg',
+            tone === 'brand' ? 'bg-wa-brand-100 text-wa-brand-700' : 'bg-wa-line-2 text-wa-ink-2',
+          )}
+        >
+          <Icon className="size-3.5" />
+        </span>
+        {label}
+      </div>
+      <div className={cn('text-[28px] leading-none font-bold tracking-tight', tone === 'brand' ? 'text-wa-brand-600' : 'text-wa-ink')}>
+        {value}
+        {suffix && <span className="ml-1 text-sm font-normal">{suffix}</span>}
+      </div>
+    </div>
+  );
+}
+
+const ActionButton = React.forwardRef<
+  HTMLButtonElement,
+  {
+    icon: React.ElementType;
+    label: string;
+    onClick: () => void;
+    disabled?: boolean;
+    loading?: boolean;
+  } & React.ButtonHTMLAttributes<HTMLButtonElement>
+>(({ icon: Icon, label, onClick, disabled, loading, ...rest }, ref) => {
+  return (
+    <button
+      ref={ref}
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className="flex w-full flex-col items-center justify-center gap-0.5 rounded-wa border border-wa-line bg-white px-1 py-1.5 text-center text-[10px] leading-none font-semibold text-wa-ink transition-colors duration-150 hover:bg-wa-line-2 disabled:pointer-events-none disabled:opacity-50 sm:w-auto sm:flex-row sm:gap-1.75 sm:whitespace-nowrap sm:px-3.5 sm:py-2.25 sm:text-[13.5px]"
+      {...rest}
+    >
+      {loading ? <Loader2 className="size-3.5 animate-spin sm:size-3.75" /> : <Icon className="size-3.5 sm:size-3.75" />}
+      <span className="truncate">{label}</span>
+    </button>
+  );
+});
+ActionButton.displayName = 'ActionButton';
+
 export default function WhatsAppPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // No mobile (abaixo de lg) as colunas viram duas "telas": lista OU
+  // conversa, nunca as duas espremidas — igual ao WhatsApp de verdade.
+  // Em telas lg+ essa flag é ignorada (ambas ficam sempre visíveis lado a lado).
+  const [mobileView, setMobileView] = useState<'list' | 'chat'>('list');
   const [sendText, setSendText] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [archivedFilter, setArchivedFilter] = useState<'false' | 'true'>('false');
@@ -194,8 +287,6 @@ export default function WhatsAppPage() {
   const archiveLoading = archiveMutation.isPending || unarchiveMutation.isPending;
   const classifyMutation = useClassifyConversationMutation();
   const classifyLoading = classifyMutation.isPending;
-  const closeQuickMutation = useCloseConversationMutation();
-  const closeQuickLoading = closeQuickMutation.isPending;
 
   const handleSuggestReply = async () => {
     if (!messages.length) {
@@ -243,11 +334,23 @@ export default function WhatsAppPage() {
     }
   };
 
+  // Volta pra tela de lista no mobile sempre que a conversa selecionada deixa
+  // de existir (senão o usuário fica preso numa tela de chat vazia).
+  const deselectConversation = () => {
+    setSelectedId(null);
+    setMobileView('list');
+  };
+
+  const selectConversation = (id: string) => {
+    setSelectedId(id);
+    setMobileView('chat');
+  };
+
   const handleArchive = async () => {
     if (!selectedId) return;
     try {
       await archiveMutation.mutateAsync(selectedId);
-      setSelectedId(null);
+      deselectConversation();
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao arquivar conversa'));
     }
@@ -257,19 +360,9 @@ export default function WhatsAppPage() {
     if (!selectedId) return;
     try {
       await unarchiveMutation.mutateAsync(selectedId);
-      setSelectedId(null);
+      deselectConversation();
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, 'Erro ao desarquivar conversa'));
-    }
-  };
-
-  const handleQuickClose = async (classification: string) => {
-    if (!selectedId) return;
-    try {
-      await closeQuickMutation.mutateAsync({ conversationId: selectedId, classification, note: '' });
-      setSelectedId(null);
-    } catch {
-      toast.error('Erro ao encerrar conversa');
     }
   };
 
@@ -292,6 +385,9 @@ export default function WhatsAppPage() {
     return pa - pb;
   });
 
+  const initials = (name: string | null | undefined, fallback: string) =>
+    (name || fallback || '?').trim().slice(0, 2).toUpperCase();
+
   return (
     <>
     {selectedId && (
@@ -299,221 +395,212 @@ export default function WhatsAppPage() {
         open={closeDialogOpen}
         onOpenChange={setCloseDialogOpen}
         conversationId={selectedId}
-        onSuccess={() => {
-          setSelectedId(null);
-        }}
+        onSuccess={deselectConversation}
       />
     )}
     {/* main content */}
-    <div className="flex flex-col gap-4 min-h-0 h-[calc(100dvh-var(--app-header-h)-6.5rem)] min-h-[420px]">
-      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 shrink-0">
-        <h1 className="text-2xl font-heading font-bold text-primary flex items-center gap-2 m-0">
-          <MessageSquare className="w-6 h-6" /> WhatsApp
+    <div className="flex flex-col gap-5 min-h-0 h-[calc(100dvh-var(--app-header-h)-2*var(--app-main-py))] min-h-[420px]">
+      {/* Stats e título só fazem sentido com espaço de sobra (desktop). No
+          mobile eles empurravam a lista/chat pra baixo do scroll — a tela
+          vira só lista OU só chat, como no WhatsApp de verdade. */}
+      <div className="hidden lg:grid grid-cols-2 sm:grid-cols-4 gap-3.5 shrink-0">
+        <StatCard icon={Clock} label="Aguardando resposta" value={metrics?.conversations_waiting_clinic ?? 0} />
+        <StatCard icon={User} label="Aguardando responsável" value={metrics?.conversations_waiting_tutor ?? 0} />
+        <StatCard icon={Check} label="Encerradas hoje" value={stats?.closed_today ?? 0} tone="brand" />
+        {alerts.length > 0 ? (
+          <div className="flex flex-1 flex-col justify-center gap-1 rounded-wa-lg border border-wa-line bg-card p-4.5 sm:px-5">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="size-4 shrink-0 text-wa-warn" />
+              <span className="text-[13.5px] font-medium text-wa-ink">{alerts.length} conversa(s) há +20 min sem resposta</span>
+            </div>
+          </div>
+        ) : (
+          <StatCard icon={Clock} label="Tempo médio resposta" value={metrics?.average_response_time ?? 0} suffix="s" />
+        )}
+      </div>
+
+      <div className="hidden lg:flex items-center gap-2 shrink-0">
+        <h1 className="m-0 flex items-center gap-2 text-[22px] font-bold text-wa-ink">
+          <MessageSquare className="size-5.5 text-wa-brand-600" /> WhatsApp
         </h1>
-        <span className="text-xs text-muted-foreground">
-          Lista e mensagens atualizam automaticamente a cada {WHATSAPP_REFRESH_MS / 1000}s (aba visível)
+        <span className="ml-auto text-[11px] text-wa-ink-3">
+          Atualiza a cada {WHATSAPP_REFRESH_MS / 1000}s
         </span>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 shrink-0">
-        <div className="rounded-lg border bg-card p-4 shadow-sm">
-          <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
-            <Clock className="w-3 h-3" /> Aguardando resposta
-          </div>
-          <div className="text-2xl font-heading font-bold">{metrics?.conversations_waiting_clinic ?? 0}</div>
-        </div>
-        <div className="rounded-lg border bg-card p-4 shadow-sm">
-          <div className="text-xs text-muted-foreground mb-1">Aguardando responsável</div>
-          <div className="text-2xl font-heading font-bold">{metrics?.conversations_waiting_tutor ?? 0}</div>
-        </div>
-        <div className="rounded-lg border bg-card p-4 shadow-sm">
-          <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
-            <CheckCheck className="w-3 h-3 text-green-600" /> Encerradas hoje
-          </div>
-          <div className="text-2xl font-heading font-bold text-green-600">{stats?.closed_today ?? 0}</div>
-        </div>
-        <div className="rounded-lg border bg-card p-4 shadow-sm">
-          {alerts.length > 0 ? (
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-amber-600" />
-              <span className="text-sm">{alerts.length} conversa(s) há +20 min sem resposta</span>
-            </div>
-          ) : (
-            <>
-              <div className="text-xs text-muted-foreground mb-1">Tempo médio resposta</div>
-              <div className="text-2xl font-heading font-bold">{metrics?.average_response_time ?? 0}<span className="text-sm font-normal ml-1">s</span></div>
-            </>
+      <div className="flex flex-1 min-h-0 flex-col overflow-hidden rounded-wa-lg border border-wa-line bg-card lg:flex-row">
+        {/* Coluna esquerda: lista de conversas (não respondidas aparecem primeiro).
+            No mobile isso é uma "tela" inteira — só aparece quando mobileView==='list'
+            (equivalente ao lg:flex forçar visível sempre em telas grandes). */}
+        <div
+          className={cn(
+            'min-h-0 w-full flex-1 flex-col border-wa-line lg:flex lg:w-85 lg:flex-none lg:border-r lg:border-b-0',
+            mobileView === 'list' ? 'flex' : 'hidden',
           )}
-        </div>
-      </div>
-
-      <div className="flex flex-1 min-h-0 flex-col gap-4 lg:flex-row">
-        {/* Coluna esquerda: lista de conversas (não respondidas aparecem primeiro) */}
-        <div className="flex flex-col gap-4 min-h-0 shrink-0 lg:w-80 lg:self-stretch">
-
-          {/* Lista de conversas */}
-          <div className="rounded-lg border bg-card shadow-sm flex flex-col min-h-0 flex-1 max-h-[min(40vh,320px)] lg:max-h-none">
-            <div className="px-4 py-3 border-b shrink-0 space-y-2">
-              <div className="flex items-center gap-2">
-                <span className="font-medium text-sm">Conversas</span>
-                <div className="ml-auto inline-flex rounded-md border overflow-hidden">
-                  <button
-                    type="button"
-                    onClick={() => setArchivedFilter('false')}
-                    className={cn(
-                      'px-2 py-1 text-xs',
-                      archivedFilter === 'false' ? 'bg-primary text-white' : 'bg-card hover:bg-muted/50',
-                    )}
-                  >
-                    Ativas
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setArchivedFilter('true')}
-                    className={cn(
-                      'px-2 py-1 text-xs border-l',
-                      archivedFilter === 'true' ? 'bg-primary text-white' : 'bg-card hover:bg-muted/50',
-                    )}
-                  >
-                    Arquivadas
-                  </button>
-                </div>
+        >
+          <div className="flex shrink-0 flex-col gap-3 px-4.5 pt-4.5 pb-3">
+            <div className="flex items-center justify-between">
+              <span className="text-[15px] font-bold text-wa-ink">Conversas</span>
+              <div className="inline-flex rounded-wa bg-wa-line-2 p-0.75 text-xs font-semibold">
+                <button
+                  type="button"
+                  onClick={() => setArchivedFilter('false')}
+                  className={cn(
+                    'rounded-[7px] px-3 py-1.5 transition-colors',
+                    archivedFilter === 'false' ? 'bg-wa-brand-600 text-white' : 'text-wa-ink-2 hover:text-wa-ink',
+                  )}
+                >
+                  Ativas
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setArchivedFilter('true')}
+                  className={cn(
+                    'rounded-[7px] px-3 py-1.5 transition-colors',
+                    archivedFilter === 'true' ? 'bg-wa-brand-600 text-white' : 'text-wa-ink-2 hover:text-wa-ink',
+                  )}
+                >
+                  Arquivadas
+                </button>
               </div>
-              <Select value={classificationFilter || 'all'} onValueChange={(v) => setClassificationFilter(v === 'all' ? '' : v)}>
-                <SelectTrigger className="h-7 text-xs">
-                  <SelectValue placeholder="Classificação: Todas" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas as classificações</SelectItem>
-                  {CLASSIFICATIONS.map((c) => (
-                    <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </div>
-            <ScrollArea className="flex-1 min-h-0">
-            <div className="p-2">
-              {loadingConv ? (
-                <div className="space-y-3 p-2">
-                  {[...Array(5)].map((_, i) => (
-                    <Skeleton key={i} className="h-14 w-full rounded" />
-                  ))}
-                </div>
-              ) : sortedConversations.length === 0 ? (
-                <div className="py-8 text-center text-muted-foreground/60 text-sm">Nenhuma conversa</div>
-              ) : (
-                <div>
-                  {sortedConversations.map((c) => (
-                    <div
-                      key={c.id}
-                      className={cn(
-                        'cursor-pointer rounded px-2 py-2',
-                        selectedId === c.id ? 'bg-primary/10 border border-primary/20' : 'hover:bg-muted/50',
-                      )}
-                      onClick={() => setSelectedId(c.id)}
-                    >
-                        <div className="w-full min-h-[52px] flex flex-col justify-center">
-                          <div className="font-medium flex items-center gap-2 flex-wrap text-sm">
-                            <span>{c.contact_name || c.wa_id || 'Sem nome'}</span>
-                            <AiPausedTag paused={c.ai_paused} />
-                            {!c.ai_paused && <ThreadStatusTag status={c.thread_status ?? null} />}
-                            {c.archived_at && (
-                              <Badge variant="outline" className="border-muted-foreground/40 text-muted-foreground gap-1 m-0">
-                                <Archive className="w-3 h-3" />
-                                {c.archived_reason?.startsWith('inactive_') ? 'Arquivada (inativa 7d)' : 'Arquivada'}
-                              </Badge>
-                            )}
-                          </div>
-                          <div className="text-xs text-muted-foreground mt-0.5">
-                            {c.wa_id}
-                            {c.last_message_at && ` · ${dayjs(c.last_message_at).fromNow()}`}
-                          </div>
-                          {c.classification && (
-                            <div className="mt-1 flex items-center gap-2 flex-wrap">
-                              <ClassificationBadge classification={c.classification} />
-                              {c.closed_by && (
-                                <span className="text-[10px] text-muted-foreground">por {c.closed_by}</span>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </ScrollArea>
+            <Select value={classificationFilter || 'all'} onValueChange={(v) => setClassificationFilter(v === 'all' ? '' : v)}>
+              <SelectTrigger className="h-auto w-full justify-between rounded-wa border-wa-line bg-transparent px-3 py-2.25 text-[13.5px] font-normal text-wa-ink-2 shadow-none [&_svg]:hidden hover:bg-wa-line-2/60">
+                <SelectValue placeholder="Todas as classificações" />
+                <ChevronDown className="size-3.5 shrink-0 text-wa-ink-2" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as classificações</SelectItem>
+                {CLASSIFICATIONS.map((c) => (
+                  <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
+          <ScrollArea className="flex-1 min-h-0">
+          <div className="flex flex-col gap-0.75 px-2.5 pb-3.5">
+            {loadingConv ? (
+              <div className="space-y-3 p-2">
+                {[...Array(5)].map((_, i) => (
+                  <Skeleton key={i} className="h-14 w-full rounded-wa" />
+                ))}
+              </div>
+            ) : sortedConversations.length === 0 ? (
+              <div className="py-8 text-center text-wa-ink-3 text-sm">Nenhuma conversa</div>
+            ) : (
+              sortedConversations.map((c) => {
+                const selected = selectedId === c.id;
+                return (
+                  <div
+                    key={c.id}
+                    className={cn(
+                      'flex cursor-pointer flex-col gap-1.25 rounded-wa border px-3.5 py-3 transition-colors duration-150',
+                      selected ? 'border-wa-brand-500 bg-wa-brand-50' : 'border-transparent hover:bg-wa-line-2',
+                    )}
+                    onClick={() => selectConversation(c.id)}
+                  >
+                    <div className="flex items-baseline justify-between gap-2">
+                      <span className="truncate text-sm font-semibold text-wa-ink">{c.contact_name || c.wa_id || 'Sem nome'}</span>
+                    </div>
+                    <span className="text-[12.5px] text-wa-ink-3">
+                      {c.wa_id}
+                      {c.last_message_at && ` · ${dayjs(c.last_message_at).fromNow()}`}
+                    </span>
+                    {c.archived_at && (
+                      <Pill icon={Archive} label={c.archived_reason?.startsWith('inactive_') ? 'Arquivada (inativa 7d)' : 'Arquivada'} fg="var(--wa-ink-2)" bg="var(--wa-line-2)" />
+                    )}
+                    <HumanFlag paused={c.ai_paused} />
+                    {!c.ai_paused && <ThreadStatusBadge status={c.thread_status ?? undefined} />}
+                    {c.classification && (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <ClassificationBadge classification={c.classification} />
+                        {c.closed_by && <span className="text-[11px] text-wa-ink-3">por {c.closed_by}</span>}
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </ScrollArea>
         </div>
 
-        {/* Painel de mensagens */}
-        <div className="rounded-lg border bg-card shadow-sm flex-1 min-w-0 min-h-0 flex flex-col">
-          <div className="px-4 py-3 border-b flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between shrink-0">
-            <div className="flex items-center gap-2 flex-wrap min-w-0">
+        {/* Painel de mensagens — no mobile é a "tela" que aparece só quando
+            mobileView==='chat'; em lg+ fica sempre visível ao lado da lista. */}
+        <div
+          className={cn(
+            'min-h-0 min-w-0 flex-1 flex-col bg-[#fbfcfb] lg:flex',
+            mobileView === 'chat' ? 'flex' : 'hidden',
+          )}
+        >
+          <div className="flex shrink-0 flex-col gap-2 border-b border-wa-line bg-card px-3 py-2.5 sm:flex-row sm:items-center sm:gap-2.5 sm:px-6 sm:py-4">
+            <div className="flex min-w-0 flex-1 items-center gap-1.5 sm:gap-3">
+              <button
+                type="button"
+                onClick={() => setMobileView('list')}
+                aria-label="Voltar para a lista de conversas"
+                className="flex size-7 shrink-0 items-center justify-center rounded-full text-wa-ink-2 hover:bg-wa-line-2 lg:hidden"
+              >
+                <ChevronLeft className="size-4" />
+              </button>
               {selectedConv ? (
                 <>
-                  <span className="font-medium text-sm truncate">
-                    {selectedConv.contact_name || selectedConv.wa_id}
-                  </span>
-                  <AiPausedTag paused={selectedConv.ai_paused} />
-                  {!selectedConv.ai_paused && <ThreadStatusTag status={selectedConv.thread_status ?? null} />}
-                  {selectedConv.classification && (
-                    <ClassificationBadge classification={selectedConv.classification} />
-                  )}
-                  {selectedConv.status === 'closed' && selectedConv.closed_by && (
-                    <span className="text-xs text-muted-foreground flex items-center gap-1">
-                      <CheckCheck className="w-3 h-3 text-green-600" />
-                      Encerrado por <strong>{selectedConv.closed_by}</strong>
-                      {selectedConv.closed_at && ` em ${dayjs(selectedConv.closed_at).format('DD/MM HH:mm')}`}
+                  <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-wa-brand-100 text-xs font-bold text-wa-brand-700 sm:size-9.5 sm:text-[13.5px]">
+                    {initials(selectedConv.contact_name, selectedConv.wa_id)}
+                  </div>
+                  <div className="flex min-w-0 flex-col gap-0.5 sm:gap-1">
+                    <span className="truncate text-[13.5px] font-bold text-wa-ink sm:text-[14.5px]">
+                      {selectedConv.contact_name || selectedConv.wa_id}
                     </span>
-                  )}
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <HumanBadge paused={selectedConv.ai_paused} />
+                      {!selectedConv.ai_paused && <ThreadStatusBadge status={selectedConv.thread_status ?? undefined} />}
+                      {selectedConv.classification && <ClassificationBadge classification={selectedConv.classification} />}
+                      {selectedConv.status === 'closed' && selectedConv.closed_by && (
+                        <span className="inline-flex items-center gap-1 text-xs text-wa-ink-3">
+                          <Check className="size-3 text-wa-brand-600" />
+                          Encerrado por <strong className="font-semibold text-wa-ink-2">{selectedConv.closed_by}</strong>
+                          {selectedConv.closed_at && ` em ${dayjs(selectedConv.closed_at).format('DD/MM HH:mm')}`}
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </>
               ) : (
-                <span className="font-medium text-sm">Selecione uma conversa</span>
+                <span className="text-sm font-medium text-wa-ink-2">Selecione uma conversa</span>
               )}
             </div>
             {selectedConv && (
-              <div className="flex gap-2 flex-wrap">
-                {/* Assumir / Retomar Bot */}
+              <div className="grid grid-cols-4 gap-1 sm:flex sm:w-auto sm:flex-wrap sm:justify-start sm:gap-2">
                 {selectedConv.ai_paused ? (
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button size="sm" variant="outline" onClick={handleResumeAi} disabled={aiActionLoading}>
-                        {aiActionLoading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Bot className="w-4 h-4 mr-1" />}
-                        Retomar Bot
-                      </Button>
+                      <ActionButton icon={Bot} label="Retomar Bot" onClick={handleResumeAi} disabled={aiActionLoading} loading={aiActionLoading} />
                     </TooltipTrigger>
                     <TooltipContent>Retomar atendimento automático pelo bot</TooltipContent>
                   </Tooltip>
                 ) : (
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button size="sm" variant="outline" onClick={handlePauseAi} disabled={aiActionLoading}>
-                        {aiActionLoading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <User className="w-4 h-4 mr-1" />}
-                        Assumir
-                      </Button>
+                      <ActionButton icon={User} label="Assumir" onClick={handlePauseAi} disabled={aiActionLoading} loading={aiActionLoading} />
                     </TooltipTrigger>
                     <TooltipContent>Pausar bot e assumir atendimento manualmente</TooltipContent>
                   </Tooltip>
                 )}
 
-                {/* Classificar (popover rápido) */}
                 {!selectedConv.archived_at && (
                   <div className="relative">
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button size="sm" variant="outline" onClick={() => setClassifyPopover((v) => !v)} disabled={classifyLoading}>
-                          {classifyLoading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Tag className="w-4 h-4 mr-1" />}
-                          Classificar
-                        </Button>
+                        <ActionButton icon={Tag} label="Classificar" onClick={() => setClassifyPopover((v) => !v)} disabled={classifyLoading} loading={classifyLoading} />
                       </TooltipTrigger>
                       <TooltipContent>Classificar sem encerrar</TooltipContent>
                     </Tooltip>
                     {classifyPopover && (
-                      <div className="absolute right-0 top-full mt-1 z-50 w-52 rounded-lg border bg-popover shadow-md p-2 space-y-1">
-                        <div className="flex items-center justify-between px-1 pb-1 border-b mb-1">
-                          <span className="text-xs font-medium text-muted-foreground">Classificar conversa</span>
-                          <button type="button" onClick={() => setClassifyPopover(false)}><X className="w-3 h-3" /></button>
+                      <div className="absolute left-1/2 top-full z-50 mt-1.5 w-52 -translate-x-1/2 rounded-wa border border-wa-line bg-popover p-2 shadow-md space-y-1 sm:left-auto sm:right-0 sm:translate-x-0">
+                        <div className="flex items-center justify-between px-1 pb-1 border-b border-wa-line mb-1">
+                          <span className="text-xs font-medium text-wa-ink-2">Classificar conversa</span>
+                          <button type="button" onClick={() => setClassifyPopover(false)}><X className="size-3" /></button>
                         </div>
                         {CLASSIFICATIONS.map((c) => (
                           <button
@@ -522,7 +609,7 @@ export default function WhatsAppPage() {
                             onClick={() => handleQuickClassify(c.value)}
                             className={cn(
                               'w-full text-left rounded-md px-2 py-1.5 text-xs transition-colors',
-                              selectedConv.classification === c.value ? `${c.badgeClass} font-medium` : 'hover:bg-muted',
+                              selectedConv.classification === c.value ? `${c.badgeClass} font-medium` : 'hover:bg-wa-line-2',
                             )}
                           >
                             {c.label}
@@ -533,61 +620,28 @@ export default function WhatsAppPage() {
                   </div>
                 )}
 
-                {/* Encerrar: escolher classificação já encerra na hora */}
+                {/* Encerrar: só abre o modal de confirmação — nada executa direto no clique,
+                    já teve dropdown de execução imediata aqui e era fácil encerrar sem querer. */}
                 {!selectedConv.archived_at && (
-                  <div className="flex items-center gap-1">
-                    <Select value="" onValueChange={handleQuickClose} disabled={closeQuickLoading}>
-                      <SelectTrigger
-                        size="sm"
-                        className="w-auto border-green-300 text-green-700 hover:bg-green-50 data-[placeholder]:text-green-700 [&_svg]:text-green-700"
-                      >
-                        {closeQuickLoading ? (
-                          <Loader2 className="w-4 h-4 animate-spin mr-1" />
-                        ) : (
-                          <CheckCheck className="w-4 h-4 mr-1" />
-                        )}
-                        <SelectValue placeholder="Encerrar..." />
-                      </SelectTrigger>
-                      <SelectContent align="end">
-                        {CLASSIFICATIONS.map((c) => (
-                          <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="shrink-0 text-muted-foreground"
-                          onClick={() => setCloseDialogOpen(true)}
-                        >
-                          <MessageSquareText className="w-4 h-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Encerrar com observação</TooltipContent>
-                    </Tooltip>
-                  </div>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <ActionButton icon={Check} label="Encerrar" onClick={() => setCloseDialogOpen(true)} />
+                    </TooltipTrigger>
+                    <TooltipContent>Encerrar conversa (escolher classificação e observação)</TooltipContent>
+                  </Tooltip>
                 )}
 
-                {/* Arquivar / Desarquivar */}
                 {selectedConv.archived_at ? (
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button size="sm" variant="outline" onClick={handleUnarchive} disabled={archiveLoading}>
-                        {archiveLoading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <ArchiveRestore className="w-4 h-4 mr-1" />}
-                        Desarquivar
-                      </Button>
+                      <ActionButton icon={ArchiveRestore} label="Desarquivar" onClick={handleUnarchive} disabled={archiveLoading} loading={archiveLoading} />
                     </TooltipTrigger>
                     <TooltipContent>Trazer conversa de volta para a lista de ativas</TooltipContent>
                   </Tooltip>
                 ) : (
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button size="sm" variant="outline" onClick={handleArchive} disabled={archiveLoading}>
-                        {archiveLoading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Archive className="w-4 h-4 mr-1" />}
-                        Arquivar
-                      </Button>
+                      <ActionButton icon={Archive} label="Arquivar" onClick={handleArchive} disabled={archiveLoading} loading={archiveLoading} />
                     </TooltipTrigger>
                     <TooltipContent>Arquivar temporariamente (reabre em nova mensagem)</TooltipContent>
                   </Tooltip>
@@ -598,83 +652,80 @@ export default function WhatsAppPage() {
 
           <div className="flex flex-col flex-1 min-h-0 p-0">
             {!selectedId ? (
-              <div className="flex-1 flex items-center justify-center text-muted-foreground/60 p-4">
+              <div className="flex-1 flex items-center justify-center text-wa-ink-3 p-4">
                 Clique em uma conversa para ver as mensagens
               </div>
             ) : (
               <>
-                <ScrollArea className="flex-1 min-h-0 px-4 pt-4">
-                  <div className="space-y-2 pb-2">
+                <ScrollArea className="flex-1 min-h-0 px-6 pt-6">
+                  <div className="flex flex-col gap-4 pb-2">
                     {loadingMsg ? (
                       <div className="flex justify-center py-8">
-                        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground/60" />
+                        <Loader2 className="size-6 animate-spin text-wa-ink-3" />
                       </div>
                     ) : messages.length === 0 ? (
-                      <div className="py-8 text-center text-muted-foreground/60 text-sm">Nenhuma mensagem</div>
+                      <div className="py-8 text-center text-wa-ink-3 text-sm">Nenhuma mensagem</div>
                     ) : (
-                      messages.map((m) => (
-                        <div
-                          key={m.id}
-                          className={`flex ${m.direction === 'outbound' ? 'justify-end' : 'justify-start'}`}
-                        >
-                          <div
-                            className={cn(
-                              'max-w-[80%] rounded-lg px-3 py-2',
-                              m.direction === 'outbound'
-                                ? 'bg-primary text-white'
-                                : 'bg-muted text-foreground',
-                            )}
-                          >
-                            {isMediaMessage(m) ? (
-                              <div className="space-y-1.5">
-                                <WhatsappMediaBubble message={m} />
-                                {m.body_text && !m.body_text.startsWith('[') && (
-                                  <div className="text-sm whitespace-pre-wrap">{m.body_text}</div>
+                      messages.map((m) => {
+                        const mine = m.direction === 'outbound';
+                        return (
+                          <div key={m.id} className={cn('flex', mine ? 'justify-end' : 'justify-start')}>
+                            <div className={cn('flex max-w-120 flex-col gap-1', mine ? 'items-end' : 'items-start')}>
+                              <div
+                                className={cn(
+                                  'px-3.75 py-3 text-sm leading-snug',
+                                  mine
+                                    ? 'rounded-[14px_14px_3px_14px] bg-wa-brand-600 text-white'
+                                    : 'rounded-[14px_14px_14px_3px] bg-wa-line-2 text-wa-ink',
+                                )}
+                              >
+                                {isMediaMessage(m) ? (
+                                  <div className="space-y-1.5">
+                                    <WhatsappMediaBubble message={m} />
+                                    {m.body_text && !m.body_text.startsWith('[') && (
+                                      <div className="whitespace-pre-wrap">{m.body_text}</div>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <div className="whitespace-pre-wrap">{m.body_text || '—'}</div>
                                 )}
                               </div>
-                            ) : (
-                              <div className="text-sm whitespace-pre-wrap">{m.body_text || '—'}</div>
-                            )}
-                            <div
-                              className={cn(
-                                'text-xs mt-1',
-                                m.direction === 'outbound' ? 'text-blue-100' : 'text-muted-foreground/60',
-                              )}
-                            >
-                              {dayjs(m.created_at ?? m.createdAt).format('DD/MM HH:mm')}
+                              <span className="px-1 text-[11.5px] text-wa-ink-3">
+                                {dayjs(m.created_at ?? m.createdAt).format('DD/MM HH:mm')}
+                              </span>
                             </div>
                           </div>
-                        </div>
-                      ))
+                        );
+                      })
                     )}
                   </div>
                 </ScrollArea>
 
                 {suggestions.length > 0 && (
-                  <div className="mb-2 flex flex-wrap gap-2 shrink-0 px-4">
-                    <span className="text-muted-foreground text-sm self-center">Sugestões:</span>
+                  <div className="mb-2 flex flex-wrap gap-2 shrink-0 px-6">
+                    <span className="text-wa-ink-3 text-sm self-center">Sugestões:</span>
                     {suggestions.map((s, i) => (
-                      <Button
+                      <button
                         key={i}
-                        size="sm"
-                        variant="outline"
+                        type="button"
                         onClick={() => {
                           setSendText(s);
                           setSuggestions([]);
                         }}
+                        className="rounded-wa border border-wa-line bg-white px-3 py-1.5 text-xs font-medium text-wa-ink transition-colors hover:bg-wa-line-2"
                       >
                         {s.length > 50 ? s.slice(0, 50) + '…' : s}
-                      </Button>
+                      </button>
                     ))}
                   </div>
                 )}
 
-                <div className="flex gap-2 shrink-0 px-4 pb-4 pt-2 border-t border-border/60 bg-card">
+                <div className="flex items-center gap-1.5 shrink-0 px-2.5 pt-2 pb-[calc(4.25rem+env(safe-area-inset-bottom))] border-t border-wa-line bg-card lg:gap-2.5 lg:px-6 lg:pt-3 lg:pb-6">
                   <Textarea
                     value={sendText}
                     onChange={(e) => setSendText(e.target.value)}
                     placeholder="Digite a mensagem..."
-                    className="min-h-[40px] max-h-[120px] resize-none"
+                    className="min-h-9 max-h-30 flex-1 resize-none rounded-xl border-wa-line px-3 py-2 text-sm shadow-none placeholder:text-wa-ink-3 focus-visible:ring-wa-brand-500/25 lg:min-h-10.5 lg:rounded-full lg:px-4.5 lg:py-2.75"
                     rows={1}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
@@ -686,34 +737,33 @@ export default function WhatsAppPage() {
                   />
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="icon"
+                      <button
+                        type="button"
                         onClick={handleSuggestReply}
                         disabled={suggestLoading}
-                        className="shrink-0"
+                        className="flex size-8.5 shrink-0 items-center justify-center rounded-full border border-wa-line bg-white text-wa-ink-2 transition-colors hover:bg-wa-line-2 disabled:opacity-50 lg:size-10.5"
                       >
                         {suggestLoading ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <Loader2 className="size-3.5 animate-spin lg:size-4" />
                         ) : (
-                          <Lightbulb className="w-4 h-4" />
+                          <Lightbulb className="size-3.5 lg:size-4" />
                         )}
-                      </Button>
+                      </button>
                     </TooltipTrigger>
                     <TooltipContent>Sugerir resposta (IA)</TooltipContent>
                   </Tooltip>
-                  <Button
+                  <button
+                    type="button"
                     onClick={handleSend}
                     disabled={sending || !sendText.trim()}
-                    size="icon"
-                    className="bg-primary hover:bg-blue-700 shrink-0"
+                    className="flex size-8.5 shrink-0 items-center justify-center rounded-full bg-wa-brand-600 text-white transition-colors hover:bg-wa-brand-700 disabled:opacity-50 lg:size-10.5"
                   >
                     {sending ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <Loader2 className="size-3.5 animate-spin lg:size-4" />
                     ) : (
-                      <Send className="w-4 h-4" />
+                      <Send className="size-3.5 lg:size-4" />
                     )}
-                  </Button>
+                  </button>
                 </div>
               </>
             )}

@@ -1,0 +1,161 @@
+<!-- @dsCard group="Web" viewport="1920x1080" name="Prontuário" subtitle="Cabeçalho redesenhado com foto presa" -->
+<!DOCTYPE html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../../styles.css">
+<style>
+*{margin:0;box-sizing:border-box;font-family:var(--font-sans)}
+body{display:flex;background:var(--bg)}
+.sidebar{width:248px;background:var(--brand-600);color:#fff;display:flex;flex-direction:column;padding:20px 14px;flex-shrink:0}
+.logo{display:flex;align-items:center;gap:9px;font-size:17px;font-weight:700;padding:0 6px 18px}
+.logo svg{width:22px;height:22px}
+.newbtn{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);border-radius:10px;padding:10px;text-align:center;font-weight:600;font-size:14px;margin-bottom:14px}
+.nav{display:flex;flex-direction:column;gap:2px;font-size:14px}
+.nav a{display:flex;align-items:center;gap:10px;color:#fff;text-decoration:none;padding:9px 10px;border-radius:9px;opacity:.88}
+.nav a svg{width:16px;height:16px;flex-shrink:0}
+.nav a.active{background:rgba(255,255,255,.16);opacity:1;font-weight:600}
+.main{flex:1;display:flex;flex-direction:column;min-width:0}
+.topbar{display:flex;align-items:center;gap:14px;padding:16px 32px;border-bottom:1px solid var(--line)}
+.search{flex:0 0 340px;display:flex;align-items:center;gap:8px;background:#eef1ef;border-radius:999px;padding:9px 14px;color:var(--ink-3);font-size:13.5px}
+.search kbd{margin-left:auto;background:#fff;border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:11px;color:var(--ink-2)}
+.icon-btn{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:#fff;display:flex;align-items:center;justify-content:center;color:var(--ink-2)}
+.lang{display:flex;background:#eef1ef;border-radius:9px;padding:3px;font-size:12.5px;font-weight:600;color:var(--ink-3)}
+.lang span{padding:5px 10px;border-radius:7px}
+.lang span.on{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.spacer{flex:1}
+.user{display:flex;align-items:center;gap:10px;font-size:13.5px;color:var(--ink-2)}
+.avatar{width:32px;height:32px;border-radius:50%;background:var(--brand-600);color:#fff;font-size:11.5px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.content{padding:24px 32px 40px;flex:1;overflow:auto}
+.crumb{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--ink-2);font-weight:600;margin-bottom:16px}
+.crumb svg{width:14px;height:14px}
+.newficha{position:absolute;top:24px;right:32px;background:var(--brand-600);color:#fff;border:none;border-radius:10px;padding:11px 18px;font-size:14px;font-weight:700;display:flex;align-items:center;gap:7px;cursor:pointer;box-shadow:0 8px 18px -6px rgba(14,158,110,.4)}
+
+/* --- new header --- */
+.header{position:relative;background:linear-gradient(135deg,var(--brand-700) 0%,var(--brand-600) 55%,#0d9d68 100%);border-radius:22px;padding:34px 36px;color:#fff;overflow:hidden;margin-bottom:22px}
+.header::before{content:"";position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,.08) 1.5px,transparent 1.5px);background-size:24px 24px;opacity:.6}
+.header::after{content:"";position:absolute;width:380px;height:380px;border-radius:50%;background:rgba(255,255,255,.06);right:-120px;top:-180px}
+.hrow{position:relative;z-index:1;display:flex;align-items:flex-start;gap:24px}
+.pet-avatar{width:76px;height:76px;border-radius:20px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.pet-avatar svg{width:38px;height:38px}
+.pet-id{flex:1;min-width:0}
+.species-tag{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28);border-radius:999px;padding:4px 12px;font-size:12px;font-weight:700;letter-spacing:.02em;margin-bottom:10px}
+.pet-name{font-size:36px;font-weight:800;letter-spacing:-0.02em;line-height:1}
+.owner-row{display:flex;align-items:center;gap:7px;margin-top:9px;font-size:14.5px;color:rgba(255,255,255,.85)}
+.owner-row svg{width:15px;height:15px;opacity:.85}
+.owner-row b{color:#fff;font-weight:700}
+.stat-strip{position:relative;z-index:1;display:flex;gap:10px;margin-top:26px;flex-wrap:wrap}
+.stat-pill{display:flex;align-items:center;gap:9px;background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.22);border-radius:12px;padding:9px 14px}
+.stat-pill svg{width:16px;height:16px;opacity:.9;flex-shrink:0}
+.stat-pill .k{font-size:11px;color:rgba(255,255,255,.7);font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+.stat-pill .v{font-size:14px;font-weight:700}
+.polaroid{position:absolute;top:26px;right:36px;width:108px;background:#fff;border-radius:6px;padding:7px 7px 12px;box-shadow:0 14px 30px -8px rgba(0,0,0,.35);transform:rotate(4deg);z-index:2}
+.polaroid img,.polaroid .ph{width:100%;height:88px;border-radius:2px;object-fit:cover}
+.clip{position:absolute;top:-14px;left:50%;transform:translateX(-50%) rotate(-8deg);width:22px;height:36px;filter:drop-shadow(0 3px 4px rgba(0,0,0,.35))}
+
+.tabs2{display:flex;background:#eef1ef;border-radius:12px;padding:4px;margin-bottom:20px;width:fit-content}
+.tabs2 .t{display:flex;align-items:center;gap:7px;padding:9px 18px;border-radius:9px;font-size:13.5px;font-weight:600;color:var(--ink-2)}
+.tabs2 .t.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.tabs2 .t svg{width:15px;height:15px}
+
+.grid2{display:grid;grid-template-columns:1.6fr 1fr;gap:20px}
+.panel{background:#fff;border:1px solid var(--line);border-radius:var(--radius-lg);overflow:hidden}
+.panel-head{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--line-2)}
+.panel-head h2{font-size:15px;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:8px}
+.panel-head h2 svg{width:16px;height:16px;color:var(--brand-600)}
+.count{font-size:12.5px;color:var(--ink-3);background:var(--line-2);padding:2px 9px;border-radius:999px}
+.ficha{display:flex;align-items:center;gap:14px;padding:14px 20px;border-bottom:1px solid var(--line-2)}
+.ficha:last-child{border-bottom:none}
+.ficha .date{font-size:12.5px;color:var(--ink-3);width:78px;flex-shrink:0}
+.ficha .tag{font-size:11.5px;font-weight:600;color:var(--ink-2);background:var(--line-2);padding:3px 9px;border-radius:999px;flex-shrink:0}
+.ficha .title{flex:1;font-size:13.5px;font-weight:600;color:var(--ink)}
+.badge-open{font-size:12px;font-weight:700;color:#0a7350;background:#e3f7ee;padding:4px 12px;border-radius:999px}
+.ficha svg{width:14px;height:14px;color:var(--ink-3)}
+.tl-item{display:flex;gap:12px;padding:13px 20px;border-bottom:1px solid var(--line-2)}
+.tl-item:last-child{border-bottom:none}
+.tl-dot{width:30px;height:30px;border-radius:9px;background:var(--brand-50);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.tl-dot svg{width:14px;height:14px;color:var(--brand-600)}
+.tl-txt .t{font-size:13px;font-weight:600;color:var(--ink)}
+.tl-txt .d{font-size:11.5px;color:var(--ink-3);margin-top:2px}
+.recent{margin-left:auto;font-size:10px;font-weight:700;background:var(--brand-600);color:#fff;padding:3px 8px;border-radius:999px;letter-spacing:.03em}
+.fab{position:fixed;bottom:24px;right:32px;display:flex;align-items:center;gap:8px;background:var(--brand-600);color:#fff;font-weight:700;font-size:13.5px;border-radius:999px;padding:13px 20px;box-shadow:0 8px 20px rgba(14,158,110,.3)}
+</style></head><body>
+<div class="sidebar">
+<div class="logo"><svg viewBox="0 0 24 24" fill="#fff"><circle cx="7" cy="7" r="4.2"/><circle cx="17" cy="7" r="4.2"/><circle cx="7" cy="17" r="4.2"/><circle cx="17" cy="17" r="4.2"/></svg>NixVetApp</div>
+<div class="newbtn">+ Novo</div>
+<div class="nav">
+<a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Dashboard</a>
+<a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>Agenda</a>
+<a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-4.5-9.3-9A5 5 0 0 1 12 6a5 5 0 0 1 9.3 6c-2.3 4.5-9.3 9-9.3 9z"/></svg>Pacientes</a>
+<a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>Responsáveis</a>
+<a href="#" class="active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v15H6z"/><path d="M14 2v5h5M9 13h6M9 17h6"/></svg>Prontuário</a>
+<a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M9 7h6M9 11h6M9 15h3"/></svg>Prescrição</a>
+<a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 2v6L4 20a1 1 0 0 0 1 2h14a1 1 0 0 0 1-2l-5-12V2"/><path d="M9 2h6"/></svg>Exames</a>
+<a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 18v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6M3 18h18M5 10V6h6v4"/></svg>Internações</a>
+<a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18M7 15l4-6 3 3 5-7"/></svg>Financeiro</a>
+<a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.4 8.4 0 0 1-8.9 8.4 8.5 8.5 0 0 1-4.3-1.1L3 20l1.2-4.8A8.4 8.4 0 1 1 21 11.5z"/></svg>WhatsApp</a>
+<a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a5 5 0 0 0-5 5c0 2 1 3 1 5v2h8v-2c0-2 1-3 1-5a5 5 0 0 0-5-5z"/><path d="M9 19h6M10 22h4"/></svg>Chatbot / IA</a>
+</div>
+</div>
+
+<div class="main">
+<div class="topbar">
+<div class="search"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>Buscar<kbd>Ctrl+K</kbd></div>
+<div class="icon-btn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></div>
+<div class="icon-btn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg></div>
+<div class="lang"><span class="on">PT</span><span>EN</span><span>ES</span></div>
+<div class="spacer"></div>
+<div class="user">Olá, Administrador<div class="avatar">AD</div></div>
+</div>
+
+<div class="content" style="position:relative">
+<div class="crumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 6l-6 6 6 6"/></svg>Prontuários</div>
+<button class="newficha"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>Nova ficha</button>
+
+<div class="header">
+<div class="hrow">
+<div class="pet-avatar"><svg viewBox="0 0 24 24" fill="#fff"><path d="M4.5 9.5a2 2 0 1 1 4 0 2 2 0 0 1-4 0zM9.5 5.5a2 2 0 1 1 4 0 2 2 0 0 1-4 0zM14.5 5.5a2 2 0 1 1 4 0 2 2 0 0 1-4 0zM19.5 9.5a2 2 0 1 1 4 0 2 2 0 0 1-4 0zM12 12c-3.5 0-7 2-7 5.5a3 3 0 0 0 5 2.3c1.2-1 2.7-1 3.9 0a3 3 0 0 0 5-2.3c0-3.5-3.4-5.5-6.9-5.5z" transform="scale(0.83) translate(2,2)"/></svg></div>
+<div class="pet-id">
+<div class="species-tag"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>Paciente ativo</div>
+<div class="pet-name">Duke</div>
+<div class="owner-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>Responsável: <b>Larissa Martins</b></div>
+</div>
+</div>
+<div class="stat-strip">
+<div class="stat-pill"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M12 21s-7-4.5-9.3-9A5 5 0 0 1 12 6a5 5 0 0 1 9.3 6c-2.3 4.5-9.3 9-9.3 9z"/></svg><div><div class="k">Espécie</div><div class="v">Canina</div></div></div>
+<div class="stat-pill"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="9"/></svg><div><div class="k">Raça</div><div class="v">Golden Retriever</div></div></div>
+<div class="stat-pill"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg><div><div class="k">Idade</div><div class="v">4 anos</div></div></div>
+<div class="stat-pill"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M6.5 8h11l1.5 12h-14z"/><path d="M9 8a3 3 0 0 1 6 0"/></svg><div><div class="k">Peso</div><div class="v">31.70 kg</div></div></div>
+<div class="stat-pill"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2"/></svg><div><div class="k">Sexo</div><div class="v">Macho</div></div></div>
+</div>
+<div class="polaroid">
+<svg class="clip" viewBox="0 0 24 40" fill="none" stroke="#c7cdc9" stroke-width="2.4"><path d="M6 4a6 6 0 0 1 12 0v24a3 3 0 0 1-6 0V10"/></svg>
+<div class="ph" style="background:repeating-linear-gradient(45deg,#eef2f0,#eef2f0 6px,#e2e8e5 6px,#e2e8e5 12px);display:flex;align-items:center;justify-content:center;color:var(--ink-3);font-size:9px;font-family:monospace;text-align:center;padding:4px">foto do pet</div>
+</div>
+</div>
+
+<div class="tabs2">
+<div class="t on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Visão geral</div>
+<div class="t"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C7 7 4 10.5 4 14a8 8 0 0 0 16 0c0-3.5-3-7-8-12z"/></svg>Vacinas</div>
+<div class="t"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>Acompanhamento</div>
+</div>
+
+<div class="grid2">
+<div class="panel">
+<div class="panel-head"><h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v15H6z"/><path d="M14 2v5h5"/></svg>Fichas de atendimento</h2><span class="count">11 no total</span></div>
+<div class="ficha"><span class="date">11/08/2026</span><span class="tag">Atendimento</span><span class="title">Consulta de urgência — ingestão de objeto</span><span class="badge-open">Aberto</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 6l6 6-6 6"/></svg></div>
+<div class="ficha"><span class="date">08/08/2026</span><span class="tag">Atendimento</span><span class="title">Retorno de exames laboratoriais</span><span class="badge-open">Aberto</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 6l6 6-6 6"/></svg></div>
+<div class="ficha"><span class="date">05/08/2026</span><span class="tag">Atendimento</span><span class="title">Avaliação odontológica</span><span class="badge-open">Aberto</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 6l6 6-6 6"/></svg></div>
+<div class="ficha"><span class="date">02/08/2026</span><span class="tag">Atendimento</span><span class="title">Avaliação dermatológica</span><span class="badge-open">Aberto</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 6l6 6-6 6"/></svg></div>
+<div class="ficha"><span class="date">30/07/2026</span><span class="tag">Atendimento</span><span class="title">Vacinação anual</span><span class="badge-open">Aberto</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 6l6 6-6 6"/></svg></div>
+</div>
+
+<div class="panel">
+<div class="panel-head"><h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>Linha do tempo</h2></div>
+<div class="tl-item"><div class="tl-dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v15H6z"/></svg></div><div class="tl-txt"><div class="t">Atendimento</div><div class="d">10/08/2026</div></div><span class="recent">MAIS RECENTE</span></div>
+<div class="tl-item"><div class="tl-dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v15H6z"/></svg></div><div class="tl-txt"><div class="t">Atendimento</div><div class="d">07/08/2026</div></div></div>
+<div class="tl-item"><div class="tl-dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v15H6z"/></svg></div><div class="tl-txt"><div class="t">Atendimento</div><div class="d">04/08/2026</div></div></div>
+<div class="tl-item"><div class="tl-dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v15H6z"/></svg></div><div class="tl-txt"><div class="t">Atendimento</div><div class="d">01/08/2026</div></div></div>
+<div class="tl-item"><div class="tl-dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v15H6z"/></svg></div><div class="tl-txt"><div class="t">Atendimento</div><div class="d">29/07/2026</div></div></div>
+</div>
+</div>
+</div>
+</div>
+<div class="fab"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" width="15" height="15"><path d="M20 6L9 17l-5-5"/></svg>Configuração 25%</div>
+</body></html>

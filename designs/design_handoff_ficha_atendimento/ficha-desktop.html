@@ -1,0 +1,185 @@
+<!-- @dsCard group="Web" viewport="1920x1080" name="Ficha de Atendimento" subtitle="Seções organizadas por hierarquia" -->
+<!DOCTYPE html><html><head><meta charset="utf-8"><link rel="stylesheet" href="../../styles.css">
+<style>
+*{margin:0;box-sizing:border-box;font-family:var(--font-sans)}
+body{display:flex;background:var(--bg)}
+.sidebar{width:248px;background:var(--brand-600);color:#fff;display:flex;flex-direction:column;padding:20px 14px;flex-shrink:0}
+.logo{display:flex;align-items:center;gap:9px;font-size:17px;font-weight:700;padding:0 6px 18px}
+.logo svg{width:22px;height:22px}
+.newbtn{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);border-radius:10px;padding:10px;text-align:center;font-weight:600;font-size:14px;margin-bottom:14px}
+.nav{display:flex;flex-direction:column;gap:2px;font-size:14px}
+.nav a{display:flex;align-items:center;gap:10px;color:#fff;text-decoration:none;padding:9px 10px;border-radius:9px;opacity:.88}
+.nav a svg{width:16px;height:16px;flex-shrink:0}
+.nav a.active{background:rgba(255,255,255,.16);opacity:1;font-weight:600}
+.main{flex:1;display:flex;flex-direction:column;min-width:0}
+.topbar{display:flex;align-items:center;gap:14px;padding:16px 32px;border-bottom:1px solid var(--line)}
+.search{flex:0 0 340px;display:flex;align-items:center;gap:8px;background:#eef1ef;border-radius:999px;padding:9px 14px;color:var(--ink-3);font-size:13.5px}
+.search kbd{margin-left:auto;background:#fff;border:1px solid var(--line);border-radius:5px;padding:1px 6px;font-size:11px;color:var(--ink-2)}
+.icon-btn{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:#fff;display:flex;align-items:center;justify-content:center;color:var(--ink-2)}
+.lang{display:flex;background:#eef1ef;border-radius:9px;padding:3px;font-size:12.5px;font-weight:600;color:var(--ink-3)}
+.lang span{padding:5px 10px;border-radius:7px}
+.lang span.on{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.spacer{flex:1}
+.user{display:flex;align-items:center;gap:10px;font-size:13.5px;color:var(--ink-2)}
+.avatar{width:32px;height:32px;border-radius:50%;background:var(--brand-600);color:#fff;font-size:11.5px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.content{padding:24px 32px 60px;flex:1;overflow:auto;max-width:1180px}
+.crumb{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--ink-2);font-weight:600;margin-bottom:16px}
+.crumb svg{width:14px;height:14px}
+
+.head-card{background:#fff;border:1px solid var(--line);border-radius:var(--radius-lg);padding:22px 26px;margin-bottom:20px}
+.head-top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px}
+.head-id{display:flex;align-items:center;gap:12px}
+.doc-ic{width:42px;height:42px;border-radius:11px;background:var(--brand-50);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.doc-ic svg{width:20px;height:20px;color:var(--brand-700)}
+.pet-name{font-size:21px;font-weight:800;color:var(--ink);letter-spacing:-0.01em}
+.pet-sub{font-size:12.5px;color:var(--ink-3);margin-top:2px}
+.status-open{font-size:12px;font-weight:700;color:#0a7350;background:#e3f7ee;padding:5px 13px;border-radius:999px;margin-left:6px}
+.head-actions{display:flex;gap:10px}
+.btn{border:none;border-radius:10px;font-size:13.5px;font-weight:700;padding:10px 18px;display:flex;align-items:center;gap:7px;cursor:pointer;font-family:var(--font-sans)}
+.btn-primary{background:var(--brand-600);color:#fff;box-shadow:0 8px 18px -6px rgba(14,158,110,.4)}
+.btn-outline{background:#fff;color:var(--ink);border:1.5px solid var(--line)}
+.meta-row{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+.meta-pill{display:flex;align-items:center;gap:7px;background:var(--bg);border:1px solid var(--line-2);border-radius:9px;padding:7px 13px;font-size:12.5px;color:var(--ink-2);font-weight:600}
+.meta-pill svg{width:14px;height:14px;color:var(--ink-3)}
+
+.tabs2{display:flex;background:#eef1ef;border-radius:12px;padding:4px;margin-bottom:22px;width:fit-content}
+.tabs2 .t{display:flex;align-items:center;gap:7px;padding:9px 18px;border-radius:9px;font-size:13.5px;font-weight:600;color:var(--ink-2)}
+.tabs2 .t.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.tabs2 .t svg{width:15px;height:15px}
+
+.section{margin-bottom:20px}
+.section-eyebrow{font-size:11px;font-weight:700;color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;padding-left:2px}
+.card{background:#fff;border:1px solid var(--line);border-radius:var(--radius-lg);padding:22px 24px}
+label{display:block;font-size:13px;font-weight:600;color:var(--ink);margin-bottom:8px}
+textarea,input,select{width:100%;border:1.5px solid var(--line);border-radius:9px;padding:11px 13px;font-size:14px;font-family:var(--font-sans);color:var(--ink);resize:vertical}
+textarea:focus,input:focus,select:focus{outline:none;border-color:var(--brand-500);box-shadow:0 0 0 3px var(--brand-50)}
+.field{margin-bottom:18px}
+.field:last-child{margin-bottom:0}
+.ai-btn{display:inline-flex;align-items:center;gap:7px;background:var(--brand-50);color:var(--brand-700);border:1px solid var(--brand-100);border-radius:9px;padding:8px 14px;font-size:12.5px;font-weight:700;margin-top:2px}
+.ai-btn svg{width:14px;height:14px}
+
+.exam-card{background:#fff;border:1px solid var(--line);border-radius:var(--radius-lg);overflow:hidden}
+.exam-head{display:flex;align-items:center;justify-content:space-between;background:var(--brand-50);padding:14px 22px;border-bottom:1px solid var(--brand-100)}
+.exam-head h3{font-size:14px;font-weight:700;color:var(--brand-700);display:flex;align-items:center;gap:9px}
+.exam-head h3 svg{width:16px;height:16px}
+.exam-head svg.chev{width:15px;height:15px;color:var(--brand-600)}
+.exam-body{padding:20px 22px;display:grid;grid-template-columns:repeat(4,1fr);gap:18px 16px}
+.unit-input{position:relative}
+.unit-input input{padding-right:44px}
+.unit-input span{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--ink-3);font-weight:600;pointer-events:none}
+
+.diag-card{background:linear-gradient(180deg,var(--brand-50),#fff);border:1.5px solid var(--brand-100);border-radius:var(--radius-lg);padding:22px 24px}
+.diag-card label{color:var(--brand-700);display:flex;align-items:center;gap:7px}
+.diag-card label svg{width:15px;height:15px}
+
+.notes-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.notes-card{background:#fbfcfb;border:1px dashed var(--line);border-radius:var(--radius-lg);padding:18px 20px}
+.notes-card label{color:var(--ink-2);display:flex;align-items:center;gap:5px;font-weight:600}
+.notes-card label svg{width:13px;height:13px;color:var(--ink-3)}
+.notes-card textarea{background:#fff}
+
+.fab{position:fixed;bottom:24px;right:32px;display:flex;align-items:center;gap:8px;background:var(--brand-600);color:#fff;font-weight:700;font-size:13.5px;border-radius:999px;padding:13px 20px;box-shadow:0 8px 20px rgba(14,158,110,.3)}
+</style></head><body>
+<div class="sidebar">
+<div class="logo"><svg viewBox="0 0 24 24" fill="#fff"><circle cx="7" cy="7" r="4.2"/><circle cx="17" cy="7" r="4.2"/><circle cx="7" cy="17" r="4.2"/><circle cx="17" cy="17" r="4.2"/></svg>NixVetApp</div>
+<div class="newbtn">+ Novo</div>
+<div class="nav">
+<a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Dashboard</a>
+<a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>Agenda</a>
+<a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-4.5-9.3-9A5 5 0 0 1 12 6a5 5 0 0 1 9.3 6c-2.3 4.5-9.3 9-9.3 9z"/></svg>Pacientes</a>
+<a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>Responsáveis</a>
+<a href="#" class="active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v15H6z"/><path d="M14 2v5h5M9 13h6M9 17h6"/></svg>Prontuário</a>
+<a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M9 7h6M9 11h6M9 15h3"/></svg>Prescrição</a>
+<a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 2v6L4 20a1 1 0 0 0 1 2h14a1 1 0 0 0 1-2l-5-12V2"/><path d="M9 2h6"/></svg>Exames</a>
+<a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 18v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6M3 18h18M5 10V6h6v4"/></svg>Internações</a>
+<a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18M7 15l4-6 3 3 5-7"/></svg>Financeiro</a>
+<a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.4 8.4 0 0 1-8.9 8.4 8.5 8.5 0 0 1-4.3-1.1L3 20l1.2-4.8A8.4 8.4 0 1 1 21 11.5z"/></svg>WhatsApp</a>
+<a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a5 5 0 0 0-5 5c0 2 1 3 1 5v2h8v-2c0-2 1-3 1-5a5 5 0 0 0-5-5z"/><path d="M9 19h6M10 22h4"/></svg>Chatbot / IA</a>
+</div>
+</div>
+
+<div class="main">
+<div class="topbar">
+<div class="search"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>Buscar<kbd>Ctrl+K</kbd></div>
+<div class="icon-btn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></div>
+<div class="icon-btn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 20a2 2 0 0 0 4 0"/></svg></div>
+<div class="lang"><span class="on">PT</span><span>EN</span><span>ES</span></div>
+<div class="spacer"></div>
+<div class="user">Olá, Administrador<div class="avatar">AD</div></div>
+</div>
+
+<div class="content">
+<div class="crumb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 6l-6 6 6 6"/></svg>Voltar</div>
+
+<div class="head-card">
+<div class="head-top">
+<div class="head-id">
+<div class="doc-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l5 5v15H6z"/><path d="M14 2v5h5"/></svg></div>
+<div><span class="pet-name">Duke<span class="status-open">Aberto</span></span><div class="pet-sub">Ficha de atendimento</div></div>
+</div>
+<div class="head-actions">
+<button class="btn btn-primary"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>Salvar</button>
+<button class="btn btn-outline"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Fechar ficha</button>
+</div>
+</div>
+<div class="meta-row">
+<div class="meta-pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-4.5-9.3-9A5 5 0 0 1 12 6a5 5 0 0 1 9.3 6c-2.3 4.5-9.3 9-9.3 9z"/></svg>Canina · Golden Retriever</div>
+<div class="meta-pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18"/></svg>11/08/2026</div>
+<div class="meta-pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg>Dr. Rafael Almeida</div>
+</div>
+</div>
+
+<div class="tabs2">
+<div class="t on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h4l2 8 4-16 2 8h8"/></svg>Clínico</div>
+<div class="t"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7" cy="17" r="3"/><circle cx="17" cy="7" r="3"/><path d="M9.5 14.5l5-5"/></svg>Prescrições</div>
+<div class="t"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 2v6L4 20a1 1 0 0 0 1 2h14a1 1 0 0 0 1-2l-5-12V2"/></svg>Exames</div>
+<div class="t"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C7 7 4 10.5 4 14a8 8 0 0 0 16 0c0-3.5-3-7-8-12z"/></svg>Vacinas</div>
+<div class="t"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="14" rx="2"/><path d="M3 13l5-5 4 4 6-6"/></svg>Anexos</div>
+</div>
+
+<div class="section">
+<div class="section-eyebrow">Motivo da consulta</div>
+<div class="card">
+<div class="field"><label>Queixa principal</label><input value="Consulta de urgência - ingestão de objeto"></div>
+<div class="field"><label>Anamnese</label><textarea rows="2">Tutora relata que Duke mastigou e possivelmente ingeriu parte de um brinquedo de borracha.</textarea></div>
+<div class="ai-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8"/></svg>Formatar com IA</div>
+</div>
+</div>
+
+<div class="section">
+<div class="section-eyebrow">Exame físico</div>
+<div class="exam-card">
+<div class="exam-head"><h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-4.5-9.3-9A5 5 0 0 1 12 6a5 5 0 0 1 9.3 6c-2.3 4.5-9.3 9-9.3 9z"/></svg>Sinais vitais e avaliação</h3><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 15l6-6 6 6"/></svg></div>
+<div class="exam-body">
+<div><label>Peso</label><div class="unit-input"><input value="31,70"><span>kg</span></div></div>
+<div><label>Temperatura</label><div class="unit-input"><input value="38,8"><span>°C</span></div></div>
+<div><label>Freq. cardíaca</label><div class="unit-input"><input value="100"><span>bpm</span></div></div>
+<div><label>Freq. respiratória</label><div class="unit-input"><input value="26"><span>mpm</span></div></div>
+<div><label>TPC</label><div class="unit-input"><input placeholder="—"><span>s</span></div></div>
+<div><label>Hidratação</label><select><option>—</option></select></div>
+<div><label>Linfonodos</label><input placeholder="—"></div>
+<div><label>Mucosas</label><input placeholder="ex.: róseas, pálidas"></div>
+</div>
+</div>
+</div>
+
+<div class="section">
+<div class="section-eyebrow">Avaliação</div>
+<div class="diag-card">
+<label><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>Diagnóstico presuntivo</label>
+<textarea rows="2">Suspeita de ingestão de corpo estranho, sem sinais de obstrução no momento.</textarea>
+</div>
+</div>
+
+<div class="section">
+<div class="section-eyebrow">Complementar</div>
+<div class="notes-grid">
+<div class="notes-card"><label><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 16v-4M12 8h.01"/></svg>Notas da equipe (interno)</label><textarea rows="3" placeholder="Visível apenas para a equipe"></textarea></div>
+<div class="notes-card"><label><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.4 8.4 0 0 1-8.9 8.4 8.5 8.5 0 0 1-4.3-1.1L3 20l1.2-4.8A8.4 8.4 0 1 1 21 11.5z"/></svg>Observações para o tutor</label><textarea rows="3">Orientado retorno imediato caso apresente vômito, apatia ou dor abdominal.</textarea></div>
+</div>
+</div>
+
+</div>
+</div>
+<div class="fab"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" width="15" height="15"><path d="M20 6L9 17l-5-5"/></svg>Configuração 25%</div>
+</body></html>

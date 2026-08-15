@@ -55,3 +55,13 @@ env.*.json
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# design-sync (Claude Design) — staged converter scripts, build output, and
+# machine-generated verification state. .design-sync/config.json, NOTES.md,
+# conventions.md, previews/, and overrides/ are committed.
+/.ds-sync/
+/ds-bundle/
+.design-sync/build/
+.design-sync/.cache/
+.design-sync/learnings/
+.design-sync/node_modules

@@ -24,9 +24,18 @@
 }
 
 :root {
+  /* Plataforma não tem modo escuro pronto — força os controles nativos do
+     navegador (inputs, selects, scrollbars) a sempre renderizar no claro,
+     mesmo com o SO em dark mode. Sem isso, essas peças ficam escuras e
+     destoam do resto do layout, que é sempre claro. */
+  color-scheme: light;
   --app-header-h: 4rem;
   --app-sidebar-w: 260px;
   --app-sidebar-w-collapsed: 72px;
+  /* Padding vertical do <main> (topo e base) — mesmo valor nos dois lados e em
+     todos os breakpoints, pra páginas como o WhatsApp poderem calcular sua
+     altura (100dvh - header - 2x isso) sem o número desalinhar do CSS real. */
+  --app-main-py: 1rem;
   /* NixVet — healthtech clínico */
   --brand-deep: #12b37f;
   --brand-deep-dark: #09452d;
@@ -65,6 +74,38 @@
   --sidebar-ring: #7fa48e;
   --shadow-card:
     0 1px 3px rgba(14, 30, 47, 0.06), 0 1px 2px rgba(14, 30, 47, 0.04);
+
+  /* Redesign escopado (sidebar, navbar, tela de WhatsApp) — ver
+     design_handoff_whatsapp_inbox/README.md. Tokens novos, aditivos: não
+     substituem --primary/--brand-deep usados no resto do app. O verde
+     continua sendo o verde da marca (--brand-deep #12b37f) — só a
+     estrutura/espaçamento/raios vêm do handoff, não o tom. 50/100/700 são
+     tinta/sombra derivadas do mesmo #12b37f, não a paleta jade do mockup. */
+  --wa-brand-50: #eefaf6;
+  --wa-brand-100: #d0f0e5;
+  --wa-brand-500: var(--brand-deep);
+  --wa-brand-600: var(--brand-deep);
+  --wa-brand-700: #0e8f66;
+  --wa-green-bg: #eefaf6;
+  --wa-ink: #1a2420;
+  --wa-ink-2: #5a6a63;
+  --wa-ink-3: #8a9791;
+  --wa-line: #e2e8e5;
+  --wa-line-2: #eef2f0;
+  --wa-bg: #f6f8f7;
+  --wa-warn: #d97706;
+  --wa-warn-bg: #fef3e2;
+  --wa-blue: #2563eb;
+  --wa-blue-bg: #eaf1ff;
+  --wa-pink: #c2417a;
+  --wa-pink-bg: #fdeef5;
+  --wa-pink-soft: #f6d3e2;
+  /* Entrada/saída financeira (ver design_handoff_financeiro) — usado em
+     badges de categoria e valores de lançamentos (receita vs. custo/despesa). */
+  --wa-in: #0a7350;
+  --wa-in-bg: #e3f7ee;
+  --wa-out: #b4394a;
+  --wa-out-bg: #fdeef0;
 }
 
 @theme inline {
@@ -110,6 +151,34 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --animate-accordion-down: accordion-down 0.25s ease-out;
+  --animate-accordion-up: accordion-up 0.25s ease-out;
+
+  --color-wa-brand-50: var(--wa-brand-50);
+  --color-wa-brand-100: var(--wa-brand-100);
+  --color-wa-brand-500: var(--wa-brand-500);
+  --color-wa-brand-600: var(--wa-brand-600);
+  --color-wa-brand-700: var(--wa-brand-700);
+  --color-wa-green-bg: var(--wa-green-bg);
+  --color-wa-ink: var(--wa-ink);
+  --color-wa-ink-2: var(--wa-ink-2);
+  --color-wa-ink-3: var(--wa-ink-3);
+  --color-wa-line: var(--wa-line);
+  --color-wa-line-2: var(--wa-line-2);
+  --color-wa-bg: var(--wa-bg);
+  --color-wa-warn: var(--wa-warn);
+  --color-wa-warn-bg: var(--wa-warn-bg);
+  --color-wa-blue: var(--wa-blue);
+  --color-wa-blue-bg: var(--wa-blue-bg);
+  --color-wa-pink: var(--wa-pink);
+  --color-wa-pink-bg: var(--wa-pink-bg);
+  --color-wa-pink-soft: var(--wa-pink-soft);
+  --color-wa-in: var(--wa-in);
+  --color-wa-in-bg: var(--wa-in-bg);
+  --color-wa-out: var(--wa-out);
+  --color-wa-out-bg: var(--wa-out-bg);
+  --radius-wa: 10px;
+  --radius-wa-lg: 14px;
 }
 
 body {
@@ -126,8 +195,16 @@ body {
   font-family: var(--font-heading), var(--font-sans), system-ui, sans-serif;
 }
 
-* {
-  border-color: var(--border);
+/* @layer base (não solto): Tailwind v4 gera as classes (border-white/5, border-wa-line
+   etc.) dentro de @layer utilities. CSS sem layer sempre ganha de CSS com layer,
+   não importa a especificidade — então um "* {border-color}" solto aqui
+   sobrescrevia SILENCIOSAMENTE qualquer border-color de qualquer componente do
+   app inteiro (era por isso que nenhum ajuste de linha/contorno na sidebar
+   aparecia). Dentro do layer, a cascata volta a funcionar normal. */
+@layer base {
+  * {
+    border-color: var(--border);
+  }
 }
 
 .login-shell {
@@ -204,6 +281,63 @@ body {
 .custom-scrollbar-thumb:hover {
   opacity: 1;
   transform: scaleX(1.05);
+}
+
+@keyframes accordion-down {
+  from {
+    height: 0;
+  }
+  to {
+    height: var(--radix-accordion-content-height);
+  }
+}
+
+@keyframes accordion-up {
+  from {
+    height: var(--radix-accordion-content-height);
+  }
+  to {
+    height: 0;
+  }
+}
+
+@keyframes nix-tab-fade-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 6px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes nix-tab-fade-out {
+  from {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    opacity: 0;
+    transform: translate3d(0, -6px, 0);
+  }
+}
+
+/* Halo suave que acompanha a entrada do dashboard logo após o onboarding
+   (ver register/page.tsx `nixvet:just-onboarded`) — aparece, respira e some,
+   sem repetir. */
+@keyframes nix-onboard-glow {
+  0% {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  35% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.15);
+  }
 }
 
 @keyframes nix-float-slow {
@@ -296,6 +430,87 @@ body {
 
 /* Responsive modal adjustments (mobile/tablet only). Aggressive mobile-first approach
    to prevent text/input overflow and ensure proper stacking. */
+/* Reserva espaço no fim da página pro SetupChecklistWidget virar uma bottom
+   bar de verdade no mobile, sem sobrepor conteúdo — em vez de cada tela
+   remendar seu próprio padding, o widget alterna essa classe no <body>. */
+.has-config-bar {
+  padding-bottom: calc(4.25rem + env(safe-area-inset-bottom));
+}
+@media (min-width: 958px) {
+  .has-config-bar {
+    padding-bottom: 0;
+  }
+}
+
+@keyframes wa-modal-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.85) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes wa-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes wa-item-in {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes wa-item-flash {
+  0% {
+    background-color: transparent;
+  }
+  35% {
+    background-color: var(--wa-brand-50);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+@keyframes wa-star-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.3) rotate(-25deg);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.15) rotate(8deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes wa-particle-burst {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--wa-tx), var(--wa-ty)) scale(0);
+    opacity: 0;
+  }
+}
+
 @media (max-width: 1024px) {
   .modal-responsive {
     width: calc(100% - 1.5rem) !important;
