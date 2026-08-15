@@ -21,7 +21,7 @@ import {
   ChevronsRight,
 } from "lucide-react";
 import { planMeetsRequirement } from "@/lib/plans";
-import { clearTenantCookie } from "@/lib/axios";
+import { destroySession } from "@/lib/session";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useProfileQuery } from "@/hooks/apiHooks/useUsers";
@@ -737,14 +737,13 @@ export default function DashboardLayout({
   // sessão anterior. window.location.href força reload completo, garantindo
   // que absolutamente nenhum estado em memória sobreviva à troca de sessão —
   // o mesmo caminho que o logout automático por 401 já usava (src/lib/axios.ts).
-  const handleLogout = () => {
+  const handleLogout = async () => {
     queryClient.clear();
     if (typeof window !== "undefined") {
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("tenantId");
-      localStorage.removeItem("tenantCode");
-      localStorage.removeItem("user");
-      clearTenantCookie();
+      // O cookie de sessão é HttpOnly: só o backend consegue apagá-lo, e é
+      // ele também quem revoga o refresh token (senão a sessão seguiria viva
+      // no servidor depois do "sair").
+      await destroySession();
       window.location.href = "/login";
       return;
     }

@@ -20,7 +20,7 @@ import Image from "next/image";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface LoginResponsePayload {
-  access_token?: string;
+  // Sem `access_token`: no web a sessão volta em cookie HttpOnly (Set-Cookie).
   user?: {
     tenant_id: string;
     name: string;
@@ -105,6 +105,9 @@ export default function LoginPage() {
       const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        // Sem isto o browser descarta o Set-Cookie da resposta (a API mora em
+        // outro subdomínio) e o login "dá certo" sem sessão nenhuma.
+        credentials: "include",
         body: JSON.stringify({
           email: trimmedEmail,
           password: trimmedPassword,
@@ -133,12 +136,12 @@ export default function LoginPage() {
         return;
       }
 
-      const { access_token, user } = data.data ?? {};
-      if (!access_token || !user) {
+      const { user } = data.data ?? {};
+      if (!user) {
         toast.error("Resposta de login inválida.");
         return;
       }
-      establishSession(access_token, user, code);
+      establishSession(user, code);
 
       toast.success(translation("auth.welcome", { name: user.name }));
       router.push("/dashboard");

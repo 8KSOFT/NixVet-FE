@@ -29,7 +29,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { getApiBaseUrl } from '@/lib/api-base';
-import { establishSession } from '@/lib/session';
+import { establishSession, hasClientSession } from '@/lib/session';
 import { LogoColored } from '@/components/shared/componentizedImages/LogoColored';
 import {
   useOnboardingStatusQuery,
@@ -169,9 +169,7 @@ export default function RegisterPage() {
   const completeOnboarding = useCompleteOnboardingMutation();
 
   useEffect(() => {
-    const hasSession =
-      typeof window !== 'undefined' && !!localStorage.getItem('accessToken');
-    setResuming(hasSession);
+    setResuming(hasClientSession());
   }, []);
 
   useEffect(() => {
@@ -227,6 +225,9 @@ export default function RegisterPage() {
       const res = await fetch(`${getApiBaseUrl()}/billing/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        // O cadastro já entrega a sessão em cookie HttpOnly; sem `include` o
+        // browser descarta o Set-Cookie e o onboarding seguiria deslogado.
+        credentials: 'include',
         body: JSON.stringify({
           clinicName: clinicName.trim(),
           clinicCode: clinicCode.trim(),
@@ -246,15 +247,15 @@ export default function RegisterPage() {
         return;
       }
 
-      // Envelope: { success, message, data: { tenantId, tenantCode, adminEmail, access_token, user } }.
-      const { access_token, user, tenantCode } = data.data ?? {};
-      if (!access_token || !user) {
+      // Envelope: { success, message, data: { tenantId, tenantCode, adminEmail, user } }.
+      const { user, tenantCode } = data.data ?? {};
+      if (!user) {
         toast.error('Conta criada, mas não foi possível entrar automaticamente. Faça login.');
         router.push(`/login?code=${clinicCode}`);
         return;
       }
 
-      establishSession(access_token, user, tenantCode || clinicCode);
+      establishSession(user, tenantCode || clinicCode);
       toast.success('Clínica criada! Falta só terminar a configuração.');
       setStep(4);
     } catch {

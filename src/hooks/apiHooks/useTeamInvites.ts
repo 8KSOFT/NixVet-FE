@@ -98,7 +98,7 @@ export function usePreviewInviteQuery(token: string) {
 
 export interface AcceptInviteResponse {
   tenantCode: string;
-  access_token: string;
+  // Sem `access_token`: no web a sessão volta em cookie HttpOnly (Set-Cookie).
   user: {
     tenant_id: string;
     name: string;

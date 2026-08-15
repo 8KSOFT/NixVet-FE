@@ -37,12 +37,13 @@ export default function AcceptInvitePage() {
     }
     try {
       const res = await acceptInvite.mutateAsync({ token, password });
-      if (!res?.access_token || !res?.user) {
+      // A sessão vem em cookie HttpOnly na própria resposta do aceite.
+      if (!res?.user) {
         toast.success('Conta criada! Faça login para entrar.');
         router.push(`/login?code=${res?.tenantCode ?? ''}`);
         return;
       }
-      establishSession(res.access_token, res.user, res.tenantCode);
+      establishSession(res.user, res.tenantCode);
       toast.success(`Bem-vindo(a) à equipe, ${res.user.name}!`);
       router.push('/dashboard');
     } catch (error: unknown) {
