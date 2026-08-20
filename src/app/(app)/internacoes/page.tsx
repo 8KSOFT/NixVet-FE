@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { ApiRequestError } from '@/app/types/api-error';
 import type { HospitalizationCreatePayload, HospitalizationFormValues } from '@/app/types/hospitalization';
 import { Plus, Clock, ChevronRight, PawPrint } from 'lucide-react';
@@ -19,6 +20,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import Link from 'next/link';
 import { PlanUpgradeGate } from '@/components/billing/PlanUpgradeGate';
+import { CURRENCY_BY_LANGUAGE, resolveAppLanguage } from '@/lib/i18n/currency';
 import {
   useActiveHospitalizationsListQuery,
   useCreateHospitalizationMutation,
@@ -32,20 +34,6 @@ function daysInternado(admissionDate: string): number {
   const ms = Date.now() - new Date(admissionDate).getTime();
   return Math.ceil(ms / (1000 * 60 * 60 * 24));
 }
-
-/** Rótulos dos status vindos do enum do backend. */
-const STATUS_LABELS: Record<string, string> = {
-  active: 'Internado',
-  discharged: 'Alta',
-  transferred: 'Transferido',
-  deceased: 'Óbito',
-};
-
-const SEVERITY_LABELS: Record<string, string> = {
-  stable: 'Estável',
-  attention: 'Atenção',
-  critical: 'Crítico',
-};
 
 const SEVERITY_STYLES: Record<string, string> = {
   stable: 'bg-green-100 text-green-700 border border-green-200',
@@ -61,12 +49,17 @@ const SEVERITY_STYLES: Record<string, string> = {
  * aparecia "Crítico", e um caso grave admitido hoje aparecia "Estável". Tempo
  * de internação continua na tela, mas como informação neutra no rodapé.
  */
-function severityBadge(severity: string | undefined, status: string): { color: string; label: string } {
+function severityBadge(
+  severity: string | undefined,
+  status: string,
+  statusLabels: Record<string, string>,
+  severityLabels: Record<string, string>,
+): { color: string; label: string } {
   if (status !== 'active') {
-    return { color: 'bg-gray-200 text-gray-600', label: STATUS_LABELS[status] ?? status };
+    return { color: 'bg-gray-200 text-gray-600', label: statusLabels[status] ?? status };
   }
   const key = severity ?? 'stable';
-  return { color: SEVERITY_STYLES[key] ?? SEVERITY_STYLES.stable, label: SEVERITY_LABELS[key] ?? key };
+  return { color: SEVERITY_STYLES[key] ?? SEVERITY_STYLES.stable, label: severityLabels[key] ?? key };
 }
 
 function getApiErrorMessage(error: unknown, fallbackMessage: string): string {
@@ -81,7 +74,23 @@ function getApiErrorMessage(error: unknown, fallbackMessage: string): string {
 }
 
 function InternacoesPageContent() {
+  const { t, i18n } = useTranslation();
+  const currencySymbol = CURRENCY_BY_LANGUAGE[resolveAppLanguage(i18n.language)].symbol;
   const [openNew, setOpenNew] = useState(false);
+
+  /** Rótulos dos status vindos do enum do backend. */
+  const STATUS_LABELS: Record<string, string> = {
+    active: t('internacoes.statusActive'),
+    discharged: t('internacoes.statusDischarged'),
+    transferred: t('internacoes.statusTransferred'),
+    deceased: t('internacoes.statusDeceased'),
+  };
+
+  const SEVERITY_LABELS: Record<string, string> = {
+    stable: t('internacoes.severityStable'),
+    attention: t('internacoes.severityAttention'),
+    critical: t('internacoes.severityCritical'),
+  };
 
   const { data: active = [], isLoading: loadingActive } = useActiveHospitalizationsListQuery();
   const { data: all = [], isLoading: loadingAll } = useHospitalizationsQuery();
@@ -111,15 +120,15 @@ function InternacoesPageContent() {
 
   const handleCreate = async () => {
     if (!form.patient_id) {
-      toast.error('Selecione o paciente');
+      toast.error(t('internacoes.validationSelectPatient'));
       return;
     }
     if (!form.veterinarian_id) {
-      toast.error('Selecione o veterinário');
+      toast.error(t('internacoes.validationSelectVeterinarian'));
       return;
     }
     if (!form.reason.trim()) {
-      toast.error('Informe o motivo');
+      toast.error(t('internacoes.validationEnterReason'));
       return;
     }
     try {
@@ -131,7 +140,7 @@ function InternacoesPageContent() {
       await createHospitalization.mutateAsync(payload);
       setOpenNew(false);
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, 'Erro ao abrir internação'));
+      toast.error(getApiErrorMessage(error, t('internacoes.createError')));
     }
   };
 
@@ -141,19 +150,19 @@ function InternacoesPageContent() {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Internações</h1>
-          <p className="text-sm text-muted-foreground">Painel de pacientes internados</p>
+          <h1 className="text-2xl font-bold">{t('internacoes.title')}</h1>
+          <p className="text-sm text-muted-foreground">{t('internacoes.subtitle')}</p>
         </div>
         <Button onClick={() => setOpenNew(true)}>
           <Plus className="mr-2 size-4" />
-          Nova Internação
+          {t('internacoes.newButton')}
         </Button>
       </div>
 
       <Tabs defaultValue="active">
         <TabsList>
-          <TabsTrigger value="active">Ativos ({active.length})</TabsTrigger>
-          <TabsTrigger value="history">Histórico ({discharged.length})</TabsTrigger>
+          <TabsTrigger value="active">{t('internacoes.tabActive', { count: active.length })}</TabsTrigger>
+          <TabsTrigger value="history">{t('internacoes.tabHistory', { count: discharged.length })}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="active" className="mt-8">
@@ -164,12 +173,12 @@ function InternacoesPageContent() {
               ))}
             </div>
           ) : active.length === 0 ? (
-            <div className="py-16 text-center text-muted-foreground">Nenhum paciente internado no momento</div>
+            <div className="py-16 text-center text-muted-foreground">{t('internacoes.emptyActive')}</div>
           ) : (
             <div className="flex flex-wrap gap-x-6 gap-y-8 pt-3">
               {active.map((h) => {
                 const days = daysInternado(h.admission_date);
-                const { color, label } = severityBadge(h.severity, h.status);
+                const { color, label } = severityBadge(h.severity, h.status, STATUS_LABELS, SEVERITY_LABELS);
                 const photoUrl = h.patient?.photo_url;
                 return (
                   <Link
@@ -207,10 +216,10 @@ function InternacoesPageContent() {
                               className="truncate border-b border-dashed border-gray-300 pb-0.5 text-[10px] font-medium text-muted-foreground"
                               title={h.veterinarian?.name}
                             >
-                              {h.veterinarian?.name ?? 'Sem veterinário'}
+                              {h.veterinarian?.name ?? t('internacoes.noVeterinarian')}
                             </p>
                             <p className="mt-0.5 truncate text-[9px] text-muted-foreground/70">
-                              {[h.patient?.species, h.box_number ? `Box ${h.box_number}` : null]
+                              {[h.patient?.species, h.box_number ? t('internacoes.boxLabel', { box: h.box_number }) : null]
                                 .filter(Boolean)
                                 .join(' · ')}
                             </p>
@@ -280,7 +289,7 @@ function InternacoesPageContent() {
                         <div className="flex items-center justify-between">
                           <span className="flex items-center gap-1">
                             <Clock className="size-3" />
-                            {days} dia{days !== 1 ? 's' : ''}
+                            {t('internacoes.daysCount', { count: days })}
                           </span>
                           <ChevronRight className="h-4 w-4 shrink-0 text-gray-400 transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-primary" />
                         </div>
@@ -298,19 +307,19 @@ function InternacoesPageContent() {
             <Table className="min-w-full border-collapse bg-white text-sm">
               <TableHeader>
                 <TableRow className="border-b border-gray-300 h-15">
-                  <TableHead>Paciente</TableHead>
-                  <TableHead>Motivo</TableHead>
-                  <TableHead>Admissão</TableHead>
-                  <TableHead>Alta</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Vet.</TableHead>
+                  <TableHead>{t('internacoes.tableHeaderPatient')}</TableHead>
+                  <TableHead>{t('internacoes.tableHeaderReason')}</TableHead>
+                  <TableHead>{t('internacoes.tableHeaderAdmission')}</TableHead>
+                  <TableHead>{t('internacoes.tableHeaderDischarge')}</TableHead>
+                  <TableHead>{t('internacoes.tableHeaderStatus')}</TableHead>
+                  <TableHead>{t('internacoes.tableHeaderVet')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {discharged.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="border-t border-slate-200 py-8 text-center text-sm text-slate-500">
-                      Nenhum histórico
+                      {t('internacoes.emptyHistory')}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -343,24 +352,24 @@ function InternacoesPageContent() {
       <DashboardCreateFormDialog
         open={openNew}
         onOpenChange={setOpenNew}
-        title="Nova Internação"
+        title={t('internacoes.newButton')}
         containerClassName="max-w-2xl mx-auto"
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button variant="outline" onClick={() => setOpenNew(false)}>
-              Cancelar
+              {t('internacoes.cancel')}
             </Button>
-            <Button onClick={handleCreate}>Abrir Internação</Button>
+            <Button onClick={handleCreate}>{t('internacoes.openButton')}</Button>
           </div>
         }
       >
         <div className="space-y-4 md:space-y-6">
           <div className="grid grid-cols-2 gap-4 md:gap-4 max-md:grid-cols-2">
             <div className="space-y-1">
-              <Label>Paciente *</Label>
+              <Label>{t('internacoes.fieldPatient')}</Label>
               <Select value={form.patient_id} onValueChange={(v) => setForm((f) => ({ ...f, patient_id: v }))}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione" />
+                  <SelectValue placeholder={t('internacoes.selectPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
                   {patients.map((p) => (
@@ -372,13 +381,13 @@ function InternacoesPageContent() {
               </Select>
             </div>
             <div className="space-y-1">
-              <Label>Veterinário *</Label>
+              <Label>{t('internacoes.fieldVeterinarian')}</Label>
               <Select
                 value={form.veterinarian_id}
                 onValueChange={(v) => setForm((f) => ({ ...f, veterinarian_id: v }))}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione" />
+                  <SelectValue placeholder={t('internacoes.selectPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
                   {users.map((u) => (
@@ -390,7 +399,7 @@ function InternacoesPageContent() {
               </Select>
             </div>
             <div className="col-span-2 space-y-1">
-              <Label>Motivo *</Label>
+              <Label>{t('internacoes.fieldReason')}</Label>
               <Textarea
                 value={form.reason}
                 onChange={(e) => setForm((f) => ({ ...f, reason: e.target.value }))}
@@ -398,7 +407,7 @@ function InternacoesPageContent() {
               />
             </div>
             <div className="space-y-1">
-              <Label>Data/Hora de Admissão *</Label>
+              <Label>{t('internacoes.fieldAdmissionDate')}</Label>
               <Input
                 type="datetime-local"
                 value={form.admission_date}
@@ -406,34 +415,34 @@ function InternacoesPageContent() {
               />
             </div>
             <div className="space-y-1">
-              <Label>Box / Baia</Label>
+              <Label>{t('internacoes.fieldBox')}</Label>
               <Input
                 value={form.box_number}
                 onChange={(e) => setForm((f) => ({ ...f, box_number: e.target.value }))}
-                placeholder="Ex: B-03"
+                placeholder={t('internacoes.boxPlaceholder')}
               />
             </div>
             <div className="space-y-1 col-span-2">
-              <Label>Forma de Pagamento</Label>
+              <Label>{t('internacoes.fieldPaymentSource')}</Label>
               <Select value={form.payment_source} onValueChange={(v) => setForm((f) => ({ ...f, payment_source: v }))}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="particular">Particular</SelectItem>
-                  <SelectItem value="health_plan">Plano de Saúde</SelectItem>
+                  <SelectItem value="particular">{t('internacoes.paymentParticular')}</SelectItem>
+                  <SelectItem value="health_plan">{t('internacoes.paymentHealthPlan')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             {form.payment_source === 'health_plan' && (
               <div className="space-y-1 col-span-2">
-                <Label>Plano de Saúde</Label>
+                <Label>{t('internacoes.fieldHealthPlan')}</Label>
                 <Select
                   value={form.health_plan_id}
                   onValueChange={(v) => setForm((f) => ({ ...f, health_plan_id: v }))}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione" />
+                    <SelectValue placeholder={t('internacoes.selectPlaceholder')} />
                   </SelectTrigger>
                   <SelectContent>
                     {healthPlans.map((p) => (
@@ -446,7 +455,7 @@ function InternacoesPageContent() {
               </div>
             )}
             <div className="space-y-1 col-span-2">
-              <Label>Diária (R$)</Label>
+              <Label>{t('internacoes.fieldDailyRate', { symbol: currencySymbol })}</Label>
               <Input
                 type="number"
                 value={form.daily_rate}
@@ -455,12 +464,12 @@ function InternacoesPageContent() {
             </div>
           </div>
           <div className="space-y-1">
-            <Label>Pertences</Label>
+            <Label>{t('internacoes.fieldBelongings')}</Label>
             <Textarea
               rows={2}
               value={form.belongings}
               onChange={(e) => setForm((f) => ({ ...f, belongings: e.target.value }))}
-              placeholder="Ex.: coleira azul, ração Hills, cobertinha xadrez"
+              placeholder={t('internacoes.belongingsPlaceholder')}
             />
           </div>
         </div>
@@ -470,8 +479,9 @@ function InternacoesPageContent() {
 }
 
 export default function InternacoesPage() {
+  const { t } = useTranslation();
   return (
-    <PlanUpgradeGate requiredPlan="clinica" feature="Internações">
+    <PlanUpgradeGate requiredPlan="clinica" feature={t('internacoes.featureName')}>
       <InternacoesPageContent />
     </PlanUpgradeGate>
   );

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { Suspense, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import type { ApiRequestError } from '@/app/types/api-error';
 import type { FollowupFormValues } from '@/app/types/exam-followup';
@@ -38,6 +39,7 @@ function getApiErrorMessage(error: unknown, fallbackMessage: string): string {
 }
 
 function FollowupsContent() {
+  const { t } = useTranslation();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -79,7 +81,7 @@ function FollowupsContent() {
       setModalOpen(false);
       reset();
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, 'Erro ao criar'));
+      toast.error(getApiErrorMessage(error, t('followups.createError')));
     }
   };
 
@@ -87,7 +89,7 @@ function FollowupsContent() {
     try {
       await updateStatusMutation.mutateAsync({ id, followupStatus: followup_status });
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, 'Erro'));
+      toast.error(getApiErrorMessage(error, t('followups.genericError')));
     }
   };
 
@@ -95,29 +97,37 @@ function FollowupsContent() {
     try {
       await markResultAvailableMutation.mutateAsync(id);
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, 'Erro ao notificar'));
+      toast.error(getApiErrorMessage(error, t('followups.notifyError')));
     }
   };
+
+  const followupStatusLabels: Record<string, string> = {
+    pending_result: t('followups.statusPendingResult'),
+    awaiting_followup: t('followups.statusAwaitingFollowup'),
+    result_available: t('followups.statusResultAvailable'),
+    closed: t('followups.statusClosed'),
+  };
+  const followupStatusLabel = (status: string) => followupStatusLabels[status] ?? status;
 
   return (
     <div>
       <div className="flex flex-wrap justify-between items-center gap-3 mb-8">
         <h1 className="text-2xl font-extrabold font-['interDoFigma'] flex items-center gap-2">
-          Acompanhamento de exames
+          {t('followups.title')}
         </h1>
         <Button onClick={() => setModalOpen(true)} className="w-full bg-primary sm:w-auto">
-          <Plus className="w-4 h-4 mr-2" /> Novo acompanhamento
+          <Plus className="w-4 h-4 mr-2" /> {t('followups.newFollowup')}
         </Button>
       </div>
 
-      <h3 className="font-medium text-foreground mb-2">Aguardando retorno</h3>
+      <h3 className="font-medium text-foreground mb-2">{t('followups.awaitingReturn')}</h3>
       {loading ? (
         <div className="flex justify-center py-8">
           <Loader2 className="w-6 h-6 animate-spin text-primary" />
         </div>
       ) : awaiting.length === 0 ? (
         <div className="rounded-lg border border-gray-300 bg-white py-8 text-center text-sm text-slate-500">
-          Nenhum acompanhamento aguardando retorno.
+          {t('followups.noAwaiting')}
         </div>
       ) : (
         <div>
@@ -126,11 +136,11 @@ function FollowupsContent() {
             <Table className="min-w-full border-collapse bg-white text-sm">
               <TableHeader>
                 <TableRow className="border-b border-gray-300 h-15">
-                  <TableHead>Paciente</TableHead>
-                  <TableHead>Solicitação</TableHead>
-                  <TableHead>Previsão resultado</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Ações</TableHead>
+                  <TableHead>{t('followups.patient')}</TableHead>
+                  <TableHead>{t('followups.request')}</TableHead>
+                  <TableHead>{t('followups.expectedResultDate')}</TableHead>
+                  <TableHead>{t('followups.status')}</TableHead>
+                  <TableHead>{t('followups.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -142,15 +152,15 @@ function FollowupsContent() {
                     <TableCell>{item.Patient?.name}</TableCell>
                     <TableCell>{item.exam_request_id}</TableCell>
                     <TableCell>{item.expected_result_date}</TableCell>
-                    <TableCell>{item.followup_status}</TableCell>
+                    <TableCell>{followupStatusLabel(item.followup_status)}</TableCell>
                     <TableCell className="space-x-1">
                       {item.followup_status === 'pending_result' && (
                         <Button
                           variant="ghost"
                           size="icon"
                           className="p-0"
-                          title="Resultado Disponível"
-                          aria-label="Resultado Disponível"
+                          title={t('followups.resultAvailable')}
+                          aria-label={t('followups.resultAvailable')}
                           onClick={() => markResultAvailable(item.id)}
                         >
                           <CheckCircle2 className="w-4 h-4 text-green-600" />
@@ -160,8 +170,8 @@ function FollowupsContent() {
                         variant="ghost"
                         size="icon"
                         className="p-0"
-                        title="Fechar"
-                        aria-label="Fechar"
+                        title={t('followups.close')}
+                        aria-label={t('followups.close')}
                         onClick={() => updateStatus(item.id, 'closed')}
                       >
                         <XCircle className="w-4 h-4" />
@@ -180,9 +190,9 @@ function FollowupsContent() {
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="truncate font-medium">{item.Patient?.name}</p>
-                    <p className="text-xs text-muted-foreground">Previsão: {item.expected_result_date || '—'}</p>
+                    <p className="text-xs text-muted-foreground">{t('followups.expectedLabel')}: {item.expected_result_date || '—'}</p>
                   </div>
-                  <Badge variant="secondary" className="shrink-0">{item.followup_status}</Badge>
+                  <Badge variant="secondary" className="shrink-0">{followupStatusLabel(item.followup_status)}</Badge>
                 </div>
                 <div className="mt-3 flex items-center justify-end gap-1 border-t border-gray-200 pt-2">
                   {item.followup_status === 'pending_result' && (
@@ -190,8 +200,8 @@ function FollowupsContent() {
                       variant="ghost"
                       size="icon"
                       className="p-0"
-                      title="Resultado Disponível"
-                      aria-label="Resultado Disponível"
+                      title={t('followups.resultAvailable')}
+                      aria-label={t('followups.resultAvailable')}
                       onClick={() => markResultAvailable(item.id)}
                     >
                       <CheckCircle2 className="w-4 h-4 text-green-600" />
@@ -201,8 +211,8 @@ function FollowupsContent() {
                     variant="ghost"
                     size="icon"
                     className="p-0"
-                    title="Fechar"
-                    aria-label="Fechar"
+                    title={t('followups.close')}
+                    aria-label={t('followups.close')}
                     onClick={() => updateStatus(item.id, 'closed')}
                   >
                     <XCircle className="w-4 h-4" />
@@ -223,10 +233,10 @@ function FollowupsContent() {
         </div>
       )}
 
-      <h3 className="font-medium text-foreground mt-6 mb-2">Todos</h3>
+      <h3 className="font-medium text-foreground mt-6 mb-2">{t('followups.all')}</h3>
       {all.length === 0 ? (
         <div className="rounded-lg border border-gray-300 bg-white py-8 text-center text-sm text-slate-500">
-          Nenhum acompanhamento cadastrado.
+          {t('followups.noneRegistered')}
         </div>
       ) : (
         <>
@@ -235,10 +245,10 @@ function FollowupsContent() {
             <Table className="min-w-full border-collapse bg-white text-sm">
               <TableHeader>
                 <TableRow className="border-b border-gray-300 h-15">
-                  <TableHead>Paciente</TableHead>
-                  <TableHead>Previsão</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Ações</TableHead>
+                  <TableHead>{t('followups.patient')}</TableHead>
+                  <TableHead>{t('followups.expectedDate')}</TableHead>
+                  <TableHead>{t('followups.status')}</TableHead>
+                  <TableHead>{t('followups.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -247,7 +257,7 @@ function FollowupsContent() {
                     <TableCell>{item.Patient?.name}</TableCell>
                     <TableCell>{item.expected_result_date}</TableCell>
                     <TableCell>
-                      <Badge variant="secondary">{item.followup_status}</Badge>
+                      <Badge variant="secondary">{followupStatusLabel(item.followup_status)}</Badge>
                     </TableCell>
                     <TableCell className="space-x-1">
                       {item.followup_status === 'pending_result' && (
@@ -255,8 +265,8 @@ function FollowupsContent() {
                           variant="ghost"
                           size="icon"
                           className="p-0"
-                          title="Resultado Disponível"
-                          aria-label="Resultado Disponível"
+                          title={t('followups.resultAvailable')}
+                          aria-label={t('followups.resultAvailable')}
                           onClick={() => markResultAvailable(item.id)}
                         >
                           <CheckCircle2 className="w-4 h-4 text-green-600" />
@@ -267,8 +277,8 @@ function FollowupsContent() {
                           variant="ghost"
                           size="icon"
                           className="p-0"
-                          title="Fechar"
-                          aria-label="Fechar"
+                          title={t('followups.close')}
+                          aria-label={t('followups.close')}
                           onClick={() => updateStatus(item.id, 'closed')}
                         >
                           <XCircle className="w-4 h-4" />
@@ -288,9 +298,9 @@ function FollowupsContent() {
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="truncate font-medium">{item.Patient?.name}</p>
-                    <p className="text-xs text-muted-foreground">Previsão: {item.expected_result_date || '—'}</p>
+                    <p className="text-xs text-muted-foreground">{t('followups.expectedLabel')}: {item.expected_result_date || '—'}</p>
                   </div>
-                  <Badge variant="secondary" className="shrink-0">{item.followup_status}</Badge>
+                  <Badge variant="secondary" className="shrink-0">{followupStatusLabel(item.followup_status)}</Badge>
                 </div>
                 <div className="mt-3 flex items-center justify-end gap-1 border-t border-gray-200 pt-2">
                   {item.followup_status === 'pending_result' && (
@@ -298,8 +308,8 @@ function FollowupsContent() {
                       variant="ghost"
                       size="icon"
                       className="p-0"
-                      title="Resultado Disponível"
-                      aria-label="Resultado Disponível"
+                      title={t('followups.resultAvailable')}
+                      aria-label={t('followups.resultAvailable')}
                       onClick={() => markResultAvailable(item.id)}
                     >
                       <CheckCircle2 className="w-4 h-4 text-green-600" />
@@ -310,8 +320,8 @@ function FollowupsContent() {
                       variant="ghost"
                       size="icon"
                       className="p-0"
-                      title="Fechar"
-                      aria-label="Fechar"
+                      title={t('followups.close')}
+                      aria-label={t('followups.close')}
                       onClick={() => updateStatus(item.id, 'closed')}
                     >
                       <XCircle className="w-4 h-4" />
@@ -335,21 +345,21 @@ function FollowupsContent() {
       <DashboardCreateFormDialog
         open={modalOpen}
         onOpenChange={setModalOpen}
-        title="Novo acompanhamento"
+        title={t('followups.newFollowup')}
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>
-              Cancelar
+              {t('followups.cancel')}
             </Button>
             <Button type="submit" form="followup-create-form" className="bg-primary">
-              Criar
+              {t('followups.create')}
             </Button>
           </div>
         }
       >
         <form id="followup-create-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4 md:space-y-6">
           <div className="space-y-2">
-            <Label>Solicitação de exame</Label>
+            <Label>{t('followups.examRequest')}</Label>
             <Controller
               name="exam_request_id"
               control={control}
@@ -357,7 +367,7 @@ function FollowupsContent() {
               render={({ field }) => (
                 <Select onValueChange={field.onChange} value={field.value}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione" />
+                    <SelectValue placeholder={t('followups.select')} />
                   </SelectTrigger>
                   <SelectContent>
                     {examRequests.map((e) => (
@@ -372,7 +382,7 @@ function FollowupsContent() {
           </div>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label>Paciente</Label>
+              <Label>{t('followups.patient')}</Label>
               <Controller
                 name="patient_id"
                 control={control}
@@ -380,7 +390,7 @@ function FollowupsContent() {
                 render={({ field }) => (
                   <Select onValueChange={field.onChange} value={field.value}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
+                      <SelectValue placeholder={t('followups.select')} />
                     </SelectTrigger>
                     <SelectContent>
                       {patients.map((p) => (
@@ -394,7 +404,7 @@ function FollowupsContent() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Previsão do resultado</Label>
+              <Label>{t('followups.expectedResultDate')}</Label>
               <Input type="date" {...register('expected_result_date')} />
             </div>
           </div>
@@ -405,8 +415,9 @@ function FollowupsContent() {
 }
 
 export default function FollowupsPage() {
+  const { t } = useTranslation();
   return (
-    <Suspense fallback={<div className="p-6">Carregando...</div>}>
+    <Suspense fallback={<div className="p-6">{t('followups.loading')}</div>}>
       <FollowupsContent />
     </Suspense>
   );

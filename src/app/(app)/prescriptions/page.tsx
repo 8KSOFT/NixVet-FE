@@ -1,6 +1,7 @@
 'use client';
 
 import React, { Suspense, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { StoredUser } from '@/app/types/exam-request';
 import { Button } from '@/components/ui/button';
 import { DashboardCreateFormDialog } from '@/components/dashboard-create-form-dialog';
@@ -57,28 +58,10 @@ import { useConsultationsQuery } from '@/hooks/apiHooks/useConsultations';
 
 const LEGAL_MODEL_OPTIONS: {
   value: PrescriptionLegalModel;
-  label: string;
-  legalBasis: string;
-  vias: string;
 }[] = [
-  {
-    value: 'SIMPLE',
-    label: 'Receituário simples',
-    legalBasis: 'Uso veterinário · medicamento sob prescrição',
-    vias: '1 via — Tutor(a) · 30 dias',
-  },
-  {
-    value: 'SPECIAL_CONTROL',
-    label: 'Controle especial',
-    legalBasis: 'Portaria SVS/MS 344/98 · listas C1/C5, fenobarbital',
-    vias: '2 vias — 1ª Farmácia (retenção) · 2ª Tutor(a) · 30 dias',
-  },
-  {
-    value: 'VET_NOTIFICATION',
-    label: 'Notificação veterinária',
-    legalBasis: 'IN MAPA 35/2017 · produto de uso veterinário controlado',
-    vias: '3 vias — Tutor(a), Estabelecimento, Veterinário · exige Nº SIPEAGRO',
-  },
+  { value: 'SIMPLE' },
+  { value: 'SPECIAL_CONTROL' },
+  { value: 'VET_NOTIFICATION' },
 ];
 
 /**
@@ -92,42 +75,34 @@ function inferLegalModel(sig: { is_controlled?: boolean; serial_number?: string 
 }
 
 const FORM_ADMIN_OPTIONS = [
-  { value: 'oral', label: 'Oral' },
-  { value: 'topica', label: 'Tópica' },
-  { value: 'colirio', label: 'Colírio' },
-  { value: 'spray', label: 'Spray' },
-  { value: 'injetavel', label: 'Injetável' },
-  { value: 'outro', label: 'Outro' },
+  { value: 'oral' },
+  { value: 'topica' },
+  { value: 'colirio' },
+  { value: 'spray' },
+  { value: 'injetavel' },
+  { value: 'outro' },
 ];
-const USE_TYPE_OPTIONS = [
-  { value: 'veterinario', label: 'Uso veterinário' },
-  { value: 'humano', label: 'Uso humano' },
-];
-const FREQUENCY_UNIT_OPTIONS = [
-  { value: 'minutos', label: 'minutos' },
-  { value: 'horas', label: 'horas' },
-  { value: 'dias', label: 'dias' },
-];
-const DURATION_UNIT_OPTIONS = [
-  { value: 'dias', label: 'dias' },
-  { value: 'semanas', label: 'semanas' },
-  { value: 'meses', label: 'meses' },
-];
+const USE_TYPE_OPTIONS = [{ value: 'veterinario' }, { value: 'humano' }];
+const FREQUENCY_UNIT_OPTIONS = [{ value: 'minutos' }, { value: 'horas' }, { value: 'dias' }];
+const DURATION_UNIT_OPTIONS = [{ value: 'dias' }, { value: 'semanas' }, { value: 'meses' }];
 
 const COMMON_VACCINES = [
   {
     group: 'Caninos',
+    groupKey: 'canine',
     items: ['V8', 'V10', 'Antirrábica', 'Gripe Canina (Bordetella)', 'Giardíase', 'Leishmaniose (Leishmania)'],
   },
   {
     group: 'Felinos',
+    groupKey: 'feline',
     items: ['Tríplice Felina (HVC, HCC, Panleucopenia)', 'Quádrupla Felina', 'Antirrábica (felino)', 'FIV/FeLV'],
   },
   {
     group: 'Equinos',
+    groupKey: 'equine',
     items: ['Tétano', 'Influenza Equina', 'Herpesvírus Equino'],
   },
-  { group: 'Outros', items: ['Raiva (Outros)', 'Leptospirose'] },
+  { group: 'Outros', groupKey: 'other', items: ['Raiva (Outros)', 'Leptospirose'] },
 ];
 
 type MedicationField = {
@@ -157,6 +132,7 @@ type FormValues = {
 };
 
 function PrescriptionsContent() {
+  const { t } = useTranslation();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -220,7 +196,7 @@ function PrescriptionsContent() {
       const items = await bularioSearch.mutateAsync(value);
       setBularioOptions(items);
     } catch {
-      toast.error('Erro ao buscar no bulário');
+      toast.error(t('prescriptions.toast.bularioSearchError'));
     }
   };
 
@@ -277,14 +253,14 @@ function PrescriptionsContent() {
       try {
         downloadBlob(await downloadSignedPdf.mutateAsync(record.id), `prescricao-${record.id}.pdf`);
       } catch {
-        toast.error('Erro ao baixar PDF assinado');
+        toast.error(t('prescriptions.toast.downloadSignedPdfError'));
       }
       return;
     }
     try {
       downloadBlob(await downloadPdf.mutateAsync(record.id), `prescricao-${record.id}.pdf`);
     } catch {
-      toast.error('Erro ao baixar PDF');
+      toast.error(t('prescriptions.toast.downloadPdfError'));
     }
   };
 
@@ -308,7 +284,7 @@ function PrescriptionsContent() {
         return url;
       });
     } catch {
-      toast.error('Erro ao carregar PDF');
+      toast.error(t('prescriptions.toast.previewPdfError'));
       setPdfPreviewOpen(false);
     }
   };
@@ -325,13 +301,13 @@ function PrescriptionsContent() {
     try {
       const userStr = localStorage.getItem('user');
       if (!userStr) {
-        toast.error('Usuário não autenticado');
+        toast.error(t('prescriptions.toast.notAuthenticated'));
         return;
       }
       const user = JSON.parse(userStr) as StoredUser;
 
       if (!values.consultation_id && !values.prescription_date) {
-        toast.error('Selecione uma consulta ou informe a data da prescrição');
+        toast.error(t('prescriptions.toast.selectConsultationOrDate'));
         return;
       }
 
@@ -369,7 +345,7 @@ function PrescriptionsContent() {
         }));
       } else if (prescriptionType === 'vacinas') {
         if (!selectedVaccines.length) {
-          toast.error('Selecione ao menos uma vacina');
+          toast.error(t('prescriptions.toast.selectVaccine'));
           return;
         }
         payload.medications = selectedVaccines.map((name) => ({
@@ -386,7 +362,7 @@ function PrescriptionsContent() {
       await createPrescription.mutateAsync(payload);
       setModalVisible(false);
     } catch {
-      toast.error('Erro ao gerar prescrição');
+      toast.error(t('prescriptions.toast.createError'));
     }
   };
 
@@ -404,7 +380,8 @@ function PrescriptionsContent() {
   } = useBularioItemQuery(bularioDetailVisible ? bularioDetailId : null);
 
   useEffect(() => {
-    if (bularioDetailError) toast.error('Erro ao carregar detalhes do medicamento');
+    if (bularioDetailError) toast.error(t('prescriptions.toast.bularioDetailError'));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bularioDetailError]);
 
   const openBularioDetail = (id: string) => {
@@ -423,7 +400,7 @@ function PrescriptionsContent() {
       await sendEmailMutation.mutateAsync(selectedPrescription.id);
       setEmailModalVisible(false);
     } catch {
-      toast.error('Erro ao enviar email');
+      toast.error(t('prescriptions.toast.sendEmailError'));
     }
   };
 
@@ -479,9 +456,9 @@ function PrescriptionsContent() {
           ...(legalModel === 'SIMPLE' ? { is_human_antibacterial: isHumanAntibacterial } : {}),
         },
       });
-      toast.success('Prescrição assinada com sucesso.');
+      toast.success(t('prescriptions.toast.signSuccess'));
     } catch (error) {
-      toast.error(getApiErrorMessage(error, 'Erro ao assinar prescrição'));
+      toast.error(getApiErrorMessage(error, t('prescriptions.toast.signError')));
     }
   };
 
@@ -489,11 +466,11 @@ function PrescriptionsContent() {
     if (!signaturePrescriptionId || !revokeReason.trim()) return;
     try {
       await revokeMutation.mutateAsync({ id: signaturePrescriptionId, reason: revokeReason.trim() });
-      toast.success('Assinatura revogada.');
+      toast.success(t('prescriptions.toast.revokeSuccess'));
       setRevokeFormOpen(false);
       setRevokeReason('');
     } catch (error) {
-      toast.error(getApiErrorMessage(error, 'Erro ao revogar assinatura'));
+      toast.error(getApiErrorMessage(error, t('prescriptions.toast.revokeError')));
     }
   };
 
@@ -504,16 +481,16 @@ function PrescriptionsContent() {
       const url = window.URL.createObjectURL(blob);
       window.open(url, '_blank', 'noopener,noreferrer');
     } catch {
-      toast.error('Erro ao baixar PDF assinado');
+      toast.error(t('prescriptions.toast.downloadSignedPdfError'));
     }
   };
 
   const handleCopy = async (value: string) => {
     try {
       await navigator.clipboard.writeText(value);
-      toast.success('Copiado para a área de transferência.');
+      toast.success(t('prescriptions.toast.copySuccess'));
     } catch {
-      toast.error('Não foi possível copiar');
+      toast.error(t('prescriptions.toast.copyError'));
     }
   };
 
@@ -522,9 +499,9 @@ function PrescriptionsContent() {
   return (
     <div>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-8">
-        <h1 className="text-2xl font-extrabold font-['InterDoFigma'] flex items-center gap-2">Prescrição</h1>
+        <h1 className="text-2xl font-extrabold font-['InterDoFigma'] flex items-center gap-2">{t('prescriptions.title')}</h1>
         <Button onClick={handleAdd} className="w-full bg-primary hover:bg-primary/70 text-white sm:w-auto">
-          <Plus className="w-4 h-4 mr-1" /> Nova Prescrição
+          <Plus className="w-4 h-4 mr-1" /> {t('prescriptions.newButton')}
         </Button>
       </div>
 
@@ -534,7 +511,7 @@ function PrescriptionsContent() {
         </div>
       ) : prescriptions.length === 0 ? (
         <div className="rounded-lg border border-gray-300 bg-white py-8 text-center text-sm text-slate-500">
-          Nenhuma prescrição encontrada.
+          {t('prescriptions.empty')}
         </div>
       ) : (
         <div>
@@ -543,12 +520,12 @@ function PrescriptionsContent() {
             <Table className="min-w-full border-collapse bg-white text-sm">
               <TableHeader>
                 <TableRow className="border-b border-gray-300 h-15">
-                  <TableHead>Data</TableHead>
-                  <TableHead>Paciente</TableHead>
-                  <TableHead>Tutor</TableHead>
-                  <TableHead>Veterinário</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Ações</TableHead>
+                  <TableHead>{t('prescriptions.table.date')}</TableHead>
+                  <TableHead>{t('prescriptions.table.patient')}</TableHead>
+                  <TableHead>{t('prescriptions.table.tutor')}</TableHead>
+                  <TableHead>{t('prescriptions.table.veterinarian')}</TableHead>
+                  <TableHead>{t('prescriptions.table.type')}</TableHead>
+                  <TableHead>{t('prescriptions.table.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -559,7 +536,9 @@ function PrescriptionsContent() {
                     <TableCell>{getTutorName(record)}</TableCell>
                     <TableCell>{record.veterinarian?.name ?? '—'}</TableCell>
                     <TableCell>
-                      {record.prescription_type === 'solicitacao_cirurgia' ? 'Cirurgia' : 'Receita'}
+                      {record.prescription_type === 'solicitacao_cirurgia'
+                        ? t('prescriptions.type.surgery')
+                        : t('prescriptions.type.prescription')}
                     </TableCell>
                     <TableCell className="w-32">
                       <div className="flex items-center gap-1">
@@ -568,8 +547,8 @@ function PrescriptionsContent() {
                           variant="ghost"
                           size="icon"
                           className="p-0"
-                          title="Visualizar"
-                          aria-label="Visualizar"
+                          title={t('prescriptions.actions.view')}
+                          aria-label={t('prescriptions.actions.view')}
                           onClick={() => handlePreviewPdf(record)}
                         >
                           <Eye className="w-4 h-4" />
@@ -579,8 +558,8 @@ function PrescriptionsContent() {
                           variant="ghost"
                           size="icon"
                           className="p-0"
-                          title="Baixar PDF"
-                          aria-label="Baixar PDF"
+                          title={t('prescriptions.actions.downloadPdf')}
+                          aria-label={t('prescriptions.actions.downloadPdf')}
                           onClick={() => handleDownloadPdf(record)}
                         >
                           <FileText className="w-4 h-4" />
@@ -590,8 +569,8 @@ function PrescriptionsContent() {
                           variant="ghost"
                           size="icon"
                           className="p-0"
-                          title="Enviar por e-mail"
-                          aria-label="Enviar por e-mail"
+                          title={t('prescriptions.actions.sendEmail')}
+                          aria-label={t('prescriptions.actions.sendEmail')}
                           onClick={() => handleOpenEmailModal(record)}
                         >
                           <Mail className="w-4 h-4" />
@@ -601,8 +580,8 @@ function PrescriptionsContent() {
                           variant="ghost"
                           size="icon"
                           className="p-0"
-                          title="Solicitar exame"
-                          aria-label="Solicitar exame"
+                          title={t('prescriptions.actions.requestExam')}
+                          aria-label={t('prescriptions.actions.requestExam')}
                           onClick={() => handleSolicitarExame(record)}
                         >
                           <FlaskConical className="w-4 h-4" />
@@ -613,8 +592,8 @@ function PrescriptionsContent() {
                             variant="ghost"
                             size="icon"
                             className="p-0"
-                            title="Assinatura digital"
-                            aria-label="Assinatura digital"
+                            title={t('prescriptions.actions.digitalSignature')}
+                            aria-label={t('prescriptions.actions.digitalSignature')}
                             onClick={() => openSignatureModal(record.id)}
                           >
                             <ShieldCheck className="w-4 h-4" />
@@ -640,17 +619,19 @@ function PrescriptionsContent() {
                     </p>
                   </div>
                   <Badge variant="secondary" className="shrink-0">
-                    {record.prescription_type === 'solicitacao_cirurgia' ? 'Cirurgia' : 'Receita'}
+                    {record.prescription_type === 'solicitacao_cirurgia'
+                      ? t('prescriptions.type.surgery')
+                      : t('prescriptions.type.prescription')}
                   </Badge>
                 </div>
 
                 <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
                   <div>
-                    <p className="text-xs text-muted-foreground">Tutor</p>
+                    <p className="text-xs text-muted-foreground">{t('prescriptions.table.tutor')}</p>
                     <p className="truncate">{getTutorName(record)}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Veterinário</p>
+                    <p className="text-xs text-muted-foreground">{t('prescriptions.table.veterinarian')}</p>
                     <p className="truncate">{record.veterinarian?.name ?? '—'}</p>
                   </div>
                 </div>
@@ -661,8 +642,8 @@ function PrescriptionsContent() {
                     variant="ghost"
                     size="icon"
                     className="p-0"
-                    title="Visualizar"
-                    aria-label="Visualizar"
+                    title={t('prescriptions.actions.view')}
+                    aria-label={t('prescriptions.actions.view')}
                     onClick={() => handlePreviewPdf(record)}
                   >
                     <Eye className="w-4 h-4" />
@@ -672,8 +653,8 @@ function PrescriptionsContent() {
                     variant="ghost"
                     size="icon"
                     className="p-0"
-                    title="Baixar PDF"
-                    aria-label="Baixar PDF"
+                    title={t('prescriptions.actions.downloadPdf')}
+                    aria-label={t('prescriptions.actions.downloadPdf')}
                     onClick={() => handleDownloadPdf(record)}
                   >
                     <FileText className="w-4 h-4" />
@@ -683,8 +664,8 @@ function PrescriptionsContent() {
                     variant="ghost"
                     size="icon"
                     className="p-0"
-                    title="Enviar por e-mail"
-                    aria-label="Enviar por e-mail"
+                    title={t('prescriptions.actions.sendEmail')}
+                    aria-label={t('prescriptions.actions.sendEmail')}
                     onClick={() => handleOpenEmailModal(record)}
                   >
                     <Mail className="w-4 h-4" />
@@ -694,8 +675,8 @@ function PrescriptionsContent() {
                     variant="ghost"
                     size="icon"
                     className="p-0"
-                    title="Solicitar exame"
-                    aria-label="Solicitar exame"
+                    title={t('prescriptions.actions.requestExam')}
+                    aria-label={t('prescriptions.actions.requestExam')}
                     onClick={() => handleSolicitarExame(record)}
                   >
                     <FlaskConical className="w-4 h-4" />
@@ -706,8 +687,8 @@ function PrescriptionsContent() {
                       variant="ghost"
                       size="icon"
                       className="p-0"
-                      title="Assinatura digital"
-                      aria-label="Assinatura digital"
+                      title={t('prescriptions.actions.digitalSignature')}
+                      aria-label={t('prescriptions.actions.digitalSignature')}
                       onClick={() => openSignatureModal(record.id)}
                     >
                       <ShieldCheck className="w-4 h-4" />
@@ -732,7 +713,7 @@ function PrescriptionsContent() {
       <DashboardCreateFormDialog
         open={modalVisible}
         onOpenChange={setModalVisible}
-        title="Nova Prescrição"
+        title={t('prescriptions.dialog.createTitle')}
         containerClassName="mx-auto max-w-2xl"
         bodyClassName="px-6 py-4"
         preventOutsideClose
@@ -740,10 +721,10 @@ function PrescriptionsContent() {
         footer={
           <div className="flex flex-row justify-end gap-3">
             <Button type="button" variant="outline" className="h-10" onClick={() => setModalVisible(false)}>
-              Cancelar
+              {t('prescriptions.dialog.cancel')}
             </Button>
             <Button type="submit" form="prescription-form" className="h-10 bg-primary hover:bg-blue-700 text-white">
-              Gerar prescrição
+              {t('prescriptions.dialog.submit')}
             </Button>
           </div>
         }
@@ -751,7 +732,7 @@ function PrescriptionsContent() {
         <form id="prescription-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4 md:space-y-6">
           {/* Paciente */}
           <div className="space-y-2">
-            <Label className="text-sm font-medium">Paciente *</Label>
+            <Label className="text-sm font-medium">{t('prescriptions.form.patientLabel')}</Label>
             <Controller
               control={control}
               name="patient_id"
@@ -765,7 +746,7 @@ function PrescriptionsContent() {
                   }}
                 >
                   <SelectTrigger className="h-10">
-                    <SelectValue placeholder="Selecione o paciente" />
+                    <SelectValue placeholder={t('prescriptions.form.patientPlaceholder')} />
                   </SelectTrigger>
                   <SelectContent>
                     {patients.map((p) => (
@@ -782,20 +763,20 @@ function PrescriptionsContent() {
           {watchPatientId && (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
               <div className="space-y-2 md:col-span-8">
-                <Label className="text-sm font-medium">Consulta (opcional)</Label>
+                <Label className="text-sm font-medium">{t('prescriptions.form.consultationLabel')}</Label>
                 <Controller
                   control={control}
                   name="consultation_id"
                   render={({ field }) => (
                     <Select value={field.value ?? ''} onValueChange={(v) => field.onChange(v || undefined)}>
                       <SelectTrigger className="h-10">
-                        <SelectValue placeholder="Sem consulta vinculada" />
+                        <SelectValue placeholder={t('prescriptions.form.consultationPlaceholder')} />
                       </SelectTrigger>
                       <SelectContent>
                         {consultationsByPatient.map((c) => (
                           <SelectItem key={c.id} value={c.id}>
-                            {new Date(c.consultation_date).toLocaleDateString('pt-BR')} — Dr.{' '}
-                            {c.veterinarian?.name ?? ''}
+                            {new Date(c.consultation_date).toLocaleDateString('pt-BR')} —{' '}
+                            {t('prescriptions.form.doctorPrefix', { name: c.veterinarian?.name ?? '' })}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -804,7 +785,7 @@ function PrescriptionsContent() {
                 />
               </div>
               <div className="space-y-2 md:col-span-4">
-                <Label className="text-sm font-medium">Data (sem consulta)</Label>
+                <Label className="text-sm font-medium">{t('prescriptions.form.dateLabel')}</Label>
                 <Controller
                   control={control}
                   name="prescription_date"
@@ -816,14 +797,14 @@ function PrescriptionsContent() {
 
           {/* Tipo */}
           <div className="space-y-2">
-            <Label className="text-sm font-medium">Tipo</Label>
+            <Label className="text-sm font-medium">{t('prescriptions.form.typeLabel')}</Label>
             <div className="flex flex-wrap gap-4">
               {[
-                { value: 'receita', label: 'Receita / Medicamentos' },
-                { value: 'vacinas', label: 'Vacinação' },
+                { value: 'receita', label: t('prescriptions.form.typeOptions.prescription') },
+                { value: 'vacinas', label: t('prescriptions.form.typeOptions.vaccination') },
                 {
                   value: 'solicitacao_cirurgia',
-                  label: 'Solicitação de cirurgia',
+                  label: t('prescriptions.form.typeOptions.surgery'),
                 },
               ].map((opt) => (
                 <label key={opt.value} className="flex items-center gap-2 cursor-pointer text-sm">
@@ -844,7 +825,7 @@ function PrescriptionsContent() {
           {/* Vacinação */}
           {prescriptionType === 'vacinas' && (
             <div className="space-y-4">
-              <Label className="text-sm font-medium">Vacinas administradas *</Label>
+              <Label className="text-sm font-medium">{t('prescriptions.form.vaccination.label')}</Label>
 
               {/* Tags selecionadas */}
               {selectedVaccines.length > 0 && (
@@ -869,7 +850,7 @@ function PrescriptionsContent() {
                 {COMMON_VACCINES.map((group) => (
                   <div key={group.group}>
                     <div className="px-4 py-2 bg-muted/50 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                      {group.group}
+                      {t(`prescriptions.form.vaccination.groups.${group.groupKey}`)}
                     </div>
                     {group.items.map((vac) => (
                       <label
@@ -896,7 +877,7 @@ function PrescriptionsContent() {
               {/* Vacina personalizada / texto livre */}
               <div className="flex gap-2">
                 <Input
-                  placeholder="Outra vacina / lote / marca comercial (texto livre)"
+                  placeholder={t('prescriptions.form.vaccination.customPlaceholder')}
                   className="h-10 flex-1"
                   value={vaccineInput}
                   onChange={(e) => setVaccineInput(e.target.value)}
@@ -923,7 +904,7 @@ function PrescriptionsContent() {
                 </Button>
               </div>
               <p className="text-xs text-muted-foreground">
-                Adicione o número do lote, fabricante ou nome comercial no campo acima se necessário.
+                {t('prescriptions.form.vaccination.hint')}
               </p>
             </div>
           )}
@@ -931,11 +912,11 @@ function PrescriptionsContent() {
           {/* Cirurgia */}
           {prescriptionType === 'solicitacao_cirurgia' && (
             <div className="space-y-2">
-              <Label className="text-sm font-medium">Procedimentos cirúrgicos *</Label>
+              <Label className="text-sm font-medium">{t('prescriptions.form.surgery.label')}</Label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
-                  placeholder="Buscar procedimento..."
+                  placeholder={t('prescriptions.form.surgery.searchPlaceholder')}
                   className="pl-9 h-10"
                   value={procedureSearch}
                   onChange={(e) => setProcedureSearch(e.target.value)}
@@ -965,7 +946,7 @@ function PrescriptionsContent() {
           {/* Medicamentos (apenas tipo receita) */}
           {prescriptionType === 'receita' && (
             <div className="space-y-4">
-              <Label className="text-sm font-medium">Medicamentos</Label>
+              <Label className="text-sm font-medium">{t('prescriptions.form.medicationsLabel')}</Label>
               {fields.map((field, index) => {
                 const bularioId = watch(`medications.${index}.bulario_item_id`);
                 const isContinuousUse = watch(`medications.${index}.continuous_use`);
@@ -977,7 +958,7 @@ function PrescriptionsContent() {
                     <div className="flex gap-2 items-start">
                       <div className="relative flex-1">
                         <Input
-                          placeholder="Nome do medicamento"
+                          placeholder={t('prescriptions.form.medicationNamePlaceholder')}
                           className="h-10"
                           value={medInputValues[index] ?? ''}
                           onChange={(e) => {
@@ -997,7 +978,7 @@ function PrescriptionsContent() {
                           <div className="absolute z-20 top-full left-0 right-0 bg-white border rounded-lg shadow-lg max-h-44 overflow-y-auto mt-1">
                             {searchingBulario ? (
                               <div className="px-4 py-3 text-sm text-muted-foreground flex items-center gap-2">
-                                <Loader2 className="w-3 h-3 animate-spin" /> Buscando...
+                                <Loader2 className="w-3 h-3 animate-spin" /> {t('prescriptions.form.searchingBulario')}
                               </div>
                             ) : (
                               bularioOptions.map((item) => (
@@ -1034,7 +1015,7 @@ function PrescriptionsContent() {
                           className="h-10 shrink-0"
                           onClick={() => openBularioDetail(bularioId)}
                         >
-                          <Info className="w-4 h-4 mr-1" /> Bula
+                          <Info className="w-4 h-4 mr-1" /> {t('prescriptions.form.bulaButton')}
                         </Button>
                       )}
                       <Button
@@ -1051,35 +1032,43 @@ function PrescriptionsContent() {
                     {/* Via / Concentração / Uso / Forma */}
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
                       <div className="space-y-1 md:col-span-2">
-                        <Label className="text-xs text-muted-foreground">Via</Label>
+                        <Label className="text-xs text-muted-foreground">{t('prescriptions.form.viaLabel')}</Label>
                         <Controller
                           control={control}
                           name={`medications.${index}.via`}
-                          render={({ field }) => <Input className="h-9" placeholder="Ex: IV" {...field} />}
+                          render={({ field }) => (
+                            <Input className="h-9" placeholder={t('prescriptions.form.viaPlaceholder')} {...field} />
+                          )}
                         />
                       </div>
                       <div className="space-y-1 md:col-span-3">
-                        <Label className="text-xs text-muted-foreground">Concentração</Label>
+                        <Label className="text-xs text-muted-foreground">{t('prescriptions.form.concentrationLabel')}</Label>
                         <Controller
                           control={control}
                           name={`medications.${index}.concentration`}
-                          render={({ field }) => <Input className="h-9" placeholder="10mg/ml" {...field} />}
+                          render={({ field }) => (
+                            <Input
+                              className="h-9"
+                              placeholder={t('prescriptions.form.concentrationPlaceholder')}
+                              {...field}
+                            />
+                          )}
                         />
                       </div>
                       <div className="space-y-1 md:col-span-3">
-                        <Label className="text-xs text-muted-foreground">Tipo de uso</Label>
+                        <Label className="text-xs text-muted-foreground">{t('prescriptions.form.useTypeLabel')}</Label>
                         <Controller
                           control={control}
                           name={`medications.${index}.use_type`}
                           render={({ field }) => (
                             <Select value={field.value ?? ''} onValueChange={field.onChange}>
                               <SelectTrigger className="h-9">
-                                <SelectValue placeholder="Uso" />
+                                <SelectValue placeholder={t('prescriptions.form.usePlaceholder')} />
                               </SelectTrigger>
                               <SelectContent>
                                 {USE_TYPE_OPTIONS.map((o) => (
                                   <SelectItem key={o.value} value={o.value}>
-                                    {o.label}
+                                    {t(`prescriptions.form.useTypeOptions.${o.value}`)}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
@@ -1088,19 +1077,19 @@ function PrescriptionsContent() {
                         />
                       </div>
                       <div className="space-y-1 md:col-span-4">
-                        <Label className="text-xs text-muted-foreground">Administração</Label>
+                        <Label className="text-xs text-muted-foreground">{t('prescriptions.form.administrationLabel')}</Label>
                         <Controller
                           control={control}
                           name={`medications.${index}.form_of_administration`}
                           render={({ field }) => (
                             <Select value={field.value ?? ''} onValueChange={field.onChange}>
                               <SelectTrigger className="h-9">
-                                <SelectValue placeholder="Forma" />
+                                <SelectValue placeholder={t('prescriptions.form.formPlaceholder')} />
                               </SelectTrigger>
                               <SelectContent>
                                 {FORM_ADMIN_OPTIONS.map((o) => (
                                   <SelectItem key={o.value} value={o.value}>
-                                    {o.label}
+                                    {t(`prescriptions.form.administrationOptions.${o.value}`)}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
@@ -1113,15 +1102,17 @@ function PrescriptionsContent() {
                     {/* Dose / Frequência / Duração */}
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
                       <div className="space-y-1 md:col-span-2">
-                        <Label className="text-xs text-muted-foreground">Dose</Label>
+                        <Label className="text-xs text-muted-foreground">{t('prescriptions.form.doseLabel')}</Label>
                         <Controller
                           control={control}
                           name={`medications.${index}.dosage`}
-                          render={({ field }) => <Input className="h-9" placeholder="Ex: 1 comp." {...field} />}
+                          render={({ field }) => (
+                            <Input className="h-9" placeholder={t('prescriptions.form.dosePlaceholder')} {...field} />
+                          )}
                         />
                       </div>
                       <div className="space-y-1 md:col-span-5">
-                        <Label className="text-xs text-muted-foreground">Frequência</Label>
+                        <Label className="text-xs text-muted-foreground">{t('prescriptions.form.frequencyLabel')}</Label>
                         <div className="flex gap-1">
                           <Controller
                             control={control}
@@ -1136,12 +1127,12 @@ function PrescriptionsContent() {
                             render={({ field }) => (
                               <Select value={field.value ?? ''} onValueChange={field.onChange}>
                                 <SelectTrigger className="h-9 flex-1">
-                                  <SelectValue placeholder="Un." />
+                                  <SelectValue placeholder={t('prescriptions.form.unitPlaceholder')} />
                                 </SelectTrigger>
                                 <SelectContent>
                                   {FREQUENCY_UNIT_OPTIONS.map((o) => (
                                     <SelectItem key={o.value} value={o.value}>
-                                      {o.label}
+                                      {t(`prescriptions.form.frequencyUnits.${o.value}`)}
                                     </SelectItem>
                                   ))}
                                 </SelectContent>
@@ -1151,7 +1142,7 @@ function PrescriptionsContent() {
                         </div>
                       </div>
                       <div className="space-y-1 md:col-span-5">
-                        <Label className="text-xs text-muted-foreground">Duração</Label>
+                        <Label className="text-xs text-muted-foreground">{t('prescriptions.form.durationLabel')}</Label>
                         <div className="flex gap-1">
                           <Controller
                             control={control}
@@ -1173,12 +1164,12 @@ function PrescriptionsContent() {
                             render={({ field }) => (
                               <Select value={field.value ?? ''} onValueChange={field.onChange} disabled={!!isContinuousUse}>
                                 <SelectTrigger className="h-9 flex-1">
-                                  <SelectValue placeholder="Un." />
+                                  <SelectValue placeholder={t('prescriptions.form.unitPlaceholder')} />
                                 </SelectTrigger>
                                 <SelectContent>
                                   {DURATION_UNIT_OPTIONS.map((o) => (
                                     <SelectItem key={o.value} value={o.value}>
-                                      {o.label}
+                                      {t(`prescriptions.form.durationUnits.${o.value}`)}
                                     </SelectItem>
                                   ))}
                                 </SelectContent>
@@ -1199,7 +1190,7 @@ function PrescriptionsContent() {
                               />
                             )}
                           />
-                          Uso contínuo (imprime &quot;USO CONTÍNUO&quot; no lugar da duração)
+                          {t('prescriptions.form.continuousUseLabel')}
                         </label>
                       </div>
                     </div>
@@ -1207,14 +1198,14 @@ function PrescriptionsContent() {
                     {/* Descrição / Obs */}
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">Como usar</Label>
+                        <Label className="text-xs text-muted-foreground">{t('prescriptions.form.usageDescriptionLabel')}</Label>
                         <Controller
                           control={control}
                           name={`medications.${index}.usage_description`}
                           render={({ field }) => (
                             <Textarea
                               rows={2}
-                              placeholder="Ex: Administrar com alimento."
+                              placeholder={t('prescriptions.form.usageDescriptionPlaceholder')}
                               className="resize-none"
                               {...field}
                             />
@@ -1222,12 +1213,17 @@ function PrescriptionsContent() {
                         />
                       </div>
                       <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">Observações</Label>
+                        <Label className="text-xs text-muted-foreground">{t('prescriptions.form.observationsLabel')}</Label>
                         <Controller
                           control={control}
                           name={`medications.${index}.observations`}
                           render={({ field }) => (
-                            <Textarea rows={2} placeholder="Obs. adicionais" className="resize-none" {...field} />
+                            <Textarea
+                              rows={2}
+                              placeholder={t('prescriptions.form.medicationObservationsPlaceholder')}
+                              className="resize-none"
+                              {...field}
+                            />
                           )}
                         />
                       </div>
@@ -1257,21 +1253,21 @@ function PrescriptionsContent() {
                   })
                 }
               >
-                <Plus className="w-4 h-4 mr-2" /> Adicionar medicamento
+                <Plus className="w-4 h-4 mr-2" /> {t('prescriptions.form.addMedicationButton')}
               </Button>
             </div>
           )}
 
           {/* Recomendações gerais */}
           <div className="space-y-2">
-            <Label className="text-sm font-medium">Recomendações gerais</Label>
+            <Label className="text-sm font-medium">{t('prescriptions.form.generalRecommendationsLabel')}</Label>
             <Controller
               control={control}
               name="observations"
               render={({ field }) => (
                 <Textarea
                   rows={3}
-                  placeholder="Orientações adicionais ao tutor..."
+                  placeholder={t('prescriptions.form.generalRecommendationsPlaceholder')}
                   className="resize-none"
                   {...field}
                 />
@@ -1290,7 +1286,7 @@ function PrescriptionsContent() {
       >
         <DialogContent className="max-w-4xl">
           <DialogHeader>
-            <DialogTitle>Visualizar prescrição</DialogTitle>
+            <DialogTitle>{t('prescriptions.dialog.pdfPreview.title')}</DialogTitle>
           </DialogHeader>
           {pdfPreviewLoading || !pdfPreviewUrl ? (
             <div className="flex h-[75vh] items-center justify-center">
@@ -1300,7 +1296,7 @@ function PrescriptionsContent() {
             <iframe
               src={pdfPreviewUrl}
               className="w-full h-[75vh] rounded"
-              title="Visualizar prescrição"
+              title={t('prescriptions.dialog.pdfPreview.title')}
             />
           )}
         </DialogContent>
@@ -1309,21 +1305,21 @@ function PrescriptionsContent() {
       <Dialog open={emailModalVisible} onOpenChange={setEmailModalVisible}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Confirmar Envio de Email</DialogTitle>
+            <DialogTitle>{t('prescriptions.dialog.email.title')}</DialogTitle>
           </DialogHeader>
           <p>
-            Enviar prescrição por email para o tutor de{' '}
+            {t('prescriptions.dialog.email.confirmQuestion')}{' '}
             <strong>{selectedPrescription && getPatient(selectedPrescription)?.name}</strong>?
           </p>
           <p className="text-muted-foreground text-sm mt-2">
-            O email será enviado para o endereço cadastrado no perfil do tutor.
+            {t('prescriptions.dialog.email.hint')}
           </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEmailModalVisible(false)}>
-              Cancelar
+              {t('prescriptions.dialog.cancel')}
             </Button>
             <Button className="bg-primary hover:bg-blue-700 text-white" onClick={handleSendEmail}>
-              Enviar
+              {t('prescriptions.dialog.email.sendButton')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1332,7 +1328,7 @@ function PrescriptionsContent() {
       <Dialog open={bularioDetailVisible} onOpenChange={setBularioDetailVisible}>
         <DialogContent className="max-w-xl">
           <DialogHeader>
-            <DialogTitle>{bularioDetail?.title ?? 'Detalhes do medicamento'}</DialogTitle>
+            <DialogTitle>{bularioDetail?.title ?? t('prescriptions.dialog.bulario.defaultTitle')}</DialogTitle>
           </DialogHeader>
           {bularioDetailLoading && (
             <div className="flex justify-center py-8">
@@ -1358,7 +1354,7 @@ function PrescriptionsContent() {
                   </div>
                 ))
               ) : (
-                <p className="text-muted-foreground">Sem detalhes cadastrados.</p>
+                <p className="text-muted-foreground">{t('prescriptions.dialog.bulario.noDetails')}</p>
               )}
             </div>
           )}
@@ -1368,7 +1364,7 @@ function PrescriptionsContent() {
       <Dialog open={signatureModalVisible} onOpenChange={closeSignatureModal}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Assinatura digital</DialogTitle>
+            <DialogTitle>{t('prescriptions.dialog.signature.title')}</DialogTitle>
           </DialogHeader>
 
           {signatureLoading ? (
@@ -1384,17 +1380,23 @@ function PrescriptionsContent() {
                   <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-emerald-800">
                     <div className="flex items-center gap-2">
                       <ShieldCheck className="w-5 h-5" />
-                      <span className="font-semibold">Assinatura válida</span>
+                      <span className="font-semibold">{t('prescriptions.dialog.signature.valid')}</span>
                     </div>
                     {modelInfo && (
                       <p className="text-sm mt-1">
-                        {modelInfo.label}
-                        {signatureStatus.serial_number ? ` — Nº ${signatureStatus.serial_number}` : ''}
+                        {t(`prescriptions.dialog.signature.legalModels.${modelInfo.value}.label`)}
+                        {signatureStatus.serial_number
+                          ? t('prescriptions.dialog.signature.serialNumberSuffix', {
+                              number: signatureStatus.serial_number,
+                            })
+                          : ''}
                       </p>
                     )}
                     {signatureStatus.signed_at && (
                       <p className="text-xs mt-1 text-emerald-700">
-                        Assinado em {new Date(signatureStatus.signed_at).toLocaleString('pt-BR')}
+                        {t('prescriptions.dialog.signature.signedAt', {
+                          date: new Date(signatureStatus.signed_at).toLocaleString('pt-BR'),
+                        })}
                       </p>
                     )}
                   </div>
@@ -1414,7 +1416,7 @@ function PrescriptionsContent() {
                 {signatureStatus.public_token && (
                   <div className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm">
                     <div>
-                      <p className="text-xs text-muted-foreground">Token (farmácia)</p>
+                      <p className="text-xs text-muted-foreground">{t('prescriptions.dialog.signature.pharmacyTokenLabel')}</p>
                       <p className="font-mono">{signatureStatus.public_token}</p>
                     </div>
                     <Button
@@ -1431,7 +1433,7 @@ function PrescriptionsContent() {
                 {signatureStatus.private_code && (
                   <div className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm">
                     <div>
-                      <p className="text-xs text-muted-foreground">Código (tutor)</p>
+                      <p className="text-xs text-muted-foreground">{t('prescriptions.dialog.signature.guardianCodeLabel')}</p>
                       <p className="font-mono">{signatureStatus.private_code}</p>
                     </div>
                     <Button
@@ -1460,7 +1462,7 @@ function PrescriptionsContent() {
                   ) : (
                     <Download className="w-4 h-4 mr-2" />
                   )}
-                  Baixar PDF assinado
+                  {t('prescriptions.dialog.signature.downloadSignedPdfButton')}
                 </Button>
                 {!revokeFormOpen && (
                   <Button
@@ -1469,24 +1471,24 @@ function PrescriptionsContent() {
                     className="flex-1"
                     onClick={() => setRevokeFormOpen(true)}
                   >
-                    Revogar assinatura
+                    {t('prescriptions.dialog.signature.revokeButton')}
                   </Button>
                 )}
               </div>
 
               {revokeFormOpen && (
                 <div className="space-y-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
-                  <Label className="text-sm">Motivo da revogação *</Label>
+                  <Label className="text-sm">{t('prescriptions.dialog.signature.revokeReasonLabel')}</Label>
                   <Textarea
                     rows={3}
                     maxLength={500}
                     value={revokeReason}
                     onChange={(e) => setRevokeReason(e.target.value)}
-                    placeholder="Descreva o motivo da revogação..."
+                    placeholder={t('prescriptions.dialog.signature.revokeReasonPlaceholder')}
                   />
                   <div className="flex justify-end gap-2">
                     <Button type="button" variant="outline" onClick={() => setRevokeFormOpen(false)}>
-                      Cancelar
+                      {t('prescriptions.dialog.cancel')}
                     </Button>
                     <Button
                       type="button"
@@ -1494,8 +1496,8 @@ function PrescriptionsContent() {
                       disabled={!revokeReason.trim() || revokeMutation.isPending}
                       onClick={handleRevoke}
                     >
-                      {revokeMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />} Confirmar
-                      revogação
+                      {revokeMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}{' '}
+                      {t('prescriptions.dialog.signature.confirmRevokeButton')}
                     </Button>
                   </div>
                 </div>
@@ -1505,11 +1507,13 @@ function PrescriptionsContent() {
             <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">
               <div className="flex items-center gap-2">
                 <ShieldX className="w-5 h-5" />
-                <span className="font-semibold">Assinatura revogada</span>
+                <span className="font-semibold">{t('prescriptions.dialog.signature.revokedTitle')}</span>
               </div>
               {signatureStatus.revoked_at && (
                 <p className="text-xs mt-1">
-                  Revogada em {new Date(signatureStatus.revoked_at).toLocaleString('pt-BR')}
+                  {t('prescriptions.dialog.signature.revokedAt', {
+                    date: new Date(signatureStatus.revoked_at).toLocaleString('pt-BR'),
+                  })}
                 </p>
               )}
               {signatureStatus.revoke_reason && <p className="text-sm mt-2">{signatureStatus.revoke_reason}</p>}
@@ -1517,7 +1521,7 @@ function PrescriptionsContent() {
           ) : (
             <div className="space-y-4">
               <div>
-                <Label className="text-sm font-medium">Modelo do receituário</Label>
+                <Label className="text-sm font-medium">{t('prescriptions.dialog.signature.modelLabel')}</Label>
                 <div className="mt-2 space-y-2">
                   {LEGAL_MODEL_OPTIONS.map((opt) => (
                     <label
@@ -1534,9 +1538,15 @@ function PrescriptionsContent() {
                         onChange={() => setLegalModel(opt.value)}
                       />
                       <div>
-                        <p className="font-medium">{opt.label}</p>
-                        <p className="text-xs text-muted-foreground">{opt.legalBasis}</p>
-                        <p className="text-xs text-muted-foreground">{opt.vias}</p>
+                        <p className="font-medium">
+                          {t(`prescriptions.dialog.signature.legalModels.${opt.value}.label`)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {t(`prescriptions.dialog.signature.legalModels.${opt.value}.legalBasis`)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {t(`prescriptions.dialog.signature.legalModels.${opt.value}.vias`)}
+                        </p>
                       </div>
                     </label>
                   ))}
@@ -1551,22 +1561,22 @@ function PrescriptionsContent() {
                     checked={isHumanAntibacterial}
                     onChange={(e) => setIsHumanAntibacterial(e.target.checked)}
                   />
-                  Antibacteriano de uso humano (RDC 471/2021 — força 2 vias e validade de 10 dias)
+                  {t('prescriptions.dialog.signature.humanAntibacterialLabel')}
                 </label>
               )}
 
               {sipeagroMissing && (
                 <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
-                  Você precisa cadastrar seu Nº SIPEAGRO antes de assinar este modelo.{' '}
+                  {t('prescriptions.dialog.signature.sipeagroMissingText')}{' '}
                   <Link href="/profile" className="font-medium underline">
-                    Ir para o perfil
+                    {t('prescriptions.dialog.signature.goToProfileLink')}
                   </Link>
                 </div>
               )}
 
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={() => closeSignatureModal(false)}>
-                  Cancelar
+                  {t('prescriptions.dialog.cancel')}
                 </Button>
                 <Button
                   type="button"
@@ -1574,7 +1584,8 @@ function PrescriptionsContent() {
                   disabled={sipeagroMissing || signMutation.isPending}
                   onClick={handleSign}
                 >
-                  {signMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />} Assinar
+                  {signMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}{' '}
+                  {t('prescriptions.dialog.signature.signButton')}
                 </Button>
               </div>
             </div>
@@ -1586,8 +1597,9 @@ function PrescriptionsContent() {
 }
 
 export default function PrescriptionsPage() {
+  const { t } = useTranslation();
   return (
-    <Suspense fallback={<div className="p-6">Carregando...</div>}>
+    <Suspense fallback={<div className="p-6">{t('prescriptions.loading')}</div>}>
       <PrescriptionsContent />
     </Suspense>
   );

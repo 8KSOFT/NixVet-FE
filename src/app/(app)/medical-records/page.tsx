@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { DashboardCreateFormDialog } from '@/components/dashboard-create-form-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,12 +28,12 @@ interface PatientRecordGroup {
   records: MedicalRecord[];
 }
 
-const RECORD_TYPE_LABELS: Record<string, string> = {
-  atendimento: 'Atendimento',
-  retorno: 'Retorno',
-  emergencia: 'Emergência',
-  cirurgia: 'Cirurgia',
-  internacao: 'Internação',
+const RECORD_TYPE_LABEL_KEYS: Record<string, string> = {
+  atendimento: 'medicalRecords.recordTypes.atendimento',
+  retorno: 'medicalRecords.recordTypes.retorno',
+  emergencia: 'medicalRecords.recordTypes.emergencia',
+  cirurgia: 'medicalRecords.recordTypes.cirurgia',
+  internacao: 'medicalRecords.recordTypes.internacao',
 };
 
 // Classes completas (não montadas em runtime) — o Tailwind só gera o CSS de
@@ -79,6 +80,7 @@ const emptyPatient = () => ({
 
 export default function MedicalRecordsListPage() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [modalVisible, setModalVisible] = useState(false);
   const [filterPatient, setFilterPatient] = useState('');
   const [search, setSearch] = useState('');
@@ -113,7 +115,7 @@ export default function MedicalRecordsListPage() {
 
   const handleCreate = async () => {
     if (!form.patient_id) {
-      toast.error('Selecione ou cadastre um paciente');
+      toast.error(t('medicalRecords.toasts.selectOrCreatePatient'));
       return;
     }
     try {
@@ -121,13 +123,13 @@ export default function MedicalRecordsListPage() {
       setModalVisible(false);
       router.push(`/medical-records/prontuario/${record.patient_id}`);
     } catch {
-      toast.error('Erro ao criar prontuário');
+      toast.error(t('medicalRecords.toasts.createRecordError'));
     }
   };
 
   const handleCreateTutor = async () => {
     if (!tutorForm.name || !tutorForm.cpf || !tutorForm.phone || !tutorForm.email || !tutorForm.cep) {
-      toast.error('Preencha nome, CPF, telefone, email e CEP');
+      toast.error(t('medicalRecords.toasts.tutorRequiredFields'));
       return;
     }
     try {
@@ -137,13 +139,13 @@ export default function MedicalRecordsListPage() {
       setPatientForm((p) => ({ ...p, tutor_id: tutor.id }));
       if (!patientModal) setPatientModal(true);
     } catch {
-      toast.error('Erro ao cadastrar tutor');
+      toast.error(t('medicalRecords.toasts.createTutorError'));
     }
   };
 
   const handleCreatePatient = async () => {
     if (!patientForm.name || !patientForm.species || !patientForm.breed) {
-      toast.error('Preencha nome, espécie e raça');
+      toast.error(t('medicalRecords.toasts.patientRequiredFields'));
       return;
     }
     try {
@@ -162,7 +164,7 @@ export default function MedicalRecordsListPage() {
       setPatientModal(false);
       setPatientForm(emptyPatient());
     } catch {
-      toast.error('Erro ao cadastrar animal');
+      toast.error(t('medicalRecords.toasts.createPatientError'));
     }
   };
 
@@ -202,7 +204,9 @@ export default function MedicalRecordsListPage() {
   return (
     <div>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-8">
-        <h1 className="text-2xl font-extrabold font-['InterDoFigma'] flex items-center gap-2">Prontuários</h1>
+        <h1 className="text-2xl font-extrabold font-['InterDoFigma'] flex items-center gap-2">
+          {t('medicalRecords.title')}
+        </h1>
         <Button
           onClick={() => {
             setForm(emptyForm());
@@ -210,7 +214,7 @@ export default function MedicalRecordsListPage() {
           }}
           className="w-full bg-primary hover:bg-primary/70 sm:w-auto"
         >
-          <Plus className="h-4 w-4 mr-1" /> Novo Prontuário
+          <Plus className="h-4 w-4 mr-1" /> {t('medicalRecords.newRecordButton')}
         </Button>
       </div>
 
@@ -218,7 +222,7 @@ export default function MedicalRecordsListPage() {
         <div className="flex-1 min-w-50 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-7 h-7" />
           <Input
-            placeholder="Buscar por paciente, veterinário, queixa..."
+            placeholder={t('medicalRecords.searchPlaceholder')}
             className="pl-12 rounded-full h-15! placeholder:text-black/80"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -251,7 +255,7 @@ export default function MedicalRecordsListPage() {
             <Loader2 className="w-8 h-8 animate-spin text-muted-foreground/60" />
           </div>
         ) : patientGroups.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground">Nenhum prontuário encontrado.</div>
+          <div className="text-center py-12 text-muted-foreground">{t('medicalRecords.emptyState')}</div>
         ) : (
           <div>
             <div className="grid grid-cols-2 gap-x-4 gap-y-6 pt-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
@@ -292,7 +296,9 @@ export default function MedicalRecordsListPage() {
                             mesmo quando é a única e sobe pouco. */}
                         <div className="flex h-4 items-center bg-primary/10 px-2">
                           <p className="truncate text-[9px] font-bold uppercase tracking-wide text-primary/80">
-                            {RECORD_TYPE_LABELS[record.record_type] ?? record.record_type}
+                            {RECORD_TYPE_LABEL_KEYS[record.record_type]
+                              ? t(RECORD_TYPE_LABEL_KEYS[record.record_type])
+                              : record.record_type}
                           </p>
                         </div>
                         <div className="px-2 py-1">
@@ -328,7 +334,7 @@ export default function MedicalRecordsListPage() {
                               className="truncate border-b border-dashed border-gray-300 pb-0.5 text-[10px] font-medium text-muted-foreground"
                               title={group.patient.tutor?.name ?? undefined}
                             >
-                              {group.patient.tutor?.name ?? 'Sem responsável'}
+                              {group.patient.tutor?.name ?? t('medicalRecords.noGuardian')}
                             </p>
                           </div>
 
@@ -392,7 +398,7 @@ export default function MedicalRecordsListPage() {
                       <div className="flex items-end justify-between border-t border-dashed border-gray-200 pt-2">
                         <div>
                           <p className="text-xs text-muted-foreground">
-                            {group.records.length} {group.records.length === 1 ? 'ficha' : 'fichas'}
+                            {t('medicalRecords.fichaCount', { count: group.records.length })}
                           </p>
                           <p className="text-[11px] text-muted-foreground/70">
                             {lastUpdated ? dayjs(lastUpdated).format('DD/MM/YYYY') : '—'}
@@ -427,28 +433,34 @@ export default function MedicalRecordsListPage() {
       <DashboardCreateFormDialog
         open={modalVisible}
         onOpenChange={setModalVisible}
-        title="Novo Prontuário"
+        title={t('medicalRecords.dialog.newRecordTitle')}
         containerClassName="max-w-lg mx-auto"
         preventOutsideClose
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button variant="outline" onClick={() => setModalVisible(false)}>
-              Cancelar
+              {t('medicalRecords.dialog.cancel')}
             </Button>
             <Button onClick={handleCreate} className="bg-primary">
-              Criar e Abrir
+              {t('medicalRecords.dialog.createAndOpen')}
             </Button>
           </div>
         }
       >
         <div className="space-y-4 md:space-y-6">
           <div className="space-y-2">
-            <Label>Paciente *</Label>
+            <Label>{t('medicalRecords.dialog.patientLabel')}</Label>
             <div className="flex flex-col gap-2 sm:flex-row">
               <div className="flex-1 min-w-0">
                 <Select value={form.patient_id} onValueChange={(v) => setForm((p) => ({ ...p, patient_id: v }))}>
                   <SelectTrigger>
-                    <SelectValue placeholder={patients.length ? 'Selecione' : 'Nenhum animal cadastrado'} />
+                    <SelectValue
+                      placeholder={
+                        patients.length
+                          ? t('medicalRecords.dialog.selectPlaceholder')
+                          : t('medicalRecords.dialog.noPatientsPlaceholder')
+                      }
+                    />
                   </SelectTrigger>
                   <SelectContent>
                     {patients.map((p) => (
@@ -466,20 +478,23 @@ export default function MedicalRecordsListPage() {
                   setPatientForm(emptyPatient());
                   setPatientModal(true);
                 }}
-                title="Cadastrar novo animal"
+                title={t('medicalRecords.dialog.newPatientTitle')}
                 className="shrink-0"
               >
-                <PawPrint className="h-4 w-4 mr-1" /> Novo animal
+                <PawPrint className="h-4 w-4 mr-1" /> {t('medicalRecords.dialog.newPatientButton')}
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              Sem tutor cadastrado? Use o botão <strong>Novo animal</strong> e clique em <strong>+ Novo tutor</strong>{' '}
-              dentro dele — ou deixe sem tutor (emergência).
+              {t('medicalRecords.dialog.noTutorHintPart1')}{' '}
+              <strong>{t('medicalRecords.dialog.newPatientButton')}</strong>{' '}
+              {t('medicalRecords.dialog.noTutorHintPart2')}{' '}
+              <strong>{t('medicalRecords.dialog.noTutorHintNewTutorLabel')}</strong>{' '}
+              {t('medicalRecords.dialog.noTutorHintPart3')}
             </p>
           </div>
 
           <div className="space-y-2">
-            <Label>Veterinário</Label>
+            <Label>{t('medicalRecords.dialog.veterinarianLabel')}</Label>
             <Select
               value={form.veterinarian_id || '_none'}
               onValueChange={(v) =>
@@ -490,10 +505,10 @@ export default function MedicalRecordsListPage() {
               }
             >
               <SelectTrigger>
-                <SelectValue placeholder="Selecione" />
+                <SelectValue placeholder={t('medicalRecords.dialog.selectPlaceholder')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="_none">Nenhum</SelectItem>
+                <SelectItem value="_none">{t('medicalRecords.dialog.noneOption')}</SelectItem>
                 {vets.map((v) => (
                   <SelectItem key={v.id} value={v.id}>
                     {v.name}
@@ -504,22 +519,22 @@ export default function MedicalRecordsListPage() {
           </div>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="space-y-1">
-              <Label>Tipo</Label>
+              <Label>{t('medicalRecords.dialog.typeLabel')}</Label>
               <Select value={form.record_type} onValueChange={(v) => setForm((p) => ({ ...p, record_type: v }))}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="atendimento">Atendimento</SelectItem>
-                  <SelectItem value="retorno">Retorno</SelectItem>
-                  <SelectItem value="emergencia">Emergência</SelectItem>
-                  <SelectItem value="cirurgia">Cirurgia</SelectItem>
-                  <SelectItem value="internacao">Internação</SelectItem>
+                  <SelectItem value="atendimento">{t('medicalRecords.recordTypes.atendimento')}</SelectItem>
+                  <SelectItem value="retorno">{t('medicalRecords.recordTypes.retorno')}</SelectItem>
+                  <SelectItem value="emergencia">{t('medicalRecords.recordTypes.emergencia')}</SelectItem>
+                  <SelectItem value="cirurgia">{t('medicalRecords.recordTypes.cirurgia')}</SelectItem>
+                  <SelectItem value="internacao">{t('medicalRecords.recordTypes.internacao')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1">
-              <Label>Data</Label>
+              <Label>{t('medicalRecords.dialog.dateLabel')}</Label>
               <Input
                 type="date"
                 value={form.record_date}
@@ -528,12 +543,12 @@ export default function MedicalRecordsListPage() {
             </div>
           </div>
           <div className="space-y-2">
-            <Label>Queixa principal</Label>
+            <Label>{t('medicalRecords.dialog.chiefComplaintLabel')}</Label>
             <Textarea
               rows={2}
               value={form.chief_complaint}
               onChange={(e) => setForm((p) => ({ ...p, chief_complaint: e.target.value }))}
-              placeholder="Descreva a queixa do tutor..."
+              placeholder={t('medicalRecords.dialog.chiefComplaintPlaceholder')}
             />
           </div>
         </div>
@@ -543,23 +558,23 @@ export default function MedicalRecordsListPage() {
       <DashboardCreateFormDialog
         open={patientModal}
         onOpenChange={setPatientModal}
-        title="Cadastrar novo animal"
+        title={t('medicalRecords.dialog.newPatientTitle')}
         containerClassName="max-w-lg mx-auto"
         preventOutsideClose
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button variant="outline" onClick={() => setPatientModal(false)}>
-              Cancelar
+              {t('medicalRecords.dialog.cancel')}
             </Button>
             <Button onClick={handleCreatePatient} disabled={patientSaving} className="bg-primary">
-              {patientSaving && <Loader2 className="h-4 w-4 mr-1 animate-spin" />} Salvar animal
+              {patientSaving && <Loader2 className="h-4 w-4 mr-1 animate-spin" />} {t('medicalRecords.dialog.savePatient')}
             </Button>
           </div>
         }
       >
         <div className="space-y-4 md:space-y-6">
           <div className="space-y-2">
-            <Label>Tutor</Label>
+            <Label>{t('medicalRecords.dialog.tutorLabel')}</Label>
             <div className="flex flex-col gap-2 sm:flex-row">
               <div className="flex-1 min-w-0">
                 <Select
@@ -572,13 +587,19 @@ export default function MedicalRecordsListPage() {
                   }
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder={tutors.length ? 'Selecione' : 'Nenhum tutor cadastrado'} />
+                    <SelectValue
+                      placeholder={
+                        tutors.length
+                          ? t('medicalRecords.dialog.selectPlaceholder')
+                          : t('medicalRecords.dialog.noTutorsPlaceholder')
+                      }
+                    />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="_none">Sem tutor (emergência)</SelectItem>
-                    {tutors.map((t) => (
-                      <SelectItem key={t.id} value={t.id}>
-                        {t.name}
+                    <SelectItem value="_none">{t('medicalRecords.dialog.noTutorOption')}</SelectItem>
+                    {tutors.map((tutor) => (
+                      <SelectItem key={tutor.id} value={tutor.id}>
+                        {tutor.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -591,52 +612,52 @@ export default function MedicalRecordsListPage() {
                   setTutorForm(emptyTutor());
                   setTutorModal(true);
                 }}
-                title="Cadastrar novo tutor"
+                title={t('medicalRecords.dialog.newTutorTitle')}
                 className="shrink-0"
               >
-                <UserPlus className="h-4 w-4 mr-1" /> Novo tutor
+                <UserPlus className="h-4 w-4 mr-1" /> {t('medicalRecords.dialog.newTutorButton')}
               </Button>
             </div>
           </div>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
             <div className="space-y-1 md:col-span-7">
-              <Label>Nome *</Label>
+              <Label>{t('medicalRecords.dialog.nameLabel')}</Label>
               <Input
                 value={patientForm.name}
                 onChange={(e) => setPatientForm((p) => ({ ...p, name: e.target.value }))}
               />
             </div>
             <div className="space-y-1 md:col-span-5">
-              <Label>Sexo</Label>
+              <Label>{t('medicalRecords.dialog.sexLabel')}</Label>
               <Select value={patientForm.sex} onValueChange={(v) => setPatientForm((p) => ({ ...p, sex: v }))}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="M">Macho</SelectItem>
-                  <SelectItem value="F">Fêmea</SelectItem>
+                  <SelectItem value="M">{t('medicalRecords.dialog.male')}</SelectItem>
+                  <SelectItem value="F">{t('medicalRecords.dialog.female')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
             <div className="space-y-1 md:col-span-4">
-              <Label>Espécie *</Label>
+              <Label>{t('medicalRecords.dialog.speciesLabel')}</Label>
               <Input
                 value={patientForm.species}
                 onChange={(e) => setPatientForm((p) => ({ ...p, species: e.target.value }))}
-                placeholder="Canino, Felino..."
+                placeholder={t('medicalRecords.dialog.speciesPlaceholder')}
               />
             </div>
             <div className="space-y-1 md:col-span-5">
-              <Label>Raça *</Label>
+              <Label>{t('medicalRecords.dialog.breedLabel')}</Label>
               <Input
                 value={patientForm.breed}
                 onChange={(e) => setPatientForm((p) => ({ ...p, breed: e.target.value }))}
               />
             </div>
             <div className="space-y-1 md:col-span-1">
-              <Label>Idade (anos)</Label>
+              <Label>{t('medicalRecords.dialog.ageLabel')}</Label>
               <Input
                 type="number"
                 step="0.1"
@@ -645,7 +666,7 @@ export default function MedicalRecordsListPage() {
               />
             </div>
             <div className="space-y-1 md:col-span-2">
-              <Label>Peso (kg)</Label>
+              <Label>{t('medicalRecords.dialog.weightLabel')}</Label>
               <Input
                 type="number"
                 step="0.1"
@@ -661,16 +682,16 @@ export default function MedicalRecordsListPage() {
       <DashboardCreateFormDialog
         open={tutorModal}
         onOpenChange={setTutorModal}
-        title="Cadastrar novo tutor"
+        title={t('medicalRecords.dialog.newTutorTitle')}
         containerClassName="max-w-lg mx-auto"
         preventOutsideClose
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button variant="outline" onClick={() => setTutorModal(false)}>
-              Cancelar
+              {t('medicalRecords.dialog.cancel')}
             </Button>
             <Button onClick={handleCreateTutor} disabled={tutorSaving} className="bg-primary">
-              {tutorSaving && <Loader2 className="h-4 w-4 mr-1 animate-spin" />} Salvar tutor
+              {tutorSaving && <Loader2 className="h-4 w-4 mr-1 animate-spin" />} {t('medicalRecords.dialog.saveTutor')}
             </Button>
           </div>
         }
@@ -678,19 +699,19 @@ export default function MedicalRecordsListPage() {
         <div className="space-y-4 md:space-y-6">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
             <div className="space-y-1 md:col-span-5">
-              <Label>Nome *</Label>
+              <Label>{t('medicalRecords.dialog.nameLabel')}</Label>
               <Input value={tutorForm.name} onChange={(e) => setTutorForm((p) => ({ ...p, name: e.target.value }))} />
             </div>
             <div className="space-y-1 md:col-span-3">
-              <Label>CPF *</Label>
+              <Label>{t('medicalRecords.dialog.cpfLabel')}</Label>
               <Input value={tutorForm.cpf} onChange={(e) => setTutorForm((p) => ({ ...p, cpf: e.target.value }))} />
             </div>
             <div className="space-y-1 md:col-span-4">
-              <Label>Telefone *</Label>
+              <Label>{t('medicalRecords.dialog.phoneLabel')}</Label>
               <Input value={tutorForm.phone} onChange={(e) => setTutorForm((p) => ({ ...p, phone: e.target.value }))} />
             </div>
             <div className="space-y-1 md:col-span-8">
-              <Label>Email *</Label>
+              <Label>{t('medicalRecords.dialog.emailLabel')}</Label>
               <Input
                 type="email"
                 value={tutorForm.email}
@@ -700,18 +721,18 @@ export default function MedicalRecordsListPage() {
           </div>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
             <div className="space-y-1 md:col-span-3">
-              <Label>CEP *</Label>
+              <Label>{t('medicalRecords.dialog.cepLabel')}</Label>
               <Input value={tutorForm.cep} onChange={(e) => setTutorForm((p) => ({ ...p, cep: e.target.value }))} />
             </div>
             <div className="space-y-1 md:col-span-7">
-              <Label>Rua</Label>
+              <Label>{t('medicalRecords.dialog.streetLabel')}</Label>
               <Input
                 value={tutorForm.street}
                 onChange={(e) => setTutorForm((p) => ({ ...p, street: e.target.value }))}
               />
             </div>
             <div className="space-y-1 md:col-span-2">
-              <Label>Número</Label>
+              <Label>{t('medicalRecords.dialog.numberLabel')}</Label>
               <Input
                 value={tutorForm.number}
                 onChange={(e) => setTutorForm((p) => ({ ...p, number: e.target.value }))}
@@ -719,7 +740,8 @@ export default function MedicalRecordsListPage() {
             </div>
           </div>
           <p className="text-xs text-muted-foreground">
-            Cadastro rápido — campos de endereço completos podem ser preenchidos depois em <strong>Tutores</strong>.
+            {t('medicalRecords.dialog.quickRegisterHintPart1')}{' '}
+            <strong>{t('medicalRecords.dialog.quickRegisterHintTutorsLabel')}</strong>.
           </p>
         </div>
       </DashboardCreateFormDialog>

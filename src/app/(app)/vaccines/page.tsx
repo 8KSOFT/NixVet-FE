@@ -1,6 +1,7 @@
 'use client';
 
 import React, { Suspense, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import type { ApiRequestError } from '@/app/types/api-error';
 import { Button } from '@/components/ui/button';
@@ -42,6 +43,8 @@ function getApiErrorMessage(error: unknown, fallbackMessage: string): string {
 }
 
 function ReminderTable({ data, loading }: { data: VaccineReminder[]; loading: boolean }) {
+  const { t } = useTranslation();
+
   if (loading) {
     return (
       <div className="flex justify-center py-8">
@@ -52,7 +55,7 @@ function ReminderTable({ data, loading }: { data: VaccineReminder[]; loading: bo
   if (data.length === 0) {
     return (
       <div className="rounded-lg border border-gray-300 bg-white py-8 text-center text-sm text-slate-500">
-        Nenhum lembrete encontrado.
+        {t('vaccines.emptyReminders')}
       </div>
     );
   }
@@ -63,10 +66,10 @@ function ReminderTable({ data, loading }: { data: VaccineReminder[]; loading: bo
         <Table className="min-w-full border-collapse bg-white text-sm">
           <TableHeader>
             <TableRow className="border-b border-gray-300 h-15">
-              <TableHead>Paciente</TableHead>
-              <TableHead>Vacina</TableHead>
-              <TableHead>Próxima dose</TableHead>
-              <TableHead>Status</TableHead>
+              <TableHead>{t('vaccines.tableHeaderPatient')}</TableHead>
+              <TableHead>{t('vaccines.tableHeaderVaccine')}</TableHead>
+              <TableHead>{t('vaccines.tableHeaderNextDose')}</TableHead>
+              <TableHead>{t('vaccines.tableHeaderStatus')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -94,11 +97,11 @@ function ReminderTable({ data, loading }: { data: VaccineReminder[]; loading: bo
             </div>
             <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
               <div>
-                <p className="text-xs text-muted-foreground">Vacina</p>
+                <p className="text-xs text-muted-foreground">{t('vaccines.tableHeaderVaccine')}</p>
                 <p className="truncate">{r.vaccine_name}</p>
               </div>
               <div>
-                <p className="text-xs text-muted-foreground">Próxima dose</p>
+                <p className="text-xs text-muted-foreground">{t('vaccines.tableHeaderNextDose')}</p>
                 <p>{r.next_due_date}</p>
               </div>
             </div>
@@ -110,6 +113,7 @@ function ReminderTable({ data, loading }: { data: VaccineReminder[]; loading: bo
 }
 
 function VaccinesContent() {
+  const { t } = useTranslation();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -149,24 +153,24 @@ function VaccinesContent() {
       setModalOpen(false);
       reset();
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, 'Erro ao criar'));
+      toast.error(getApiErrorMessage(error, t('vaccines.createError')));
     }
   };
 
   return (
     <div>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-8">
-        <h1 className="text-2xl font-extrabold font-['InterDoFigma']">Vacinas</h1>
+        <h1 className="text-2xl font-extrabold font-['InterDoFigma']">{t('vaccines.title')}</h1>
         <Button onClick={() => setModalOpen(true)} className="w-full bg-primary sm:w-auto">
-          <Plus className="w-4 h-4 mr-2" /> Novo lembrete
+          <Plus className="w-4 h-4 mr-2" /> {t('vaccines.newButton')}
         </Button>
       </div>
 
       <div className="bg-transparent border-none shadow-none">
         <Tabs defaultValue="due">
           <TabsList>
-            <TabsTrigger value="due">Próximos 30 dias</TabsTrigger>
-            <TabsTrigger value="all">Todos os lembretes</TabsTrigger>
+            <TabsTrigger value="due">{t('vaccines.tabDue')}</TabsTrigger>
+            <TabsTrigger value="all">{t('vaccines.tabAll')}</TabsTrigger>
           </TabsList>
           <TabsContent value="due">
             <div className="rounded-md overflow-hidden border-none">
@@ -200,14 +204,14 @@ function VaccinesContent() {
       <DashboardCreateFormDialog
         open={modalOpen}
         onOpenChange={setModalOpen}
-        title="Novo lembrete de vacina"
+        title={t('vaccines.dialogTitle')}
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>
-              Cancelar
+              {t('vaccines.cancel')}
             </Button>
             <Button type="submit" form="vaccine-reminder-form" className="bg-primary">
-              Criar
+              {t('vaccines.createButton')}
             </Button>
           </div>
         }
@@ -215,7 +219,7 @@ function VaccinesContent() {
         <form id="vaccine-reminder-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4 md:space-y-6">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <div className="space-y-2 md:col-span-2">
-              <Label>Paciente</Label>
+              <Label>{t('vaccines.tableHeaderPatient')}</Label>
               <Controller
                 name="patient_id"
                 control={control}
@@ -223,7 +227,7 @@ function VaccinesContent() {
                 render={({ field }) => (
                   <Select onValueChange={field.onChange} value={field.value}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
+                      <SelectValue placeholder={t('vaccines.selectPlaceholder')} />
                     </SelectTrigger>
                     <SelectContent>
                       {patients.map((p) => (
@@ -237,13 +241,13 @@ function VaccinesContent() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Próxima dose</Label>
+              <Label>{t('vaccines.tableHeaderNextDose')}</Label>
               <Input type="date" {...register('next_due_date', { required: true })} />
             </div>
           </div>
           <div className="space-y-2">
-            <Label>Vacina</Label>
-            <Input {...register('vaccine_name', { required: true })} placeholder="Ex.: Antirrábica" />
+            <Label>{t('vaccines.tableHeaderVaccine')}</Label>
+            <Input {...register('vaccine_name', { required: true })} placeholder={t('vaccines.vaccineNamePlaceholder')} />
           </div>
         </form>
       </DashboardCreateFormDialog>
@@ -252,8 +256,9 @@ function VaccinesContent() {
 }
 
 export default function VaccinesPage() {
+  const { t } = useTranslation();
   return (
-    <Suspense fallback={<div className="p-6">Carregando...</div>}>
+    <Suspense fallback={<div className="p-6">{t('vaccines.loading')}</div>}>
       <VaccinesContent />
     </Suspense>
   );

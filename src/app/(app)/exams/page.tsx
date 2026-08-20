@@ -1,6 +1,7 @@
 'use client';
 
 import React, { Suspense, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { CreateExamRequestPayload, ExamRequest, ExamRequestFormValues, StoredUser } from '@/app/types/exam-request';
 import { DashboardCreateFormDialog } from '@/components/dashboard-create-form-dialog';
 import { Button } from '@/components/ui/button';
@@ -33,6 +34,7 @@ import { usePatientsListQuery } from '@/hooks/apiHooks/usePatients';
 import { useConsultationsQuery } from '@/hooks/apiHooks/useConsultations';
 
 function ExamRequestsContent() {
+  const { t } = useTranslation();
   const searchParams = useSearchParams();
   const preselectedPatientId = searchParams?.get('patientId') ?? null;
 
@@ -99,7 +101,7 @@ function ExamRequestsContent() {
       link.click();
       link.remove();
     } catch {
-      toast.error('Erro ao baixar PDF');
+      toast.error(t('exams.downloadPdfError'));
     }
   };
 
@@ -107,18 +109,18 @@ function ExamRequestsContent() {
     try {
       const userStr = localStorage.getItem('user');
       if (!userStr) {
-        toast.error('Usuário não autenticado');
+        toast.error(t('exams.userNotAuthenticated'));
         return;
       }
       const user = JSON.parse(userStr) as StoredUser;
 
       if (!values.consultation_id && !values.request_date) {
-        toast.error('Selecione uma consulta ou informe a data da solicitação');
+        toast.error(t('exams.selectConsultationOrDate'));
         return;
       }
 
       if (!selectedExams.length) {
-        toast.error('Adicione ao menos um exame');
+        toast.error(t('exams.addAtLeastOneExam'));
         return;
       }
 
@@ -153,7 +155,7 @@ function ExamRequestsContent() {
       await createExamRequest.mutateAsync(payload);
       setModalVisible(false);
     } catch {
-      toast.error('Erro ao gerar solicitação');
+      toast.error(t('exams.createRequestError'));
     }
   };
 
@@ -173,7 +175,7 @@ function ExamRequestsContent() {
       await sendEmailMutation.mutateAsync(selectedExamRequest.id);
       setEmailModalVisible(false);
     } catch {
-      toast.error('Erro ao enviar email');
+      toast.error(t('exams.sendEmailError'));
     }
   };
 
@@ -183,7 +185,7 @@ function ExamRequestsContent() {
 
   const handleAddExamToCatalog = async () => {
     if (!newExamName.trim() || !newExamAreaId) {
-      toast.warning('Preencha o nome e a área do exame');
+      toast.warning(t('exams.fillNameAndArea'));
       return;
     }
     try {
@@ -192,7 +194,7 @@ function ExamRequestsContent() {
       setNewExamName('');
       setNewExamAreaId('');
     } catch {
-      toast.error('Erro ao adicionar exame');
+      toast.error(t('exams.addExamError'));
     }
   };
 
@@ -222,10 +224,10 @@ function ExamRequestsContent() {
     <div>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-8">
         <h1 className="text-2xl font-extrabold font-['interDoFigma'] flex items-center gap-2">
-          Solicitações de Exames
+          {t('exams.pageTitle')}
         </h1>
         <Button onClick={handleAdd} className="w-full bg-primary hover:bg-primary/70 text-white sm:w-auto">
-          <Plus className="w-4 h-4 mr-1" /> Nova Solicitação
+          <Plus className="w-4 h-4 mr-1" /> {t('exams.newRequest')}
         </Button>
       </div>
 
@@ -235,7 +237,7 @@ function ExamRequestsContent() {
         </div>
       ) : examRequests.length === 0 ? (
         <div className="rounded-lg border border-gray-300 bg-white py-8 text-center text-sm text-slate-500">
-          Nenhuma solicitação encontrada.
+          {t('exams.emptyState')}
         </div>
       ) : (
         <div>
@@ -244,12 +246,12 @@ function ExamRequestsContent() {
             <Table className="min-w-full border-collapse bg-white text-sm">
               <TableHeader>
                 <TableRow className="border-b border-gray-300 h-15">
-                  <TableHead>Data</TableHead>
-                  <TableHead>Paciente</TableHead>
-                  <TableHead>Tutor</TableHead>
-                  <TableHead>Veterinário</TableHead>
-                  <TableHead>Exames</TableHead>
-                  <TableHead>Ações</TableHead>
+                  <TableHead>{t('exams.columnDate')}</TableHead>
+                  <TableHead>{t('exams.columnPatient')}</TableHead>
+                  <TableHead>{t('exams.columnTutor')}</TableHead>
+                  <TableHead>{t('exams.columnVeterinarian')}</TableHead>
+                  <TableHead>{t('exams.columnExams')}</TableHead>
+                  <TableHead>{t('exams.columnActions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -276,8 +278,8 @@ function ExamRequestsContent() {
                           variant="ghost"
                           size="icon"
                           className="p-0"
-                          title="Baixar PDF"
-                          aria-label="Baixar PDF"
+                          title={t('exams.downloadPdfTooltip')}
+                          aria-label={t('exams.downloadPdfTooltip')}
                           onClick={() => handleDownloadPdf(record.id)}
                         >
                           <FileText className="w-4 h-4" />
@@ -287,8 +289,8 @@ function ExamRequestsContent() {
                           variant="ghost"
                           size="icon"
                           className="p-0"
-                          title="Enviar por e-mail"
-                          aria-label="Enviar por e-mail"
+                          title={t('exams.sendEmailTooltip')}
+                          aria-label={t('exams.sendEmailTooltip')}
                           onClick={() => handleOpenEmailModal(record)}
                         >
                           <Mail className="w-4 h-4" />
@@ -316,15 +318,15 @@ function ExamRequestsContent() {
 
                 <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
                   <div>
-                    <p className="text-xs text-muted-foreground">Tutor</p>
+                    <p className="text-xs text-muted-foreground">{t('exams.columnTutor')}</p>
                     <p className="truncate">{getPatient(record)?.tutor?.name ?? '—'}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Veterinário</p>
+                    <p className="text-xs text-muted-foreground">{t('exams.columnVeterinarian')}</p>
                     <p className="truncate">{record.veterinarian?.name ?? '—'}</p>
                   </div>
                   <div className="col-span-2">
-                    <p className="text-xs text-muted-foreground">Exames</p>
+                    <p className="text-xs text-muted-foreground">{t('exams.columnExams')}</p>
                     <p className="truncate">
                       {record.requested_exams?.length
                         ? record.requested_exams
@@ -344,8 +346,8 @@ function ExamRequestsContent() {
                     variant="ghost"
                     size="icon"
                     className="p-0"
-                    title="Baixar PDF"
-                    aria-label="Baixar PDF"
+                    title={t('exams.downloadPdfTooltip')}
+                    aria-label={t('exams.downloadPdfTooltip')}
                     onClick={() => handleDownloadPdf(record.id)}
                   >
                     <FileText className="w-4 h-4" />
@@ -355,8 +357,8 @@ function ExamRequestsContent() {
                     variant="ghost"
                     size="icon"
                     className="p-0"
-                    title="Enviar por e-mail"
-                    aria-label="Enviar por e-mail"
+                    title={t('exams.sendEmailTooltip')}
+                    aria-label={t('exams.sendEmailTooltip')}
                     onClick={() => handleOpenEmailModal(record)}
                   >
                     <Mail className="w-4 h-4" />
@@ -380,7 +382,7 @@ function ExamRequestsContent() {
       <DashboardCreateFormDialog
         open={modalVisible}
         onOpenChange={setModalVisible}
-        title="Nova Solicitação de Exames"
+        title={t('exams.newRequestModalTitle')}
         containerClassName="mx-auto max-w-2xl max-h-[96dvh] sm:max-h-[90dvh]"
         bodyClassName="px-6 py-5"
         preventOutsideClose
@@ -388,10 +390,10 @@ function ExamRequestsContent() {
         footer={
           <div className="flex flex-row justify-end gap-3">
             <Button type="button" variant="outline" className="h-10" onClick={() => setModalVisible(false)}>
-              Cancelar
+              {t('exams.cancel')}
             </Button>
             <Button className="h-10 bg-primary hover:bg-blue-700 text-white" onClick={handleSubmit(onSubmit)}>
-              Gerar solicitação
+              {t('exams.generateRequest')}
             </Button>
           </div>
         }
@@ -399,7 +401,7 @@ function ExamRequestsContent() {
         <div className="space-y-4 md:space-y-6">
           {/* Paciente */}
           <div className="space-y-2">
-            <Label className="text-sm font-medium">Paciente *</Label>
+            <Label className="text-sm font-medium">{t('exams.patientLabel')}</Label>
             <Controller
               control={control}
               name="patient_id"
@@ -413,7 +415,7 @@ function ExamRequestsContent() {
                   }}
                 >
                   <SelectTrigger className="h-10">
-                    <SelectValue placeholder="Selecione o paciente" />
+                    <SelectValue placeholder={t('exams.selectPatientPlaceholder')} />
                   </SelectTrigger>
                   <SelectContent>
                     {patients.map((p) => (
@@ -431,20 +433,20 @@ function ExamRequestsContent() {
           {selectedPatientId && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label className="text-sm font-medium">Consulta (opcional)</Label>
+                <Label className="text-sm font-medium">{t('exams.consultationLabel')}</Label>
                 <Controller
                   control={control}
                   name="consultation_id"
                   render={({ field }) => (
                     <Select value={field.value ?? ''} onValueChange={(v) => field.onChange(v || undefined)}>
                       <SelectTrigger className="h-10">
-                        <SelectValue placeholder="Sem consulta vinculada" />
+                        <SelectValue placeholder={t('exams.noConsultationLinked')} />
                       </SelectTrigger>
                       <SelectContent>
                         {consultationsByPatient.map((c) => (
                           <SelectItem key={c.id} value={c.id}>
-                            {new Date(c.consultation_date).toLocaleDateString('pt-BR')} — Dr.{' '}
-                            {c.veterinarian?.name ?? ''}
+                            {new Date(c.consultation_date).toLocaleDateString('pt-BR')} —{' '}
+                            {t('exams.doctorPrefix', { name: c.veterinarian?.name ?? '' })}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -453,7 +455,7 @@ function ExamRequestsContent() {
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-medium">Data (sem consulta)</Label>
+                <Label className="text-sm font-medium">{t('exams.dateWithoutConsultationLabel')}</Label>
                 <Controller
                   control={control}
                   name="request_date"
@@ -466,9 +468,9 @@ function ExamRequestsContent() {
           {/* Exames */}
           <div className="space-y-2">
             <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-              <Label className="text-sm font-medium">Exames *</Label>
+              <Label className="text-sm font-medium">{t('exams.examsLabel')}</Label>
               <span className="text-xs text-muted-foreground">
-                Selecione da lista, digite para filtrar ou adicione texto livre (Enter)
+                {t('exams.examsHint')}
               </span>
             </div>
 
@@ -489,7 +491,7 @@ function ExamRequestsContent() {
             {/* Input de busca / texto livre */}
             <div className="relative">
               <Input
-                placeholder="Buscar exame ou digitar nome livre (Enter para adicionar)"
+                placeholder={t('exams.searchExamPlaceholder')}
                 className="h-10"
                 value={examInput}
                 onChange={(e) => {
@@ -525,7 +527,7 @@ function ExamRequestsContent() {
                       className="w-full text-left px-4 py-2.5 text-sm bg-primary/5 hover:bg-primary/10 text-primary font-medium border-t"
                       onClick={() => addExamTag(examInput)}
                     >
-                      + Usar &quot;{examInput.trim()}&quot; (texto livre)
+                      {t('exams.useFreeTextExam', { name: examInput.trim() })}
                     </button>
                   )}
                   {/* Cadastrar no catálogo */}
@@ -537,26 +539,26 @@ function ExamRequestsContent() {
                       setAddExamModalVisible(true);
                     }}
                   >
-                    Cadastrar novo exame no catálogo da clínica...
+                    {t('exams.registerNewExamInCatalog')}
                   </button>
                 </div>
               )}
             </div>
             <p className="text-xs text-muted-foreground">
-              Você pode adicionar exames não cadastrados digitando o nome e pressionando Enter.
+              {t('exams.freeTextExamHint')}
             </p>
           </div>
 
           {/* Suspeita / Notas */}
           <div className="space-y-2">
-            <Label className="text-sm font-medium">Suspeita clínica / Observações</Label>
+            <Label className="text-sm font-medium">{t('exams.clinicalNotesLabel')}</Label>
             <Controller
               control={control}
               name="clinical_notes"
               render={({ field }) => (
                 <Textarea
                   rows={4}
-                  placeholder="Descreva a suspeita clínica, informações relevantes ou outras orientações..."
+                  placeholder={t('exams.clinicalNotesPlaceholder')}
                   className="resize-none"
                   {...field}
                 />
@@ -569,32 +571,32 @@ function ExamRequestsContent() {
       <DashboardCreateFormDialog
         open={addExamModalVisible}
         onOpenChange={setAddExamModalVisible}
-        title="Adicionar exame ao catálogo"
+        title={t('exams.addExamToCatalogModalTitle')}
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button variant="outline" onClick={() => setAddExamModalVisible(false)}>
-              Cancelar
+              {t('exams.cancel')}
             </Button>
             <Button className="bg-primary hover:bg-blue-700 text-white" onClick={handleAddExamToCatalog}>
-              Adicionar
+              {t('exams.add')}
             </Button>
           </div>
         }
       >
         <div className="space-y-4 md:space-y-6">
           <div className="space-y-2">
-            <Label>Nome do exame *</Label>
+            <Label>{t('exams.examNameLabel')}</Label>
             <Input
-              placeholder="Ex: Hemograma completo"
+              placeholder={t('exams.examNamePlaceholder')}
               value={newExamName}
               onChange={(e) => setNewExamName(e.target.value)}
             />
           </div>
           <div className="space-y-2">
-            <Label>Área *</Label>
+            <Label>{t('exams.areaLabel')}</Label>
             <Select value={newExamAreaId} onValueChange={setNewExamAreaId}>
               <SelectTrigger>
-                <SelectValue placeholder="Selecione a área" />
+                <SelectValue placeholder={t('exams.selectAreaPlaceholder')} />
               </SelectTrigger>
               <SelectContent>
                 {examAreas.map((a) => (
@@ -611,21 +613,21 @@ function ExamRequestsContent() {
       <Dialog open={emailModalVisible} onOpenChange={setEmailModalVisible}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Confirmar Envio de Email</DialogTitle>
+            <DialogTitle>{t('exams.confirmSendEmailTitle')}</DialogTitle>
           </DialogHeader>
           <p>
-            Enviar solicitação de exames por email para o tutor de{' '}
+            {t('exams.confirmSendEmailQuestion')}{' '}
             <strong>{selectedExamRequest && getPatient(selectedExamRequest)?.name}</strong>?
           </p>
           <p className="text-muted-foreground text-sm mt-2">
-            O email será enviado para o endereço cadastrado no perfil do tutor.
+            {t('exams.confirmSendEmailHint')}
           </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEmailModalVisible(false)}>
-              Cancelar
+              {t('exams.cancel')}
             </Button>
             <Button className="bg-primary hover:bg-blue-700 text-white" onClick={handleSendEmail}>
-              Enviar
+              {t('exams.send')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -635,8 +637,9 @@ function ExamRequestsContent() {
 }
 
 export default function ExamRequestsPage() {
+  const { t } = useTranslation();
   return (
-    <Suspense fallback={<div className="p-6">Carregando...</div>}>
+    <Suspense fallback={<div className="p-6">{t('exams.loading')}</div>}>
       <ExamRequestsContent />
     </Suspense>
   );

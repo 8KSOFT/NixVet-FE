@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -64,11 +65,11 @@ function formatMedicationsSummary(medications: unknown): string {
 }
 
 const CLINICAL_TABS = [
-  { value: 'clinical', label: 'Clínico', icon: Activity },
-  { value: 'prescriptions', label: 'Prescrições', icon: Pill },
-  { value: 'exams', label: 'Exames', icon: FlaskConical },
-  { value: 'vaccines', label: 'Vacinas', icon: Syringe },
-  { value: 'attachments', label: 'Anexos', icon: ImageIcon },
+  { value: 'clinical', labelKey: 'medicalRecordDetail.tabs.clinical', icon: Activity },
+  { value: 'prescriptions', labelKey: 'medicalRecordDetail.tabs.prescriptions', icon: Pill },
+  { value: 'exams', labelKey: 'medicalRecordDetail.tabs.exams', icon: FlaskConical },
+  { value: 'vaccines', labelKey: 'medicalRecordDetail.tabs.vaccines', icon: Syringe },
+  { value: 'attachments', labelKey: 'medicalRecordDetail.tabs.attachments', icon: ImageIcon },
 ] as const;
 
 /** Rótulo pequeno maiúsculo acima de cada seção da ficha — dá pro olho
@@ -119,6 +120,7 @@ function UnitField({
 }
 
 export default function MedicalRecordDetailPage() {
+  const { t } = useTranslation();
   const params = useParams();
   const router = useRouter();
   const id = typeof params?.id === 'string' ? params.id : '';
@@ -161,7 +163,7 @@ export default function MedicalRecordDetailPage() {
   // poder ser trocada tanto pela linha de tabs (desktop) quanto pelo
   // dropdown (mobile, onde 5 abas não cabem numa tela estreita sem cortar).
   const [clinicalTab, setClinicalTab] = useState('clinical');
-  const activeTabMeta = CLINICAL_TABS.find(t => t.value === clinicalTab) ?? CLINICAL_TABS[0];
+  const activeTabMeta = CLINICAL_TABS.find(tab => tab.value === clinicalTab) ?? CLINICAL_TABS[0];
 
   // Card de exame físico colapsável (2.4)
   const [examOpen, setExamOpen] = useState(true);
@@ -177,8 +179,8 @@ export default function MedicalRecordDetailPage() {
   });
 
   useEffect(() => {
-    if (!id) toast.error('Ficha inválida');
-  }, [id]);
+    if (!id) toast.error(t('medicalRecordDetail.toast.invalidRecord'));
+  }, [id, t]);
 
   useEffect(() => {
     if (!record) return;
@@ -214,27 +216,27 @@ export default function MedicalRecordDetailPage() {
           capillary_refill_time: form.capillary_refill_time ? parseFloat(form.capillary_refill_time) : null,
         },
       });
-    } catch { toast.error('Erro ao salvar'); }
+    } catch { toast.error(t('medicalRecordDetail.toast.saveError')); }
   };
 
   const handleClose = async () => {
     if (!record) return;
     try {
       await updateRecord.mutateAsync({ id, payload: { status: 'closed' } });
-    } catch { toast.error('Erro ao fechar'); }
+    } catch { toast.error(t('medicalRecordDetail.toast.closeError')); }
   };
 
   const handleAddVaccine = async () => {
-    if (!vaccineForm.name) { toast.error('Informe o nome da vacina'); return; }
+    if (!vaccineForm.name) { toast.error(t('medicalRecordDetail.toast.vaccineNameRequired')); return; }
     try {
       await addVaccine.mutateAsync({ id, payload: vaccineForm });
       setVaccineModal(false);
-    } catch { toast.error('Erro ao adicionar vacina'); }
+    } catch { toast.error(t('medicalRecordDetail.toast.addVaccineError')); }
   };
 
   // 8.7 — upload de anexo via OCI (patient_files)
   const handleAddAttachment = async () => {
-    if (!attachForm.file) { toast.error('Selecione um arquivo'); return; }
+    if (!attachForm.file) { toast.error(t('medicalRecordDetail.toast.selectFileRequired')); return; }
     if (!record) return;
     setAttachUploading(true);
     try {
@@ -261,14 +263,14 @@ export default function MedicalRecordDetailPage() {
       });
       setAttachModal(false);
       setAttachForm({ name: '', category: 'exame', file: null });
-    } catch { toast.error('Erro ao enviar anexo'); } finally { setAttachUploading(false); }
+    } catch { toast.error(t('medicalRecordDetail.toast.addAttachmentError')); } finally { setAttachUploading(false); }
   };
 
   const handleOpenPatientFile = async (fileId: string) => {
     try {
       const url = await downloadFileUrl.mutateAsync(fileId);
       window.open(url, '_blank', 'noopener,noreferrer');
-    } catch { toast.error('Erro ao abrir arquivo'); }
+    } catch { toast.error(t('medicalRecordDetail.toast.openFileError')); }
   };
 
   // 2.6 — Formatar anamnese com IA
@@ -279,7 +281,7 @@ export default function MedicalRecordDetailPage() {
       const result = await formatTextMutation.mutateAsync({ text: prev, context: 'veterinary_anamnesis' });
       setOriginalAnamnese(prev);
       setForm(p => ({ ...p, anamnesis: result.formatted || prev }));
-    } catch { toast.error('Não foi possível formatar com IA'); }
+    } catch { toast.error(t('medicalRecordDetail.toast.formatAnamnesisError')); }
   };
   const handleUndoAnamnese = () => {
     if (originalAnamnese == null) return;
@@ -295,9 +297,9 @@ export default function MedicalRecordDetailPage() {
 
   const handleCreatePrescription = async () => {
     if (!record) return;
-    if (!record.veterinarian_id) { toast.error('Defina um veterinário na ficha antes de prescrever'); return; }
+    if (!record.veterinarian_id) { toast.error(t('medicalRecordDetail.toast.vetRequiredError')); return; }
     const meds = presForm.medications.filter(m => m.name.trim());
-    if (meds.length === 0) { toast.error('Adicione ao menos um medicamento'); return; }
+    if (meds.length === 0) { toast.error(t('medicalRecordDetail.toast.medicationRequiredError')); return; }
     try {
       await createPrescription.mutateAsync({
         patient_id: record.patient_id,
@@ -318,14 +320,14 @@ export default function MedicalRecordDetailPage() {
       setPresModal(false);
       setPresForm({ prescription_type: 'receita', observations: '', medications: [emptyMed()] });
       queryClient.invalidateQueries({ queryKey: medicalRecordKeys.relatedPrescriptions(record.patient_id) });
-    } catch { toast.error('Erro ao criar prescrição'); }
+    } catch { toast.error(t('medicalRecordDetail.toast.createPrescriptionError')); }
   };
 
   if (loading) return <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground/60" /></div>;
   if (!record) return (
     <div>
-      <Button asChild variant="ghost"><Link href="/medical-records"><ChevronLeft className="w-4 h-4 mr-1" /> Voltar</Link></Button>
-      <p className="text-muted-foreground mt-4">Ficha não encontrada.</p>
+      <Button asChild variant="ghost"><Link href="/medical-records"><ChevronLeft className="w-4 h-4 mr-1" /> {t('medicalRecordDetail.back')}</Link></Button>
+      <p className="text-muted-foreground mt-4">{t('medicalRecordDetail.notFound')}</p>
     </div>
   );
 
@@ -337,9 +339,9 @@ export default function MedicalRecordDetailPage() {
       {activeHosp && (
         <div className="flex items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 sm:px-4 sm:py-3 sm:text-sm">
           <AlertTriangle className="h-4 w-4 shrink-0" />
-          <span className="min-w-0 flex-1 truncate">Este animal está internado na clínica.</span>
+          <span className="min-w-0 flex-1 truncate">{t('medicalRecordDetail.banner.message')}</span>
           <Link href={`/internacoes/${activeHosp.id}`} className="shrink-0 whitespace-nowrap font-medium underline">
-            Ver internação →
+            {t('medicalRecordDetail.banner.link')}
           </Link>
         </div>
       )}
@@ -348,7 +350,7 @@ export default function MedicalRecordDetailPage() {
           foi aberta), não pra listagem geral de prontuários. */}
       <Button asChild variant="ghost" size="sm">
         <Link href={record.patient_id ? `/medical-records/prontuario/${record.patient_id}` : '/medical-records'}>
-          <ChevronLeft className="w-4 h-4 mr-1" /> Voltar
+          <ChevronLeft className="w-4 h-4 mr-1" /> {t('medicalRecordDetail.back')}
         </Link>
       </Button>
 
@@ -364,7 +366,7 @@ export default function MedicalRecordDetailPage() {
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-1.5">
                 <span className="truncate text-lg font-extrabold tracking-[-0.01em] text-wa-ink sm:text-xl">
-                  {record.patient?.name || `Ficha #${id.substring(0, 8)}`}
+                  {record.patient?.name || t('medicalRecordDetail.header.defaultTitle', { id: id.substring(0, 8) })}
                 </span>
                 <span
                   className={cn(
@@ -372,10 +374,10 @@ export default function MedicalRecordDetailPage() {
                     isClosed ? 'bg-wa-line-2 text-wa-ink-2' : 'bg-wa-in-bg text-wa-in',
                   )}
                 >
-                  {isClosed ? 'Fechado' : 'Aberto'}
+                  {isClosed ? t('medicalRecordDetail.header.statusClosed') : t('medicalRecordDetail.header.statusOpen')}
                 </span>
               </div>
-              <div className="mt-0.5 text-[12.5px] text-wa-ink-3">Ficha de atendimento</div>
+              <div className="mt-0.5 text-[12.5px] text-wa-ink-3">{t('medicalRecordDetail.header.subtitle')}</div>
             </div>
           </div>
 
@@ -388,7 +390,7 @@ export default function MedicalRecordDetailPage() {
                 disabled={saving}
                 className="rounded-[10px] bg-wa-brand-600 font-bold shadow-[0_8px_18px_-6px_rgba(18,179,127,0.4)] hover:bg-wa-brand-700"
               >
-                {saving ? <Loader2 className="mr-1 size-4 animate-spin" /> : <Save className="mr-1 size-4" />} Salvar
+                {saving ? <Loader2 className="mr-1 size-4 animate-spin" /> : <Save className="mr-1 size-4" />} {t('medicalRecordDetail.header.save')}
               </Button>
               <Button
                 size="sm"
@@ -397,7 +399,7 @@ export default function MedicalRecordDetailPage() {
                 variant="outline"
                 className="rounded-[10px] border-[1.5px] border-wa-line text-wa-ink"
               >
-                <Lock className="mr-1 size-4" /> Fechar ficha
+                <Lock className="mr-1 size-4" /> {t('medicalRecordDetail.header.closeButton')}
               </Button>
             </div>
           )}
@@ -415,7 +417,7 @@ export default function MedicalRecordDetailPage() {
           </span>
           <span className="inline-flex max-w-52 items-center gap-1.75 rounded-[9px] border border-wa-line-2 bg-wa-bg px-3 py-1.75 text-[12.5px] font-semibold text-wa-ink-2">
             <User className="size-3.5 shrink-0 text-wa-ink-3" />
-            <span className="truncate">{record.veterinarian?.name || 'Sem veterinário'}</span>
+            <span className="truncate">{record.veterinarian?.name || t('medicalRecordDetail.header.noVet')}</span>
           </span>
         </div>
       </div>
@@ -425,9 +427,9 @@ export default function MedicalRecordDetailPage() {
             prontuário (abas viram colunas iguais em vez de ficarem
             agrupadas à esquerda). */}
         <TabsList className="mb-1 hidden h-auto! w-full grid-cols-5 gap-1 sm:grid">
-          {CLINICAL_TABS.map(({ value, label, icon: Icon }) => (
+          {CLINICAL_TABS.map(({ value, labelKey, icon: Icon }) => (
             <TabsTrigger key={value} value={value} className="w-full justify-center gap-1.5 px-4 py-2.25 text-[13.5px] whitespace-nowrap">
-              <Icon className="size-3.75 shrink-0" /> {label}
+              <Icon className="size-3.75 shrink-0" /> {t(labelKey)}
             </TabsTrigger>
           ))}
         </TabsList>
@@ -443,15 +445,15 @@ export default function MedicalRecordDetailPage() {
               >
                 <span className="flex items-center gap-2 text-[13.5px] font-bold text-wa-ink">
                   <activeTabMeta.icon className="size-4 shrink-0 text-wa-brand-600" />
-                  {activeTabMeta.label}
+                  {t(activeTabMeta.labelKey)}
                 </span>
                 <ChevronDown className="size-4 shrink-0 text-wa-ink-3" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-(--radix-dropdown-menu-trigger-width)">
-              {CLINICAL_TABS.map(({ value, label, icon: Icon }) => (
+              {CLINICAL_TABS.map(({ value, labelKey, icon: Icon }) => (
                 <DropdownMenuItem key={value} onClick={() => setClinicalTab(value)} className="gap-2 py-2.25 text-[13.5px]">
-                  <Icon className="size-4 shrink-0 text-wa-ink-3" /> {label}
+                  <Icon className="size-4 shrink-0 text-wa-ink-3" /> {t(labelKey)}
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
@@ -462,18 +464,18 @@ export default function MedicalRecordDetailPage() {
         <TabsContent value="clinical" className="space-y-5">
           {/* Motivo da consulta */}
           <div>
-            <SectionEyebrow>Motivo da consulta</SectionEyebrow>
+            <SectionEyebrow>{t('medicalRecordDetail.sections.chiefComplaint.title')}</SectionEyebrow>
             <div className="rounded-2xl border border-wa-line bg-white p-4.5 sm:p-6">
               <div className="space-y-4">
                 <div className="space-y-1.5">
-                  <Label>Queixa principal</Label>
+                  <Label>{t('medicalRecordDetail.sections.chiefComplaint.label')}</Label>
                   <Input value={form.chief_complaint} onChange={e => setForm(p => ({ ...p, chief_complaint: e.target.value }))} disabled={isClosed} />
                 </div>
 
                 {/* Anamnese + Formatar com IA (2.6) */}
                 <div className="space-y-1.5">
-                  <Label>Anamnese</Label>
-                  <Textarea rows={3} value={form.anamnesis} onChange={e => setForm(p => ({ ...p, anamnesis: e.target.value }))} disabled={isClosed} placeholder="Histórico do paciente, evolução dos sintomas..." />
+                  <Label>{t('medicalRecordDetail.sections.anamnesis.label')}</Label>
+                  <Textarea rows={3} value={form.anamnesis} onChange={e => setForm(p => ({ ...p, anamnesis: e.target.value }))} disabled={isClosed} placeholder={t('medicalRecordDetail.sections.anamnesis.placeholder')} />
                   {!isClosed && (
                     <div className="flex items-center gap-2 pt-1">
                       <button
@@ -483,11 +485,11 @@ export default function MedicalRecordDetailPage() {
                         className="inline-flex items-center gap-1.75 rounded-[9px] border border-wa-brand-100 bg-wa-brand-50 px-3.5 py-2 text-[12.5px] font-bold text-wa-brand-700 transition-colors hover:bg-wa-brand-100 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {formattingAi ? <Loader2 className="size-3.5 animate-spin" /> : <Sparkles className="size-3.5" />}
-                        Formatar com IA
+                        {t('medicalRecordDetail.sections.anamnesis.formatWithAi')}
                       </button>
                       {originalAnamnese != null && (
                         <Button type="button" variant="ghost" size="sm" onClick={handleUndoAnamnese}>
-                          <Undo2 className="h-3 w-3 mr-1" /> Desfazer
+                          <Undo2 className="h-3 w-3 mr-1" /> {t('medicalRecordDetail.sections.anamnesis.undo')}
                         </Button>
                       )}
                     </div>
@@ -500,7 +502,7 @@ export default function MedicalRecordDetailPage() {
           {/* Exame físico — cabeçalho tintado pra destacar como bloco de dados
               estruturados, colapsável (2.4) */}
           <div>
-            <SectionEyebrow>Exame físico</SectionEyebrow>
+            <SectionEyebrow>{t('medicalRecordDetail.sections.physicalExam.title')}</SectionEyebrow>
             <div className="overflow-hidden rounded-2xl border border-wa-line bg-white">
               <button
                 type="button"
@@ -508,39 +510,39 @@ export default function MedicalRecordDetailPage() {
                 className="flex w-full items-center justify-between border-b border-wa-brand-100 bg-wa-brand-50 px-4.5 py-3.25 text-left sm:px-6"
               >
                 <span className="flex items-center gap-2.25 text-sm font-bold text-wa-brand-700">
-                  <Stethoscope className="size-4 shrink-0" /> Sinais vitais e avaliação
+                  <Stethoscope className="size-4 shrink-0" /> {t('medicalRecordDetail.sections.physicalExam.header')}
                 </span>
                 <ChevronDown className={cn('size-3.75 shrink-0 text-wa-brand-600 transition-transform', examOpen && 'rotate-180')} />
               </button>
               {examOpen && (
                 <div className="grid grid-cols-2 gap-4 p-4.5 sm:grid-cols-4 sm:gap-4.5 sm:p-6">
-                  <UnitField label="Peso" unit="kg" step="0.01" value={form.weight_kg} onChange={v => setForm(p => ({ ...p, weight_kg: v }))} disabled={isClosed} />
-                  <UnitField label="Temperatura" unit="°C" step="0.1" value={form.temperature_c} onChange={v => setForm(p => ({ ...p, temperature_c: v }))} disabled={isClosed} />
-                  <UnitField label="Freq. cardíaca" unit="bpm" value={form.heart_rate} onChange={v => setForm(p => ({ ...p, heart_rate: v }))} disabled={isClosed} />
-                  <UnitField label="Freq. respiratória" unit="mpm" value={form.respiratory_rate} onChange={v => setForm(p => ({ ...p, respiratory_rate: v }))} disabled={isClosed} />
-                  <UnitField label="TPC" unit="s" step="0.1" value={form.capillary_refill_time} onChange={v => setForm(p => ({ ...p, capillary_refill_time: v }))} disabled={isClosed} />
+                  <UnitField label={t('medicalRecordDetail.sections.physicalExam.weightLabel')} unit={t('medicalRecordDetail.sections.physicalExam.weightUnit')} step="0.01" value={form.weight_kg} onChange={v => setForm(p => ({ ...p, weight_kg: v }))} disabled={isClosed} />
+                  <UnitField label={t('medicalRecordDetail.sections.physicalExam.temperatureLabel')} unit={t('medicalRecordDetail.sections.physicalExam.temperatureUnit')} step="0.1" value={form.temperature_c} onChange={v => setForm(p => ({ ...p, temperature_c: v }))} disabled={isClosed} />
+                  <UnitField label={t('medicalRecordDetail.sections.physicalExam.heartRateLabel')} unit={t('medicalRecordDetail.sections.physicalExam.heartRateUnit')} value={form.heart_rate} onChange={v => setForm(p => ({ ...p, heart_rate: v }))} disabled={isClosed} />
+                  <UnitField label={t('medicalRecordDetail.sections.physicalExam.respiratoryRateLabel')} unit={t('medicalRecordDetail.sections.physicalExam.respiratoryRateUnit')} value={form.respiratory_rate} onChange={v => setForm(p => ({ ...p, respiratory_rate: v }))} disabled={isClosed} />
+                  <UnitField label={t('medicalRecordDetail.sections.physicalExam.crtLabel')} unit={t('medicalRecordDetail.sections.physicalExam.crtUnit')} step="0.1" value={form.capillary_refill_time} onChange={v => setForm(p => ({ ...p, capillary_refill_time: v }))} disabled={isClosed} />
                   <div className="space-y-1">
-                    <Label>Hidratação</Label>
+                    <Label>{t('medicalRecordDetail.sections.physicalExam.hydrationLabel')}</Label>
                     <Select value={form.hydration || '_none'} onValueChange={v => setForm(p => ({ ...p, hydration: v === '_none' ? '' : v }))} disabled={isClosed}>
-                      <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                      <SelectTrigger><SelectValue placeholder={t('medicalRecordDetail.sections.physicalExam.hydrationPlaceholder')} /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="_none">—</SelectItem>
-                        <SelectItem value="Normal">Normal</SelectItem>
-                        <SelectItem value="Leve">Leve</SelectItem>
-                        <SelectItem value="Moderada">Moderada</SelectItem>
-                        <SelectItem value="Grave">Grave</SelectItem>
+                        <SelectItem value="Normal">{t('medicalRecordDetail.sections.physicalExam.hydrationNormal')}</SelectItem>
+                        <SelectItem value="Leve">{t('medicalRecordDetail.sections.physicalExam.hydrationMild')}</SelectItem>
+                        <SelectItem value="Moderada">{t('medicalRecordDetail.sections.physicalExam.hydrationModerate')}</SelectItem>
+                        <SelectItem value="Grave">{t('medicalRecordDetail.sections.physicalExam.hydrationSevere')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
 
                   {/* Descritivos — precisam de mais espaço, meia linha (linha inteira em telas menores) */}
                   <div className="col-span-2 space-y-1">
-                    <Label>Linfonodos</Label>
+                    <Label>{t('medicalRecordDetail.sections.physicalExam.lymphNodesLabel')}</Label>
                     <Input value={form.lymph_nodes} onChange={e => setForm(p => ({ ...p, lymph_nodes: e.target.value }))} disabled={isClosed} placeholder="—" />
                   </div>
                   <div className="col-span-2 space-y-1">
-                    <Label>Mucosas</Label>
-                    <Input value={form.mucous_membranes} onChange={e => setForm(p => ({ ...p, mucous_membranes: e.target.value }))} disabled={isClosed} placeholder="ex.: róseas, pálidas" />
+                    <Label>{t('medicalRecordDetail.sections.physicalExam.mucousMembranesLabel')}</Label>
+                    <Input value={form.mucous_membranes} onChange={e => setForm(p => ({ ...p, mucous_membranes: e.target.value }))} disabled={isClosed} placeholder={t('medicalRecordDetail.sections.physicalExam.mucousMembranesPlaceholder')} />
                   </div>
                 </div>
               )}
@@ -549,10 +551,10 @@ export default function MedicalRecordDetailPage() {
 
           {/* Avaliação — diagnóstico presuntivo em destaque: é a conclusão clínica da ficha */}
           <div>
-            <SectionEyebrow>Avaliação</SectionEyebrow>
+            <SectionEyebrow>{t('medicalRecordDetail.sections.assessment.title')}</SectionEyebrow>
             <div className="rounded-2xl border-[1.5px] border-wa-brand-100 bg-linear-to-b from-wa-brand-50 to-white p-4.5 sm:p-6">
               <Label className="mb-2 flex items-center gap-1.75 text-wa-brand-700">
-                <AlertCircle className="size-3.75 shrink-0" /> Diagnóstico presuntivo
+                <AlertCircle className="size-3.75 shrink-0" /> {t('medicalRecordDetail.sections.assessment.diagnosisLabel')}
               </Label>
               <Textarea rows={2} className="bg-white" value={form.diagnosis} onChange={e => setForm(p => ({ ...p, diagnosis: e.target.value }))} disabled={isClosed} />
             </div>
@@ -561,12 +563,12 @@ export default function MedicalRecordDetailPage() {
           {/* Complementar — notas internas / observações pro tutor: cards
               tracejados sinalizam que são secundários em relação ao resto */}
           <div>
-            <SectionEyebrow>Complementar</SectionEyebrow>
+            <SectionEyebrow>{t('medicalRecordDetail.sections.additional.title')}</SectionEyebrow>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5">
               <div className="rounded-2xl border border-dashed border-wa-line bg-[#fbfcfb] p-4.5 sm:p-5">
                 <div className="mb-2 flex items-center gap-1.25">
                   <Label className="mb-0 flex items-center gap-1.25 font-semibold text-wa-ink-2">
-                    <Info className="size-3.25 shrink-0 text-wa-ink-3" /> Notas da equipe (interno)
+                    <Info className="size-3.25 shrink-0 text-wa-ink-3" /> {t('medicalRecordDetail.sections.additional.teamNotesLabel')}
                   </Label>
                   <TooltipProvider>
                     <Tooltip>
@@ -574,18 +576,17 @@ export default function MedicalRecordDetailPage() {
                         <Info className="h-3.5 w-3.5 shrink-0 cursor-help text-muted-foreground" />
                       </TooltipTrigger>
                       <TooltipContent className="max-w-xs">
-                        Espaço para registrar observações internas importantes, recomendações operacionais
-                        ou informações úteis para a equipe clínica.
+                        {t('medicalRecordDetail.sections.additional.teamNotesTooltip')}
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
                 </div>
-                <Textarea rows={3} className="bg-white" value={form.team_notes} onChange={e => setForm(p => ({ ...p, team_notes: e.target.value }))} disabled={isClosed} placeholder="Visível apenas para a equipe" />
+                <Textarea rows={3} className="bg-white" value={form.team_notes} onChange={e => setForm(p => ({ ...p, team_notes: e.target.value }))} disabled={isClosed} placeholder={t('medicalRecordDetail.sections.additional.teamNotesPlaceholder')} />
               </div>
 
               <div className="rounded-2xl border border-dashed border-wa-line bg-[#fbfcfb] p-4.5 sm:p-5">
                 <Label className="mb-2 flex items-center gap-1.25 font-semibold text-wa-ink-2">
-                  <MessageCircle className="size-3.25 shrink-0 text-wa-ink-3" /> Observações para o tutor
+                  <MessageCircle className="size-3.25 shrink-0 text-wa-ink-3" /> {t('medicalRecordDetail.sections.additional.ownerObservationsLabel')}
                 </Label>
                 <Textarea rows={3} className="bg-white" value={form.observations} onChange={e => setForm(p => ({ ...p, observations: e.target.value }))} disabled={isClosed} />
               </div>
@@ -597,28 +598,28 @@ export default function MedicalRecordDetailPage() {
         <TabsContent value="prescriptions">
           <Card className="rounded-none border-0 bg-transparent py-0 shadow-none sm:rounded-xl sm:border sm:border-border/80 sm:bg-card sm:py-6 sm:shadow-(--shadow-card)">
             <CardHeader className="flex flex-col items-start gap-2 space-y-0 px-0 pb-2 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-              <CardTitle className="text-base">Prescrições do paciente</CardTitle>
+              <CardTitle className="text-base">{t('medicalRecordDetail.prescriptions.title')}</CardTitle>
               <div className="flex flex-wrap items-center gap-2">
                 {!isClosed && (
                   <Button
                     size="sm"
                     onClick={() => { setPresForm({ prescription_type: 'receita', observations: '', medications: [emptyMed()] }); setPresModal(true); }}
                   >
-                    <Plus className="h-3 w-3 mr-1" /> Nova prescrição
+                    <Plus className="h-3 w-3 mr-1" /> {t('medicalRecordDetail.prescriptions.newButton')}
                   </Button>
                 )}
-                <Button asChild size="sm" variant="outline"><Link href="/prescriptions">Ver todas</Link></Button>
+                <Button asChild size="sm" variant="outline"><Link href="/prescriptions">{t('medicalRecordDetail.prescriptions.viewAll')}</Link></Button>
               </div>
             </CardHeader>
             <CardContent className="px-0 sm:px-6">
               {prescriptions.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-4">Nenhuma prescrição registrada.</p>
+                <p className="text-sm text-muted-foreground py-4">{t('medicalRecordDetail.prescriptions.empty')}</p>
               ) : (
                 <>
                   {/* Desktop / tablet: tabela */}
                   <div className="hidden md:block">
                     <Table>
-                      <TableHeader><TableRow><TableHead>Data</TableHead><TableHead>Tipo</TableHead><TableHead>Medicamentos</TableHead></TableRow></TableHeader>
+                      <TableHeader><TableRow><TableHead>{t('medicalRecordDetail.prescriptions.tableDate')}</TableHead><TableHead>{t('medicalRecordDetail.prescriptions.tableType')}</TableHead><TableHead>{t('medicalRecordDetail.prescriptions.tableMedications')}</TableHead></TableRow></TableHeader>
                       <TableBody>
                         {prescriptions.map(p => (
                           <TableRow key={p.id}>
@@ -653,17 +654,17 @@ export default function MedicalRecordDetailPage() {
         <TabsContent value="exams">
           <Card className="rounded-none border-0 bg-transparent py-0 shadow-none sm:rounded-xl sm:border sm:border-border/80 sm:bg-card sm:py-6 sm:shadow-(--shadow-card)">
             <CardHeader className="px-0 pb-2 sm:px-6">
-              <CardTitle className="text-base">Exames solicitados</CardTitle>
+              <CardTitle className="text-base">{t('medicalRecordDetail.exams.title')}</CardTitle>
             </CardHeader>
             <CardContent className="px-0 sm:px-6">
               {examRequests.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-4">Nenhum exame solicitado.</p>
+                <p className="text-sm text-muted-foreground py-4">{t('medicalRecordDetail.exams.empty')}</p>
               ) : (
                 <>
                   {/* Desktop / tablet: tabela */}
                   <div className="hidden md:block">
                     <Table>
-                      <TableHeader><TableRow><TableHead>Data</TableHead><TableHead>Tipo</TableHead><TableHead>Status</TableHead></TableRow></TableHeader>
+                      <TableHeader><TableRow><TableHead>{t('medicalRecordDetail.exams.tableDate')}</TableHead><TableHead>{t('medicalRecordDetail.exams.tableType')}</TableHead><TableHead>{t('medicalRecordDetail.exams.tableStatus')}</TableHead></TableRow></TableHeader>
                       <TableBody>
                         {examRequests.map(e => (
                           <TableRow key={e.id}>
@@ -698,10 +699,10 @@ export default function MedicalRecordDetailPage() {
         <TabsContent value="vaccines">
           <Card className="rounded-none border-0 bg-transparent py-0 shadow-none sm:rounded-xl sm:border sm:border-border/80 sm:bg-card sm:py-6 sm:shadow-(--shadow-card)">
             <CardHeader className="flex flex-col items-start gap-2 space-y-0 px-0 pb-2 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-              <CardTitle className="text-base">Vacinas</CardTitle>
+              <CardTitle className="text-base">{t('medicalRecordDetail.vaccines.title')}</CardTitle>
               {!isClosed && (
                 <Button size="sm" onClick={() => { setVaccineForm({ name: '', date: dayjs().format('YYYY-MM-DD'), batch: '', next_dose: '' }); setVaccineModal(true); }}>
-                  <Syringe className="h-3 w-3 mr-1" /> Adicionar
+                  <Syringe className="h-3 w-3 mr-1" /> {t('medicalRecordDetail.vaccines.addButton')}
                 </Button>
               )}
             </CardHeader>
@@ -709,11 +710,11 @@ export default function MedicalRecordDetailPage() {
               {/* Vaccines from this record */}
               {(record.vaccines ?? []).length > 0 && (
                 <div className="mb-4">
-                  <h4 className="text-sm font-semibold mb-2 text-foreground">Nesta ficha</h4>
+                  <h4 className="text-sm font-semibold mb-2 text-foreground">{t('medicalRecordDetail.vaccines.inThisRecord')}</h4>
                   {/* Desktop / tablet: tabela */}
                   <div className="hidden md:block">
                     <Table>
-                      <TableHeader><TableRow><TableHead>Vacina</TableHead><TableHead>Data</TableHead><TableHead>Lote</TableHead><TableHead>Próxima dose</TableHead></TableRow></TableHeader>
+                      <TableHeader><TableRow><TableHead>{t('medicalRecordDetail.vaccines.tableVaccine')}</TableHead><TableHead>{t('medicalRecordDetail.vaccines.tableDate')}</TableHead><TableHead>{t('medicalRecordDetail.vaccines.tableBatch')}</TableHead><TableHead>{t('medicalRecordDetail.vaccines.tableNextDose')}</TableHead></TableRow></TableHeader>
                       <TableBody>
                         {(record.vaccines ?? []).map((v, i) => (
                           <TableRow key={i}>
@@ -735,8 +736,8 @@ export default function MedicalRecordDetailPage() {
                           <span className="text-xs text-muted-foreground">{dayjs(v.date).format('DD/MM/YYYY')}</span>
                         </div>
                         <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
-                          <span>Lote: {v.batch || '—'}</span>
-                          <span>Próxima: {v.next_dose ? dayjs(v.next_dose).format('DD/MM/YYYY') : '—'}</span>
+                          <span>{t('medicalRecordDetail.vaccines.batchInlineLabel')} {v.batch || '—'}</span>
+                          <span>{t('medicalRecordDetail.vaccines.nextDoseInlineLabel')} {v.next_dose ? dayjs(v.next_dose).format('DD/MM/YYYY') : '—'}</span>
                         </div>
                       </div>
                     ))}
@@ -746,11 +747,11 @@ export default function MedicalRecordDetailPage() {
               {/* All vaccines from patient */}
               {vaccineRecords.length > 0 && (
                 <div>
-                  <h4 className="text-sm font-semibold mb-2 text-foreground">Histórico geral</h4>
+                  <h4 className="text-sm font-semibold mb-2 text-foreground">{t('medicalRecordDetail.vaccines.generalHistory')}</h4>
                   {/* Desktop / tablet: tabela */}
                   <div className="hidden md:block">
                     <Table>
-                      <TableHeader><TableRow><TableHead>Vacina</TableHead><TableHead>Data</TableHead><TableHead>Lote</TableHead><TableHead>Próxima dose</TableHead></TableRow></TableHeader>
+                      <TableHeader><TableRow><TableHead>{t('medicalRecordDetail.vaccines.tableVaccine')}</TableHead><TableHead>{t('medicalRecordDetail.vaccines.tableDate')}</TableHead><TableHead>{t('medicalRecordDetail.vaccines.tableBatch')}</TableHead><TableHead>{t('medicalRecordDetail.vaccines.tableNextDose')}</TableHead></TableRow></TableHeader>
                       <TableBody>
                         {vaccineRecords.map(v => (
                           <TableRow key={v.id}>
@@ -772,8 +773,8 @@ export default function MedicalRecordDetailPage() {
                           <span className="text-xs text-muted-foreground">{dayjs(v.application_date).format('DD/MM/YYYY')}</span>
                         </div>
                         <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
-                          <span>Lote: {v.batch_number || '—'}</span>
-                          <span>Próxima: {v.next_due_date ? dayjs(v.next_due_date).format('DD/MM/YYYY') : '—'}</span>
+                          <span>{t('medicalRecordDetail.vaccines.batchInlineLabel')} {v.batch_number || '—'}</span>
+                          <span>{t('medicalRecordDetail.vaccines.nextDoseInlineLabel')} {v.next_due_date ? dayjs(v.next_due_date).format('DD/MM/YYYY') : '—'}</span>
                         </div>
                       </div>
                     ))}
@@ -781,7 +782,7 @@ export default function MedicalRecordDetailPage() {
                 </div>
               )}
               {(record.vaccines ?? []).length === 0 && vaccineRecords.length === 0 && (
-                <p className="text-sm text-muted-foreground py-4">Nenhuma vacina registrada.</p>
+                <p className="text-sm text-muted-foreground py-4">{t('medicalRecordDetail.vaccines.empty')}</p>
               )}
             </CardContent>
           </Card>
@@ -791,16 +792,16 @@ export default function MedicalRecordDetailPage() {
         <TabsContent value="attachments">
           <Card className="rounded-none border-0 bg-transparent py-0 shadow-none sm:rounded-xl sm:border sm:border-border/80 sm:bg-card sm:py-6 sm:shadow-(--shadow-card)">
             <CardHeader className="flex flex-col items-start gap-2 space-y-0 px-0 pb-2 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-              <CardTitle className="text-base">Anexos (imagens de exames, vacinas...)</CardTitle>
+              <CardTitle className="text-base">{t('medicalRecordDetail.attachments.title')}</CardTitle>
               {!isClosed && (
                 <Button size="sm" onClick={() => { setAttachForm({ name: '', category: 'exame', file: null }); setAttachModal(true); }}>
-                  <Paperclip className="h-3 w-3 mr-1" /> Anexar
+                  <Paperclip className="h-3 w-3 mr-1" /> {t('medicalRecordDetail.attachments.addButton')}
                 </Button>
               )}
             </CardHeader>
             <CardContent className="space-y-4 px-0 sm:px-6">
               {patientFiles.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-4">Nenhum anexo.</p>
+                <p className="text-sm text-muted-foreground py-4">{t('medicalRecordDetail.attachments.empty')}</p>
               ) : (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   {patientFiles.map((f) => (
@@ -835,14 +836,14 @@ export default function MedicalRecordDetailPage() {
             variant="outline"
             className="flex-1 rounded-[9px] border-[1.5px] border-wa-line text-wa-ink"
           >
-            <Lock className="mr-1 size-3.75" /> Fechar
+            <Lock className="mr-1 size-3.75" /> {t('medicalRecordDetail.footer.close')}
           </Button>
           <Button
             onClick={handleSave}
             disabled={saving}
             className="flex-1 rounded-[9px] bg-wa-brand-600 font-bold hover:bg-wa-brand-700"
           >
-            {saving ? <Loader2 className="mr-1 size-3.75 animate-spin" /> : <Save className="mr-1 size-3.75" />} Salvar
+            {saving ? <Loader2 className="mr-1 size-3.75 animate-spin" /> : <Save className="mr-1 size-3.75" />} {t('medicalRecordDetail.footer.save')}
           </Button>
         </div>
       )}
@@ -851,20 +852,20 @@ export default function MedicalRecordDetailPage() {
       <DashboardCreateFormDialog
         open={vaccineModal}
         onOpenChange={setVaccineModal}
-        title="Adicionar Vacina"
+        title={t('medicalRecordDetail.vaccineModal.title')}
         contentClassName="modal-responsive"
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <Button variant="outline" className="border border-gray-300" onClick={() => setVaccineModal(false)}>Cancelar</Button>
-            <Button onClick={handleAddVaccine} className="bg-primary">Adicionar</Button>
+            <Button variant="outline" className="border border-gray-300" onClick={() => setVaccineModal(false)}>{t('medicalRecordDetail.vaccineModal.cancel')}</Button>
+            <Button onClick={handleAddVaccine} className="bg-primary">{t('medicalRecordDetail.vaccineModal.submit')}</Button>
           </div>
         }
       >
         <div className="space-y-4 md:space-y-6">
-          <div className="space-y-2"><Label>Nome *</Label><Input value={vaccineForm.name} onChange={e => setVaccineForm(p => ({ ...p, name: e.target.value }))} /></div>
-          <div className="space-y-2"><Label>Data</Label><Input type="date" value={vaccineForm.date} onChange={e => setVaccineForm(p => ({ ...p, date: e.target.value }))} /></div>
-          <div className="space-y-2"><Label>Lote</Label><Input value={vaccineForm.batch} onChange={e => setVaccineForm(p => ({ ...p, batch: e.target.value }))} /></div>
-          <div className="space-y-2"><Label>Próxima dose</Label><Input type="date" value={vaccineForm.next_dose} onChange={e => setVaccineForm(p => ({ ...p, next_dose: e.target.value }))} /></div>
+          <div className="space-y-2"><Label>{t('medicalRecordDetail.vaccineModal.nameLabel')}</Label><Input value={vaccineForm.name} onChange={e => setVaccineForm(p => ({ ...p, name: e.target.value }))} /></div>
+          <div className="space-y-2"><Label>{t('medicalRecordDetail.vaccineModal.dateLabel')}</Label><Input type="date" value={vaccineForm.date} onChange={e => setVaccineForm(p => ({ ...p, date: e.target.value }))} /></div>
+          <div className="space-y-2"><Label>{t('medicalRecordDetail.vaccineModal.batchLabel')}</Label><Input value={vaccineForm.batch} onChange={e => setVaccineForm(p => ({ ...p, batch: e.target.value }))} /></div>
+          <div className="space-y-2"><Label>{t('medicalRecordDetail.vaccineModal.nextDoseLabel')}</Label><Input type="date" value={vaccineForm.next_dose} onChange={e => setVaccineForm(p => ({ ...p, next_dose: e.target.value }))} /></div>
         </div>
       </DashboardCreateFormDialog>
 
@@ -872,30 +873,30 @@ export default function MedicalRecordDetailPage() {
       <DashboardCreateFormDialog
         open={attachModal}
         onOpenChange={setAttachModal}
-        title="Anexar Arquivo"
+        title={t('medicalRecordDetail.attachModal.title')}
         contentClassName="modal-responsive"
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <Button variant="outline" className="border border-gray-300" onClick={() => setAttachModal(false)}>Cancelar</Button>
+            <Button variant="outline" className="border border-gray-300" onClick={() => setAttachModal(false)}>{t('medicalRecordDetail.attachModal.cancel')}</Button>
             <Button onClick={handleAddAttachment} disabled={attachUploading} className="bg-primary">
-              {attachUploading && <Loader2 className="h-4 w-4 mr-1 animate-spin" />} Anexar
+              {attachUploading && <Loader2 className="h-4 w-4 mr-1 animate-spin" />} {t('medicalRecordDetail.attachModal.submit')}
             </Button>
           </div>
         }
       >
         <div className="space-y-4 md:space-y-6">
-          <div className="space-y-2"><Label>Descrição</Label><Input value={attachForm.name} onChange={e => setAttachForm(p => ({ ...p, name: e.target.value }))} placeholder="Ex: Hemograma 25/03 (opcional)" /></div>
+          <div className="space-y-2"><Label>{t('medicalRecordDetail.attachModal.descriptionLabel')}</Label><Input value={attachForm.name} onChange={e => setAttachForm(p => ({ ...p, name: e.target.value }))} placeholder={t('medicalRecordDetail.attachModal.descriptionPlaceholder')} /></div>
           <div className="space-y-2">
-            <Label>Categoria</Label>
+            <Label>{t('medicalRecordDetail.attachModal.categoryLabel')}</Label>
             <select className="w-full border rounded px-3 py-2 text-sm" value={attachForm.category} onChange={e => setAttachForm(p => ({ ...p, category: e.target.value }))}>
-              <option value="exame">Exame</option>
-              <option value="imagem">Imagem</option>
-              <option value="documento">Documento</option>
-              <option value="outro">Outro</option>
+              <option value="exame">{t('medicalRecordDetail.attachModal.categoryExam')}</option>
+              <option value="imagem">{t('medicalRecordDetail.attachModal.categoryImage')}</option>
+              <option value="documento">{t('medicalRecordDetail.attachModal.categoryDocument')}</option>
+              <option value="outro">{t('medicalRecordDetail.attachModal.categoryOther')}</option>
             </select>
           </div>
           <div className="space-y-2">
-            <Label>Arquivo *</Label>
+            <Label>{t('medicalRecordDetail.attachModal.fileLabel')}</Label>
             <Input type="file" onChange={e => setAttachForm(p => ({ ...p, file: e.target.files?.[0] ?? null }))} />
           </div>
         </div>
@@ -905,41 +906,41 @@ export default function MedicalRecordDetailPage() {
       <DashboardCreateFormDialog
         open={presModal}
         onOpenChange={setPresModal}
-        title="Nova prescrição"
+        title={t('medicalRecordDetail.prescriptionModal.title')}
         contentClassName="modal-responsive sm:max-w-2xl"
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <Button variant="outline" className="border border-gray-300" onClick={() => setPresModal(false)}>Cancelar</Button>
+            <Button variant="outline" className="border border-gray-300" onClick={() => setPresModal(false)}>{t('medicalRecordDetail.prescriptionModal.cancel')}</Button>
             <Button onClick={handleCreatePrescription} disabled={presSaving} className="bg-primary">
-              {presSaving && <Loader2 className="h-4 w-4 mr-1 animate-spin" />} Criar prescrição
+              {presSaving && <Loader2 className="h-4 w-4 mr-1 animate-spin" />} {t('medicalRecordDetail.prescriptionModal.submit')}
             </Button>
           </div>
         }
       >
         <div className="space-y-4 md:space-y-6">
           <div className="space-y-2">
-            <Label>Tipo</Label>
+            <Label>{t('medicalRecordDetail.prescriptionModal.typeLabel')}</Label>
             <Select value={presForm.prescription_type} onValueChange={v => setPresForm(p => ({ ...p, prescription_type: v }))}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="receita">Receita</SelectItem>
-                <SelectItem value="solicitacao_cirurgia">Solicitação de cirurgia</SelectItem>
-                <SelectItem value="vacinas">Vacinas</SelectItem>
+                <SelectItem value="receita">{t('medicalRecordDetail.prescriptionModal.typeReceita')}</SelectItem>
+                <SelectItem value="solicitacao_cirurgia">{t('medicalRecordDetail.prescriptionModal.typeSurgeryRequest')}</SelectItem>
+                <SelectItem value="vacinas">{t('medicalRecordDetail.prescriptionModal.typeVaccines')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <Label>Medicamentos</Label>
+              <Label>{t('medicalRecordDetail.prescriptionModal.medicationsLabel')}</Label>
               <Button type="button" size="sm" variant="outline" onClick={addMed}>
-                <Plus className="h-3 w-3 mr-1" /> Adicionar
+                <Plus className="h-3 w-3 mr-1" /> {t('medicalRecordDetail.prescriptionModal.addMedication')}
               </Button>
             </div>
             {presForm.medications.map((m, i) => (
               <div key={i} className="rounded-lg border border-slate-200 p-3 space-y-2">
                 <div className="flex items-center gap-2">
-                  <Input className="flex-1" placeholder="Nome do medicamento *" value={m.name} onChange={e => updateMed(i, { name: e.target.value })} />
+                  <Input className="flex-1" placeholder={t('medicalRecordDetail.prescriptionModal.medicationNamePlaceholder')} value={m.name} onChange={e => updateMed(i, { name: e.target.value })} />
                   {presForm.medications.length > 1 && (
                     <Button type="button" variant="ghost" size="sm" onClick={() => removeMed(i)}>
                       <Trash2 className="h-4 w-4 text-red-500" />
@@ -947,29 +948,29 @@ export default function MedicalRecordDetailPage() {
                   )}
                 </div>
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  <Input placeholder="Via (VO, IV, IM...)" value={m.via} onChange={e => updateMed(i, { via: e.target.value })} />
-                  <Input placeholder="Dose (ex.: 10 mg/kg)" value={m.dosage} onChange={e => updateMed(i, { dosage: e.target.value })} />
+                  <Input placeholder={t('medicalRecordDetail.prescriptionModal.viaPlaceholder')} value={m.via} onChange={e => updateMed(i, { via: e.target.value })} />
+                  <Input placeholder={t('medicalRecordDetail.prescriptionModal.dosagePlaceholder')} value={m.dosage} onChange={e => updateMed(i, { dosage: e.target.value })} />
                 </div>
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                   <div className="flex gap-1">
-                    <Input type="number" placeholder="Freq." value={m.frequency_value} onChange={e => updateMed(i, { frequency_value: e.target.value })} />
+                    <Input type="number" placeholder={t('medicalRecordDetail.prescriptionModal.frequencyPlaceholder')} value={m.frequency_value} onChange={e => updateMed(i, { frequency_value: e.target.value })} />
                     <Select value={m.frequency_unit} onValueChange={v => updateMed(i, { frequency_unit: v })}>
                       <SelectTrigger className="w-28 shrink-0"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="minutos">minutos</SelectItem>
-                        <SelectItem value="horas">horas</SelectItem>
-                        <SelectItem value="dias">dias</SelectItem>
+                        <SelectItem value="minutos">{t('medicalRecordDetail.prescriptionModal.freqMinutes')}</SelectItem>
+                        <SelectItem value="horas">{t('medicalRecordDetail.prescriptionModal.freqHours')}</SelectItem>
+                        <SelectItem value="dias">{t('medicalRecordDetail.prescriptionModal.freqDays')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="flex gap-1">
-                    <Input type="number" placeholder="Duração" value={m.duration_value} onChange={e => updateMed(i, { duration_value: e.target.value })} />
+                    <Input type="number" placeholder={t('medicalRecordDetail.prescriptionModal.durationPlaceholder')} value={m.duration_value} onChange={e => updateMed(i, { duration_value: e.target.value })} />
                     <Select value={m.duration_unit} onValueChange={v => updateMed(i, { duration_unit: v })}>
                       <SelectTrigger className="w-28 shrink-0"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="dias">dias</SelectItem>
-                        <SelectItem value="semanas">semanas</SelectItem>
-                        <SelectItem value="meses">meses</SelectItem>
+                        <SelectItem value="dias">{t('medicalRecordDetail.prescriptionModal.durationDays')}</SelectItem>
+                        <SelectItem value="semanas">{t('medicalRecordDetail.prescriptionModal.durationWeeks')}</SelectItem>
+                        <SelectItem value="meses">{t('medicalRecordDetail.prescriptionModal.durationMonths')}</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -979,7 +980,7 @@ export default function MedicalRecordDetailPage() {
           </div>
 
           <div className="space-y-2">
-            <Label>Observações</Label>
+            <Label>{t('medicalRecordDetail.prescriptionModal.observationsLabel')}</Label>
             <Textarea rows={2} value={presForm.observations} onChange={e => setPresForm(p => ({ ...p, observations: e.target.value }))} />
           </div>
         </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -23,6 +24,7 @@ import { ListPagination } from "@/components/list-pagination";
 import { useBularioItemQuery, useBularioSearchQuery } from "@/hooks/apiHooks/useBulario";
 
 export default function BularioPage() {
+  const { t } = useTranslation();
   const [listPage, setListPage] = useState(1);
   const [query, setQuery] = useState("");
   const [activeQuery, setActiveQuery] = useState("");
@@ -64,7 +66,7 @@ export default function BularioPage() {
     <div>
       <div className="flex justify-between items-center flex-wrap gap-2 mb-8">
         <h1 className="text-2xl font-extrabold font-['interDoFigma'] flex items-center gap-2">
-          Bulário – Consulta de Medicamentos
+          {t('bulario.title')}
         </h1>
       </div>
 
@@ -73,7 +75,7 @@ export default function BularioPage() {
           <div className="relative flex-1 max-w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-7 h-7" />
             <Input
-              placeholder="Buscar por nome do medicamento"
+              placeholder={t('bulario.searchPlaceholder')}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSearch()}
@@ -90,13 +92,12 @@ export default function BularioPage() {
                 setListPage(1);
               }}
             >
-              Limpar lista
+              {t('bulario.clearList')}
             </Button>
           )}
         </div>
         <p className="text-muted-foreground text-xs pl-5 mt-2">
-          Digite pelo menos 2 caracteres e clique em Buscar para listar os
-          medicamentos.
+          {t('bulario.searchHint')}
         </p>
       </div>
 
@@ -109,8 +110,8 @@ export default function BularioPage() {
           <div className="h-[calc(100vh-400px)] flex items-center justify-center text-muted-foreground">
             <p>
               {activeQuery
-                ? "Nenhum medicamento encontrado."
-                : "Use a busca acima para consultar o bulário."}
+                ? t('bulario.noResults')
+                : t('bulario.searchPrompt')}
             </p>
           </div>
         ) : (
@@ -120,9 +121,9 @@ export default function BularioPage() {
               <Table className="min-w-full border-collapse bg-white text-sm">
                 <TableHeader>
                   <TableRow className="border-b border-gray-300 h-15">
-                    <TableHead>Medicamento</TableHead>
-                    <TableHead>Subtítulo</TableHead>
-                    <TableHead className="w-30">Ações</TableHead>
+                    <TableHead>{t('bulario.medicine')}</TableHead>
+                    <TableHead>{t('bulario.subtitle')}</TableHead>
+                    <TableHead className="w-30">{t('bulario.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -135,8 +136,8 @@ export default function BularioPage() {
                           variant="ghost"
                           size="icon"
                           className="p-0"
-                          title="Ver detalhes"
-                          aria-label="Ver detalhes"
+                          title={t('bulario.viewDetails')}
+                          aria-label={t('bulario.viewDetails')}
                           onClick={() => openDetail(item.id)}
                         >
                           <Info className="w-4 h-4" />
@@ -161,8 +162,8 @@ export default function BularioPage() {
                       variant="ghost"
                       size="icon"
                       className="p-0 shrink-0"
-                      title="Ver detalhes"
-                      aria-label="Ver detalhes"
+                      title={t('bulario.viewDetails')}
+                      aria-label={t('bulario.viewDetails')}
                       onClick={() => openDetail(item.id)}
                     >
                       <Info className="w-4 h-4" />
@@ -190,7 +191,7 @@ export default function BularioPage() {
         <DialogContent className="max-w-[calc(100%-2rem)] sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle>
-              {detailItem?.title ?? "Detalhes do medicamento"}
+              {detailItem?.title ?? t('bulario.detailsTitle')}
             </DialogTitle>
           </DialogHeader>
           {detailLoading && (
@@ -215,17 +216,17 @@ export default function BularioPage() {
                 detailItem.contraindications) && (
                 <div className="mb-4">
                   <div className="flex items-center gap-2 mb-2">
-                    <h4 className="font-semibold text-primary">Posologia</h4>
+                    <h4 className="font-semibold text-primary">{t('bulario.posology')}</h4>
                     {detailItem.vetalpha_validated && (
                       <span className="rounded-full bg-green-100 px-2 py-0.5 text-[11px] text-green-700">
-                        Validado VetAlpha
+                        {t('bulario.vetalphaValidated')}
                       </span>
                     )}
                   </div>
                   <div className="border rounded divide-y text-sm">
                     {(detailItem.dose_min_mg_kg != null || detailItem.dose_max_mg_kg != null) && (
                       <div className="grid grid-cols-1 gap-0.5 px-3 py-2 sm:grid-cols-3 sm:gap-0">
-                        <span className="col-span-1 font-medium text-muted-foreground">Dose</span>
+                        <span className="col-span-1 font-medium text-muted-foreground">{t('bulario.dose')}</span>
                         <span className="col-span-2">
                           {[detailItem.dose_min_mg_kg, detailItem.dose_max_mg_kg]
                             .filter((v) => v != null)
@@ -236,31 +237,31 @@ export default function BularioPage() {
                     )}
                     {detailItem.frequency && (
                       <div className="grid grid-cols-1 gap-0.5 px-3 py-2 sm:grid-cols-3 sm:gap-0">
-                        <span className="col-span-1 font-medium text-muted-foreground">Frequência</span>
+                        <span className="col-span-1 font-medium text-muted-foreground">{t('bulario.frequency')}</span>
                         <span className="col-span-2">{detailItem.frequency}</span>
                       </div>
                     )}
                     {(detailItem.administration_routes?.length ?? 0) > 0 && (
                       <div className="grid grid-cols-1 gap-0.5 px-3 py-2 sm:grid-cols-3 sm:gap-0">
-                        <span className="col-span-1 font-medium text-muted-foreground">Vias</span>
+                        <span className="col-span-1 font-medium text-muted-foreground">{t('bulario.routes')}</span>
                         <span className="col-span-2">{detailItem.administration_routes?.join(", ")}</span>
                       </div>
                     )}
                     {(detailItem.species?.length ?? 0) > 0 && (
                       <div className="grid grid-cols-1 gap-0.5 px-3 py-2 sm:grid-cols-3 sm:gap-0">
-                        <span className="col-span-1 font-medium text-muted-foreground">Espécies</span>
+                        <span className="col-span-1 font-medium text-muted-foreground">{t('bulario.species')}</span>
                         <span className="col-span-2">{detailItem.species?.join(", ")}</span>
                       </div>
                     )}
                     {detailItem.toxicity_notes && (
                       <div className="grid grid-cols-1 gap-0.5 px-3 py-2 sm:grid-cols-3 sm:gap-0">
-                        <span className="col-span-1 font-medium text-muted-foreground">Toxicidade</span>
+                        <span className="col-span-1 font-medium text-muted-foreground">{t('bulario.toxicity')}</span>
                         <span className="col-span-2 whitespace-pre-wrap">{detailItem.toxicity_notes}</span>
                       </div>
                     )}
                     {detailItem.contraindications && (
                       <div className="grid grid-cols-1 gap-0.5 px-3 py-2 sm:grid-cols-3 sm:gap-0">
-                        <span className="col-span-1 font-medium text-muted-foreground">Contraindicações</span>
+                        <span className="col-span-1 font-medium text-muted-foreground">{t('bulario.contraindications')}</span>
                         <span className="col-span-2 whitespace-pre-wrap">{detailItem.contraindications}</span>
                       </div>
                     )}
@@ -299,7 +300,7 @@ export default function BularioPage() {
                           {section.title}
                           {isDose && (
                             <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
-                              Doses
+                              {t('bulario.doses')}
                             </span>
                           )}
                         </h4>
@@ -324,7 +325,7 @@ export default function BularioPage() {
                   })
               ) : (
                 <p className="text-muted-foreground">
-                  Sem detalhes cadastrados.
+                  {t('bulario.noDetails')}
                 </p>
               )}
             </div>

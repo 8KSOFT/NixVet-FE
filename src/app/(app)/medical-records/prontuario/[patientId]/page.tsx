@@ -4,6 +4,8 @@ import React, { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -42,49 +44,64 @@ import {
 } from "@/hooks/apiHooks/useMedicalRecords";
 import { useFollowupsListQuery } from "@/hooks/apiHooks/useExamFollowups";
 
-const typeConfig: Record<
+const timelineTypeMeta: Record<
   string,
-  { label: string; dotClass: string; icon: React.ReactNode }
+  { dotClass: string; icon: React.ReactNode }
 > = {
   medical_record: {
-    label: "Ficha",
     dotClass: "bg-blue-100 text-primary",
     icon: <FileText className="w-3.5 h-3.5" />,
   },
   vaccine: {
-    label: "Vacina",
     dotClass: "bg-green-100 text-green-600",
     icon: <FlaskConical className="w-3.5 h-3.5" />,
   },
   exam_request: {
-    label: "Exame",
     dotClass: "bg-purple-100 text-purple-600",
     icon: <ClipboardList className="w-3.5 h-3.5" />,
   },
   prescription: {
-    label: "Prescrição",
     dotClass: "bg-orange-100 text-orange-600",
     icon: <BookOpen className="w-3.5 h-3.5" />,
   },
 };
 
-const recordTypeLabel = (t: string) => {
-  const map: Record<string, string> = {
-    atendimento: "Atendimento",
-    retorno: "Retorno",
-    emergencia: "Emergência",
-    cirurgia: "Cirurgia",
-    internacao: "Internação",
-    no_show: "Não Compareceu",
-  };
-  return map[t] || t;
+const TIMELINE_TYPE_LABEL_KEYS: Record<string, string> = {
+  medical_record: "medicalRecord",
+  vaccine: "vaccine",
+  exam_request: "examRequest",
+  prescription: "prescription",
 };
 
-const FOLLOWUP_STATUS_LABELS: Record<string, string> = {
-  pending_result: "Aguardando resultado",
-  awaiting_followup: "Aguardando retorno",
-  result_available: "Resultado disponível",
-  closed: "Concluído",
+function timelineTypeLabel(type: string, t: TFunction): string {
+  const key = TIMELINE_TYPE_LABEL_KEYS[type];
+  return key ? t(`prontuario.timelineType.${key}`) : type;
+}
+
+const RECORD_TYPE_LABEL_KEYS: Record<string, string> = {
+  atendimento: "atendimento",
+  retorno: "retorno",
+  emergencia: "emergencia",
+  cirurgia: "cirurgia",
+  internacao: "internacao",
+  no_show: "noShow",
+};
+
+const recordTypeLabel = (type: string, t: TFunction) => {
+  const key = RECORD_TYPE_LABEL_KEYS[type];
+  return key ? t(`prontuario.recordType.${key}`) : type;
+};
+
+const FOLLOWUP_STATUS_LABEL_KEYS: Record<string, string> = {
+  pending_result: "pendingResult",
+  awaiting_followup: "awaitingFollowup",
+  result_available: "resultAvailable",
+  closed: "closed",
+};
+
+const followupStatusLabel = (status: string, t: TFunction) => {
+  const key = FOLLOWUP_STATUS_LABEL_KEYS[status];
+  return key ? t(`prontuario.followupStatus.${key}`) : status;
 };
 
 const VALID_TABS = ["overview", "vaccines", "followups"] as const;
@@ -168,6 +185,7 @@ const JUICY_EASE = "ease-[cubic-bezier(0.34,1.56,0.64,1)]";
 const ZOOM_SCALE = 2.75;
 
 function PetPolaroid({ url, name }: { url?: string | null; name: string }) {
+  const { t } = useTranslation();
   const cardRef = useRef<HTMLButtonElement>(null);
   const [origin, setOrigin] = useState<{ x: number; y: number; w: number; h: number; deg: number; shiftX: number } | null>(
     null,
@@ -227,7 +245,7 @@ function PetPolaroid({ url, name }: { url?: string | null; name: string }) {
         type="button"
         ref={cardRef}
         onClick={openZoom}
-        aria-label={`Ampliar foto de ${name}`}
+        aria-label={t("prontuario.zoomPhotoAria", { name })}
         className={cn(
           "relative block w-full rotate-5 cursor-zoom-in rounded-[6px] bg-white p-1.5 pb-2.5 shadow-[0_12px_24px_-6px_rgba(0,0,0,0.35)] transition-transform duration-300 sm:rotate-4 sm:p-2.25 sm:pb-3.5 sm:shadow-[0_16px_34px_-8px_rgba(0,0,0,0.35)]",
           JUICY_EASE,
@@ -292,6 +310,7 @@ function PetPolaroid({ url, name }: { url?: string | null; name: string }) {
 }
 
 function ProntuarioDetailContent() {
+  const { t } = useTranslation();
   const params = useParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -351,7 +370,7 @@ function ProntuarioDetailContent() {
       const record = await createRecord.mutateAsync({ patient_id: patientId });
       router.push(`/medical-records/${record.id}`);
     } catch {
-      toast.error("Erro ao criar ficha");
+      toast.error(t("prontuario.createError"));
       setCreating(false);
     }
   };
@@ -379,20 +398,20 @@ function ProntuarioDetailContent() {
     return (
       <div>
         <Button variant="ghost" onClick={() => router.push("/medical-records")}>
-          <ChevronLeft className="w-4 h-4 mr-1" /> Voltar
+          <ChevronLeft className="w-4 h-4 mr-1" /> {t("prontuario.back")}
         </Button>
-        <p className="text-muted-foreground mt-4">Prontuário não encontrado.</p>
+        <p className="text-muted-foreground mt-4">{t("prontuario.notFound")}</p>
       </div>
     );
   }
 
   const SexIcon = sexIcon(patient.sex);
   const statPills = [
-    { label: "Espécie", value: patient.species, icon: PawPrint },
-    { label: "Raça", value: patient.breed, icon: Tag },
-    { label: "Idade", value: `${patient.age} ano(s)`, icon: Clock },
-    { label: "Peso", value: `${patient.weight} kg`, icon: Scale },
-    { label: "Sexo", value: patient.sex, icon: SexIcon },
+    { label: t("prontuario.stats.species"), value: patient.species, icon: PawPrint },
+    { label: t("prontuario.stats.breed"), value: patient.breed, icon: Tag },
+    { label: t("prontuario.stats.age"), value: t("prontuario.stats.ageValue", { count: patient.age }), icon: Clock },
+    { label: t("prontuario.stats.weight"), value: t("prontuario.stats.weightValue", { value: patient.weight }), icon: Scale },
+    { label: t("prontuario.stats.sex"), value: patient.sex, icon: SexIcon },
   ];
 
   return (
@@ -400,7 +419,7 @@ function ProntuarioDetailContent() {
       <div className="mb-9 flex items-center justify-between gap-3">
         <Button asChild variant="ghost" className="self-start pl-0">
           <Link href="/medical-records">
-            <ChevronLeft className="w-4 h-4 mr-1" /> Prontuários
+            <ChevronLeft className="w-4 h-4 mr-1" /> {t("prontuario.backToList")}
           </Link>
         </Button>
         {/* No mobile o botão vira FAB fixo (ver final do JSX) — aqui só
@@ -415,7 +434,7 @@ function ProntuarioDetailContent() {
           ) : (
             <Plus className="h-4 w-4 mr-1" />
           )}
-          Nova ficha
+          {t("prontuario.newRecord")}
         </Button>
       </div>
 
@@ -444,7 +463,7 @@ function ProntuarioDetailContent() {
             <div className="min-w-0 flex-1 pr-19 sm:pr-37">
               <div className="mb-1.5 inline-flex items-center gap-1.25 rounded-full border border-white/28 bg-white/16 px-2.5 py-0.75 text-[10.5px] font-bold tracking-wide sm:mb-2 sm:gap-1.5 sm:px-3 sm:py-1 sm:text-xs">
                 <Check className="size-2.75 sm:size-3" strokeWidth={3} />
-                Paciente ativo
+                {t("prontuario.activePatient")}
               </div>
               <h1 className="truncate text-[26px] leading-none font-extrabold tracking-[-0.02em] sm:text-4xl">
                 {patient.name}
@@ -452,8 +471,8 @@ function ProntuarioDetailContent() {
               <div className="mt-1.5 flex items-center gap-1.5 text-[12.5px] text-white/85 sm:mt-2 sm:gap-1.75 sm:text-[14.5px]">
                 <User className="size-3.25 shrink-0 opacity-85 sm:size-3.75" />
                 <span className="truncate">
-                  <span className="hidden sm:inline">Responsável: </span>
-                  <b className="font-bold text-white">{patient.tutor?.name ?? "Sem tutor"}</b>
+                  <span className="hidden sm:inline">{t("prontuario.guardianLabel")} </span>
+                  <b className="font-bold text-white">{patient.tutor?.name ?? t("prontuario.noGuardian")}</b>
                 </span>
               </div>
             </div>
@@ -482,22 +501,22 @@ function ProntuarioDetailContent() {
             className="h-auto! w-full justify-center px-2 py-2.25 text-center leading-snug whitespace-normal sm:px-3"
           >
             <LayoutGrid className="mr-1 size-3.75 shrink-0 sm:size-4" />
-            <span className="sm:hidden">Geral</span>
-            <span className="hidden sm:inline">Visão geral</span>
+            <span className="sm:hidden">{t("prontuario.tabs.overviewShort")}</span>
+            <span className="hidden sm:inline">{t("prontuario.tabs.overviewFull")}</span>
           </TabsTrigger>
           <TabsTrigger
             value="vaccines"
             className="h-auto! w-full justify-center px-2 py-2.25 text-center leading-snug whitespace-normal sm:px-3"
           >
-            <Syringe className="mr-1 size-3.75 shrink-0 sm:size-4" /> Vacinas
+            <Syringe className="mr-1 size-3.75 shrink-0 sm:size-4" /> {t("prontuario.tabs.vaccines")}
           </TabsTrigger>
           <TabsTrigger
             value="followups"
             className="h-auto! w-full justify-center px-2 py-2.25 text-center leading-snug whitespace-normal sm:px-3"
           >
             <CalendarClock className="mr-1 size-3.75 shrink-0 sm:size-4" />
-            <span className="sm:hidden">Acomp.</span>
-            <span className="hidden sm:inline">Acompanhamento</span>
+            <span className="sm:hidden">{t("prontuario.tabs.followupsShort")}</span>
+            <span className="hidden sm:inline">{t("prontuario.tabs.followupsFull")}</span>
           </TabsTrigger>
         </TabsList>
 
@@ -507,15 +526,16 @@ function ProntuarioDetailContent() {
             <div className="lg:col-span-2">
               <div className="mb-3 flex items-center gap-2">
                 <FileText className="h-4 w-4 text-primary" />
-                <h2 className="text-sm font-bold text-slate-900">Fichas de atendimento</h2>
+                <h2 className="text-sm font-bold text-slate-900">{t("prontuario.overview.recordsTitle")}</h2>
                 <span className="text-xs text-muted-foreground">
-                  {sortedRecords.length} no total
+                  {t("prontuario.countTotal", { count: sortedRecords.length })}
                 </span>
               </div>
 
               {sortedRecords.length === 0 ? (
                 <div className="rounded-xl border border-dashed border-slate-200 bg-white py-10 text-center text-sm text-muted-foreground">
-                  Nenhuma ficha registrada. Clique em <strong>Nova ficha</strong> para começar.
+                  {t("prontuario.overview.emptyRecordsPrefix")} <strong>{t("prontuario.newRecord")}</strong>{" "}
+                  {t("prontuario.overview.emptyRecordsSuffix")}
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -532,9 +552,9 @@ function ProntuarioDetailContent() {
                           {dayjs(r.record_date).format("DD/MM/YYYY")}
                         </span>
                         {r.status === "closed" ? (
-                          <Badge className="bg-green-500 text-white">Fechado</Badge>
+                          <Badge className="bg-green-500 text-white">{t("prontuario.overview.statusClosed")}</Badge>
                         ) : (
-                          <Badge className="bg-primary text-white">Aberto</Badge>
+                          <Badge className="bg-primary text-white">{t("prontuario.overview.statusOpen")}</Badge>
                         )}
                       </div>
 
@@ -543,19 +563,19 @@ function ProntuarioDetailContent() {
                         <span className="text-sm font-medium text-slate-900 whitespace-nowrap">
                           {dayjs(r.record_date).format("DD/MM/YYYY")}
                         </span>
-                        <Badge variant="outline">{recordTypeLabel(r.record_type)}</Badge>
+                        <Badge variant="outline">{recordTypeLabel(r.record_type, t)}</Badge>
                       </div>
 
                       <span className="text-sm font-medium text-slate-900 sm:flex-1 sm:truncate sm:font-normal sm:text-muted-foreground">
-                        {r.chief_complaint || r.veterinarian?.name || "Sem queixa registrada"}
+                        {r.chief_complaint || r.veterinarian?.name || t("prontuario.overview.noChiefComplaint")}
                       </span>
 
                       {/* Desktop: status + seta, alinhados à direita. */}
                       <div className="hidden shrink-0 items-center gap-2 sm:ml-auto sm:flex sm:justify-end">
                         {r.status === "closed" ? (
-                          <Badge className="bg-green-500 text-white">Fechado</Badge>
+                          <Badge className="bg-green-500 text-white">{t("prontuario.overview.statusClosed")}</Badge>
                         ) : (
-                          <Badge className="bg-primary text-white">Aberto</Badge>
+                          <Badge className="bg-primary text-white">{t("prontuario.overview.statusOpen")}</Badge>
                         )}
                         <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
                       </div>
@@ -569,16 +589,15 @@ function ProntuarioDetailContent() {
             <div>
               <div className="mb-3 flex items-center gap-2">
                 <Clock className="h-4 w-4 text-primary" />
-                <h2 className="text-sm font-bold text-slate-900">Linha do tempo</h2>
+                <h2 className="text-sm font-bold text-slate-900">{t("prontuario.overview.timelineTitle")}</h2>
               </div>
               <div className="rounded-xl border border-slate-200 bg-white p-4">
                 {sortedEvents.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Nenhum evento registrado.</p>
+                  <p className="text-sm text-muted-foreground">{t("prontuario.overview.noEvents")}</p>
                 ) : (
                   <div className="space-y-0">
                     {sortedEvents.map((ev, idx) => {
-                      const meta = typeConfig[ev.type] ?? {
-                        label: ev.type,
+                      const meta = timelineTypeMeta[ev.type] ?? {
                         dotClass: "bg-muted text-muted-foreground",
                         icon: null,
                       };
@@ -588,8 +607,8 @@ function ProntuarioDetailContent() {
                       // seria ruído.
                       const isRecordEvent = ev.type === "medical_record";
                       const label = isRecordEvent
-                        ? recordTypeLabel((ev.data as TimelineMedicalRecordData).record_type ?? "")
-                        : meta.label;
+                        ? recordTypeLabel((ev.data as TimelineMedicalRecordData).record_type ?? "", t)
+                        : timelineTypeLabel(ev.type, t);
                       const dateFormat = isRecordEvent ? "DD/MM/YYYY" : "DD/MM/YYYY HH:mm";
                       const isFirst = idx === 0;
                       const isLast = idx === sortedEvents.length - 1;
@@ -626,12 +645,12 @@ function ProntuarioDetailContent() {
                                     "polygon(0% 50%, 10px 0%, 100% 0%, calc(100% - 10px) 50%, 100% 100%, 10px 100%)",
                                 }}
                               >
-                                Mais recente
+                                {t("prontuario.overview.mostRecent")}
                               </span>
                             )}
                             {isLast && !isFirst && (
                               <Badge variant="outline" className="mt-0.5 shrink-0 whitespace-nowrap text-muted-foreground">
-                                Início
+                                {t("prontuario.overview.start")}
                               </Badge>
                             )}
                           </div>
@@ -648,14 +667,14 @@ function ProntuarioDetailContent() {
         <TabsContent value="vaccines">
           <div className="mb-3 flex items-center gap-2">
             <Syringe className="h-4 w-4 text-primary" />
-            <h2 className="text-sm font-bold text-slate-900">Vacinas</h2>
+            <h2 className="text-sm font-bold text-slate-900">{t("prontuario.tabs.vaccines")}</h2>
             <span className="text-xs text-muted-foreground">
-              {sortedVaccineHistory.length} no total
+              {t("prontuario.countTotal", { count: sortedVaccineHistory.length })}
             </span>
           </div>
           {sortedVaccineHistory.length === 0 ? (
             <div className="rounded-xl border border-dashed border-slate-200 bg-white py-10 text-center text-sm text-muted-foreground">
-              Nenhuma vacina registrada para este paciente.
+              {t("prontuario.vaccines.empty")}
             </div>
           ) : (
             <div className="space-y-2">
@@ -668,11 +687,11 @@ function ProntuarioDetailContent() {
                   >
                     <span className="text-sm font-medium text-slate-900 sm:flex-1">{v.vaccine_name}</span>
                     <span className="text-xs text-muted-foreground">
-                      Aplicada em {dayjs(v.application_date).format("DD/MM/YYYY")}
+                      {t("prontuario.vaccines.appliedOn", { date: dayjs(v.application_date).format("DD/MM/YYYY") })}
                     </span>
                     {v.next_due_date && (
                       <Badge variant={isUpcoming ? "default" : "secondary"} className={isUpcoming ? "bg-primary text-white" : undefined}>
-                        Próxima dose: {dayjs(v.next_due_date).format("DD/MM/YYYY")}
+                        {t("prontuario.vaccines.nextDose", { date: dayjs(v.next_due_date).format("DD/MM/YYYY") })}
                       </Badge>
                     )}
                   </div>
@@ -685,14 +704,14 @@ function ProntuarioDetailContent() {
         <TabsContent value="followups">
           <div className="mb-3 flex items-center gap-2">
             <CalendarClock className="h-4 w-4 text-primary" />
-            <h2 className="text-sm font-bold text-slate-900">Acompanhamento</h2>
+            <h2 className="text-sm font-bold text-slate-900">{t("prontuario.tabs.followupsFull")}</h2>
             <span className="text-xs text-muted-foreground">
-              {patientFollowups.length} no total
+              {t("prontuario.countTotal", { count: patientFollowups.length })}
             </span>
           </div>
           {patientFollowups.length === 0 ? (
             <div className="rounded-xl border border-dashed border-slate-200 bg-white py-10 text-center text-sm text-muted-foreground">
-              Nenhum acompanhamento registrado para este paciente.
+              {t("prontuario.followups.empty")}
             </div>
           ) : (
             <div className="space-y-2">
@@ -702,11 +721,12 @@ function ProntuarioDetailContent() {
                   className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-white px-4 py-3 sm:flex-row sm:items-center sm:gap-3"
                 >
                   <span className="text-sm text-slate-900 sm:flex-1">
-                    Retorno esperado:{" "}
-                    {f.expected_result_date ? dayjs(f.expected_result_date).format("DD/MM/YYYY") : "—"}
+                    {t("prontuario.followups.expectedReturn", {
+                      date: f.expected_result_date ? dayjs(f.expected_result_date).format("DD/MM/YYYY") : "—",
+                    })}
                   </span>
                   <Badge variant="outline">
-                    {FOLLOWUP_STATUS_LABELS[f.followup_status] ?? f.followup_status}
+                    {followupStatusLabel(f.followup_status, t)}
                   </Badge>
                 </div>
               ))}
@@ -714,7 +734,7 @@ function ProntuarioDetailContent() {
           )}
           <div className="mt-4">
             <Button asChild variant="outline" size="sm">
-              <Link href="/followups">Ver todos os acompanhamentos</Link>
+              <Link href="/followups">{t("prontuario.followups.viewAll")}</Link>
             </Button>
           </div>
         </TabsContent>
@@ -728,15 +748,16 @@ function ProntuarioDetailContent() {
         className="fixed right-5 bottom-20 z-30 flex items-center gap-1.75 rounded-full bg-wa-brand-600 px-5 py-3.25 text-[13.5px] font-bold text-white shadow-[0_8px_20px_rgba(18,179,127,0.35)] transition-colors hover:bg-wa-brand-700 disabled:opacity-60 sm:hidden"
       >
         {creating ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
-        Nova ficha
+        {t("prontuario.newRecord")}
       </button>
     </div>
   );
 }
 
 export default function ProntuarioDetailPage() {
+  const { t } = useTranslation();
   return (
-    <Suspense fallback={<div className="p-6">Carregando...</div>}>
+    <Suspense fallback={<div className="p-6">{t("prontuario.loading")}</div>}>
       <ProntuarioDetailContent />
     </Suspense>
   );

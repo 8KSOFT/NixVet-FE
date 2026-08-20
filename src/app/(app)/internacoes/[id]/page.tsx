@@ -2,6 +2,7 @@
 
 import { ArrowLeft, LogOut, Download, Plus, Check, X, Sparkles, Loader2, Users, ClipboardList, ChevronDown, FileText } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -20,6 +21,7 @@ import { getStoredUserRole } from '@/lib/role-permissions';
 import { toast } from 'sonner';
 import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import { PlanUpgradeGate } from '@/components/billing/PlanUpgradeGate';
+import { useCurrencyFormatter } from '@/lib/i18n/currency';
 import type { Hospitalization } from '@/app/types/hospitalization';
 import {
   useAddHospitalizationCostMutation,
@@ -54,35 +56,23 @@ import {
 const canSeeFinancials = (role: string | null | undefined) =>
   ['admin', 'manager', 'financial'].includes((role || '').toLowerCase());
 
-function fmt(n: number) {
-  return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-}
-
-const COST_TYPE_LABELS: Record<string, string> = {
-  daily_rate: 'Diária',
-  material: 'Material',
-  medication: 'Medicação',
-  procedure: 'Procedimento',
-  exam: 'Exame',
-  anesthesia: 'Anestesia',
-  other: 'Outro',
-};
-
 /* ---- Sub-components ---- */
 
 function ResumoTab({ h, canSee }: { h: Hospitalization; canSee: boolean }) {
+  const { t } = useTranslation();
+  const fmt = useCurrencyFormatter();
   const rows: Array<[string, string | null | undefined]> = [
-    ['Paciente', h.patient?.name],
-    ['Espécie', `${h.patient?.species ?? ''}${h.patient?.breed ? ` — ${h.patient.breed}` : ''}`],
-    ['Tutor', h.patient?.tutor?.name ?? '—'],
-    ['Veterinário', h.veterinarian?.name],
-    ['Admissão', new Date(h.admission_date).toLocaleString('pt-BR')],
-    ['Box', h.box_number ?? '—'],
-    ['Motivo', h.reason],
-    ['Diagnóstico Presuntivo', h.diagnosis ?? '—'],
-    ['Pagamento', h.payment_source === 'health_plan' ? 'Plano de Saúde' : 'Particular'],
+    [t('internacaoDetail.resumo.patient'), h.patient?.name],
+    [t('internacaoDetail.resumo.species'), `${h.patient?.species ?? ''}${h.patient?.breed ? ` — ${h.patient.breed}` : ''}`],
+    [t('internacaoDetail.resumo.tutor'), h.patient?.tutor?.name ?? '—'],
+    [t('internacaoDetail.resumo.veterinarian'), h.veterinarian?.name],
+    [t('internacaoDetail.resumo.admission'), new Date(h.admission_date).toLocaleString('pt-BR')],
+    [t('internacaoDetail.resumo.box'), h.box_number ?? '—'],
+    [t('internacaoDetail.resumo.reason'), h.reason],
+    [t('internacaoDetail.resumo.diagnosis'), h.diagnosis ?? '—'],
+    [t('internacaoDetail.resumo.payment'), h.payment_source === 'health_plan' ? t('internacaoDetail.resumo.healthPlan') : t('internacaoDetail.resumo.private')],
     // 3.3 — diária só para papéis com acesso financeiro
-    ...(canSee ? ([['Diária', fmt(Number(h.daily_rate))]] as Array<[string, string]>) : []),
+    ...(canSee ? ([[t('internacaoDetail.resumo.dailyRate'), fmt(Number(h.daily_rate))]] as Array<[string, string]>) : []),
   ];
   return (
     <div className="grid gap-4 sm:grid-cols-2">
@@ -94,33 +84,19 @@ function ResumoTab({ h, canSee }: { h: Hospitalization; canSee: boolean }) {
       ))}
       {h.belongings && (
         <div className="col-span-2 space-y-0.5">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Pertences</p>
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('internacaoDetail.resumo.belongings')}</p>
           <p className="text-sm whitespace-pre-wrap">{h.belongings}</p>
         </div>
       )}
       {h.notes && (
         <div className="col-span-2 space-y-0.5">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Observações</p>
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{t('internacaoDetail.resumo.notes')}</p>
           <p className="text-sm whitespace-pre-wrap">{h.notes}</p>
         </div>
       )}
     </div>
   );
 }
-
-/** Rótulos do enum de status vindo do backend. */
-const HOSP_STATUS_LABELS: Record<string, string> = {
-  active: 'Internado',
-  discharged: 'Alta',
-  transferred: 'Transferido',
-  deceased: 'Óbito',
-};
-
-const SEVERITY_LABELS: Record<string, string> = {
-  stable: 'Estável',
-  attention: 'Atenção',
-  critical: 'Crítico',
-};
 
 const SEVERITY_STYLES: Record<string, string> = {
   stable: 'bg-green-100 text-green-700 border border-green-200',
@@ -129,6 +105,17 @@ const SEVERITY_STYLES: Record<string, string> = {
 };
 
 function CustosTab({ hospitalizationId, status }: { hospitalizationId: string; status: string }) {
+  const { t } = useTranslation();
+  const fmt = useCurrencyFormatter();
+  const COST_TYPE_LABELS: Record<string, string> = {
+    daily_rate: t('internacaoDetail.costType.dailyRate'),
+    material: t('internacaoDetail.costType.material'),
+    medication: t('internacaoDetail.costType.medication'),
+    procedure: t('internacaoDetail.costType.procedure'),
+    exam: t('internacaoDetail.costType.exam'),
+    anesthesia: t('internacaoDetail.costType.anesthesia'),
+    other: t('internacaoDetail.costType.other'),
+  };
   const { data: costs = [], isLoading: loadingCosts } = useHospitalizationCostsQuery(hospitalizationId);
   const { data: summary } = useHospitalizationCostSummaryQuery(hospitalizationId);
   const loading = loadingCosts;
@@ -152,7 +139,7 @@ function CustosTab({ hospitalizationId, status }: { hospitalizationId: string; s
       await addCostMutation.mutateAsync({ hospitalizationId, payload: form });
       setOpenAdd(false);
     } catch {
-      toast.error('Erro ao adicionar');
+      toast.error(t('internacaoDetail.costs.addError'));
     }
   };
 
@@ -160,7 +147,7 @@ function CustosTab({ hospitalizationId, status }: { hospitalizationId: string; s
     try {
       await deleteCostMutation.mutateAsync({ hospitalizationId, costId });
     } catch {
-      toast.error('Erro ao remover');
+      toast.error(t('internacaoDetail.costs.removeError'));
     }
   };
 
@@ -174,7 +161,7 @@ function CustosTab({ hospitalizationId, status }: { hospitalizationId: string; s
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      toast.error('Erro ao gerar fatura');
+      toast.error(t('internacaoDetail.costs.invoiceError'));
     }
   };
 
@@ -185,9 +172,9 @@ function CustosTab({ hospitalizationId, status }: { hospitalizationId: string; s
       {summary && (
         <div className="grid gap-3 sm:grid-cols-3">
           {[
-            { label: 'Total Geral', value: summary.total_gross, color: 'text-foreground' },
-            { label: 'Coberto pelo Plano', value: summary.plan_coverage, color: 'text-green-600' },
-            { label: 'Devido pelo Responsável', value: summary.patient_responsibility, color: 'text-blue-600' },
+            { label: t('internacaoDetail.costs.totalGeneral'), value: summary.total_gross, color: 'text-foreground' },
+            { label: t('internacaoDetail.costs.coveredByPlan'), value: summary.plan_coverage, color: 'text-green-600' },
+            { label: t('internacaoDetail.costs.dueByGuardian'), value: summary.patient_responsibility, color: 'text-blue-600' },
           ].map(({ label, value, color }) => (
             <Card key={label}>
               <CardContent className="p-4">
@@ -202,18 +189,18 @@ function CustosTab({ hospitalizationId, status }: { hospitalizationId: string; s
       <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-between">
         <Button size="sm" variant="outline" onClick={() => setOpenAdd(true)} className="w-full sm:w-auto">
           <Plus className="mr-2 size-4" />
-          Adicionar Item
+          {t('internacaoDetail.costs.addItem')}
         </Button>
         {status === 'discharged' && (
           <Button size="sm" onClick={generateInvoice} className="w-full sm:w-auto">
             <Download className="mr-2 size-4" />
-            Gerar Fatura
+            {t('internacaoDetail.costs.generateInvoice')}
           </Button>
         )}
       </div>
 
       {costs.length === 0 ? (
-        <p className="py-8 text-center text-sm text-muted-foreground">Nenhum item de custo registrado.</p>
+        <p className="py-8 text-center text-sm text-muted-foreground">{t('internacaoDetail.costs.empty')}</p>
       ) : (
         <>
           {/* Desktop / tablet: tabela */}
@@ -221,13 +208,13 @@ function CustosTab({ hospitalizationId, status }: { hospitalizationId: string; s
             <Table>
               <TableHeader>
                 <TableRow className="border-b border-gray-300 h-15">
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Data</TableHead>
-                  <TableHead>Descrição</TableHead>
-                  <TableHead className="text-right">Qtd</TableHead>
-                  <TableHead className="text-right">Unit.</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
-                  <TableHead className="text-right">Plano</TableHead>
+                  <TableHead>{t('internacaoDetail.costs.table.type')}</TableHead>
+                  <TableHead>{t('internacaoDetail.costs.table.date')}</TableHead>
+                  <TableHead>{t('internacaoDetail.costs.table.description')}</TableHead>
+                  <TableHead className="text-right">{t('internacaoDetail.costs.table.quantity')}</TableHead>
+                  <TableHead className="text-right">{t('internacaoDetail.costs.table.unit')}</TableHead>
+                  <TableHead className="text-right">{t('internacaoDetail.costs.table.total')}</TableHead>
+                  <TableHead className="text-right">{t('internacaoDetail.costs.table.plan')}</TableHead>
                   <TableHead></TableHead>
                 </TableRow>
               </TableHeader>
@@ -273,24 +260,24 @@ function CustosTab({ hospitalizationId, status }: { hospitalizationId: string; s
                 </div>
                 <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
                   <div>
-                    <p className="text-xs text-muted-foreground">Data</p>
+                    <p className="text-xs text-muted-foreground">{t('internacaoDetail.costs.table.date')}</p>
                     <p>{new Date(c.date).toLocaleDateString('pt-BR')}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Qtd</p>
+                    <p className="text-xs text-muted-foreground">{t('internacaoDetail.costs.table.quantity')}</p>
                     <p>{c.quantity}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Unit.</p>
+                    <p className="text-xs text-muted-foreground">{t('internacaoDetail.costs.table.unit')}</p>
                     <p className="tabular-nums">{fmt(Number(c.unit_price))}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Total</p>
+                    <p className="text-xs text-muted-foreground">{t('internacaoDetail.costs.table.total')}</p>
                     <p className="font-medium tabular-nums">{fmt(Number(c.total_price))}</p>
                   </div>
                   {c.covered_by_plan && (
                     <div className="col-span-2">
-                      <p className="text-xs text-muted-foreground">Plano</p>
+                      <p className="text-xs text-muted-foreground">{t('internacaoDetail.costs.table.plan')}</p>
                       <p className="tabular-nums text-green-600">{fmt(Number(c.plan_coverage_amount))}</p>
                     </div>
                   )}
@@ -304,20 +291,20 @@ function CustosTab({ hospitalizationId, status }: { hospitalizationId: string; s
       <DashboardCreateFormDialog
         open={openAdd}
         onOpenChange={setOpenAdd}
-        title="Adicionar Item de Custo"
+        title={t('internacaoDetail.costs.dialog.title')}
         contentClassName="modal-responsive"
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button variant="outline" className="border border-gray-300" onClick={() => setOpenAdd(false)}>
-              Cancelar
+              {t('internacaoDetail.costs.dialog.cancel')}
             </Button>
-            <Button onClick={addCost} className="bg-primary">Adicionar</Button>
+            <Button onClick={addCost} className="bg-primary">{t('internacaoDetail.costs.dialog.submit')}</Button>
           </div>
         }
       >
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label>Tipo</Label>
+            <Label>{t('internacaoDetail.costs.dialog.type')}</Label>
             <Select value={form.type} onValueChange={(v) => setForm((f) => ({ ...f, type: v }))}>
               <SelectTrigger>
                 <SelectValue />
@@ -332,7 +319,7 @@ function CustosTab({ hospitalizationId, status }: { hospitalizationId: string; s
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>Data</Label>
+            <Label>{t('internacaoDetail.costs.dialog.date')}</Label>
             <Input
               type="date"
               value={form.date}
@@ -340,14 +327,14 @@ function CustosTab({ hospitalizationId, status }: { hospitalizationId: string; s
             />
           </div>
           <div className="col-span-2 space-y-2">
-            <Label>Descrição</Label>
+            <Label>{t('internacaoDetail.costs.dialog.description')}</Label>
             <Input
               value={form.description}
               onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
             />
           </div>
           <div className="space-y-2">
-            <Label>Quantidade</Label>
+            <Label>{t('internacaoDetail.costs.dialog.quantity')}</Label>
             <Input
               type="number"
               step="0.001"
@@ -356,7 +343,7 @@ function CustosTab({ hospitalizationId, status }: { hospitalizationId: string; s
             />
           </div>
           <div className="space-y-2">
-            <Label>Valor Unitário</Label>
+            <Label>{t('internacaoDetail.costs.dialog.unitPrice')}</Label>
             <Input
               type="number"
               step="0.01"
@@ -371,6 +358,7 @@ function CustosTab({ hospitalizationId, status }: { hospitalizationId: string; s
 }
 
 function OcorrenciasTab({ hospitalizationId }: { hospitalizationId: string }) {
+  const { t } = useTranslation();
   const { data: evolutions = [], isLoading: loading } = useHospitalizationEvolutionsQuery(hospitalizationId);
   const [openNew, setOpenNew] = useState(false);
   const [form, setForm] = useState({
@@ -400,7 +388,7 @@ function OcorrenciasTab({ hospitalizationId }: { hospitalizationId: string }) {
       });
       setOpenNew(false);
     } catch {
-      toast.error('Erro ao registrar');
+      toast.error(t('internacaoDetail.evolutions.registerError'));
     }
   };
 
@@ -414,7 +402,7 @@ function OcorrenciasTab({ hospitalizationId }: { hospitalizationId: string }) {
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      toast.error('Erro ao exportar');
+      toast.error(t('internacaoDetail.evolutions.exportError'));
     }
   };
 
@@ -425,17 +413,17 @@ function OcorrenciasTab({ hospitalizationId }: { hospitalizationId: string }) {
       <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-between">
         <Button size="sm" variant="outline" onClick={() => setOpenNew(true)} className="w-full sm:w-auto">
           <Plus className="mr-2 size-4" />
-          Nova Ocorrência
+          {t('internacaoDetail.evolutions.newEvolution')}
         </Button>
         <Button size="sm" variant="ghost" onClick={downloadPdf} className="w-full sm:w-auto">
           <Download className="mr-2 size-4" />
-          Exportar Ficha PDF
+          {t('internacaoDetail.evolutions.exportRecord')}
         </Button>
       </div>
 
       <div className="space-y-3">
         {evolutions.length === 0 ? (
-          <p className="py-12 text-center text-muted-foreground">Nenhuma ocorrência registrada</p>
+          <p className="py-12 text-center text-muted-foreground">{t('internacaoDetail.evolutions.empty')}</p>
         ) : (
           evolutions.map((e) => (
             <Card key={e.id}>
@@ -452,22 +440,22 @@ function OcorrenciasTab({ hospitalizationId }: { hospitalizationId: string }) {
                 <div className="flex flex-wrap gap-2 pt-1">
                   {e.heart_rate && (
                     <Badge variant="secondary" className="text-xs">
-                      FC: {e.heart_rate}bpm
+                      {t('internacaoDetail.vitals.heartRate', { value: e.heart_rate })}
                     </Badge>
                   )}
                   {e.temperature_c && (
                     <Badge variant="secondary" className="text-xs">
-                      Temp: {e.temperature_c}°C
+                      {t('internacaoDetail.vitals.temperature', { value: e.temperature_c })}
                     </Badge>
                   )}
                   {e.spo2_percent && (
                     <Badge variant="secondary" className="text-xs">
-                      SpO2: {e.spo2_percent}%
+                      {t('internacaoDetail.vitals.spo2', { value: e.spo2_percent })}
                     </Badge>
                   )}
                   {e.respiratory_rate && (
                     <Badge variant="secondary" className="text-xs">
-                      FR: {e.respiratory_rate}mpm
+                      {t('internacaoDetail.vitals.respiratoryRate', { value: e.respiratory_rate })}
                     </Badge>
                   )}
                 </div>
@@ -476,17 +464,17 @@ function OcorrenciasTab({ hospitalizationId }: { hospitalizationId: string }) {
                 <CardContent className="pt-0 space-y-1">
                   {e.subjective && (
                     <p className="text-sm">
-                      <span className="font-medium">S:</span> {e.subjective}
+                      <span className="font-medium">{t('internacaoDetail.evolutions.soap.subjective')}</span> {e.subjective}
                     </p>
                   )}
                   {e.assessment && (
                     <p className="text-sm">
-                      <span className="font-medium">A:</span> {e.assessment}
+                      <span className="font-medium">{t('internacaoDetail.evolutions.soap.assessment')}</span> {e.assessment}
                     </p>
                   )}
                   {e.plan && (
                     <p className="text-sm">
-                      <span className="font-medium">P:</span> {e.plan}
+                      <span className="font-medium">{t('internacaoDetail.evolutions.soap.plan')}</span> {e.plan}
                     </p>
                   )}
                 </CardContent>
@@ -499,35 +487,35 @@ function OcorrenciasTab({ hospitalizationId }: { hospitalizationId: string }) {
       <DashboardCreateFormDialog
         open={openNew}
         onOpenChange={setOpenNew}
-        title="Nova Ocorrência"
+        title={t('internacaoDetail.evolutions.dialog.title')}
         contentClassName="modal-responsive"
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button variant="outline" className="border border-gray-300" onClick={() => setOpenNew(false)}>
-              Cancelar
+              {t('internacaoDetail.evolutions.dialog.cancel')}
             </Button>
-            <Button onClick={createOcorrencia} className="bg-primary">Registrar</Button>
+            <Button onClick={createOcorrencia} className="bg-primary">{t('internacaoDetail.evolutions.dialog.submit')}</Button>
           </div>
         }
       >
         <div className="space-y-4 md:space-y-6">
           <div className="space-y-2">
-            <Label>Tipo</Label>
+            <Label>{t('internacaoDetail.evolutions.dialog.type')}</Label>
             <Select value={form.evolution_type} onValueChange={(v) => setForm((f) => ({ ...f, evolution_type: v }))}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="clinical">Clínica</SelectItem>
-                <SelectItem value="procedure">Procedimento</SelectItem>
-                <SelectItem value="nursing">Enfermagem</SelectItem>
-                <SelectItem value="observation">Observação</SelectItem>
+                <SelectItem value="clinical">{t('internacaoDetail.evolutions.dialog.typeClinical')}</SelectItem>
+                <SelectItem value="procedure">{t('internacaoDetail.evolutions.dialog.typeProcedure')}</SelectItem>
+                <SelectItem value="nursing">{t('internacaoDetail.evolutions.dialog.typeNursing')}</SelectItem>
+                <SelectItem value="observation">{t('internacaoDetail.evolutions.dialog.typeObservation')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div className="space-y-2">
-              <Label>FC (bpm)</Label>
+              <Label>{t('internacaoDetail.evolutions.dialog.heartRate')}</Label>
               <Input
                 type="number"
                 value={form.heart_rate}
@@ -535,7 +523,7 @@ function OcorrenciasTab({ hospitalizationId }: { hospitalizationId: string }) {
               />
             </div>
             <div className="space-y-2">
-              <Label>Temp. (°C)</Label>
+              <Label>{t('internacaoDetail.evolutions.dialog.temperature')}</Label>
               <Input
                 type="number"
                 step="0.1"
@@ -544,7 +532,7 @@ function OcorrenciasTab({ hospitalizationId }: { hospitalizationId: string }) {
               />
             </div>
             <div className="space-y-2">
-              <Label>SpO2 (%)</Label>
+              <Label>{t('internacaoDetail.evolutions.dialog.spo2')}</Label>
               <Input
                 type="number"
                 value={form.spo2_percent}
@@ -556,12 +544,12 @@ function OcorrenciasTab({ hospitalizationId }: { hospitalizationId: string }) {
             <div key={field} className="space-y-2">
               <Label>
                 {field === 'subjective'
-                  ? 'Subjetivo'
+                  ? t('internacaoDetail.evolutions.dialog.subjective')
                   : field === 'objective'
-                    ? 'Objetivo'
+                    ? t('internacaoDetail.evolutions.dialog.objective')
                     : field === 'assessment'
-                      ? 'Avaliação'
-                      : 'Plano'}
+                      ? t('internacaoDetail.evolutions.dialog.assessment')
+                      : t('internacaoDetail.evolutions.dialog.plan')}
               </Label>
               <Textarea
                 rows={2}
@@ -577,6 +565,16 @@ function OcorrenciasTab({ hospitalizationId }: { hospitalizationId: string }) {
 }
 
 function MedicacoesTab({ hospitalizationId }: { hospitalizationId: string }) {
+  const { t } = useTranslation();
+  const ROUTE_LABELS: Record<string, string> = {
+    oral: t('internacaoDetail.medications.routes.oral'),
+    iv: t('internacaoDetail.medications.routes.iv'),
+    im: t('internacaoDetail.medications.routes.im'),
+    sc: t('internacaoDetail.medications.routes.sc'),
+    topical: t('internacaoDetail.medications.routes.topical'),
+    inhalation: t('internacaoDetail.medications.routes.inhalation'),
+    other: t('internacaoDetail.medications.routes.other'),
+  };
   const { data: schedules = [], isLoading: loading } = useHospitalizationMedicationsQuery(hospitalizationId);
   const [openNew, setOpenNew] = useState(false);
   const [form, setForm] = useState({
@@ -597,7 +595,7 @@ function MedicacoesTab({ hospitalizationId }: { hospitalizationId: string }) {
       await prescribeMutation.mutateAsync({ hospitalizationId, payload: form });
       setOpenNew(false);
     } catch {
-      toast.error('Erro ao prescrever');
+      toast.error(t('internacaoDetail.medications.prescribeError'));
     }
   };
 
@@ -605,7 +603,7 @@ function MedicacoesTab({ hospitalizationId }: { hospitalizationId: string }) {
     try {
       await confirmAdminMutation.mutateAsync({ hospitalizationId, adminId });
     } catch {
-      toast.error('Erro ao confirmar');
+      toast.error(t('internacaoDetail.medications.confirmError'));
     }
   };
 
@@ -619,7 +617,7 @@ function MedicacoesTab({ hospitalizationId }: { hospitalizationId: string }) {
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      toast.error('Erro ao exportar kardex');
+      toast.error(t('internacaoDetail.medications.exportError'));
     }
   };
 
@@ -630,16 +628,16 @@ function MedicacoesTab({ hospitalizationId }: { hospitalizationId: string }) {
       <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:justify-between">
         <Button size="sm" variant="outline" onClick={() => setOpenNew(true)} className="w-full sm:w-auto">
           <Plus className="mr-2 size-4" />
-          Prescrever Medicação
+          {t('internacaoDetail.medications.prescribe')}
         </Button>
         <Button size="sm" variant="ghost" onClick={downloadKardex} className="w-full sm:w-auto">
           <Download className="mr-2 size-4" />
-          Exportar Kardex PDF
+          {t('internacaoDetail.medications.exportKardex')}
         </Button>
       </div>
 
       {schedules.length === 0 ? (
-        <p className="py-12 text-center text-muted-foreground">Nenhuma medicação prescrita</p>
+        <p className="py-12 text-center text-muted-foreground">{t('internacaoDetail.medications.empty')}</p>
       ) : (
         <div className="space-y-3">
           {schedules.map((s) => {
@@ -652,12 +650,12 @@ function MedicacoesTab({ hospitalizationId }: { hospitalizationId: string }) {
                     <p className="font-medium">{s.medication_name}</p>
                     {overdue.length > 0 && (
                       <Badge variant="destructive">
-                        {overdue.length} atrasada{overdue.length > 1 ? 's' : ''}
+                        {t('internacaoDetail.medications.overdue', { count: overdue.length })}
                       </Badge>
                     )}
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    {s.dose} — {s.route} — cada {s.frequency_hours}h
+                    {t('internacaoDetail.medications.doseRouteFrequency', { dose: s.dose, route: s.route, hours: s.frequency_hours })}
                   </p>
                 </CardHeader>
                 {overdue.length > 0 && (
@@ -671,7 +669,7 @@ function MedicacoesTab({ hospitalizationId }: { hospitalizationId: string }) {
                           <span className="text-red-700">{new Date(a.scheduled_datetime).toLocaleString('pt-BR')}</span>
                           <Button size="sm" variant="outline" className="h-6 text-xs" onClick={() => confirm(a.id)}>
                             <Check className="mr-1 size-3" />
-                            Confirmar
+                            {t('internacaoDetail.medications.confirm')}
                           </Button>
                         </div>
                       ))}
@@ -687,35 +685,35 @@ function MedicacoesTab({ hospitalizationId }: { hospitalizationId: string }) {
       <DashboardCreateFormDialog
         open={openNew}
         onOpenChange={setOpenNew}
-        title="Prescrever Medicação"
+        title={t('internacaoDetail.medications.dialog.title')}
         contentClassName="modal-responsive"
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button variant="outline" className="border border-gray-300" onClick={() => setOpenNew(false)}>
-              Cancelar
+              {t('internacaoDetail.medications.dialog.cancel')}
             </Button>
-            <Button onClick={prescribe} className="bg-primary">Prescrever</Button>
+            <Button onClick={prescribe} className="bg-primary">{t('internacaoDetail.medications.dialog.submit')}</Button>
           </div>
         }
       >
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="sm:col-span-2 space-y-2">
-            <Label>Medicamento *</Label>
+            <Label>{t('internacaoDetail.medications.dialog.medication')}</Label>
             <Input
               value={form.medication_name}
               onChange={(e) => setForm((f) => ({ ...f, medication_name: e.target.value }))}
             />
           </div>
           <div className="space-y-2">
-            <Label>Dose *</Label>
+            <Label>{t('internacaoDetail.medications.dialog.dose')}</Label>
             <Input
               value={form.dose}
               onChange={(e) => setForm((f) => ({ ...f, dose: e.target.value }))}
-              placeholder="Ex: 10mg/kg"
+              placeholder={t('internacaoDetail.medications.dialog.dosePlaceholder')}
             />
           </div>
           <div className="space-y-2">
-            <Label>Via</Label>
+            <Label>{t('internacaoDetail.medications.dialog.route')}</Label>
             <Select value={form.route} onValueChange={(v) => setForm((f) => ({ ...f, route: v }))}>
               <SelectTrigger>
                 <SelectValue />
@@ -723,14 +721,14 @@ function MedicacoesTab({ hospitalizationId }: { hospitalizationId: string }) {
               <SelectContent>
                 {['oral', 'iv', 'im', 'sc', 'topical', 'inhalation', 'other'].map((r) => (
                   <SelectItem key={r} value={r}>
-                    {r.toUpperCase()}
+                    {ROUTE_LABELS[r]}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>Frequência (a cada X horas)</Label>
+            <Label>{t('internacaoDetail.medications.dialog.frequency')}</Label>
             <Input
               type="number"
               value={form.frequency_hours}
@@ -738,7 +736,7 @@ function MedicacoesTab({ hospitalizationId }: { hospitalizationId: string }) {
             />
           </div>
           <div className="space-y-2">
-            <Label>Início</Label>
+            <Label>{t('internacaoDetail.medications.dialog.start')}</Label>
             <Input
               type="datetime-local"
               value={form.start_datetime}
@@ -755,6 +753,7 @@ function MedicacoesTab({ hospitalizationId }: { hospitalizationId: string }) {
 /* ---- SBAR (3.1) ---- */
 
 function SbarTab({ hospitalizationId, status }: { hospitalizationId: string; status: string }) {
+  const { t } = useTranslation();
   const { data: reports = [], isLoading: loading } = useHospitalizationSbarReportsQuery(hospitalizationId);
   const [reviewingId, setReviewingId] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -767,20 +766,20 @@ function SbarTab({ hospitalizationId, status }: { hospitalizationId: string; sta
 
   const handleCreate = async () => {
     if (!form.suspicion && !form.brief_history && !form.assessment && !form.recommendations) {
-      toast.error('Preencha ao menos um campo do SBAR');
+      toast.error(t('internacaoDetail.sbar.fillAtLeastOne'));
       return;
     }
     try {
       await createReportMutation.mutateAsync({ hospitalizationId, payload: form });
       setForm(emptyForm());
-    } catch { toast.error('Erro ao salvar relatório'); }
+    } catch { toast.error(t('internacaoDetail.sbar.saveError')); }
   };
 
   const handleAiReview = async (id: string) => {
     setReviewingId(id);
     try {
       await aiReviewMutation.mutateAsync({ hospitalizationId, reportId: id });
-    } catch { toast.error('Erro ao revisar com IA'); } finally { setReviewingId(null); }
+    } catch { toast.error(t('internacaoDetail.sbar.aiReviewError')); } finally { setReviewingId(null); }
   };
 
   const toggle = (id: string) => setExpanded((prev) => {
@@ -796,32 +795,32 @@ function SbarTab({ hospitalizationId, status }: { hospitalizationId: string; sta
       {isActive && (
         <Card>
           <CardHeader className="pb-2">
-            <h3 className="text-sm font-semibold">Relatório SBAR do dia</h3>
+            <h3 className="text-sm font-semibold">{t('internacaoDetail.sbar.todayReport')}</h3>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="space-y-1">
-              <Label>Data</Label>
+              <Label>{t('internacaoDetail.sbar.date')}</Label>
               <Input type="date" value={form.report_date} onChange={(e) => setForm((f) => ({ ...f, report_date: e.target.value }))} />
             </div>
             <div className="space-y-1">
-              <Label>S — Suspeita / hipótese diagnóstica</Label>
+              <Label>{t('internacaoDetail.sbar.suspicion')}</Label>
               <Textarea rows={2} value={form.suspicion} onChange={(e) => setForm((f) => ({ ...f, suspicion: e.target.value }))} />
             </div>
             <div className="space-y-1">
-              <Label>B — Breve histórico</Label>
+              <Label>{t('internacaoDetail.sbar.briefHistory')}</Label>
               <Textarea rows={2} value={form.brief_history} onChange={(e) => setForm((f) => ({ ...f, brief_history: e.target.value }))} />
             </div>
             <div className="space-y-1">
-              <Label>A — Atualização / evolução do dia</Label>
+              <Label>{t('internacaoDetail.sbar.assessment')}</Label>
               <Textarea rows={2} value={form.assessment} onChange={(e) => setForm((f) => ({ ...f, assessment: e.target.value }))} />
             </div>
             <div className="space-y-1">
-              <Label>R — Recomendações / próximos passos</Label>
+              <Label>{t('internacaoDetail.sbar.recommendations')}</Label>
               <Textarea rows={2} value={form.recommendations} onChange={(e) => setForm((f) => ({ ...f, recommendations: e.target.value }))} />
             </div>
             <div className="flex justify-end">
               <Button onClick={handleCreate} disabled={saving}>
-                {saving && <Loader2 className="mr-1 size-4 animate-spin" />} Salvar relatório
+                {saving && <Loader2 className="mr-1 size-4 animate-spin" />} {t('internacaoDetail.sbar.save')}
               </Button>
             </div>
           </CardContent>
@@ -829,11 +828,11 @@ function SbarTab({ hospitalizationId, status }: { hospitalizationId: string; sta
       )}
 
       <div className="space-y-2">
-        <h3 className="text-sm font-semibold">Relatórios anteriores</h3>
+        <h3 className="text-sm font-semibold">{t('internacaoDetail.sbar.previousReports')}</h3>
         {loading ? (
           <Skeleton className="h-24 w-full" />
         ) : reports.length === 0 ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">Nenhum relatório registrado.</p>
+          <p className="py-6 text-center text-sm text-muted-foreground">{t('internacaoDetail.sbar.empty')}</p>
         ) : (
           reports.map((r) => {
             const open = expanded.has(r.id);
@@ -842,19 +841,19 @@ function SbarTab({ hospitalizationId, status }: { hospitalizationId: string; sta
                 <button type="button" onClick={() => toggle(r.id)} className="flex w-full flex-wrap items-center gap-3 px-4 py-3 text-left hover:bg-slate-50">
                   <span className="text-sm font-medium">{new Date(r.report_date).toLocaleDateString('pt-BR')}</span>
                   {r.author?.name && <span className="text-sm text-muted-foreground">{r.author.name}</span>}
-                  {r.ai_reviewed && <Badge variant="secondary" className="gap-1"><Sparkles className="size-3" /> IA</Badge>}
+                  {r.ai_reviewed && <Badge variant="secondary" className="gap-1"><Sparkles className="size-3" /> {t('internacaoDetail.sbar.aiBadge')}</Badge>}
                   <ChevronDown className={`ml-auto size-4 transition-transform ${open ? 'rotate-180' : ''}`} />
                 </button>
                 {open && (
                   <div className="space-y-2 border-t border-slate-200 px-4 py-3 text-sm">
-                    <div><span className="font-semibold">S:</span> {r.suspicion || '—'}</div>
-                    <div><span className="font-semibold">B:</span> {r.brief_history || '—'}</div>
-                    <div><span className="font-semibold">A:</span> {r.assessment || '—'}</div>
-                    <div><span className="font-semibold">R:</span> {r.recommendations || '—'}</div>
+                    <div><span className="font-semibold">{t('internacaoDetail.sbar.fields.s')}</span> {r.suspicion || '—'}</div>
+                    <div><span className="font-semibold">{t('internacaoDetail.sbar.fields.b')}</span> {r.brief_history || '—'}</div>
+                    <div><span className="font-semibold">{t('internacaoDetail.sbar.fields.a')}</span> {r.assessment || '—'}</div>
+                    <div><span className="font-semibold">{t('internacaoDetail.sbar.fields.r')}</span> {r.recommendations || '—'}</div>
                     <div className="pt-1">
                       <Button size="sm" variant="outline" onClick={() => handleAiReview(r.id)} disabled={reviewingId === r.id}>
                         {reviewingId === r.id ? <Loader2 className="mr-1 size-3 animate-spin" /> : <Sparkles className="mr-1 size-3" />}
-                        Revisar com IA
+                        {t('internacaoDetail.sbar.reviewWithAi')}
                       </Button>
                     </div>
                   </div>
@@ -871,6 +870,7 @@ function SbarTab({ hospitalizationId, status }: { hospitalizationId: string; sta
 /* ---- Visitas (3.2) ---- */
 
 function VisitasTab({ hospitalizationId, status }: { hospitalizationId: string; status: string }) {
+  const { t } = useTranslation();
   const { data: visits = [], isLoading: loading } = useHospitalizationVisitsQuery(hospitalizationId);
   const emptyForm = () => ({ visited_at: new Date().toISOString().slice(0, 16), visitor_name: '', notes: '' });
   const [form, setForm] = useState(emptyForm());
@@ -879,11 +879,11 @@ function VisitasTab({ hospitalizationId, status }: { hospitalizationId: string; 
   const saving = createVisitMutation.isPending;
 
   const handleCreate = async () => {
-    if (!form.visitor_name && !form.notes) { toast.error('Informe o visitante ou uma observação'); return; }
+    if (!form.visitor_name && !form.notes) { toast.error(t('internacaoDetail.visits.fillRequired')); return; }
     try {
       await createVisitMutation.mutateAsync({ hospitalizationId, payload: form });
       setForm(emptyForm());
-    } catch { toast.error('Erro ao registrar visita'); }
+    } catch { toast.error(t('internacaoDetail.visits.registerError')); }
   };
 
   return (
@@ -891,26 +891,26 @@ function VisitasTab({ hospitalizationId, status }: { hospitalizationId: string; 
       {status === 'active' && (
         <Card>
           <CardHeader className="pb-2">
-            <h3 className="text-sm font-semibold">Registrar visita</h3>
+            <h3 className="text-sm font-semibold">{t('internacaoDetail.visits.register')}</h3>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1">
-                <Label>Data/Hora</Label>
+                <Label>{t('internacaoDetail.visits.dateTime')}</Label>
                 <Input type="datetime-local" value={form.visited_at} onChange={(e) => setForm((f) => ({ ...f, visited_at: e.target.value }))} />
               </div>
               <div className="space-y-1">
-                <Label>Visitante</Label>
-                <Input value={form.visitor_name} onChange={(e) => setForm((f) => ({ ...f, visitor_name: e.target.value }))} placeholder="Nome do tutor/visitante" />
+                <Label>{t('internacaoDetail.visits.visitor')}</Label>
+                <Input value={form.visitor_name} onChange={(e) => setForm((f) => ({ ...f, visitor_name: e.target.value }))} placeholder={t('internacaoDetail.visits.visitorPlaceholder')} />
               </div>
             </div>
             <div className="space-y-1">
-              <Label>O que foi conversado</Label>
+              <Label>{t('internacaoDetail.visits.notes')}</Label>
               <Textarea rows={2} value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
             </div>
             <div className="flex justify-end">
               <Button onClick={handleCreate} disabled={saving}>
-                {saving && <Loader2 className="mr-1 size-4 animate-spin" />} Registrar visita
+                {saving && <Loader2 className="mr-1 size-4 animate-spin" />} {t('internacaoDetail.visits.register')}
               </Button>
             </div>
           </CardContent>
@@ -918,11 +918,11 @@ function VisitasTab({ hospitalizationId, status }: { hospitalizationId: string; 
       )}
 
       <div className="space-y-2">
-        <h3 className="text-sm font-semibold">Histórico de visitas</h3>
+        <h3 className="text-sm font-semibold">{t('internacaoDetail.visits.history')}</h3>
         {loading ? (
           <Skeleton className="h-24 w-full" />
         ) : visits.length === 0 ? (
-          <p className="py-6 text-center text-sm text-muted-foreground">Nenhuma visita registrada.</p>
+          <p className="py-6 text-center text-sm text-muted-foreground">{t('internacaoDetail.visits.empty')}</p>
         ) : (
           <div className="space-y-2">
             {visits.map((v) => (
@@ -930,7 +930,7 @@ function VisitasTab({ hospitalizationId, status }: { hospitalizationId: string; 
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-medium">{new Date(v.visited_at).toLocaleString('pt-BR')}</span>
                   {v.visitor_name && <span className="text-muted-foreground">· {v.visitor_name}</span>}
-                  {v.registrar?.name && <span className="ml-auto text-xs text-muted-foreground">registrado por {v.registrar.name}</span>}
+                  {v.registrar?.name && <span className="ml-auto text-xs text-muted-foreground">{t('internacaoDetail.visits.registeredBy', { name: v.registrar.name })}</span>}
                 </div>
                 {v.notes && <p className="mt-1 whitespace-pre-wrap text-muted-foreground">{v.notes}</p>}
               </div>
@@ -957,6 +957,7 @@ function RelatorioMedicoTab({
   veterinarianId: string;
   onLinked: () => void;
 }) {
+  const { t } = useTranslation();
   const { data: record, isLoading: loading } = useMedicalRecordQuery(medicalRecordId);
   const [form, setForm] = useState({ chief_complaint: '', anamnesis: '', diagnosis: '', observations: '' });
 
@@ -985,23 +986,23 @@ function RelatorioMedicoTab({
       });
       await linkRecordMutation.mutateAsync({ id: hospitalizationId, medicalRecordId: created.id });
       onLinked();
-    } catch { toast.error('Erro ao criar ficha de internação'); }
+    } catch { toast.error(t('internacaoDetail.medicalRecord.createError')); }
   };
 
   const handleSave = async () => {
     if (!medicalRecordId) return;
     try {
       await updateRecordMutation.mutateAsync({ id: medicalRecordId, payload: form });
-    } catch { toast.error('Erro ao salvar ficha'); }
+    } catch { toast.error(t('internacaoDetail.medicalRecord.saveError')); }
   };
 
   if (!medicalRecordId) {
     return (
       <Card>
         <CardContent className="flex flex-col items-center gap-3 p-8 text-center">
-          <p className="text-sm text-muted-foreground">Nenhuma ficha vinculada a esta internação.</p>
+          <p className="text-sm text-muted-foreground">{t('internacaoDetail.medicalRecord.noneLinked')}</p>
           <Button onClick={handleCreate} disabled={creating}>
-            {creating && <Loader2 className="mr-1 size-4 animate-spin" />} Criar ficha de internação
+            {creating && <Loader2 className="mr-1 size-4 animate-spin" />} {t('internacaoDetail.medicalRecord.create')}
           </Button>
         </CardContent>
       </Card>
@@ -1015,32 +1016,32 @@ function RelatorioMedicoTab({
   return (
     <Card>
       <CardHeader className="flex flex-col items-start gap-2 pb-2 sm:flex-row sm:items-center sm:justify-between">
-        <h3 className="text-sm font-semibold">Ficha vinculada</h3>
+        <h3 className="text-sm font-semibold">{t('internacaoDetail.medicalRecord.linkedTitle')}</h3>
         <Button asChild size="sm" variant="outline">
-          <Link href={`/medical-records/${medicalRecordId}`}>Abrir ficha completa</Link>
+          <Link href={`/medical-records/${medicalRecordId}`}>{t('internacaoDetail.medicalRecord.openFull')}</Link>
         </Button>
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="space-y-1">
-          <Label>Queixa principal</Label>
+          <Label>{t('internacaoDetail.medicalRecord.chiefComplaint')}</Label>
           <Textarea rows={2} value={form.chief_complaint} onChange={(e) => setForm((f) => ({ ...f, chief_complaint: e.target.value }))} disabled={isClosed} />
         </div>
         <div className="space-y-1">
-          <Label>Anamnese</Label>
+          <Label>{t('internacaoDetail.medicalRecord.anamnesis')}</Label>
           <Textarea rows={3} value={form.anamnesis} onChange={(e) => setForm((f) => ({ ...f, anamnesis: e.target.value }))} disabled={isClosed} />
         </div>
         <div className="space-y-1">
-          <Label>Diagnóstico Presuntivo</Label>
+          <Label>{t('internacaoDetail.medicalRecord.diagnosis')}</Label>
           <Textarea rows={2} value={form.diagnosis} onChange={(e) => setForm((f) => ({ ...f, diagnosis: e.target.value }))} disabled={isClosed} />
         </div>
         <div className="space-y-1">
-          <Label>Observações</Label>
+          <Label>{t('internacaoDetail.medicalRecord.observations')}</Label>
           <Textarea rows={2} value={form.observations} onChange={(e) => setForm((f) => ({ ...f, observations: e.target.value }))} disabled={isClosed} />
         </div>
         {!isClosed && (
           <div className="flex justify-end">
             <Button onClick={handleSave} disabled={saving}>
-              {saving && <Loader2 className="mr-1 size-4 animate-spin" />} Salvar
+              {saving && <Loader2 className="mr-1 size-4 animate-spin" />} {t('internacaoDetail.medicalRecord.save')}
             </Button>
           </div>
         )}
@@ -1050,6 +1051,18 @@ function RelatorioMedicoTab({
 }
 
 function HospitalizationDetailPageContent() {
+  const { t } = useTranslation();
+  const HOSP_STATUS_LABELS: Record<string, string> = {
+    active: t('internacaoDetail.status.active'),
+    discharged: t('internacaoDetail.status.discharged'),
+    transferred: t('internacaoDetail.status.transferred'),
+    deceased: t('internacaoDetail.status.deceased'),
+  };
+  const SEVERITY_LABELS: Record<string, string> = {
+    stable: t('internacaoDetail.severity.stable'),
+    attention: t('internacaoDetail.severity.attention'),
+    critical: t('internacaoDetail.severity.critical'),
+  };
   const params = useParams<{ id: string }>();
   const hospitalizationId = typeof params?.id === 'string' ? params.id : '';
   const { data: h, isLoading: loading } = useHospitalizationQuery(hospitalizationId);
@@ -1064,8 +1077,8 @@ function HospitalizationDetailPageContent() {
   const dischargeMutation = useDischargeHospitalizationMutation();
 
   useEffect(() => {
-    if (!hospitalizationId) toast.error('Internação inválida');
-  }, [hospitalizationId]);
+    if (!hospitalizationId) toast.error(t('internacaoDetail.header.invalid'));
+  }, [hospitalizationId, t]);
 
   const handleDischarge = async () => {
     if (!hospitalizationId) return;
@@ -1074,7 +1087,7 @@ function HospitalizationDetailPageContent() {
       await dischargeMutation.mutateAsync({ id: hospitalizationId, payload: dischargeForm });
       setOpenDischarge(false);
     } catch {
-      toast.error('Erro ao registrar alta');
+      toast.error(t('internacaoDetail.discharge.error'));
     }
   };
 
@@ -1087,7 +1100,7 @@ function HospitalizationDetailPageContent() {
     );
   }
 
-  if (!h) return <p className="py-16 text-center text-muted-foreground">Internação não encontrada</p>;
+  if (!h) return <p className="py-16 text-center text-muted-foreground">{t('internacaoDetail.header.notFound')}</p>;
 
   const canSee = canSeeFinancials(getStoredUserRole());
 
@@ -1095,7 +1108,7 @@ function HospitalizationDetailPageContent() {
     <div className="space-y-6">
       <Button asChild variant="ghost" size="sm">
         <Link href="/internacoes">
-          <ArrowLeft className="size-4 mr-1" /> Voltar
+          <ArrowLeft className="size-4 mr-1" /> {t('internacaoDetail.back')}
         </Link>
       </Button>
 
@@ -1121,7 +1134,7 @@ function HospitalizationDetailPageContent() {
               {h.patient?.species}
             </Badge>
             <Badge variant="secondary" className="font-normal text-muted-foreground">
-              Admissão: {new Date(h.admission_date).toLocaleDateString('pt-BR')}
+              {t('internacaoDetail.header.admission', { date: new Date(h.admission_date).toLocaleDateString('pt-BR') })}
             </Badge>
           </div>
           {h.status === 'active' && (
@@ -1129,7 +1142,7 @@ function HospitalizationDetailPageContent() {
               {/* Gravidade é avaliação clínica: quem está cuidando define, e o
                   backend carimba autor e data para a passagem de plantão. */}
               <div className="space-y-1">
-                <label className="text-xs font-medium text-muted-foreground">Gravidade clínica</label>
+                <label className="text-xs font-medium text-muted-foreground">{t('internacaoDetail.header.clinicalSeverity')}</label>
                 <div className="flex items-center gap-2">
                   <Select
                     value={h.severity ?? 'stable'}
@@ -1137,8 +1150,8 @@ function HospitalizationDetailPageContent() {
                       setSeverity.mutate(
                         { id: hospitalizationId, severity: v as 'stable' | 'attention' | 'critical' },
                         {
-                          onSuccess: () => toast.success('Gravidade atualizada.'),
-                          onError: (e) => toast.error(getApiErrorMessage(e, 'Erro ao atualizar gravidade')),
+                          onSuccess: () => toast.success(t('internacaoDetail.header.severityUpdated')),
+                          onError: (e) => toast.error(getApiErrorMessage(e, t('internacaoDetail.header.severityUpdateError'))),
                         },
                       )
                     }
@@ -1156,14 +1169,14 @@ function HospitalizationDetailPageContent() {
                   </Select>
                   {h.severity_updated_at && (
                     <span className="text-[11px] text-muted-foreground">
-                      desde {new Date(h.severity_updated_at).toLocaleString('pt-BR')}
+                      {t('internacaoDetail.header.since', { date: new Date(h.severity_updated_at).toLocaleString('pt-BR') })}
                     </span>
                   )}
                 </div>
               </div>
               <Button variant="destructive" onClick={() => setOpenDischarge(true)} className="w-full sm:w-auto">
                 <LogOut className="mr-2 size-4" />
-                Registrar Alta
+                {t('internacaoDetail.header.registerDischarge')}
               </Button>
             </div>
           )}
@@ -1173,26 +1186,26 @@ function HospitalizationDetailPageContent() {
       <Tabs defaultValue="resumo">
         <TabsList className="grid h-auto! w-full grid-cols-1 gap-1 sm:grid-cols-3 lg:grid-cols-7">
           <TabsTrigger value="resumo" className="h-auto! w-full justify-start whitespace-normal px-3 py-2 text-left leading-snug sm:justify-center sm:text-center">
-            Resumo
+            {t('internacaoDetail.tabs.resumo')}
           </TabsTrigger>
           <TabsTrigger value="ocorrencias" className="h-auto! w-full justify-start whitespace-normal px-3 py-2 text-left leading-snug sm:justify-center sm:text-center">
-            Ocorrências
+            {t('internacaoDetail.tabs.ocorrencias')}
           </TabsTrigger>
           <TabsTrigger value="relatorio-medico" className="h-auto! w-full justify-start whitespace-normal px-3 py-2 text-left leading-snug sm:justify-center sm:text-center">
-            <FileText className="mr-1 size-4 shrink-0" /> Relatório Médico
+            <FileText className="mr-1 size-4 shrink-0" /> {t('internacaoDetail.tabs.relatorioMedico')}
           </TabsTrigger>
           <TabsTrigger value="sbar" className="h-auto! w-full justify-start whitespace-normal px-3 py-2 text-left leading-snug sm:justify-center sm:text-center">
-            <ClipboardList className="mr-1 size-4 shrink-0" /> Relatório SBAR
+            <ClipboardList className="mr-1 size-4 shrink-0" /> {t('internacaoDetail.tabs.sbar')}
           </TabsTrigger>
           <TabsTrigger value="visitas" className="h-auto! w-full justify-start whitespace-normal px-3 py-2 text-left leading-snug sm:justify-center sm:text-center">
-            <Users className="mr-1 size-4 shrink-0" /> Visitas
+            <Users className="mr-1 size-4 shrink-0" /> {t('internacaoDetail.tabs.visitas')}
           </TabsTrigger>
           <TabsTrigger value="medicacoes" className="h-auto! w-full justify-start whitespace-normal px-3 py-2 text-left leading-snug sm:justify-center sm:text-center">
-            Medicações
+            {t('internacaoDetail.tabs.medicacoes')}
           </TabsTrigger>
           {canSee && (
             <TabsTrigger value="custos" className="h-auto! w-full justify-start whitespace-normal px-3 py-2 text-left leading-snug sm:justify-center sm:text-center">
-              Custos
+              {t('internacaoDetail.tabs.custos')}
             </TabsTrigger>
           )}
         </TabsList>
@@ -1241,22 +1254,22 @@ function HospitalizationDetailPageContent() {
       <DashboardCreateFormDialog
         open={openDischarge}
         onOpenChange={setOpenDischarge}
-        title="Registrar Alta"
+        title={t('internacaoDetail.discharge.title')}
         contentClassName="modal-responsive"
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button variant="outline" className="border border-gray-300" onClick={() => setOpenDischarge(false)}>
-              Cancelar
+              {t('internacaoDetail.discharge.cancel')}
             </Button>
             <Button variant="destructive" onClick={handleDischarge}>
-              Confirmar Alta
+              {t('internacaoDetail.discharge.confirm')}
             </Button>
           </div>
         }
       >
         <div className="space-y-4 md:space-y-6">
           <div className="space-y-2">
-            <Label>Data/Hora de Alta</Label>
+            <Label>{t('internacaoDetail.discharge.dateTime')}</Label>
             <Input
               type="datetime-local"
               value={dischargeForm.actual_discharge_date}
@@ -1264,7 +1277,7 @@ function HospitalizationDetailPageContent() {
             />
           </div>
           <div className="space-y-2">
-            <Label>Condição de Alta</Label>
+            <Label>{t('internacaoDetail.discharge.condition')}</Label>
             <Select
               value={dischargeForm.discharge_condition}
               onValueChange={(v) => setDischargeForm((f) => ({ ...f, discharge_condition: v }))}
@@ -1273,15 +1286,15 @@ function HospitalizationDetailPageContent() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="improved">Melhorado</SelectItem>
-                <SelectItem value="cured">Curado</SelectItem>
-                <SelectItem value="referred">Encaminhado</SelectItem>
-                <SelectItem value="deceased">Óbito</SelectItem>
+                <SelectItem value="improved">{t('internacaoDetail.discharge.conditionImproved')}</SelectItem>
+                <SelectItem value="cured">{t('internacaoDetail.discharge.conditionCured')}</SelectItem>
+                <SelectItem value="referred">{t('internacaoDetail.discharge.conditionReferred')}</SelectItem>
+                <SelectItem value="deceased">{t('internacaoDetail.discharge.conditionDeceased')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-2">
-            <Label>Instruções de Alta</Label>
+            <Label>{t('internacaoDetail.discharge.instructions')}</Label>
             <Textarea
               rows={3}
               value={dischargeForm.discharge_instructions}
@@ -1295,8 +1308,9 @@ function HospitalizationDetailPageContent() {
 }
 
 export default function HospitalizationDetailPage() {
+  const { t } = useTranslation();
   return (
-    <PlanUpgradeGate requiredPlan="clinica" feature="Internações">
+    <PlanUpgradeGate requiredPlan="clinica" feature={t('internacaoDetail.pageTitle')}>
       <HospitalizationDetailPageContent />
     </PlanUpgradeGate>
   );
