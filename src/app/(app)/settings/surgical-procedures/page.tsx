@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { CurrencyInput } from '@/components/ui/currency-input';
@@ -39,6 +40,7 @@ import {
   useDeleteSurgicalProcedurePlanPriceMutation,
 } from '@/hooks/apiHooks/useSurgicalProcedures';
 import { useHealthPlansListQuery } from '@/hooks/apiHooks/useHealthPlans';
+import { useCurrencyFormatter } from '@/lib/i18n/currency';
 import type { SurgicalProcedure } from '@/app/types/surgical-procedure';
 
 type FormValues = {
@@ -48,11 +50,6 @@ type FormValues = {
   cost_price?: string;
   tax_percentage?: string;
 };
-
-function fmtBRL(v?: number | null) {
-  if (v == null) return '—';
-  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
-}
 
 /** Itens base do catálogo global não têm tenant_id — só a clínica dona de um item personalizado pode editá-lo/excluí-lo. */
 function isBaseProcedure(procedure: SurgicalProcedure) {
@@ -68,6 +65,8 @@ function PlanPricesDialog({
   open: boolean;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
+  const fmt = useCurrencyFormatter();
   const [addMode, setAddMode] = useState(false);
   const [newPlanId, setNewPlanId] = useState('');
   const [newPlanPrice, setNewPlanPrice] = useState('');
@@ -98,7 +97,7 @@ function PlanPricesDialog({
       setNewPlanPrice('');
       setNewReimbursement('');
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, 'Erro ao salvar'));
+      toast.error(getApiErrorMessage(error, t('settingsSurgicalProcedures.saveError')));
     }
   };
 
@@ -106,7 +105,7 @@ function PlanPricesDialog({
     try {
       await deleteMutation.mutateAsync(healthPlanId);
     } catch {
-      toast.error('Erro ao remover');
+      toast.error(t('settingsSurgicalProcedures.removeError'));
     }
   };
 
@@ -117,7 +116,7 @@ function PlanPricesDialog({
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-[calc(100%-2rem)] sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Preços por convênio — {procedure.name}</DialogTitle>
+          <DialogTitle>{t('settingsSurgicalProcedures.planPricesTitle', { name: procedure.name })}</DialogTitle>
         </DialogHeader>
         {loading ? (
           <div className="flex justify-center py-6">
@@ -127,7 +126,7 @@ function PlanPricesDialog({
           <div className="space-y-4">
             {prices.length === 0 && !addMode ? (
               <div className="rounded-lg border border-gray-300 bg-white py-8 text-center text-sm text-slate-500">
-                Nenhum convênio configurado
+                {t('settingsSurgicalProcedures.noHealthPlansConfigured')}
               </div>
             ) : (
               <>
@@ -136,9 +135,9 @@ function PlanPricesDialog({
                 <Table className="min-w-full border-collapse bg-white text-sm">
                   <TableHeader>
                     <TableRow className="border-b border-gray-300 h-15">
-                      <TableHead>Convênio</TableHead>
-                      <TableHead>Valor cobrado</TableHead>
-                      <TableHead>Reembolso recebido</TableHead>
+                      <TableHead>{t('settingsSurgicalProcedures.healthPlan')}</TableHead>
+                      <TableHead>{t('settingsSurgicalProcedures.chargedAmount')}</TableHead>
+                      <TableHead>{t('settingsSurgicalProcedures.reimbursementReceived')}</TableHead>
                       <TableHead className="w-15" />
                     </TableRow>
                   </TableHeader>
@@ -146,15 +145,15 @@ function PlanPricesDialog({
                     {prices.map((p) => (
                       <TableRow className="border-b border-gray-300 h-15" key={p.id}>
                         <TableCell>{p.health_plan_name ?? p.health_plan_id}</TableCell>
-                        <TableCell>{fmtBRL(p.plan_price)}</TableCell>
-                        <TableCell>{fmtBRL(p.reimbursement)}</TableCell>
+                        <TableCell>{fmt(p.plan_price)}</TableCell>
+                        <TableCell>{fmt(p.reimbursement)}</TableCell>
                         <TableCell>
                           <Button
                             variant="ghost"
                             size="icon"
                             className="p-0"
-                            title="Remover"
-                            aria-label="Remover"
+                            title={t('settingsSurgicalProcedures.remove')}
+                            aria-label={t('settingsSurgicalProcedures.remove')}
                             onClick={() => handleDelete(p.health_plan_id)}
                           >
                             <X className="w-4 h-4 text-red-500" />
@@ -167,7 +166,7 @@ function PlanPricesDialog({
                         <TableCell>
                           <Select value={newPlanId} onValueChange={setNewPlanId}>
                             <SelectTrigger className="h-8">
-                              <SelectValue placeholder="Selecionar convênio" />
+                              <SelectValue placeholder={t('settingsSurgicalProcedures.selectHealthPlan')} />
                             </SelectTrigger>
                             <SelectContent>
                               {availablePlans.map((p) => (
@@ -187,8 +186,8 @@ function PlanPricesDialog({
                             variant="ghost"
                             size="icon"
                             className="p-0"
-                            title="Salvar"
-                            aria-label="Salvar"
+                            title={t('settingsSurgicalProcedures.save')}
+                            aria-label={t('settingsSurgicalProcedures.save')}
                             disabled={saving}
                             onClick={handleSaveNew}
                           >
@@ -211,8 +210,8 @@ function PlanPricesDialog({
                           variant="ghost"
                           size="icon"
                           className="h-7 w-7 shrink-0 p-0"
-                          title="Remover"
-                          aria-label="Remover"
+                          title={t('settingsSurgicalProcedures.remove')}
+                          aria-label={t('settingsSurgicalProcedures.remove')}
                           onClick={() => handleDelete(p.health_plan_id)}
                         >
                           <X className="w-4 h-4 text-red-500" />
@@ -220,12 +219,12 @@ function PlanPricesDialog({
                       </div>
                       <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
                         <div>
-                          <p className="text-xs text-muted-foreground">Valor cobrado</p>
-                          <p className="tabular-nums">{fmtBRL(p.plan_price)}</p>
+                          <p className="text-xs text-muted-foreground">{t('settingsSurgicalProcedures.chargedAmount')}</p>
+                          <p className="tabular-nums">{fmt(p.plan_price)}</p>
                         </div>
                         <div>
-                          <p className="text-xs text-muted-foreground">Reembolso recebido</p>
-                          <p className="tabular-nums">{fmtBRL(p.reimbursement)}</p>
+                          <p className="text-xs text-muted-foreground">{t('settingsSurgicalProcedures.reimbursementReceived')}</p>
+                          <p className="tabular-nums">{fmt(p.reimbursement)}</p>
                         </div>
                       </div>
                     </div>
@@ -234,10 +233,10 @@ function PlanPricesDialog({
                   {addMode && (
                     <div className="space-y-3 rounded-lg border border-gray-300 p-3">
                       <div className="space-y-1.5">
-                        <Label>Convênio</Label>
+                        <Label>{t('settingsSurgicalProcedures.healthPlan')}</Label>
                         <Select value={newPlanId} onValueChange={setNewPlanId}>
                           <SelectTrigger>
-                            <SelectValue placeholder="Selecionar convênio" />
+                            <SelectValue placeholder={t('settingsSurgicalProcedures.selectHealthPlan')} />
                           </SelectTrigger>
                           <SelectContent>
                             {availablePlans.map((p) => (
@@ -248,11 +247,11 @@ function PlanPricesDialog({
                       </div>
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1.5">
-                          <Label>Valor cobrado</Label>
+                          <Label>{t('settingsSurgicalProcedures.chargedAmount')}</Label>
                           <CurrencyInput value={newPlanPrice} onValueChange={setNewPlanPrice} />
                         </div>
                         <div className="space-y-1.5">
-                          <Label>Reembolso</Label>
+                          <Label>{t('settingsSurgicalProcedures.reimbursement')}</Label>
                           <CurrencyInput
                             value={newReimbursement}
                             onValueChange={setNewReimbursement}
@@ -261,11 +260,11 @@ function PlanPricesDialog({
                       </div>
                       <div className="flex justify-end gap-2">
                         <Button variant="outline" size="sm" onClick={() => setAddMode(false)}>
-                          Cancelar
+                          {t('settingsSurgicalProcedures.cancel')}
                         </Button>
                         <Button size="sm" disabled={saving} onClick={handleSaveNew} className="bg-primary">
                           {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                          Salvar
+                          {t('settingsSurgicalProcedures.save')}
                         </Button>
                       </div>
                     </div>
@@ -275,7 +274,7 @@ function PlanPricesDialog({
             )}
             {!addMode && availablePlans.length > 0 && (
               <Button variant="outline" size="sm" onClick={() => setAddMode(true)} className="w-full sm:w-auto">
-                <Plus className="w-4 h-4 mr-1" /> Adicionar convênio
+                <Plus className="w-4 h-4 mr-1" /> {t('settingsSurgicalProcedures.addHealthPlan')}
               </Button>
             )}
           </div>
@@ -286,6 +285,8 @@ function PlanPricesDialog({
 }
 
 export default function SettingsSurgicalProceduresPage() {
+  const { t } = useTranslation();
+  const fmt = useCurrencyFormatter();
   const [listPage, setListPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -324,7 +325,7 @@ export default function SettingsSurgicalProceduresPage() {
     try {
       await deleteMutation.mutateAsync(id);
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, 'Erro ao remover'));
+      toast.error(getApiErrorMessage(error, t('settingsSurgicalProcedures.removeError')));
     }
   };
 
@@ -344,17 +345,17 @@ export default function SettingsSurgicalProceduresPage() {
       }
       setModalOpen(false);
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, 'Erro ao salvar'));
+      toast.error(getApiErrorMessage(error, t('settingsSurgicalProcedures.saveError')));
     }
   };
 
   return (
     <div>
-      <h1 className="text-2xl font-heading font-bold mb-6">Procedimentos cirúrgicos</h1>
+      <h1 className="text-2xl font-heading font-bold mb-6">{t('settingsSurgicalProcedures.title')}</h1>
       <Card className="rounded-none border-0 bg-transparent py-0 shadow-none sm:rounded-xl sm:border sm:border-border/80 sm:bg-card sm:py-6 sm:shadow-(--shadow-card)">
         <CardContent className="px-0 pt-0 sm:px-6 sm:pt-6">
           <Button onClick={openCreate} className="mb-4 w-full bg-primary sm:w-auto">
-            <Plus className="w-4 h-4 mr-2" /> Novo procedimento
+            <Plus className="w-4 h-4 mr-2" /> {t('settingsSurgicalProcedures.newProcedure')}
           </Button>
           {loading ? (
             <div className="flex justify-center py-8">
@@ -367,13 +368,13 @@ export default function SettingsSurgicalProceduresPage() {
               <Table className="min-w-full border-collapse bg-white text-sm">
                 <TableHeader>
                   <TableRow className="border-b border-gray-300 h-15">
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Categoria</TableHead>
-                    <TableHead>Origem</TableHead>
-                    <TableHead>Particular</TableHead>
-                    <TableHead>Custo</TableHead>
-                    <TableHead>Margem</TableHead>
-                    <TableHead className="w-[140px]">Ações</TableHead>
+                    <TableHead>{t('settingsSurgicalProcedures.name')}</TableHead>
+                    <TableHead>{t('settingsSurgicalProcedures.category')}</TableHead>
+                    <TableHead>{t('settingsSurgicalProcedures.origin')}</TableHead>
+                    <TableHead>{t('settingsSurgicalProcedures.private')}</TableHead>
+                    <TableHead>{t('settingsSurgicalProcedures.cost')}</TableHead>
+                    <TableHead>{t('settingsSurgicalProcedures.margin')}</TableHead>
+                    <TableHead className="w-[140px]">{t('settingsSurgicalProcedures.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -389,11 +390,11 @@ export default function SettingsSurgicalProceduresPage() {
                         <TableCell>{r.category?.name ?? r.category_id ?? '—'}</TableCell>
                         <TableCell>
                           <Badge variant={isBase ? 'outline' : 'secondary'}>
-                            {isBase ? 'Base' : 'Personalizado'}
+                            {isBase ? t('settingsSurgicalProcedures.base') : t('settingsSurgicalProcedures.custom')}
                           </Badge>
                         </TableCell>
-                        <TableCell>{fmtBRL(r.private_price)}</TableCell>
-                        <TableCell>{fmtBRL(r.cost_price)}</TableCell>
+                        <TableCell>{fmt(r.private_price)}</TableCell>
+                        <TableCell>{fmt(r.cost_price)}</TableCell>
                         <TableCell>
                           {margin !== '—' ? (
                             <Badge variant="secondary">{margin}</Badge>
@@ -402,11 +403,11 @@ export default function SettingsSurgicalProceduresPage() {
                         <TableCell>
                           <div className="flex items-center gap-1">
                             {!isBase && (
-                              <Button variant="ghost" size="sm" onClick={() => openEdit(r)} title="Editar">
+                              <Button variant="ghost" size="sm" onClick={() => openEdit(r)} title={t('settingsSurgicalProcedures.edit')}>
                                 <Pencil className="w-4 h-4" />
                               </Button>
                             )}
-                            <Button variant="ghost" size="sm" onClick={() => setPlanPricesFor(r)} title="Preços por convênio">
+                            <Button variant="ghost" size="sm" onClick={() => setPlanPricesFor(r)} title={t('settingsSurgicalProcedures.healthPlanPrices')}>
                               <DollarSign className="w-4 h-4 text-blue-500" />
                             </Button>
                             <AlertDialog>
@@ -415,7 +416,7 @@ export default function SettingsSurgicalProceduresPage() {
                                   variant="ghost"
                                   size="sm"
                                   className="text-red-600 hover:text-red-700"
-                                  title={isBase ? 'Ocultar para minha clínica' : 'Remover'}
+                                  title={isBase ? t('settingsSurgicalProcedures.hideForMyClinic') : t('settingsSurgicalProcedures.remove')}
                                 >
                                   {isBase ? <EyeOff className="w-4 h-4" /> : <Trash2 className="w-4 h-4" />}
                                 </Button>
@@ -423,18 +424,18 @@ export default function SettingsSurgicalProceduresPage() {
                               <AlertDialogContent>
                                 <AlertDialogHeader>
                                   <AlertDialogTitle>
-                                    {isBase ? 'Ocultar este procedimento base?' : 'Remover este procedimento?'}
+                                    {isBase ? t('settingsSurgicalProcedures.hideBaseProcedureConfirmTitle') : t('settingsSurgicalProcedures.removeProcedureConfirmTitle')}
                                   </AlertDialogTitle>
                                   <AlertDialogDescription>
                                     {isBase
-                                      ? 'O item continua disponível para as demais clínicas — apenas deixa de aparecer para a sua.'
-                                      : 'Esta ação não pode ser desfeita.'}
+                                      ? t('settingsSurgicalProcedures.hideBaseProcedureConfirmDescription')
+                                      : t('settingsSurgicalProcedures.removeProcedureConfirmDescription')}
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                  <AlertDialogCancel>{t('settingsSurgicalProcedures.cancel')}</AlertDialogCancel>
                                   <AlertDialogAction onClick={() => handleDelete(r.id)}>
-                                    {isBase ? 'Ocultar' : 'Remover'}
+                                    {isBase ? t('settingsSurgicalProcedures.hide') : t('settingsSurgicalProcedures.remove')}
                                   </AlertDialogAction>
                                 </AlertDialogFooter>
                               </AlertDialogContent>
@@ -464,30 +465,30 @@ export default function SettingsSurgicalProceduresPage() {
                           <p className="text-xs text-muted-foreground">{r.category?.name ?? r.category_id ?? '—'}</p>
                         </div>
                         <Badge variant={isBase ? 'outline' : 'secondary'} className="shrink-0">
-                          {isBase ? 'Base' : 'Personalizado'}
+                          {isBase ? t('settingsSurgicalProcedures.base') : t('settingsSurgicalProcedures.custom')}
                         </Badge>
                       </div>
                       <div className="mt-3 grid grid-cols-3 gap-x-3 gap-y-2 text-sm">
                         <div>
-                          <p className="text-xs text-muted-foreground">Particular</p>
-                          <p className="tabular-nums">{fmtBRL(r.private_price)}</p>
+                          <p className="text-xs text-muted-foreground">{t('settingsSurgicalProcedures.private')}</p>
+                          <p className="tabular-nums">{fmt(r.private_price)}</p>
                         </div>
                         <div>
-                          <p className="text-xs text-muted-foreground">Custo</p>
-                          <p className="tabular-nums">{fmtBRL(r.cost_price)}</p>
+                          <p className="text-xs text-muted-foreground">{t('settingsSurgicalProcedures.cost')}</p>
+                          <p className="tabular-nums">{fmt(r.cost_price)}</p>
                         </div>
                         <div>
-                          <p className="text-xs text-muted-foreground">Margem</p>
+                          <p className="text-xs text-muted-foreground">{t('settingsSurgicalProcedures.margin')}</p>
                           <p>{margin !== '—' ? <Badge variant="secondary">{margin}</Badge> : '—'}</p>
                         </div>
                       </div>
                       <div className="mt-3 flex items-center justify-end gap-1 border-t border-gray-200 pt-2">
                         {!isBase && (
-                          <Button variant="ghost" size="sm" onClick={() => openEdit(r)} title="Editar">
+                          <Button variant="ghost" size="sm" onClick={() => openEdit(r)} title={t('settingsSurgicalProcedures.edit')}>
                             <Pencil className="w-4 h-4" />
                           </Button>
                         )}
-                        <Button variant="ghost" size="sm" onClick={() => setPlanPricesFor(r)} title="Preços por convênio">
+                        <Button variant="ghost" size="sm" onClick={() => setPlanPricesFor(r)} title={t('settingsSurgicalProcedures.healthPlanPrices')}>
                           <DollarSign className="w-4 h-4 text-blue-500" />
                         </Button>
                         <AlertDialog>
@@ -496,7 +497,7 @@ export default function SettingsSurgicalProceduresPage() {
                               variant="ghost"
                               size="sm"
                               className="text-red-600 hover:text-red-700"
-                              title={isBase ? 'Ocultar para minha clínica' : 'Remover'}
+                              title={isBase ? t('settingsSurgicalProcedures.hideForMyClinic') : t('settingsSurgicalProcedures.remove')}
                             >
                               {isBase ? <EyeOff className="w-4 h-4" /> : <Trash2 className="w-4 h-4" />}
                             </Button>
@@ -504,18 +505,18 @@ export default function SettingsSurgicalProceduresPage() {
                           <AlertDialogContent>
                             <AlertDialogHeader>
                               <AlertDialogTitle>
-                                {isBase ? 'Ocultar este procedimento base?' : 'Remover este procedimento?'}
+                                {isBase ? t('settingsSurgicalProcedures.hideBaseProcedureConfirmTitle') : t('settingsSurgicalProcedures.removeProcedureConfirmTitle')}
                               </AlertDialogTitle>
                               <AlertDialogDescription>
                                 {isBase
-                                  ? 'O item continua disponível para as demais clínicas — apenas deixa de aparecer para a sua.'
-                                  : 'Esta ação não pode ser desfeita.'}
+                                  ? t('settingsSurgicalProcedures.hideBaseProcedureConfirmDescription')
+                                  : t('settingsSurgicalProcedures.removeProcedureConfirmDescription')}
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogCancel>{t('settingsSurgicalProcedures.cancel')}</AlertDialogCancel>
                               <AlertDialogAction onClick={() => handleDelete(r.id)}>
-                                {isBase ? 'Ocultar' : 'Remover'}
+                                {isBase ? t('settingsSurgicalProcedures.hide') : t('settingsSurgicalProcedures.remove')}
                               </AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
@@ -542,7 +543,7 @@ export default function SettingsSurgicalProceduresPage() {
       <DashboardCreateFormDialog
         open={modalOpen}
         onOpenChange={setModalOpen}
-        title={editingId ? 'Editar procedimento' : 'Novo procedimento'}
+        title={editingId ? t('settingsSurgicalProcedures.editProcedure') : t('settingsSurgicalProcedures.newProcedure')}
         contentClassName="modal-responsive"
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
@@ -552,24 +553,24 @@ export default function SettingsSurgicalProceduresPage() {
               className="border border-gray-300"
               onClick={() => setModalOpen(false)}
             >
-              Cancelar
+              {t('settingsSurgicalProcedures.cancel')}
             </Button>
             <Button type="submit" form="surgical-procedure-form" className="bg-primary">
-              {editingId ? 'Salvar' : 'Criar'}
+              {editingId ? t('settingsSurgicalProcedures.save') : t('settingsSurgicalProcedures.create')}
             </Button>
           </div>
         }
       >
         <form id="surgical-procedure-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4 md:space-y-6">
           <div className="space-y-2">
-            <Label>Categoria</Label>
+            <Label>{t('settingsSurgicalProcedures.category')}</Label>
             <Controller
               name="category_id"
               control={control}
               render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione" />
+                    <SelectValue placeholder={t('settingsSurgicalProcedures.select')} />
                   </SelectTrigger>
                   <SelectContent>
                     {categories.map((c) => (
@@ -581,15 +582,15 @@ export default function SettingsSurgicalProceduresPage() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="name">Nome</Label>
-            <Input id="name" placeholder="Nome do procedimento" {...register('name', { required: true })} />
-            {errors.name && <p className="text-sm text-destructive">Campo obrigatório</p>}
+            <Label htmlFor="name">{t('settingsSurgicalProcedures.name')}</Label>
+            <Input id="name" placeholder={t('settingsSurgicalProcedures.procedureNamePlaceholder')} {...register('name', { required: true })} />
+            {errors.name && <p className="text-sm text-destructive">{t('settingsSurgicalProcedures.requiredField')}</p>}
           </div>
           <div className="border-t border-gray-200 pt-4">
-            <p className="mb-3 text-sm font-medium text-muted-foreground">Precificação</p>
+            <p className="mb-3 text-sm font-medium text-muted-foreground">{t('settingsSurgicalProcedures.pricing')}</p>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div className="space-y-2">
-                <Label htmlFor="private_price">Preço Particular</Label>
+                <Label htmlFor="private_price">{t('settingsSurgicalProcedures.privatePrice')}</Label>
                 <Controller
                   name="private_price"
                   control={control}
@@ -599,7 +600,7 @@ export default function SettingsSurgicalProceduresPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="cost_price">Custo Interno</Label>
+                <Label htmlFor="cost_price">{t('settingsSurgicalProcedures.internalCost')}</Label>
                 <Controller
                   name="cost_price"
                   control={control}
@@ -609,7 +610,7 @@ export default function SettingsSurgicalProceduresPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="tax_percentage">Imposto (%)</Label>
+                <Label htmlFor="tax_percentage">{t('settingsSurgicalProcedures.tax')}</Label>
                 <Input
                   id="tax_percentage"
                   type="number"
@@ -622,7 +623,7 @@ export default function SettingsSurgicalProceduresPage() {
               </div>
             </div>
             <p className="mt-2 text-xs text-muted-foreground">
-              Imposto é adicionado por cima do preço (cliente paga preço + imposto). Margem = preço − custo.
+              {t('settingsSurgicalProcedures.taxHint')}
             </p>
           </div>
         </form>

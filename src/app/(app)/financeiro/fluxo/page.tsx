@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   ComposedChart,
   Bar,
@@ -26,6 +27,7 @@ import {
 import { cn } from '@/lib/utils';
 import api from '@/lib/axios';
 import { toast } from 'sonner';
+import { useCurrencyFormatter, CURRENCY_BY_LANGUAGE, resolveAppLanguage } from '@/lib/i18n/currency';
 
 interface CashFlowDay {
   date: string;
@@ -46,10 +48,6 @@ interface CashFlow {
   };
 }
 
-function fmt(n: number | null | undefined) {
-  return Number(n ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-}
-
 function fmtDate(iso: string) {
   return new Date(`${iso}T12:00:00`).toLocaleDateString('pt-BR');
 }
@@ -57,6 +55,9 @@ function fmtDate(iso: string) {
 const RANGE_OPTIONS = [30, 60, 90];
 
 export default function FluxoCaixaPage() {
+  const { t, i18n } = useTranslation();
+  const fmt = useCurrencyFormatter();
+  const currencySymbol = CURRENCY_BY_LANGUAGE[resolveAppLanguage(i18n.language)].symbol;
   const [days, setDays] = useState(60);
   const [data, setData] = useState<CashFlow | null>(null);
   const [loading, setLoading] = useState(true);
@@ -67,11 +68,11 @@ export default function FluxoCaixaPage() {
       const res = await api.get<CashFlow>(`/financial-reports/fluxo-caixa?days=${days}`);
       setData(res.data);
     } catch {
-      toast.error('Erro ao carregar fluxo de caixa');
+      toast.error(t('financeiroFluxo.loadError'));
     } finally {
       setLoading(false);
     }
-  }, [days]);
+  }, [days, t]);
 
   useEffect(() => {
     fetchData();
@@ -93,9 +94,9 @@ export default function FluxoCaixaPage() {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Fluxo de Caixa Projetado</h1>
+          <h1 className="text-2xl font-bold">{t('financeiroFluxo.title')}</h1>
           <p className="text-sm text-muted-foreground">
-            Entradas por liquidação esperada e saídas por vencimento das contas a pagar.
+            {t('financeiroFluxo.subtitle')}
           </p>
         </div>
         <div className="flex gap-1">
@@ -106,7 +107,7 @@ export default function FluxoCaixaPage() {
               variant={days === r ? 'default' : 'outline'}
               onClick={() => setDays(r)}
             >
-              {r}d
+              {t('financeiroFluxo.rangeButton', { days: r })}
             </Button>
           ))}
         </div>
@@ -116,8 +117,8 @@ export default function FluxoCaixaPage() {
         <div className="flex items-center gap-2 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-800">
           <AlertTriangle className="size-4 shrink-0" />
           <span>
-            Saldo projetado negativo a partir de <strong>{fmtDate(data.summary.first_negative_day)}</strong>.
-            Antecipe recebimentos ou adie pagamentos.
+            {t('financeiroFluxo.negativeBalancePrefix')} <strong>{fmtDate(data.summary.first_negative_day)}</strong>
+            {t('financeiroFluxo.negativeBalanceSuffix')}
           </span>
         </div>
       )}
@@ -126,7 +127,7 @@ export default function FluxoCaixaPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Entradas Previstas ({days}d)
+              {t('financeiroFluxo.expectedInflows', { days })}
             </CardTitle>
             <TrendingUp className="size-4 text-green-600" />
           </CardHeader>
@@ -137,7 +138,7 @@ export default function FluxoCaixaPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Saídas Previstas ({days}d)
+              {t('financeiroFluxo.expectedOutflows', { days })}
             </CardTitle>
             <TrendingDown className="size-4 text-red-600" />
           </CardHeader>
@@ -147,7 +148,7 @@ export default function FluxoCaixaPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Saldo Projetado</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t('financeiroFluxo.projectedBalance')}</CardTitle>
             <Wallet className={cn('size-4', (data?.summary.final_balance ?? 0) >= 0 ? 'text-green-600' : 'text-red-600')} />
           </CardHeader>
           <CardContent>
@@ -164,22 +165,26 @@ export default function FluxoCaixaPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm font-medium">Projeção — próximos {days} dias</CardTitle>
+          <CardTitle className="text-sm font-medium">{t('financeiroFluxo.projectionTitle', { days })}</CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
             <Skeleton className="h-64 w-full" />
           ) : chartData.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">Sem movimentação prevista no período.</p>
+            <p className="py-8 text-center text-sm text-muted-foreground">{t('financeiroFluxo.noMovementInPeriod')}</p>
           ) : (
             <ResponsiveContainer width="100%" height={280}>
               <ComposedChart data={chartData} stackOffset="sign">
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `R$${(Number(v) / 1000).toFixed(0)}k`} />
+                <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${currencySymbol}${(Number(v) / 1000).toFixed(0)}k`} />
                 <Tooltip
                   formatter={(v, name) => [
                     fmt(Math.abs(Number(v))),
-                    name === 'entrada' ? 'Entrada' : name === 'saida' ? 'Saída' : 'Saldo acumulado',
+                    name === 'entrada'
+                      ? t('financeiroFluxo.tooltipInflow')
+                      : name === 'saida'
+                        ? t('financeiroFluxo.tooltipOutflow')
+                        : t('financeiroFluxo.tooltipCumulativeBalance'),
                   ]}
                 />
                 <ReferenceLine y={0} stroke="#ef4444" strokeDasharray="4 4" />
@@ -194,7 +199,7 @@ export default function FluxoCaixaPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm font-medium">Dias com movimentação</CardTitle>
+          <CardTitle className="text-sm font-medium">{t('financeiroFluxo.movementDaysTitle')}</CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -204,17 +209,17 @@ export default function FluxoCaixaPage() {
               ))}
             </div>
           ) : movementDays.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">Sem movimentação prevista.</p>
+            <p className="py-8 text-center text-sm text-muted-foreground">{t('financeiroFluxo.noMovementDays')}</p>
           ) : (
             <div className="overflow-x-auto rounded-lg border border-slate-200">
               <Table className="min-w-full text-sm">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Data</TableHead>
-                    <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">Entradas</TableHead>
-                    <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">Saídas</TableHead>
-                    <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">Líquido</TableHead>
-                    <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">Saldo Acumulado</TableHead>
+                    <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('financeiroFluxo.columnDate')}</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('financeiroFluxo.columnInflows')}</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('financeiroFluxo.columnOutflows')}</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('financeiroFluxo.columnNet')}</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('financeiroFluxo.columnCumulativeBalance')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

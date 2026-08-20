@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -31,6 +32,7 @@ const PRESET_COLORS = [
 type FormValues = { name: string; duration_minutes: number; color?: string };
 
 export default function AppointmentTypesPage() {
+  const { t } = useTranslation();
   const [listPage, setListPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<AppointmentType | null>(null);
@@ -69,7 +71,7 @@ export default function AppointmentTypesPage() {
       reset();
       setEditing(null);
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, 'Erro ao salvar'));
+      toast.error(getApiErrorMessage(error, t('settingsAppointmentTypes.saveError')));
     }
   };
 
@@ -77,28 +79,29 @@ export default function AppointmentTypesPage() {
     try {
       await deleteMutation.mutateAsync(id);
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, 'Erro ao remover'));
+      toast.error(getApiErrorMessage(error, t('settingsAppointmentTypes.removeError')));
     }
   };
 
   const formatDuration = (d: number) => {
-    if (d < 60) return `${d} min`;
+    if (d < 60) return t('settingsAppointmentTypes.durationMin', { value: d });
     const h = Math.floor(d / 60);
     const m = d % 60;
-    return m > 0 ? `${h}h ${m}min` : `${h}h`;
+    return m > 0
+      ? t('settingsAppointmentTypes.durationHoursMin', { hours: h, minutes: m })
+      : t('settingsAppointmentTypes.durationHours', { hours: h });
   };
 
   return (
     <div>
-      <h1 className="text-2xl font-heading font-bold text-primary mb-6">Tipos de Procedimento</h1>
+      <h1 className="text-2xl font-heading font-bold text-primary mb-6">{t('settingsAppointmentTypes.title')}</h1>
       <Card>
         <CardContent className="pt-6">
           <p className="text-muted-foreground mb-4">
-            Defina os tipos de procedimento com sua duração padrão. O sistema usará essa duração ao calcular
-            os slots disponíveis na agenda.
+            {t('settingsAppointmentTypes.description')}
           </p>
           <Button onClick={openNew} className="mb-4 w-full bg-primary sm:w-auto">
-            <Plus className="w-4 h-4 mr-2" /> Novo tipo
+            <Plus className="w-4 h-4 mr-2" /> {t('settingsAppointmentTypes.newType')}
           </Button>
           {loading ? (
             <div className="flex justify-center py-8">
@@ -111,10 +114,10 @@ export default function AppointmentTypesPage() {
             <Table className="min-w-full border-collapse bg-white text-sm">
               <TableHeader>
                 <TableRow className="border-b border-gray-300 h-15">
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Duração</TableHead>
-                  <TableHead>Cor no calendário</TableHead>
-                  <TableHead>Ações</TableHead>
+                  <TableHead>{t('settingsAppointmentTypes.colName')}</TableHead>
+                  <TableHead>{t('settingsAppointmentTypes.colDuration')}</TableHead>
+                  <TableHead>{t('settingsAppointmentTypes.color')}</TableHead>
+                  <TableHead>{t('settingsAppointmentTypes.colActions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -151,12 +154,12 @@ export default function AppointmentTypesPage() {
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
-                              <AlertDialogTitle>Remover este tipo?</AlertDialogTitle>
-                              <AlertDialogDescription>Esta ação não pode ser desfeita.</AlertDialogDescription>
+                              <AlertDialogTitle>{t('settingsAppointmentTypes.deleteConfirmTitle')}</AlertDialogTitle>
+                              <AlertDialogDescription>{t('settingsAppointmentTypes.deleteConfirmDescription')}</AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleDelete(r.id)}>Remover</AlertDialogAction>
+                              <AlertDialogCancel>{t('settingsAppointmentTypes.cancel')}</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDelete(r.id)}>{t('settingsAppointmentTypes.remove')}</AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
                         </AlertDialog>
@@ -197,12 +200,12 @@ export default function AppointmentTypesPage() {
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
-                            <AlertDialogTitle>Remover este tipo?</AlertDialogTitle>
-                            <AlertDialogDescription>Esta ação não pode ser desfeita.</AlertDialogDescription>
+                            <AlertDialogTitle>{t('settingsAppointmentTypes.deleteConfirmTitle')}</AlertDialogTitle>
+                            <AlertDialogDescription>{t('settingsAppointmentTypes.deleteConfirmDescription')}</AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleDelete(r.id)}>Remover</AlertDialogAction>
+                            <AlertDialogCancel>{t('settingsAppointmentTypes.cancel')}</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDelete(r.id)}>{t('settingsAppointmentTypes.remove')}</AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
@@ -228,16 +231,16 @@ export default function AppointmentTypesPage() {
       <Dialog open={modalOpen} onOpenChange={(open) => { setModalOpen(open); if (!open) setEditing(null); }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editing ? 'Editar tipo de procedimento' : 'Novo tipo de procedimento'}</DialogTitle>
+            <DialogTitle>{editing ? t('settingsAppointmentTypes.editTitle') : t('settingsAppointmentTypes.newTitleModal')}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
-              <Label htmlFor="name">Nome do procedimento</Label>
-              <Input id="name" placeholder="Ex.: Consulta, Vacina, Cirurgia, Retorno..." {...register('name', { required: true })} />
-              {errors.name && <p className="text-red-500 text-xs mt-1">Campo obrigatório</p>}
+              <Label htmlFor="name">{t('settingsAppointmentTypes.nameLabel')}</Label>
+              <Input id="name" placeholder={t('settingsAppointmentTypes.namePlaceholder')} {...register('name', { required: true })} />
+              {errors.name && <p className="text-red-500 text-xs mt-1">{t('settingsAppointmentTypes.requiredField')}</p>}
             </div>
             <div>
-              <Label htmlFor="duration_minutes">Duração padrão (minutos)</Label>
+              <Label htmlFor="duration_minutes">{t('settingsAppointmentTypes.durationLabel')}</Label>
               <div className="flex items-center gap-2">
                 <Input
                   id="duration_minutes"
@@ -247,12 +250,12 @@ export default function AppointmentTypesPage() {
                   step={5}
                   {...register('duration_minutes', { required: true, valueAsNumber: true })}
                 />
-                <span className="text-sm text-muted-foreground">min</span>
+                <span className="text-sm text-muted-foreground">{t('settingsAppointmentTypes.minutesUnit')}</span>
               </div>
-              {errors.duration_minutes && <p className="text-red-500 text-xs mt-1">Campo obrigatório</p>}
+              {errors.duration_minutes && <p className="text-red-500 text-xs mt-1">{t('settingsAppointmentTypes.requiredField')}</p>}
             </div>
             <div>
-              <Label htmlFor="color">Cor no calendário</Label>
+              <Label htmlFor="color">{t('settingsAppointmentTypes.color')}</Label>
               <Input id="color" type="color" className="w-24 h-10 p-1 cursor-pointer" {...register('color')} />
               <div className="flex flex-wrap gap-2 mt-2">
                 {PRESET_COLORS.map((c) => (
@@ -268,7 +271,7 @@ export default function AppointmentTypesPage() {
             </div>
             <DialogFooter>
               <Button type="submit" className="bg-primary">
-                {editing ? 'Salvar' : 'Criar'}
+                {editing ? t('settingsAppointmentTypes.save') : t('settingsAppointmentTypes.create')}
               </Button>
             </DialogFooter>
           </form>

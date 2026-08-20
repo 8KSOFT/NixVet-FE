@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -57,6 +58,7 @@ function slugify(value: string) {
 }
 
 export default function AccessControlProfilesPage() {
+  const { t } = useTranslation();
   const [listPage, setListPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingProfile, setEditingProfile] = useState<AccessProfile | null>(null);
@@ -126,7 +128,7 @@ export default function AccessControlProfilesPage() {
     try {
       await deleteMutation.mutateAsync(id);
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, 'Erro ao remover perfil'));
+      toast.error(getApiErrorMessage(error, t('settingsAccessProfiles.toasts.deleteError')));
     }
   };
 
@@ -146,7 +148,7 @@ export default function AccessControlProfilesPage() {
       }
       setModalOpen(false);
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, 'Erro ao salvar perfil'));
+      toast.error(getApiErrorMessage(error, t('settingsAccessProfiles.toasts.saveError')));
     }
   };
 
@@ -154,9 +156,9 @@ export default function AccessControlProfilesPage() {
     return (
       <div>
         <h1 className="mb-4 flex items-center gap-2 text-2xl font-heading font-bold text-primary">
-          <ShieldCheck className="h-6 w-6" /> Perfis de Acesso
+          <ShieldCheck className="h-6 w-6" /> {t('settingsAccessProfiles.title')}
         </h1>
-        <p className="text-muted-foreground">Apenas administrador ou gerente pode gerenciar perfis de acesso.</p>
+        <p className="text-muted-foreground">{t('settingsAccessProfiles.forbidden')}</p>
       </div>
     );
   }
@@ -164,16 +166,16 @@ export default function AccessControlProfilesPage() {
   return (
     <div>
       <h1 className="mb-2 flex items-center gap-2 text-2xl font-heading font-bold text-primary">
-        <ShieldCheck className="h-6 w-6" /> Perfis de Acesso
+        <ShieldCheck className="h-6 w-6" /> {t('settingsAccessProfiles.title')}
       </h1>
       <p className="mb-6 text-sm text-muted-foreground">
-        Monte perfis vinculando permissões e depois atribua cada perfil aos usuários da equipe em{' '}
-        <span className="font-medium">Equipe</span>.
+        {t('settingsAccessProfiles.description')}{' '}
+        <span className="font-medium">{t('settingsAccessProfiles.team')}</span>.
       </p>
       <Card className="rounded-none border-0 bg-transparent py-0 shadow-none sm:rounded-xl sm:border sm:border-border/80 sm:bg-card sm:py-6 sm:shadow-(--shadow-card)">
         <CardContent className="px-0 pt-0 sm:px-6 sm:pt-6">
           <Button onClick={openCreate} className="mb-4 w-full bg-primary sm:w-auto">
-            <Plus className="w-4 h-4 mr-2" /> Novo perfil
+            <Plus className="w-4 h-4 mr-2" /> {t('settingsAccessProfiles.newProfile')}
           </Button>
           {loading ? (
             <div className="flex justify-center py-8">
@@ -181,7 +183,7 @@ export default function AccessControlProfilesPage() {
             </div>
           ) : list.length === 0 ? (
             <div className="rounded-lg border border-gray-300 bg-white py-8 text-center text-sm text-slate-500">
-              Nenhum perfil cadastrado.
+              {t('settingsAccessProfiles.emptyState')}
             </div>
           ) : (
             <div>
@@ -190,12 +192,12 @@ export default function AccessControlProfilesPage() {
                 <Table className="min-w-full border-collapse bg-white text-sm">
                   <TableHeader>
                     <TableRow className="border-b border-gray-300 h-15">
-                      <TableHead>Nome</TableHead>
-                      <TableHead>Slug</TableHead>
-                      <TableHead>Permissões</TableHead>
-                      <TableHead>Origem</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="w-30">Ações</TableHead>
+                      <TableHead>{t('settingsAccessProfiles.table.name')}</TableHead>
+                      <TableHead>{t('settingsAccessProfiles.table.slug')}</TableHead>
+                      <TableHead>{t('settingsAccessProfiles.table.permissions')}</TableHead>
+                      <TableHead>{t('settingsAccessProfiles.table.origin')}</TableHead>
+                      <TableHead>{t('settingsAccessProfiles.table.status')}</TableHead>
+                      <TableHead className="w-30">{t('settingsAccessProfiles.table.actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -206,17 +208,17 @@ export default function AccessControlProfilesPage() {
                         <TableCell>{r.permissions.length}</TableCell>
                         <TableCell>
                           <Badge variant={r.is_system ? 'secondary' : 'default'}>
-                            {r.is_system ? 'Sistema' : 'Customizado'}
+                            {r.is_system ? t('settingsAccessProfiles.origin.system') : t('settingsAccessProfiles.origin.custom')}
                           </Badge>
                         </TableCell>
                         <TableCell>
                           <Badge variant={r.is_active ? 'default' : 'secondary'}>
-                            {r.is_active ? 'Ativo' : 'Inativo'}
+                            {r.is_active ? t('settingsAccessProfiles.status.active') : t('settingsAccessProfiles.status.inactive')}
                           </Badge>
                         </TableCell>
                         <TableCell>
                           {r.is_system ? (
-                            <div className="flex items-center gap-1 text-muted-foreground" title="Perfil de sistema — somente leitura">
+                            <div className="flex items-center gap-1 text-muted-foreground" title={t('settingsAccessProfiles.systemReadOnlyTooltip')}>
                               <Lock className="w-4 h-4" />
                             </div>
                           ) : (
@@ -236,15 +238,15 @@ export default function AccessControlProfilesPage() {
                                 </AlertDialogTrigger>
                                 <AlertDialogContent>
                                   <AlertDialogHeader>
-                                    <AlertDialogTitle>Remover perfil?</AlertDialogTitle>
+                                    <AlertDialogTitle>{t('settingsAccessProfiles.deleteDialog.title')}</AlertDialogTitle>
                                     <AlertDialogDescription>
-                                      {r.name}. Perfis vinculados a usuários não podem ser removidos.
+                                      {t('settingsAccessProfiles.deleteDialog.description', { name: r.name })}
                                     </AlertDialogDescription>
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                    <AlertDialogCancel>{t('settingsAccessProfiles.deleteDialog.cancel')}</AlertDialogCancel>
                                     <AlertDialogAction onClick={() => handleDelete(r.id)}>
-                                      Confirmar
+                                      {t('settingsAccessProfiles.deleteDialog.confirm')}
                                     </AlertDialogAction>
                                   </AlertDialogFooter>
                                 </AlertDialogContent>
@@ -270,7 +272,7 @@ export default function AccessControlProfilesPage() {
                       {r.is_system ? (
                         <div
                           className="flex shrink-0 items-center gap-1 text-muted-foreground"
-                          title="Perfil de sistema — somente leitura"
+                          title={t('settingsAccessProfiles.systemReadOnlyTooltip')}
                         >
                           <Lock className="w-4 h-4" />
                         </div>
@@ -291,15 +293,15 @@ export default function AccessControlProfilesPage() {
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
-                                <AlertDialogTitle>Remover perfil?</AlertDialogTitle>
+                                <AlertDialogTitle>{t('settingsAccessProfiles.deleteDialog.title')}</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  {r.name}. Perfis vinculados a usuários não podem ser removidos.
+                                  {t('settingsAccessProfiles.deleteDialog.description', { name: r.name })}
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
-                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogCancel>{t('settingsAccessProfiles.deleteDialog.cancel')}</AlertDialogCancel>
                                 <AlertDialogAction onClick={() => handleDelete(r.id)}>
-                                  Confirmar
+                                  {t('settingsAccessProfiles.deleteDialog.confirm')}
                                 </AlertDialogAction>
                               </AlertDialogFooter>
                             </AlertDialogContent>
@@ -309,12 +311,12 @@ export default function AccessControlProfilesPage() {
                     </div>
                     <div className="mt-2 flex flex-wrap items-center gap-2">
                       <Badge variant={r.is_system ? 'secondary' : 'default'}>
-                        {r.is_system ? 'Sistema' : 'Customizado'}
+                        {r.is_system ? t('settingsAccessProfiles.origin.system') : t('settingsAccessProfiles.origin.custom')}
                       </Badge>
                       <Badge variant={r.is_active ? 'default' : 'secondary'}>
-                        {r.is_active ? 'Ativo' : 'Inativo'}
+                        {r.is_active ? t('settingsAccessProfiles.status.active') : t('settingsAccessProfiles.status.inactive')}
                       </Badge>
-                      <span className="text-xs text-muted-foreground">{r.permissions.length} permissões</span>
+                      <span className="text-xs text-muted-foreground">{t('settingsAccessProfiles.permissionsCount', { count: r.permissions.length })}</span>
                     </div>
                   </div>
                 ))}
@@ -336,7 +338,7 @@ export default function AccessControlProfilesPage() {
       <DashboardCreateFormDialog
         open={modalOpen}
         onOpenChange={setModalOpen}
-        title={isEditing ? 'Editar perfil de acesso' : 'Novo perfil de acesso'}
+        title={isEditing ? t('settingsAccessProfiles.formDialog.editTitle') : t('settingsAccessProfiles.formDialog.createTitle')}
         contentClassName="modal-responsive"
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
@@ -346,10 +348,10 @@ export default function AccessControlProfilesPage() {
               className="border border-gray-300"
               onClick={() => setModalOpen(false)}
             >
-              Cancelar
+              {t('settingsAccessProfiles.formDialog.cancel')}
             </Button>
             <Button type="submit" form="access-profile-form" className="bg-primary" disabled={!nameValue}>
-              {isEditing ? 'Salvar' : 'Criar'}
+              {isEditing ? t('settingsAccessProfiles.formDialog.save') : t('settingsAccessProfiles.formDialog.create')}
             </Button>
           </div>
         }
@@ -357,10 +359,10 @@ export default function AccessControlProfilesPage() {
         <form id="access-profile-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4 md:space-y-6">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="name">Nome</Label>
+              <Label htmlFor="name">{t('settingsAccessProfiles.formDialog.nameLabel')}</Label>
               <Input
                 id="name"
-                placeholder="ex: Recepção Avançada"
+                placeholder={t('settingsAccessProfiles.formDialog.namePlaceholder')}
                 {...register('name', { required: true })}
                 onChange={(e) => {
                   setValue('name', e.target.value);
@@ -369,13 +371,13 @@ export default function AccessControlProfilesPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="slug">Slug</Label>
-              <Input id="slug" placeholder="reception-advanced" {...register('slug', { required: true })} />
+              <Label htmlFor="slug">{t('settingsAccessProfiles.formDialog.slugLabel')}</Label>
+              <Input id="slug" placeholder={t('settingsAccessProfiles.formDialog.slugPlaceholder')} {...register('slug', { required: true })} />
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="description">Descrição</Label>
-            <Input id="description" placeholder="Descrição do perfil" {...register('description')} />
+            <Label htmlFor="description">{t('settingsAccessProfiles.formDialog.descriptionLabel')}</Label>
+            <Input id="description" placeholder={t('settingsAccessProfiles.formDialog.descriptionPlaceholder')} {...register('description')} />
           </div>
           <div className="flex items-center gap-2">
             <Controller
@@ -385,16 +387,16 @@ export default function AccessControlProfilesPage() {
                 <Switch id="is_active" checked={field.value} onCheckedChange={field.onChange} />
               )}
             />
-            <Label htmlFor="is_active">Ativo</Label>
+            <Label htmlFor="is_active">{t('settingsAccessProfiles.formDialog.activeLabel')}</Label>
           </div>
           <div className="space-y-2">
-            <Label className="block">Permissões</Label>
+            <Label className="block">{t('settingsAccessProfiles.formDialog.permissionsLabel')}</Label>
             {permissionsLoading ? (
               <div className="flex justify-center py-4">
                 <Loader2 className="w-5 h-5 animate-spin text-primary" />
               </div>
             ) : permissionsForbidden ? (
-              <p className="text-sm text-muted-foreground">Não foi possível carregar as permissões disponíveis.</p>
+              <p className="text-sm text-muted-foreground">{t('settingsAccessProfiles.formDialog.permissionsLoadError')}</p>
             ) : (
               <Controller
                 name="permission_ids"
@@ -404,7 +406,7 @@ export default function AccessControlProfilesPage() {
                     options={permissionOptions}
                     selected={field.value}
                     onChange={field.onChange}
-                    emptyMessage="Nenhuma permissão cadastrada."
+                    emptyMessage={t('settingsAccessProfiles.formDialog.permissionsEmptyMessage')}
                   />
                 )}
               />

@@ -2,6 +2,7 @@
 
 import React, { useEffect } from 'react';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -23,16 +24,6 @@ import { useChatbotSettingsQuery, useSaveChatbotSettingsMutation } from '@/hooks
 import { PlanUpgradeGate } from '@/components/billing/PlanUpgradeGate';
 import type { ChatbotSettings } from '@/app/types/chatbot-settings';
 
-const DEFAULTS: Record<string, string> = {
-  persona_name: 'Assistente',
-  greeting_message: 'Olá! Seja bem-vindo(a). Como posso ajudar você e seu pet hoje? 🐾',
-  farewell_message: 'Obrigado pelo contato! Qualquer dúvida, estamos aqui. Até logo! 👋',
-  fallback_message: 'Desculpe, não entendi sua mensagem. Pode reformular? Se preferir, um atendente pode ajudá-lo.',
-  emergency_message: 'Percebemos que pode ser urgente. Se o animal estiver muito mal, dirija-se imediatamente à nossa clínica. Nossa equipe foi notificada. 🚨',
-  human_handoff_message: 'Entendido! Vou chamar um atendente humano. Em breve alguém da nossa equipe entrará em contato. 👋',
-  system_prompt_extra: '',
-};
-
 function FieldTooltip({ text }: { text: string }) {
   return (
     <TooltipProvider>
@@ -47,6 +38,18 @@ function FieldTooltip({ text }: { text: string }) {
 }
 
 function ChatbotSettingsPageContent() {
+  const { t } = useTranslation();
+
+  const DEFAULTS: Record<string, string> = {
+    persona_name: t('settingsChatbot.defaults.personaName'),
+    greeting_message: t('settingsChatbot.defaults.greetingMessage'),
+    farewell_message: t('settingsChatbot.defaults.farewellMessage'),
+    fallback_message: t('settingsChatbot.defaults.fallbackMessage'),
+    emergency_message: t('settingsChatbot.defaults.emergencyMessage'),
+    human_handoff_message: t('settingsChatbot.defaults.humanHandoffMessage'),
+    system_prompt_extra: '',
+  };
+
   const { register, handleSubmit, reset, formState: { errors } } = useForm<ChatbotSettings>({
     defaultValues: DEFAULTS,
   });
@@ -70,13 +73,14 @@ function ChatbotSettingsPageContent() {
       human_handoff_message: data.human_handoff_message ?? DEFAULTS.human_handoff_message,
       system_prompt_extra: data.system_prompt_extra ?? '',
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, isError, reset]);
 
   const onSubmit = async (values: ChatbotSettings) => {
     try {
       await saveMutation.mutateAsync(values);
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, 'Erro ao salvar'));
+      toast.error(getApiErrorMessage(error, t('settingsChatbot.saveError')));
     }
   };
 
@@ -92,16 +96,16 @@ function ChatbotSettingsPageContent() {
           </Link>
           <div>
             <h1 className="text-2xl font-heading font-semibold text-foreground flex items-center gap-2">
-              <Bot className="w-6 h-6 text-primary" /> Persona & Mensagens
+              <Bot className="w-6 h-6 text-primary" /> {t('settingsChatbot.title')}
             </h1>
             <p className="text-sm text-muted-foreground mt-0.5">
-              Configure o comportamento e as mensagens padrão do bot.
+              {t('settingsChatbot.subtitle')}
             </p>
           </div>
         </div>
         <Link href="/chatbot-workflows">
           <Button variant="outline" size="sm" className="w-full gap-1.5 text-muted-foreground sm:w-auto">
-            <Workflow className="w-4 h-4" /> Ver Workflows
+            <Workflow className="w-4 h-4" /> {t('settingsChatbot.viewWorkflows')}
           </Button>
         </Link>
       </div>
@@ -115,10 +119,10 @@ function ChatbotSettingsPageContent() {
           <Tabs defaultValue="persona">
             <TabsList className="mb-4 grid h-auto! w-full grid-cols-1 gap-1 sm:grid-cols-2">
               <TabsTrigger value="persona" className="h-auto! whitespace-normal px-3 py-2 text-center leading-snug">
-                Persona & Mensagens
+                {t('settingsChatbot.tabs.persona')}
               </TabsTrigger>
               <TabsTrigger value="advanced" className="h-auto! whitespace-normal px-3 py-2 text-center leading-snug">
-                Prompt Avançado
+                {t('settingsChatbot.tabs.advanced')}
               </TabsTrigger>
             </TabsList>
 
@@ -128,17 +132,17 @@ function ChatbotSettingsPageContent() {
                   {/* Persona name */}
                   <div className="space-y-2">
                     <Label htmlFor="persona_name" className="flex items-center gap-1">
-                      Nome da persona
-                      <FieldTooltip text="Como o bot se identifica nas respostas geradas pela IA (ex: Nina, Assistente Pet)." />
+                      {t('settingsChatbot.personaName.label')}
+                      <FieldTooltip text={t('settingsChatbot.personaName.tooltip')} />
                     </Label>
                     <Input
                       id="persona_name"
-                      placeholder="Ex.: Nina, Assistente Pet, Clínica PetCare"
+                      placeholder={t('settingsChatbot.personaName.placeholder')}
                       maxLength={80}
                       {...register('persona_name', { required: true })}
                     />
                     {errors.persona_name && (
-                      <p className="text-destructive text-xs">Campo obrigatório</p>
+                      <p className="text-destructive text-xs">{t('settingsChatbot.requiredField')}</p>
                     )}
                   </div>
 
@@ -147,8 +151,8 @@ function ChatbotSettingsPageContent() {
                   {/* Greeting */}
                   <div className="space-y-2">
                     <Label htmlFor="greeting_message" className="flex items-center gap-1">
-                      Mensagem de boas-vindas
-                      <FieldTooltip text="Enviada automaticamente quando o cliente escreve pela 1ª vez. Deixe vazio para não enviar." />
+                      {t('settingsChatbot.greetingMessage.label')}
+                      <FieldTooltip text={t('settingsChatbot.greetingMessage.tooltip')} />
                     </Label>
                     <Textarea
                       id="greeting_message"
@@ -162,8 +166,8 @@ function ChatbotSettingsPageContent() {
                   {/* Fallback */}
                   <div className="space-y-2">
                     <Label htmlFor="fallback_message" className="flex items-center gap-1">
-                      Resposta de fallback
-                      <FieldTooltip text="Enviada quando a IA não consegue responder (ex: sem OpenAI key ou intenção desconhecida)." />
+                      {t('settingsChatbot.fallbackMessage.label')}
+                      <FieldTooltip text={t('settingsChatbot.fallbackMessage.tooltip')} />
                     </Label>
                     <Textarea
                       id="fallback_message"
@@ -177,8 +181,8 @@ function ChatbotSettingsPageContent() {
                   {/* Emergency */}
                   <div className="space-y-2">
                     <Label htmlFor="emergency_message" className="flex items-center gap-1">
-                      Mensagem de emergência
-                      <FieldTooltip text="Enviada quando o sistema detecta uma emergência real (atropelamento, convulsão, envenenamento etc.)." />
+                      {t('settingsChatbot.emergencyMessage.label')}
+                      <FieldTooltip text={t('settingsChatbot.emergencyMessage.tooltip')} />
                     </Label>
                     <Textarea
                       id="emergency_message"
@@ -192,8 +196,8 @@ function ChatbotSettingsPageContent() {
                   {/* Human handoff */}
                   <div className="space-y-2">
                     <Label htmlFor="human_handoff_message" className="flex items-center gap-1">
-                      Transferência para humano
-                      <FieldTooltip text="Enviada quando o cliente solicita atendimento humano. Após isso o bot é pausado para essa conversa." />
+                      {t('settingsChatbot.humanHandoffMessage.label')}
+                      <FieldTooltip text={t('settingsChatbot.humanHandoffMessage.tooltip')} />
                     </Label>
                     <Textarea
                       id="human_handoff_message"
@@ -207,8 +211,8 @@ function ChatbotSettingsPageContent() {
                   {/* Farewell */}
                   <div className="space-y-2">
                     <Label htmlFor="farewell_message" className="flex items-center gap-1">
-                      Mensagem de encerramento
-                      <FieldTooltip text="Pode ser usada manualmente ou por automações ao finalizar um atendimento." />
+                      {t('settingsChatbot.farewellMessage.label')}
+                      <FieldTooltip text={t('settingsChatbot.farewellMessage.tooltip')} />
                     </Label>
                     <Textarea
                       id="farewell_message"
@@ -227,21 +231,20 @@ function ChatbotSettingsPageContent() {
                 <CardContent className="pt-6">
                   <div className="space-y-2">
                     <Label htmlFor="system_prompt_extra" className="flex items-center gap-1">
-                      Instruções adicionais para a IA
-                      <FieldTooltip text='Texto injetado no system prompt. Permite customizar o comportamento da IA. Ex: "Somos especializados em animais exóticos.", "Não mencione preços."' />
+                      {t('settingsChatbot.advancedPrompt.label')}
+                      <FieldTooltip text={t('settingsChatbot.advancedPrompt.tooltip')} />
                     </Label>
                     <p className="text-xs text-muted-foreground">
-                      Este texto é concatenado ao prompt base da IA. Use para customizar o comportamento,
-                      adicionar contexto da clínica ou restringir tópicos.
+                      {t('settingsChatbot.advancedPrompt.description')}
                     </p>
                     <Textarea
                       id="system_prompt_extra"
                       rows={6}
-                      placeholder="Ex.: Somos uma clínica especializada em animais exóticos. Sempre mencione que temos pronto-socorro 24h. Nunca mencione preços sem antes consultar a recepção."
+                      placeholder={t('settingsChatbot.advancedPrompt.placeholder')}
                       maxLength={1000}
                       {...register('system_prompt_extra')}
                     />
-                    <p className="text-xs text-muted-foreground/60">Máximo 1000 caracteres</p>
+                    <p className="text-xs text-muted-foreground/60">{t('settingsChatbot.advancedPrompt.maxChars')}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -251,7 +254,7 @@ function ChatbotSettingsPageContent() {
           <div className="mt-4 flex flex-col sm:flex-row sm:justify-end">
             <Button type="submit" disabled={saving} className="w-full gap-2 bg-primary sm:w-auto">
               {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-              Salvar configurações
+              {t('settingsChatbot.saveButton')}
             </Button>
           </div>
         </form>
@@ -261,8 +264,9 @@ function ChatbotSettingsPageContent() {
 }
 
 export default function ChatbotSettingsPage() {
+  const { t } = useTranslation();
   return (
-    <PlanUpgradeGate requiredPlan="clinica" feature="Chatbot / IA">
+    <PlanUpgradeGate requiredPlan="clinica" feature={t('settingsChatbot.featureName')}>
       <ChatbotSettingsPageContent />
     </PlanUpgradeGate>
   );

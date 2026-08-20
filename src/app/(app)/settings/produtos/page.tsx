@@ -2,6 +2,7 @@
 
 import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { Plus, Package, ShoppingCart, Trash2, Pencil, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -41,10 +42,7 @@ import {
   useProductSalesQuery,
   useUpdateProductMutation,
 } from '@/hooks/apiHooks/useProducts';
-
-function fmt(n: number | null | undefined) {
-  return Number(n ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-}
+import { useCurrencyFormatter } from '@/lib/i18n/currency';
 
 function computeMargin(salePrice: number, cost: number, tax: number) {
   const tax_amount = Math.round(((salePrice * tax) / 100) * 100) / 100;
@@ -66,6 +64,8 @@ const EMPTY_FORM = {
 };
 
 function ProdutosContent() {
+  const { t } = useTranslation();
+  const fmt = useCurrencyFormatter();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -129,7 +129,7 @@ function ProdutosContent() {
 
   const saveProduct = async () => {
     if (!form.name.trim() || !form.sale_price) {
-      toast.error('Informe nome e preço de venda');
+      toast.error(t('settingsProdutos.missingFieldsError'));
       return;
     }
     const payload: ProductPayload = {
@@ -150,7 +150,7 @@ function ProdutosContent() {
       }
       setProductDialog(false);
     } catch {
-      toast.error('Erro ao salvar produto');
+      toast.error(t('settingsProdutos.saveProductError'));
     }
   };
 
@@ -160,7 +160,7 @@ function ProdutosContent() {
     try {
       await deleteProduct.mutateAsync(p.id);
     } catch {
-      toast.error('Erro ao remover produto');
+      toast.error(t('settingsProdutos.deleteProductError'));
     }
   };
 
@@ -210,14 +210,14 @@ function ProdutosContent() {
 
   const submitSale = async () => {
     if (cart.length === 0) {
-      toast.error('Adicione ao menos um produto');
+      toast.error(t('settingsProdutos.emptyCartError'));
       return;
     }
     try {
       await createSale.mutateAsync({ items: cart });
       setSaleDialog(false);
     } catch {
-      toast.error('Erro ao registrar venda');
+      toast.error(t('settingsProdutos.registerSaleError'));
     }
   };
 
@@ -225,27 +225,27 @@ function ProdutosContent() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Produtos / Farmácia</h1>
+          <h1 className="text-2xl font-bold">{t('settingsProdutos.title')}</h1>
           <p className="text-sm text-muted-foreground">
-            Cadastro de produtos e vendas. Cada venda gera um lançamento financeiro sugerido.
+            {t('settingsProdutos.subtitle')}
           </p>
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
           <Button variant="outline" onClick={openNewProduct} className="w-full sm:w-auto">
-            <Plus className="mr-2 size-4" /> Novo produto
+            <Plus className="mr-2 size-4" /> {t('settingsProdutos.newProduct')}
           </Button>
           <Button onClick={openSale} className="w-full sm:w-auto">
-            <ShoppingCart className="mr-2 size-4" /> Nova venda
+            <ShoppingCart className="mr-2 size-4" /> {t('settingsProdutos.newSale')}
           </Button>
         </div>
       </div>
 
       <div className="flex flex-wrap gap-2">
         <Button variant={tab === 'products' ? 'default' : 'outline'} size="sm" onClick={() => setTab('products')}>
-          <Package className="mr-2 size-4" /> Produtos
+          <Package className="mr-2 size-4" /> {t('settingsProdutos.tabProducts')}
         </Button>
         <Button variant={tab === 'sales' ? 'default' : 'outline'} size="sm" onClick={() => setTab('sales')}>
-          <ShoppingCart className="mr-2 size-4" /> Vendas
+          <ShoppingCart className="mr-2 size-4" /> {t('settingsProdutos.tabSales')}
         </Button>
       </div>
 
@@ -259,7 +259,7 @@ function ProdutosContent() {
         ) : tab === 'products' ? (
           products.length === 0 ? (
             <div className="rounded-lg border border-gray-300 bg-white py-8 text-center text-sm text-slate-500">
-              Nenhum produto cadastrado.
+              {t('settingsProdutos.emptyProducts')}
             </div>
           ) : (
             <>
@@ -268,13 +268,13 @@ function ProdutosContent() {
                 <Table className="min-w-full border-collapse bg-white text-sm">
                   <TableHeader>
                     <TableRow className="border-b border-gray-300 h-15">
-                      <TableHead>Produto</TableHead>
-                      <TableHead className="text-right">Custo</TableHead>
-                      <TableHead className="text-right">Venda</TableHead>
-                      <TableHead className="text-right">Imposto</TableHead>
-                      <TableHead className="text-right">Margem</TableHead>
-                      <TableHead className="text-right">Estoque</TableHead>
-                      <TableHead className="text-right">Ações</TableHead>
+                      <TableHead>{t('settingsProdutos.colProduct')}</TableHead>
+                      <TableHead className="text-right">{t('settingsProdutos.cost')}</TableHead>
+                      <TableHead className="text-right">{t('settingsProdutos.colSalePrice')}</TableHead>
+                      <TableHead className="text-right">{t('settingsProdutos.tax')}</TableHead>
+                      <TableHead className="text-right">{t('settingsProdutos.colMargin')}</TableHead>
+                      <TableHead className="text-right">{t('settingsProdutos.stock')}</TableHead>
+                      <TableHead className="text-right">{t('settingsProdutos.colActions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -285,7 +285,7 @@ function ProdutosContent() {
                           {p.sku ? <span className="ml-2 text-xs text-muted-foreground">{p.sku}</span> : null}
                         </TableCell>
                         <TableCell className="text-right tabular-nums">
-                          {p.cost_price_formatted ?? fmt(p.cost_price)}
+                          {p.cost_price_formatted ?? fmt(p.cost_price ?? 0)}
                         </TableCell>
                         <TableCell className="text-right tabular-nums">
                           {p.sale_price_formatted ?? fmt(p.sale_price)}
@@ -308,18 +308,18 @@ function ProdutosContent() {
                               </AlertDialogTrigger>
                               <AlertDialogContent>
                                 <AlertDialogHeader>
-                                  <AlertDialogTitle>Remover produto</AlertDialogTitle>
+                                  <AlertDialogTitle>{t('settingsProdutos.deleteProductTitle')}</AlertDialogTitle>
                                   <AlertDialogDescription>
-                                    Tem certeza que deseja remover &quot;{p.name}&quot;? Essa ação não pode ser desfeita.
+                                    {t('settingsProdutos.deleteProductDescription', { name: p.name })}
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                  <AlertDialogCancel>{t('settingsProdutos.cancel')}</AlertDialogCancel>
                                   <AlertDialogAction
                                     className="bg-destructive hover:bg-destructive/90"
                                     onClick={() => handleDeleteProduct(p)}
                                   >
-                                    Remover
+                                    {t('settingsProdutos.remove')}
                                   </AlertDialogAction>
                                 </AlertDialogFooter>
                               </AlertDialogContent>
@@ -346,30 +346,30 @@ function ProdutosContent() {
                       </div>
                       {!p.active && (
                         <Badge variant="secondary" className="shrink-0">
-                          Inativo
+                          {t('settingsProdutos.inactiveBadge')}
                         </Badge>
                       )}
                     </div>
 
                     <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
                       <div>
-                        <p className="text-xs text-muted-foreground">Custo</p>
-                        <p className="tabular-nums">{p.cost_price_formatted ?? fmt(p.cost_price)}</p>
+                        <p className="text-xs text-muted-foreground">{t('settingsProdutos.cost')}</p>
+                        <p className="tabular-nums">{p.cost_price_formatted ?? fmt(p.cost_price ?? 0)}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-muted-foreground">Venda</p>
+                        <p className="text-xs text-muted-foreground">{t('settingsProdutos.colSalePrice')}</p>
                         <p className="tabular-nums">{p.sale_price_formatted ?? fmt(p.sale_price)}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-muted-foreground">Imposto</p>
+                        <p className="text-xs text-muted-foreground">{t('settingsProdutos.tax')}</p>
                         <p className="tabular-nums">{Number(p.tax_percentage)}%</p>
                       </div>
                       <div>
-                        <p className="text-xs text-muted-foreground">Margem</p>
+                        <p className="text-xs text-muted-foreground">{t('settingsProdutos.colMargin')}</p>
                         <p className="tabular-nums">{p.pricing ? `${p.pricing.margin_percentage}%` : '—'}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-muted-foreground">Estoque</p>
+                        <p className="text-xs text-muted-foreground">{t('settingsProdutos.stock')}</p>
                         <p className="tabular-nums">{p.stock_quantity}</p>
                       </div>
                     </div>
@@ -386,18 +386,18 @@ function ProdutosContent() {
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
-                            <AlertDialogTitle>Remover produto</AlertDialogTitle>
+                            <AlertDialogTitle>{t('settingsProdutos.deleteProductTitle')}</AlertDialogTitle>
                             <AlertDialogDescription>
-                              Tem certeza que deseja remover &quot;{p.name}&quot;? Essa ação não pode ser desfeita.
+                              {t('settingsProdutos.deleteProductDescription', { name: p.name })}
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogCancel>{t('settingsProdutos.cancel')}</AlertDialogCancel>
                             <AlertDialogAction
                               className="bg-destructive hover:bg-destructive/90"
                               onClick={() => handleDeleteProduct(p)}
                             >
-                              Remover
+                              {t('settingsProdutos.remove')}
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
@@ -410,7 +410,7 @@ function ProdutosContent() {
           )
         ) : sales.length === 0 ? (
           <div className="rounded-lg border border-gray-300 bg-white py-8 text-center text-sm text-slate-500">
-            Nenhuma venda registrada.
+            {t('settingsProdutos.emptySales')}
           </div>
         ) : (
           <>
@@ -419,11 +419,11 @@ function ProdutosContent() {
               <Table className="min-w-full border-collapse bg-white text-sm">
                 <TableHeader>
                   <TableRow className="border-b border-gray-300 h-15">
-                    <TableHead>Data</TableHead>
-                    <TableHead>Itens</TableHead>
-                    <TableHead className="text-right">Bruto</TableHead>
-                    <TableHead className="text-right">Imposto</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
+                    <TableHead>{t('settingsProdutos.colDate')}</TableHead>
+                    <TableHead>{t('settingsProdutos.colItems')}</TableHead>
+                    <TableHead className="text-right">{t('settingsProdutos.gross')}</TableHead>
+                    <TableHead className="text-right">{t('settingsProdutos.tax')}</TableHead>
+                    <TableHead className="text-right">{t('settingsProdutos.total')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -454,8 +454,8 @@ function ProdutosContent() {
                     {(s.items ?? []).map((i) => `${i.quantity}× ${i.product_name}`).join(', ')}
                   </p>
                   <div className="mt-2 flex justify-between border-t border-gray-200 pt-2 text-xs text-muted-foreground">
-                    <span>Bruto: {fmt(s.total_gross)}</span>
-                    <span>Imposto: {fmt(s.total_tax)}</span>
+                    <span>{t('settingsProdutos.gross')}: {fmt(s.total_gross)}</span>
+                    <span>{t('settingsProdutos.tax')}: {fmt(s.total_tax)}</span>
                   </div>
                 </div>
               ))}
@@ -468,15 +468,15 @@ function ProdutosContent() {
       <DashboardCreateFormDialog
         open={productDialog}
         onOpenChange={setProductDialog}
-        title={editing ? 'Editar produto' : 'Novo produto'}
+        title={editing ? t('settingsProdutos.editProductTitle') : t('settingsProdutos.newProduct')}
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button type="button" variant="outline" onClick={() => setProductDialog(false)} disabled={savingProduct}>
-              Cancelar
+              {t('settingsProdutos.cancel')}
             </Button>
             <Button type="submit" form="product-create-form" className="bg-primary" disabled={savingProduct}>
               {savingProduct && <Loader2 className="mr-2 size-4 animate-spin" />}
-              Salvar
+              {t('settingsProdutos.save')}
             </Button>
           </div>
         }
@@ -490,11 +490,11 @@ function ProdutosContent() {
           className="space-y-4 md:space-y-6"
         >
           <div className="space-y-2">
-            <Label htmlFor="name">Nome</Label>
+            <Label htmlFor="name">{t('settingsProdutos.nameLabel')}</Label>
             <Input id="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="description">Descrição (opcional)</Label>
+            <Label htmlFor="description">{t('settingsProdutos.descriptionLabel')}</Label>
             <Textarea
               id="description"
               value={form.description}
@@ -502,12 +502,12 @@ function ProdutosContent() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="sku">SKU / código (opcional)</Label>
+            <Label htmlFor="sku">{t('settingsProdutos.skuLabel')}</Label>
             <Input id="sku" value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} />
           </div>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="cost">Custo</Label>
+              <Label htmlFor="cost">{t('settingsProdutos.cost')}</Label>
               <CurrencyInput
                 id="cost"
                 value={form.cost_price}
@@ -515,7 +515,7 @@ function ProdutosContent() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="sale">Preço de venda</Label>
+              <Label htmlFor="sale">{t('settingsProdutos.salePriceLabel')}</Label>
               <CurrencyInput
                 id="sale"
                 value={form.sale_price}
@@ -523,7 +523,7 @@ function ProdutosContent() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="tax">Imposto (%)</Label>
+              <Label htmlFor="tax">{t('settingsProdutos.taxPercentLabel')}</Label>
               <Input
                 id="tax"
                 type="number"
@@ -533,7 +533,7 @@ function ProdutosContent() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="stock">Estoque</Label>
+              <Label htmlFor="stock">{t('settingsProdutos.stock')}</Label>
               <Input
                 id="stock"
                 type="number"
@@ -545,7 +545,7 @@ function ProdutosContent() {
 
           <div className="flex items-center justify-between rounded-md border border-gray-300 p-3">
             <Label htmlFor="active" className="cursor-pointer">
-              Produto ativo
+              {t('settingsProdutos.activeProductLabel')}
             </Label>
             <Switch
               id="active"
@@ -556,17 +556,17 @@ function ProdutosContent() {
 
           <div className="rounded-md bg-muted/50 p-3 text-sm">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Margem (lucro)</span>
+              <span className="text-muted-foreground">{t('settingsProdutos.marginLabel')}</span>
               <span className="font-medium">
                 {fmt(formPreview.margin_value)} ({formPreview.margin_percentage}%)
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Imposto por cima</span>
+              <span className="text-muted-foreground">{t('settingsProdutos.taxOnTopLabel')}</span>
               <span>{fmt(formPreview.tax_amount)}</span>
             </div>
             <div className="flex justify-between font-semibold">
-              <span>Total ao cliente (à vista)</span>
+              <span>{t('settingsProdutos.clientTotalLabel')}</span>
               <span>{fmt(formPreview.client_total)}</span>
             </div>
           </div>
@@ -577,11 +577,11 @@ function ProdutosContent() {
       <DashboardCreateFormDialog
         open={saleDialog}
         onOpenChange={setSaleDialog}
-        title="Nova venda"
+        title={t('settingsProdutos.newSale')}
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button type="button" variant="outline" onClick={() => setSaleDialog(false)} disabled={createSale.isPending}>
-              Cancelar
+              {t('settingsProdutos.cancel')}
             </Button>
             <Button
               type="submit"
@@ -590,7 +590,7 @@ function ProdutosContent() {
               disabled={createSale.isPending || cart.length === 0}
             >
               {createSale.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
-              Registrar venda
+              {t('settingsProdutos.registerSale')}
             </Button>
           </div>
         }
@@ -604,18 +604,18 @@ function ProdutosContent() {
           className="space-y-4 md:space-y-6"
         >
           <div className="space-y-2">
-            <Label htmlFor="product-search">Produtos</Label>
+            <Label htmlFor="product-search">{t('settingsProdutos.tabProducts')}</Label>
             <Input
               id="product-search"
               type="text"
-              placeholder="Buscar produto por nome..."
+              placeholder={t('settingsProdutos.searchProductPlaceholder')}
               value={productSearch}
               onChange={(e) => setProductSearch(e.target.value)}
               autoComplete="off"
             />
             <div className="max-h-48 space-y-1 overflow-y-auto rounded-md border border-gray-300 p-1">
               {filteredProducts.length === 0 ? (
-                <p className="p-2 text-center text-sm text-muted-foreground">Nenhum produto encontrado.</p>
+                <p className="p-2 text-center text-sm text-muted-foreground">{t('settingsProdutos.noProductsFound')}</p>
               ) : (
                 filteredProducts.map((p) => (
                   <button
@@ -655,15 +655,15 @@ function ProdutosContent() {
               })}
               <div className="rounded-md bg-muted/50 p-3 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Bruto</span>
+                  <span className="text-muted-foreground">{t('settingsProdutos.gross')}</span>
                   <span>{fmt(cartTotals.gross)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Imposto</span>
+                  <span className="text-muted-foreground">{t('settingsProdutos.tax')}</span>
                   <span>{fmt(cartTotals.tax)}</span>
                 </div>
                 <div className="flex justify-between font-semibold">
-                  <span>Total</span>
+                  <span>{t('settingsProdutos.total')}</span>
                   <span>{fmt(cartTotals.total)}</span>
                 </div>
               </div>
@@ -676,8 +676,9 @@ function ProdutosContent() {
 }
 
 export default function ProdutosPage() {
+  const { t } = useTranslation();
   return (
-    <Suspense fallback={<div className="p-6">Carregando...</div>}>
+    <Suspense fallback={<div className="p-6">{t('settingsProdutos.loading')}</div>}>
       <ProdutosContent />
     </Suspense>
   );

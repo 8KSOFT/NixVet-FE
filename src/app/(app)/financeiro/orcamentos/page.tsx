@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, FileText, CheckCircle, Eye, Trash2, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -35,6 +36,7 @@ import {
   useDownloadBudgetPdfMutation,
 } from '@/hooks/apiHooks/useBudgets';
 import { getApiErrorMessage } from '@/app/utils/api-error-message';
+import { useCurrencyFormatter } from '@/lib/i18n/currency';
 import type { Budget, BudgetItem, BudgetItemType, BudgetPayload, BudgetType } from '@/app/types/budget';
 
 type BudgetBadgeVariant = 'secondary' | 'default' | 'destructive';
@@ -72,15 +74,18 @@ function emptyBudgetItem(): BudgetFormItem {
   };
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  draft: 'Rascunho',
-  sent: 'Enviado',
-  approved: 'Aprovado',
-  rejected: 'Recusado',
-  expired: 'Expirado',
-  converted: 'Convertido',
-  cancelled: 'Cancelado',
-};
+function getStatusLabel(t: (key: string) => string, status: string): string {
+  const labels: Record<string, string> = {
+    draft: t('financeiroOrcamentos.statusDraft'),
+    sent: t('financeiroOrcamentos.statusSent'),
+    approved: t('financeiroOrcamentos.statusApproved'),
+    rejected: t('financeiroOrcamentos.statusRejected'),
+    expired: t('financeiroOrcamentos.statusExpired'),
+    converted: t('financeiroOrcamentos.statusConverted'),
+    cancelled: t('financeiroOrcamentos.statusCancelled'),
+  };
+  return labels[status] ?? status;
+}
 
 const STATUS_COLORS: Record<string, BudgetBadgeVariant> = {
   draft: 'secondary',
@@ -97,10 +102,6 @@ function canCancel(status: string) {
   return status !== 'cancelled' && status !== 'converted';
 }
 
-function fmt(n: number) {
-  return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-}
-
 function computeTotals(items: BudgetItem[]) {
   const total = items.reduce((s, i) => s + Number(i.total_price), 0);
   const plan = items.reduce((s, i) => s + Number(i.plan_coverage_amount), 0);
@@ -108,6 +109,8 @@ function computeTotals(items: BudgetItem[]) {
 }
 
 export default function OrcamentosPage() {
+  const { t } = useTranslation();
+  const fmt = useCurrencyFormatter();
   const [openNew, setOpenNew] = useState(false);
   const [selected, setSelected] = useState<Budget | null>(null);
   const [toCancel, setToCancel] = useState<Budget | null>(null);
@@ -133,14 +136,14 @@ export default function OrcamentosPage() {
 
   const handleCreate = async () => {
     if (!form.patient_id) {
-      toast.error('Selecione o paciente');
+      toast.error(t('financeiroOrcamentos.selectPatientError'));
       return;
     }
     const invalidItem = form.items.find((item) =>
       item.item_type === 'product' ? !item.reference_id : !item.description.trim(),
     );
     if (invalidItem) {
-      toast.error('Preencha o produto ou a descrição de todos os itens');
+      toast.error(t('financeiroOrcamentos.fillItemsError'));
       return;
     }
 
@@ -181,7 +184,7 @@ export default function OrcamentosPage() {
         items: [emptyBudgetItem()],
       });
     } catch {
-      toast.error('Erro ao criar orçamento');
+      toast.error(t('financeiroOrcamentos.createError'));
     }
   };
 
@@ -189,7 +192,7 @@ export default function OrcamentosPage() {
     try {
       await approveBudget.mutateAsync(id);
     } catch {
-      toast.error('Erro ao aprovar');
+      toast.error(t('financeiroOrcamentos.approveError'));
     }
   };
 
@@ -203,14 +206,14 @@ export default function OrcamentosPage() {
       const kept = result?.financial?.kept_confirmed ?? 0;
       toast.success(
         kept > 0
-          ? `Orçamento cancelado. ${kept} lançamento(s) já confirmado(s) permanecem no financeiro — revise manualmente.`
-          : 'Orçamento cancelado.',
+          ? t('financeiroOrcamentos.cancelSuccessWithKept', { count: kept })
+          : t('financeiroOrcamentos.cancelSuccess'),
       );
       setToCancel(null);
       setCancelReason('');
       if (selected?.id === toCancel.id) setSelected(null);
     } catch (error) {
-      toast.error(getApiErrorMessage(error, 'Erro ao cancelar orçamento'));
+      toast.error(getApiErrorMessage(error, t('financeiroOrcamentos.cancelError')));
     }
   };
 
@@ -224,7 +227,7 @@ export default function OrcamentosPage() {
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      toast.error('Erro ao gerar PDF');
+      toast.error(t('financeiroOrcamentos.pdfError'));
     }
   };
 
@@ -273,12 +276,12 @@ export default function OrcamentosPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Orçamentos</h1>
-          <p className="text-sm text-muted-foreground">Gerencie orçamentos para procedimentos e internações</p>
+          <h1 className="text-2xl font-bold">{t('financeiroOrcamentos.title')}</h1>
+          <p className="text-sm text-muted-foreground">{t('financeiroOrcamentos.subtitle')}</p>
         </div>
         <Button onClick={() => setOpenNew(true)} className="w-full sm:w-auto">
           <Plus className="mr-2 size-4" />
-          Novo Orçamento
+          {t('financeiroOrcamentos.newBudget')}
         </Button>
       </div>
 
@@ -290,7 +293,7 @@ export default function OrcamentosPage() {
         </div>
       ) : budgets.length === 0 ? (
         <div className="rounded-lg border border-gray-300 bg-white py-8 text-center text-sm text-slate-500">
-          Nenhum orçamento encontrado
+          {t('financeiroOrcamentos.emptyState')}
         </div>
       ) : (
         <>
@@ -299,15 +302,15 @@ export default function OrcamentosPage() {
             <Table className="min-w-full border-collapse bg-white text-sm">
               <TableHeader>
                 <TableRow className="border-b border-gray-300 h-15">
-                  <TableHead>Nº</TableHead>
-                  <TableHead>Paciente</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead className="text-right">Total</TableHead>
-                  <TableHead className="text-right">Plano Cobre</TableHead>
-                  <TableHead className="text-right">Tutor Paga</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Validade</TableHead>
-                  <TableHead>Ações</TableHead>
+                  <TableHead>{t('financeiroOrcamentos.columnNumber')}</TableHead>
+                  <TableHead>{t('financeiroOrcamentos.patient')}</TableHead>
+                  <TableHead>{t('financeiroOrcamentos.type')}</TableHead>
+                  <TableHead className="text-right">{t('financeiroOrcamentos.total')}</TableHead>
+                  <TableHead className="text-right">{t('financeiroOrcamentos.planCoverage')}</TableHead>
+                  <TableHead className="text-right">{t('financeiroOrcamentos.tutorPays')}</TableHead>
+                  <TableHead>{t('financeiroOrcamentos.status')}</TableHead>
+                  <TableHead>{t('financeiroOrcamentos.validity')}</TableHead>
+                  <TableHead>{t('financeiroOrcamentos.actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -320,13 +323,17 @@ export default function OrcamentosPage() {
                     <TableRow className="cursor-pointer hover:bg-muted/50 border-b border-gray-300 h-15" key={b.id}>
                       <TableCell className="font-mono text-xs">{b.id.substring(0, 8).toUpperCase()}</TableCell>
                       <TableCell>{b.patient?.name}</TableCell>
-                      <TableCell>{b.type === 'procedure' ? 'Procedimento' : 'Internação'}</TableCell>
+                      <TableCell>
+                        {b.type === 'procedure'
+                          ? t('financeiroOrcamentos.typeProcedure')
+                          : t('financeiroOrcamentos.typeHospitalization')}
+                      </TableCell>
                       <TableCell className="text-right tabular-nums">{totalFmt}</TableCell>
                       <TableCell className="text-right tabular-nums text-green-600">{planFmt}</TableCell>
                       <TableCell className="text-right tabular-nums text-blue-600">{tutorFmt}</TableCell>
                       <TableCell>
                         <Badge variant={STATUS_COLORS[b.status] ?? 'secondary'}>
-                          {STATUS_LABELS[b.status] ?? b.status}
+                          {getStatusLabel(t, b.status)}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
@@ -334,14 +341,14 @@ export default function OrcamentosPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
-                          <Button variant="ghost" size="icon" onClick={() => setSelected(b)} title="Visualizar">
+                          <Button variant="ghost" size="icon" onClick={() => setSelected(b)} title={t('financeiroOrcamentos.viewAction')}>
                             <Eye className="size-4" />
                           </Button>
-                          <Button variant="ghost" size="icon" onClick={() => handleDownloadPdf(b.id)} title="PDF">
+                          <Button variant="ghost" size="icon" onClick={() => handleDownloadPdf(b.id)} title={t('financeiroOrcamentos.pdfAction')}>
                             <FileText className="size-4" />
                           </Button>
                           {b.status === 'draft' || b.status === 'sent' ? (
-                            <Button variant="ghost" size="icon" onClick={() => handleApprove(b.id)} title="Aprovar">
+                            <Button variant="ghost" size="icon" onClick={() => handleApprove(b.id)} title={t('financeiroOrcamentos.approveAction')}>
                               <CheckCircle className="size-4 text-green-600" />
                             </Button>
                           ) : null}
@@ -350,7 +357,7 @@ export default function OrcamentosPage() {
                               variant="ghost"
                               size="icon"
                               onClick={() => setToCancel(b)}
-                              title="Cancelar orçamento"
+                              title={t('financeiroOrcamentos.cancelIconTitle')}
                             >
                               <XCircle className="size-4 text-destructive" />
                             </Button>
@@ -377,42 +384,45 @@ export default function OrcamentosPage() {
                     <div className="min-w-0">
                       <p className="truncate font-medium">{b.patient?.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        #{b.id.substring(0, 8).toUpperCase()} · {b.type === 'procedure' ? 'Procedimento' : 'Internação'}
+                        #{b.id.substring(0, 8).toUpperCase()} ·{' '}
+                        {b.type === 'procedure'
+                          ? t('financeiroOrcamentos.typeProcedure')
+                          : t('financeiroOrcamentos.typeHospitalization')}
                       </p>
                     </div>
                     <Badge variant={STATUS_COLORS[b.status] ?? 'secondary'} className="shrink-0">
-                      {STATUS_LABELS[b.status] ?? b.status}
+                      {getStatusLabel(t, b.status)}
                     </Badge>
                   </div>
 
                   <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
                     <div>
-                      <p className="text-xs text-muted-foreground">Total</p>
+                      <p className="text-xs text-muted-foreground">{t('financeiroOrcamentos.total')}</p>
                       <p className="tabular-nums">{totalFmt}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-muted-foreground">Validade</p>
+                      <p className="text-xs text-muted-foreground">{t('financeiroOrcamentos.validity')}</p>
                       <p>{b.valid_until ? new Date(b.valid_until).toLocaleDateString('pt-BR') : '—'}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-muted-foreground">Plano Cobre</p>
+                      <p className="text-xs text-muted-foreground">{t('financeiroOrcamentos.planCoverage')}</p>
                       <p className="tabular-nums text-green-600">{planFmt}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-muted-foreground">Tutor Paga</p>
+                      <p className="text-xs text-muted-foreground">{t('financeiroOrcamentos.tutorPays')}</p>
                       <p className="tabular-nums text-blue-600">{tutorFmt}</p>
                     </div>
                   </div>
 
                   <div className="mt-3 flex items-center justify-end gap-1 border-t border-gray-200 pt-2">
-                    <Button variant="ghost" size="icon" onClick={() => setSelected(b)} title="Visualizar">
+                    <Button variant="ghost" size="icon" onClick={() => setSelected(b)} title={t('financeiroOrcamentos.viewAction')}>
                       <Eye className="size-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDownloadPdf(b.id)} title="PDF">
+                    <Button variant="ghost" size="icon" onClick={() => handleDownloadPdf(b.id)} title={t('financeiroOrcamentos.pdfAction')}>
                       <FileText className="size-4" />
                     </Button>
                     {b.status === 'draft' || b.status === 'sent' ? (
-                      <Button variant="ghost" size="icon" onClick={() => handleApprove(b.id)} title="Aprovar">
+                      <Button variant="ghost" size="icon" onClick={() => handleApprove(b.id)} title={t('financeiroOrcamentos.approveAction')}>
                         <CheckCircle className="size-4 text-green-600" />
                       </Button>
                     ) : null}
@@ -421,7 +431,7 @@ export default function OrcamentosPage() {
                         variant="ghost"
                         size="icon"
                         onClick={() => setToCancel(b)}
-                        title="Cancelar orçamento"
+                        title={t('financeiroOrcamentos.cancelIconTitle')}
                       >
                         <XCircle className="size-4 text-destructive" />
                       </Button>
@@ -438,15 +448,15 @@ export default function OrcamentosPage() {
       <DashboardCreateFormDialog
         open={openNew}
         onOpenChange={setOpenNew}
-        title="Novo Orçamento"
+        title={t('financeiroOrcamentos.newBudget')}
         contentClassName="modal-responsive sm:max-w-3xl"
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button type="button" variant="outline" className="border border-gray-300" onClick={() => setOpenNew(false)}>
-              Cancelar
+              {t('financeiroOrcamentos.cancel')}
             </Button>
             <Button type="button" onClick={handleCreate}>
-              Criar Orçamento
+              {t('financeiroOrcamentos.createBudgetButton')}
             </Button>
           </div>
         }
@@ -454,10 +464,10 @@ export default function OrcamentosPage() {
         <div className="space-y-4 md:space-y-6">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-1">
-                <Label>Paciente</Label>
+                <Label>{t('financeiroOrcamentos.patient')}</Label>
                 <Select value={form.patient_id} onValueChange={(v) => setForm((f) => ({ ...f, patient_id: v }))}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione" />
+                    <SelectValue placeholder={t('financeiroOrcamentos.selectPlaceholder')} />
                   </SelectTrigger>
                   <SelectContent>
                     {patients.map((p) => (
@@ -469,16 +479,16 @@ export default function OrcamentosPage() {
                 </Select>
               </div>
               <div className="space-y-1">
-                <Label>Veterinário</Label>
+                <Label>{t('financeiroOrcamentos.veterinarian')}</Label>
                 <Select
                   value={form.veterinarian_id || '_none'}
                   onValueChange={(v) => setForm((f) => ({ ...f, veterinarian_id: v === '_none' ? '' : v }))}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione" />
+                    <SelectValue placeholder={t('financeiroOrcamentos.selectPlaceholder')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="_none">Usar veterinário autenticado</SelectItem>
+                    <SelectItem value="_none">{t('financeiroOrcamentos.useAuthenticatedVet')}</SelectItem>
                     {users.map((u) => (
                       <SelectItem key={u.id} value={u.id}>
                         {u.name}
@@ -488,7 +498,7 @@ export default function OrcamentosPage() {
                 </Select>
               </div>
               <div className="space-y-1">
-                <Label>Tipo</Label>
+                <Label>{t('financeiroOrcamentos.type')}</Label>
                 <Select
                   value={form.type}
                   onValueChange={(value: BudgetType) => setForm((f) => ({ ...f, type: value }))}
@@ -497,13 +507,13 @@ export default function OrcamentosPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="procedure">Procedimento</SelectItem>
-                    <SelectItem value="hospitalization">Internação</SelectItem>
+                    <SelectItem value="procedure">{t('financeiroOrcamentos.typeProcedure')}</SelectItem>
+                    <SelectItem value="hospitalization">{t('financeiroOrcamentos.typeHospitalization')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1">
-                <Label>Válido até</Label>
+                <Label>{t('financeiroOrcamentos.validUntilLabel')}</Label>
                 <Input
                   type="date"
                   value={form.valid_until}
@@ -514,16 +524,16 @@ export default function OrcamentosPage() {
 
             <div>
               <div className="mb-2 flex items-center justify-between">
-                <Label>Itens</Label>
+                <Label>{t('financeiroOrcamentos.itemsLabel')}</Label>
                 <Button type="button" variant="outline" size="sm" onClick={addItem}>
-                  + Adicionar Item
+                  {t('financeiroOrcamentos.addItemButton')}
                 </Button>
               </div>
               <div className="hidden gap-2 px-3 text-xs font-medium text-muted-foreground sm:grid sm:grid-cols-12">
-                <span className="col-span-3">Tipo</span>
-                <span className="col-span-4">Produto / Descrição</span>
-                <span className="col-span-2">Qtd</span>
-                <span className="col-span-2">Valor unit.</span>
+                <span className="col-span-3">{t('financeiroOrcamentos.type')}</span>
+                <span className="col-span-4">{t('financeiroOrcamentos.productDescriptionColumn')}</span>
+                <span className="col-span-2">{t('financeiroOrcamentos.quantityColumn')}</span>
+                <span className="col-span-2">{t('financeiroOrcamentos.unitPriceColumn')}</span>
                 <span className="col-span-1" />
               </div>
               <div className="space-y-2">
@@ -534,15 +544,15 @@ export default function OrcamentosPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="procedure">Manual</SelectItem>
-                        <SelectItem value="product">Produto</SelectItem>
+                        <SelectItem value="procedure">{t('financeiroOrcamentos.itemTypeManual')}</SelectItem>
+                        <SelectItem value="product">{t('financeiroOrcamentos.itemTypeProduct')}</SelectItem>
                       </SelectContent>
                     </Select>
 
                     {item.item_type === 'product' ? (
                       <Select value={item.reference_id} onValueChange={(v) => selectItemProduct(i, v)}>
                         <SelectTrigger className="col-span-2 h-9 sm:col-span-4">
-                          <SelectValue placeholder="Selecione o produto" />
+                          <SelectValue placeholder={t('financeiroOrcamentos.selectProductPlaceholder')} />
                         </SelectTrigger>
                         <SelectContent>
                           {products.map((p) => (
@@ -554,7 +564,7 @@ export default function OrcamentosPage() {
                       </Select>
                     ) : (
                       <Input
-                        placeholder="Descrição"
+                        placeholder={t('financeiroOrcamentos.descriptionColumn')}
                         value={item.description}
                         onChange={(e) => updateItem(i, 'description', e.target.value)}
                         className="col-span-2 h-9 sm:col-span-4"
@@ -564,13 +574,13 @@ export default function OrcamentosPage() {
                     <Input
                       type="number"
                       min={1}
-                      placeholder="Qtd"
+                      placeholder={t('financeiroOrcamentos.quantityColumn')}
                       value={item.quantity}
                       onChange={(e) => updateItem(i, 'quantity', Number(e.target.value))}
                       className="col-span-1 h-9 sm:col-span-2"
                     />
                     <CurrencyInput
-                      placeholder="Valor unit."
+                      placeholder={t('financeiroOrcamentos.unitPriceColumn')}
                       value={item.unit_price}
                       disabled={item.item_type === 'product'}
                       onValueChange={(v) => updateItem(i, 'unit_price', Number(v))}
@@ -584,7 +594,7 @@ export default function OrcamentosPage() {
                       className="col-span-2 h-9 justify-self-end text-muted-foreground hover:text-destructive sm:col-span-1"
                       onClick={() => removeItem(i)}
                       disabled={form.items.length === 1}
-                      title="Remover item"
+                      title={t('financeiroOrcamentos.removeItemTitle')}
                     >
                       <Trash2 className="size-4" />
                     </Button>
@@ -600,27 +610,34 @@ export default function OrcamentosPage() {
         <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
           <DialogContent className="max-w-[calc(100%-2rem)] sm:max-w-2xl">
             <DialogHeader>
-              <DialogTitle>Orçamento #{selected.id.substring(0, 8).toUpperCase()}</DialogTitle>
+              <DialogTitle>
+                {t('financeiroOrcamentos.budgetDetailTitle', { id: selected.id.substring(0, 8).toUpperCase() })}
+              </DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
                 <div>
-                  <span className="font-medium">Paciente:</span> {selected.patient?.name}
+                  <span className="font-medium">{t('financeiroOrcamentos.patient')}:</span> {selected.patient?.name}
                 </div>
                 <div>
-                  <span className="font-medium">Veterinário:</span> {selected.veterinarian?.name ?? '—'}
+                  <span className="font-medium">{t('financeiroOrcamentos.veterinarian')}:</span>{' '}
+                  {selected.veterinarian?.name ?? '—'}
                 </div>
                 <div>
-                  <span className="font-medium">Tipo:</span> {selected.type}
+                  <span className="font-medium">{t('financeiroOrcamentos.type')}:</span> {selected.type}
                 </div>
                 <div>
-                  <span className="font-medium">Status:</span> {STATUS_LABELS[selected.status] ?? selected.status}
+                  <span className="font-medium">{t('financeiroOrcamentos.status')}:</span>{' '}
+                  {getStatusLabel(t, selected.status)}
                 </div>
                 {selected.status === 'cancelled' && (
                   <div className="sm:col-span-2 text-destructive">
-                    <span className="font-medium">Cancelado</span>
+                    <span className="font-medium">{getStatusLabel(t, 'cancelled')}</span>
                     {selected.cancelled_at
-                      ? ` em ${new Date(selected.cancelled_at).toLocaleDateString('pt-BR')}`
+                      ? ' ' +
+                        t('financeiroOrcamentos.cancelledOnDate', {
+                          date: new Date(selected.cancelled_at).toLocaleDateString('pt-BR'),
+                        })
                       : ''}
                     {selected.cancellation_reason ? ` — ${selected.cancellation_reason}` : ''}
                   </div>
@@ -630,10 +647,10 @@ export default function OrcamentosPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Descrição</TableHead>
-                      <TableHead className="text-right">Qtd</TableHead>
-                      <TableHead className="text-right">Unit.</TableHead>
-                      <TableHead className="text-right">Total</TableHead>
+                      <TableHead>{t('financeiroOrcamentos.descriptionColumn')}</TableHead>
+                      <TableHead className="text-right">{t('financeiroOrcamentos.quantityColumn')}</TableHead>
+                      <TableHead className="text-right">{t('financeiroOrcamentos.unitColumnShort')}</TableHead>
+                      <TableHead className="text-right">{t('financeiroOrcamentos.total')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -644,7 +661,7 @@ export default function OrcamentosPage() {
                             {item.description}
                             {item.reference_type === 'product' && (
                               <Badge variant="secondary" className="text-[10px]">
-                                Produto
+                                {t('financeiroOrcamentos.itemTypeProduct')}
                               </Badge>
                             )}
                           </div>
@@ -662,22 +679,22 @@ export default function OrcamentosPage() {
                 </Table>
               </div>
               {(() => {
-                const t = computeTotals(selected.items ?? []);
-                const totalFmt = selected.summary?.total_formatted ?? fmt(t.total);
-                const planFmt = selected.summary?.plan_coverage_formatted ?? fmt(t.plan);
-                const tutorFmt = selected.summary?.tutor_responsibility_formatted ?? fmt(t.tutor);
+                const totals = computeTotals(selected.items ?? []);
+                const totalFmt = selected.summary?.total_formatted ?? fmt(totals.total);
+                const planFmt = selected.summary?.plan_coverage_formatted ?? fmt(totals.plan);
+                const tutorFmt = selected.summary?.tutor_responsibility_formatted ?? fmt(totals.tutor);
                 return (
                   <div className="rounded-lg bg-muted/50 p-3 space-y-1 text-sm">
                     <div className="flex justify-between">
-                      <span>Total Geral</span>
+                      <span>{t('financeiroOrcamentos.grandTotal')}</span>
                       <span className="font-semibold">{totalFmt}</span>
                     </div>
                     <div className="flex justify-between text-green-600">
-                      <span>Coberto pelo Plano</span>
+                      <span>{t('financeiroOrcamentos.coveredByPlan')}</span>
                       <span>{planFmt}</span>
                     </div>
                     <div className="flex justify-between text-blue-600">
-                      <span>Responsabilidade do Tutor</span>
+                      <span>{t('financeiroOrcamentos.tutorResponsibility')}</span>
                       <span>{tutorFmt}</span>
                     </div>
                   </div>
@@ -688,7 +705,7 @@ export default function OrcamentosPage() {
                 <div className="flex justify-end border-t pt-3">
                   <Button variant="outline" className="text-destructive" onClick={() => setToCancel(selected)}>
                     <XCircle className="mr-2 size-4" />
-                    Cancelar Orçamento
+                    {t('financeiroOrcamentos.cancelBudgetButton')}
                   </Button>
                 </div>
               )}
@@ -710,26 +727,24 @@ export default function OrcamentosPage() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              Cancelar orçamento #{toCancel?.id.substring(0, 8).toUpperCase()}?
+              {t('financeiroOrcamentos.cancelConfirmTitle', { id: toCancel?.id.substring(0, 8).toUpperCase() ?? '' })}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              O orçamento fica registrado como cancelado e sai do fluxo de aprovação. Lançamentos
-              financeiros ainda sugeridos são baixados automaticamente; os já confirmados
-              permanecem e precisam ser revisados no financeiro.
+              {t('financeiroOrcamentos.cancelConfirmDescription')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-1">
-            <Label htmlFor="cancel-reason">Motivo (opcional)</Label>
+            <Label htmlFor="cancel-reason">{t('financeiroOrcamentos.cancelReasonLabel')}</Label>
             <Textarea
               id="cancel-reason"
               value={cancelReason}
               maxLength={500}
-              placeholder="Ex.: tutor desistiu do procedimento"
+              placeholder={t('financeiroOrcamentos.cancelReasonPlaceholder')}
               onChange={(e) => setCancelReason(e.target.value)}
             />
           </div>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={cancelBudget.isPending}>Voltar</AlertDialogCancel>
+            <AlertDialogCancel disabled={cancelBudget.isPending}>{t('financeiroOrcamentos.back')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => {
                 e.preventDefault();
@@ -737,7 +752,7 @@ export default function OrcamentosPage() {
               }}
               disabled={cancelBudget.isPending}
             >
-              {cancelBudget.isPending ? 'Cancelando…' : 'Cancelar orçamento'}
+              {cancelBudget.isPending ? t('financeiroOrcamentos.cancelling') : t('financeiroOrcamentos.cancelIconTitle')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

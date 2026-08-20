@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import Link from 'next/link';
 import {
   Settings,
@@ -35,52 +36,58 @@ type NavSection = {
   items: { key: string; icon: React.ElementType; label: string }[];
 };
 
+// Observação sobre i18n: `label` (de seção e de item) guarda uma CHAVE de
+// tradução (t()), não o texto literal — assim `s.label === '...'` abaixo
+// continua funcionando como identificador estável em qualquer idioma. A
+// tradução em si acontece só nos pontos de renderização, via t(section.label)
+// / t(item.label).
 const navSections: NavSection[] = [
   {
-    label: 'Geral',
+    label: 'settingsLayout.sectionGeral',
     items: [
-      { key: '/settings', icon: Settings, label: 'Dados da Clínica' },
-      { key: '/settings/billing', icon: CreditCard, label: 'Assinatura & NFS-e' },
+      { key: '/settings', icon: Settings, label: 'settingsLayout.clinicData' },
+      { key: '/settings/billing', icon: CreditCard, label: 'settingsLayout.subscriptionNfse' },
     ],
   },
   {
-    label: 'Agenda',
+    label: 'settingsLayout.sectionAgenda',
     items: [
-      { key: '/settings/hours', icon: Clock, label: 'Horários' },
-      { key: '/settings/holidays', icon: CalendarOff, label: 'Feriados' },
-      { key: '/settings/appointment-types', icon: List, label: 'Tipos de Procedimento' },
-      { key: '/settings/resources', icon: Layers, label: 'Recursos' },
+      { key: '/settings/hours', icon: Clock, label: 'settingsLayout.hours' },
+      { key: '/settings/holidays', icon: CalendarOff, label: 'settingsLayout.holidays' },
+      { key: '/settings/appointment-types', icon: List, label: 'settingsLayout.appointmentTypes' },
+      { key: '/settings/resources', icon: Layers, label: 'settingsLayout.resources' },
     ],
   },
   {
-    label: 'Catálogo',
+    label: 'settingsLayout.sectionCatalog',
     items: [
-      { key: '/settings/diseases', icon: HeartPulse, label: 'Doenças' },
-      { key: '/settings/surgical-procedures', icon: Scissors, label: 'Procedimentos cirúrgicos' },
-      { key: '/settings/exams', icon: FlaskConical, label: 'Exames' },
-      { key: '/settings/materials', icon: Wrench, label: 'Materiais' },
+      { key: '/settings/diseases', icon: HeartPulse, label: 'settingsLayout.diseases' },
+      { key: '/settings/surgical-procedures', icon: Scissors, label: 'settingsLayout.surgicalProcedures' },
+      { key: '/settings/exams', icon: FlaskConical, label: 'settingsLayout.exams' },
+      { key: '/settings/materials', icon: Wrench, label: 'settingsLayout.materials' },
     ],
   },
   {
-    label: 'Financeiro',
+    label: 'settingsLayout.sectionFinance',
     items: [
-      { key: '/settings/planos-saude', icon: HeartHandshake, label: 'Planos de Saúde' },
-      { key: '/settings/pagamentos', icon: BadgeDollarSign, label: 'Taxas de Pagamento' },
-      { key: '/settings/fiscal', icon: FileText, label: 'Configurações Fiscais' },
+      { key: '/settings/planos-saude', icon: HeartHandshake, label: 'settingsLayout.healthPlans' },
+      { key: '/settings/pagamentos', icon: BadgeDollarSign, label: 'settingsLayout.paymentFees' },
+      { key: '/settings/fiscal', icon: FileText, label: 'settingsLayout.fiscalSettings' },
     ],
   },
   {
-    label: 'Comunicação & IA',
+    label: 'settingsLayout.sectionCommunicationAi',
     items: [
-      { key: '/settings/whatsapp-numbers', icon: MessageSquare, label: 'WhatsApp da clínica' },
-      { key: '/settings/chatbot', icon: Bot, label: 'Chatbot / IA' },
-      { key: '/settings/ai-costs', icon: DollarSign, label: 'Custos IA' },
-      { key: '/settings/automations', icon: Zap, label: 'Automações' },
+      { key: '/settings/whatsapp-numbers', icon: MessageSquare, label: 'settingsLayout.whatsappClinic' },
+      { key: '/settings/chatbot', icon: Bot, label: 'settingsLayout.chatbotAi' },
+      { key: '/settings/ai-costs', icon: DollarSign, label: 'settingsLayout.aiCosts' },
+      { key: '/settings/automations', icon: Zap, label: 'settingsLayout.automations' },
     ],
   },
 ];
 
 export default function SettingsLayout({ children }: { children: React.ReactNode }) {
+  const { t } = useTranslation();
   const pathname = usePathname();
   const router = useRouter();
   const currentPathname = pathname ?? '';
@@ -106,12 +113,12 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
   // GRUPO 7 — "Termos da Clínica" visível só para admin/manager
   let sections = canManageTerms
     ? navSections.map((s) =>
-        s.label === 'Geral'
+        s.label === 'settingsLayout.sectionGeral'
           ? {
               ...s,
               items: [
                 ...s.items,
-                { key: '/settings/clinic-terms', icon: FileText, label: 'Termos da Clínica' },
+                { key: '/settings/clinic-terms', icon: FileText, label: 'settingsLayout.clinicTerms' },
               ],
             }
           : s,
@@ -125,17 +132,17 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
   const contextualSections: NavSection[] = [];
   if (menuAllow.has('products')) {
     contextualSections.push({
-      label: 'Estoque',
-      items: [{ key: '/settings/produtos', icon: Package, label: 'Produtos' }],
+      label: 'settingsLayout.sectionInventory',
+      items: [{ key: '/settings/produtos', icon: Package, label: 'settingsLayout.products' }],
     });
   }
   if (menuAllow.has('team')) {
     contextualSections.push({
-      label: 'Equipe',
-      items: [{ key: '/settings/team', icon: Users, label: 'Equipe' }],
+      label: 'settingsLayout.sectionTeam',
+      items: [{ key: '/settings/team', icon: Users, label: 'settingsLayout.team' }],
     });
   }
-  const catalogIdx = sections.findIndex((s) => s.label === 'Catálogo');
+  const catalogIdx = sections.findIndex((s) => s.label === 'settingsLayout.sectionCatalog');
   sections =
     catalogIdx >= 0
       ? [...sections.slice(0, catalogIdx + 1), ...contextualSections, ...sections.slice(catalogIdx + 1)]
@@ -147,8 +154,8 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
     sections = [
       ...sections,
       {
-        label: 'Acesso',
-        items: [{ key: '/settings/access-control/profiles', icon: ShieldCheck, label: 'Perfis de Acesso' }],
+        label: 'settingsLayout.sectionAccess',
+        items: [{ key: '/settings/access-control/profiles', icon: ShieldCheck, label: 'settingsLayout.accessProfiles' }],
       },
     ];
   }
@@ -173,9 +180,9 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
 
   const platformItems = isSuperAdmin
     ? [
-        { key: '/superadmin/clinics', icon: Landmark, label: 'Clínicas (global)' },
-        { key: '/superadmin/finance', icon: Wallet, label: 'Financeiro (global)' },
-        { key: '/superadmin/access-control/permissions', icon: ShieldCheck, label: 'Permissões (catálogo)' },
+        { key: '/superadmin/clinics', icon: Landmark, label: 'settingsLayout.clinicsGlobal' },
+        { key: '/superadmin/finance', icon: Wallet, label: 'settingsLayout.financeGlobal' },
+        { key: '/superadmin/access-control/permissions', icon: ShieldCheck, label: 'settingsLayout.permissionsCatalog' },
       ]
     : [];
 
@@ -189,19 +196,19 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
           className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700"
         >
           {platformItems.length > 0 && (
-            <optgroup label="Plataforma">
+            <optgroup label={t('settingsLayout.platform')}>
               {platformItems.map((item) => (
                 <option key={item.key} value={item.key}>
-                  {item.label}
+                  {t(item.label)}
                 </option>
               ))}
             </optgroup>
           )}
           {sections.map((section) => (
-            <optgroup key={section.label} label={section.label}>
+            <optgroup key={section.label} label={t(section.label)}>
               {section.items.map((item) => (
                 <option key={item.key} value={item.key}>
-                  {item.label}
+                  {t(item.label)}
                 </option>
               ))}
             </optgroup>
@@ -215,7 +222,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
           {platformItems.length > 0 && (
             <>
               <p className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-                Plataforma
+                {t('settingsLayout.platform')}
               </p>
               {platformItems.map((item) => {
                 const Icon = item.icon;
@@ -232,7 +239,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
                     )}
                   >
                     <Icon className="size-4 shrink-0" />
-                    {item.label}
+                    {t(item.label)}
                   </Link>
                 );
               })}
@@ -242,7 +249,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
           {sections.map((section) => (
             <div key={section.label}>
               <p className="px-3 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-400">
-                {section.label}
+                {t(section.label)}
               </p>
               {section.items.map((item) => {
                 const Icon = item.icon;
@@ -261,7 +268,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
                     )}
                   >
                     <Icon className="size-4 shrink-0" />
-                    {item.label}
+                    {t(item.label)}
                   </Link>
                 );
               })}

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   BarChart,
   Bar,
@@ -30,57 +31,53 @@ import {
   useFinancialKPIsQuery,
   useMonthlyDREQuery,
 } from '@/hooks/apiHooks/useFinancialReports';
+import { useCurrencyFormatter, CURRENCY_BY_LANGUAGE, resolveAppLanguage } from '@/lib/i18n/currency';
 
-const CATEGORY_LABELS: Record<string, string> = {
-  consultation: 'Consultas',
-  hospitalization: 'Internações',
-  exam: 'Exames',
-  procedure: 'Procedimentos',
-  vaccine: 'Vacinas',
-  product: 'Produtos',
-  medication: 'Medicamentos',
-  material: 'Materiais',
-  card_fee: 'Taxa de Cartão',
-  medication_purchase: 'Compra de Medicamentos',
-  material_purchase: 'Compra de Materiais',
-  lab_cost: 'Custo de Laboratório',
-  rent: 'Aluguel',
-  personnel: 'Pessoal',
-  utilities: 'Energia / Água / Internet',
-  marketing: 'Marketing',
-  equipment: 'Equipamento',
-  tax: 'Impostos',
-  diaria: 'Diárias',
-  other: 'Outros',
+/** Mapeia a categoria bruta (vinda da API) para o sufixo da chave de tradução em financeiroDre.categories.*. */
+const CATEGORY_LABEL_KEYS: Record<string, string> = {
+  consultation: 'consultation',
+  hospitalization: 'hospitalization',
+  exam: 'exam',
+  procedure: 'procedure',
+  vaccine: 'vaccine',
+  product: 'product',
+  medication: 'medication',
+  material: 'material',
+  card_fee: 'cardFee',
+  medication_purchase: 'medicationPurchase',
+  material_purchase: 'materialPurchase',
+  lab_cost: 'labCost',
+  rent: 'rent',
+  personnel: 'personnel',
+  utilities: 'utilities',
+  marketing: 'marketing',
+  equipment: 'equipment',
+  tax: 'tax',
+  diaria: 'diaria',
+  other: 'other',
 };
 
-const METHOD_LABELS: Record<string, string> = {
-  cash: 'Dinheiro',
-  pix: 'PIX',
-  debit: 'Débito',
-  credit_1x: 'Crédito à vista',
-  credit_2_6x: 'Crédito 2-6x',
-  credit_7_12x: 'Crédito 7-12x',
-  boleto: 'Boleto',
-  transfer: 'Transferência',
+/** Mapeia o método de pagamento bruto (vindo da API) para o sufixo da chave de tradução em financeiroDre.methods.*. */
+const METHOD_LABEL_KEYS: Record<string, string> = {
+  cash: 'cash',
+  pix: 'pix',
+  debit: 'debit',
+  credit_1x: 'credit1x',
+  credit_2_6x: 'credit26x',
+  credit_7_12x: 'credit712x',
+  boleto: 'boleto',
+  transfer: 'transfer',
 };
 
-const COMPARE_LABELS: Record<DRECompareMode, string> = {
-  none: '— (sem comparar)',
-  prev_month: 'Mês anterior',
-  prev_year: 'Mesmo mês do ano anterior',
+/** Mapeia o modo de comparação para o sufixo da chave de tradução em financeiroDre.compareModes.*. */
+const COMPARE_LABEL_KEYS: Record<DRECompareMode, string> = {
+  none: 'none',
+  prev_month: 'prevMonth',
+  prev_year: 'prevYear',
 };
-
-function fmt(n: number) {
-  return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-}
 
 function fmtPct(n: number) {
   return `${n.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
-}
-
-function catLabel(cat: string) {
-  return CATEGORY_LABELS[cat] ?? cat;
 }
 
 /** Variação formatada com sinal; `inverse` para custos (aumento = ruim). */
@@ -106,6 +103,7 @@ function SummaryCard({
   icon: Icon,
   color,
   loading,
+  fmt,
 }: {
   title: string;
   value: number;
@@ -114,6 +112,7 @@ function SummaryCard({
   icon: React.ElementType;
   color: string;
   loading: boolean;
+  fmt: (value: number | string | null | undefined) => string;
 }) {
   return (
     <Card>
@@ -145,6 +144,7 @@ function DRERow({
   bold,
   indent,
   color,
+  fmt,
 }: {
   label: string;
   value: number;
@@ -155,6 +155,7 @@ function DRERow({
   bold?: boolean;
   indent?: boolean;
   color?: string;
+  fmt: (value: number | string | null | undefined) => string;
 }) {
   return (
     <div
@@ -179,6 +180,9 @@ function DRERow({
 }
 
 function FinanceiroDREPageContent() {
+  const { t, i18n } = useTranslation();
+  const fmt = useCurrencyFormatter();
+  const currencySymbol = CURRENCY_BY_LANGUAGE[resolveAppLanguage(i18n.language)].symbol;
   const now = new Date();
   const [period, setPeriod] = useState(
     `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`,
@@ -195,8 +199,20 @@ function FinanceiroDREPageContent() {
   const activeComparison = compare !== 'none' ? comparison : undefined;
 
   useEffect(() => {
-    if (dreError) toast.error('Erro ao carregar DRE');
-  }, [dreError]);
+    if (dreError) toast.error(t('financeiroDre.loadError'));
+  }, [dreError, t]);
+
+  const catLabel = (cat: string) => {
+    const key = CATEGORY_LABEL_KEYS[cat];
+    return key ? t(`financeiroDre.categories.${key}`) : cat;
+  };
+
+  const methodLabel = (method: string) => {
+    const key = METHOD_LABEL_KEYS[method];
+    return key ? t(`financeiroDre.methods.${key}`) : method;
+  };
+
+  const compareLabel = (mode: DRECompareMode) => t(`financeiroDre.compareModes.${COMPARE_LABEL_KEYS[mode]}`);
 
   const handleExport = async (format: 'pdf' | 'xlsx') => {
     try {
@@ -208,7 +224,7 @@ function FinanceiroDREPageContent() {
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      toast.error('Erro ao exportar');
+      toast.error(t('financeiroDre.exportError'));
     }
   };
 
@@ -231,20 +247,20 @@ function FinanceiroDREPageContent() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Financeiro — DRE</h1>
-          <p className="text-sm text-muted-foreground">Demonstrativo de Resultado do Exercício</p>
+          <h1 className="text-2xl font-bold">{t('financeiroDre.title')}</h1>
+          <p className="text-sm text-muted-foreground">{t('financeiroDre.subtitle')}</p>
         </div>
         <div className="flex items-center gap-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm">
-                Comparar: {COMPARE_LABELS[compare]} <ChevronDown className="ml-2 size-3" />
+                {t('financeiroDre.compareButton', { mode: compareLabel(compare) })} <ChevronDown className="ml-2 size-3" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              {(Object.keys(COMPARE_LABELS) as DRECompareMode[]).map((m) => (
+              {(Object.keys(COMPARE_LABEL_KEYS) as DRECompareMode[]).map((m) => (
                 <DropdownMenuItem key={m} onClick={() => setCompare(m)}>
-                  {COMPARE_LABELS[m]}
+                  {compareLabel(m)}
                 </DropdownMenuItem>
               ))}
             </DropdownMenuContent>
@@ -269,13 +285,13 @@ function FinanceiroDREPageContent() {
             <DropdownMenuTrigger asChild>
               <Button size="sm">
                 <Download className="mr-2 size-4" />
-                Exportar para Contador
+                {t('financeiroDre.exportButton')}
                 <ChevronDown className="ml-2 size-3" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => handleExport('pdf')}>Exportar PDF</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExport('xlsx')}>Exportar Excel (XLSX)</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport('pdf')}>{t('financeiroDre.exportPdf')}</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport('xlsx')}>{t('financeiroDre.exportXlsx')}</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
@@ -285,7 +301,7 @@ function FinanceiroDREPageContent() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Ticket Médio</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t('financeiroDre.avgTicket')}</CardTitle>
           </CardHeader>
           <CardContent>
             {loading || !kpis ? (
@@ -293,7 +309,9 @@ function FinanceiroDREPageContent() {
             ) : (
               <>
                 <p className="text-2xl font-bold">{fmt(kpis.ticket_medio)}</p>
-                <p className="text-xs text-muted-foreground">{kpis.total_atendimentos} atendimentos</p>
+                <p className="text-xs text-muted-foreground">
+                  {t('financeiroDre.appointmentsCount', { count: kpis.total_atendimentos })}
+                </p>
               </>
             )}
           </CardContent>
@@ -301,7 +319,7 @@ function FinanceiroDREPageContent() {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Margem Bruta</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t('financeiroDre.grossMargin')}</CardTitle>
           </CardHeader>
           <CardContent>
             {loading || !kpis ? (
@@ -325,7 +343,7 @@ function FinanceiroDREPageContent() {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Crescimento MoM</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t('financeiroDre.momGrowth')}</CardTitle>
           </CardHeader>
           <CardContent>
             {loading || !kpis ? (
@@ -347,7 +365,7 @@ function FinanceiroDREPageContent() {
                   )}
                   {fmtPct(Math.abs(kpis.crescimento_mom_pct))}
                 </p>
-                <p className="text-xs text-muted-foreground">vs. mês anterior</p>
+                <p className="text-xs text-muted-foreground">{t('financeiroDre.vsPreviousMonth')}</p>
               </>
             )}
           </CardContent>
@@ -355,7 +373,7 @@ function FinanceiroDREPageContent() {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Receita Particular</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t('financeiroDre.privateRevenue')}</CardTitle>
           </CardHeader>
           <CardContent>
             {loading || !kpis ? (
@@ -369,7 +387,9 @@ function FinanceiroDREPageContent() {
                     style={{ width: `${Math.min(100, kpis.pct_particular)}%` }}
                   />
                 </div>
-                <p className="mt-1 text-xs text-muted-foreground">{fmtPct(kpis.pct_particular)} do total</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {t('financeiroDre.pctOfTotal', { pct: fmtPct(kpis.pct_particular) })}
+                </p>
               </>
             )}
           </CardContent>
@@ -377,7 +397,7 @@ function FinanceiroDREPageContent() {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Receita Planos</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t('financeiroDre.healthPlanRevenue')}</CardTitle>
           </CardHeader>
           <CardContent>
             {loading || !kpis ? (
@@ -391,7 +411,9 @@ function FinanceiroDREPageContent() {
                     style={{ width: `${Math.min(100, kpis.pct_plano)}%` }}
                   />
                 </div>
-                <p className="mt-1 text-xs text-muted-foreground">{fmtPct(kpis.pct_plano)} do total</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {t('financeiroDre.pctOfTotal', { pct: fmtPct(kpis.pct_plano) })}
+                </p>
               </>
             )}
           </CardContent>
@@ -399,14 +421,14 @@ function FinanceiroDREPageContent() {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Método Principal</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t('financeiroDre.mainMethod')}</CardTitle>
           </CardHeader>
           <CardContent>
             {loading || !kpis ? (
               <Skeleton className="h-7 w-24" />
             ) : kpis.metodo_principal ? (
               <p className="text-2xl font-bold">
-                {METHOD_LABELS[kpis.metodo_principal] ?? kpis.metodo_principal}
+                {methodLabel(kpis.metodo_principal)}
                 <span className="ml-2 text-base font-medium text-muted-foreground">
                   {fmtPct(kpis.mix_pagamento[kpis.metodo_principal] ?? 0)}
                 </span>
@@ -421,39 +443,43 @@ function FinanceiroDREPageContent() {
       {/* Resumo DRE — 4 cards (mockup) */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <SummaryCard
-          title="Receita Bruta"
+          title={t('financeiroDre.grossRevenue')}
           value={dre?.gross_revenue ?? 0}
           extra={activeComparison && <DiffBadge diff={activeComparison.gross_revenue} />}
           icon={TrendingUp}
           color="text-green-600"
           loading={loading}
+          fmt={fmt}
         />
         <SummaryCard
-          title="Margem Bruta"
+          title={t('financeiroDre.grossMargin')}
           value={dre?.gross_profit ?? 0}
-          subtext={dre ? `${fmtPct(dre.gross_margin_pct ?? 0)} da receita líquida` : undefined}
+          subtext={dre ? t('financeiroDre.pctOfNetRevenue', { pct: fmtPct(dre.gross_margin_pct ?? 0) }) : undefined}
           extra={activeComparison && <DiffBadge diff={activeComparison.gross_profit} />}
           icon={DollarSign}
           color={(dre?.gross_profit ?? 0) >= 0 ? 'text-blue-600' : 'text-red-600'}
           loading={loading}
+          fmt={fmt}
         />
         <SummaryCard
-          title="Desp. Operacionais"
+          title={t('financeiroDre.operatingExpenses')}
           value={dre?.opex ?? 0}
-          subtext={dre ? `${fmtPct(pctOfNet(dre.opex))} da receita` : undefined}
+          subtext={dre ? t('financeiroDre.pctOfRevenue', { pct: fmtPct(pctOfNet(dre.opex)) }) : undefined}
           extra={activeComparison && <DiffBadge diff={activeComparison.opex} inverse />}
           icon={TrendingDown}
           color="text-orange-500"
           loading={loading}
+          fmt={fmt}
         />
         <SummaryCard
-          title="EBITDA"
+          title={t('financeiroDre.ebitda')}
           value={dre?.ebitda ?? 0}
           subtext={dre ? fmtPct(dre.ebitda_margin_pct ?? 0) : undefined}
           extra={activeComparison && <DiffBadge diff={activeComparison.ebitda} />}
           icon={BarChart2}
           color={(dre?.ebitda ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'}
           loading={loading}
+          fmt={fmt}
         />
       </div>
 
@@ -461,7 +487,7 @@ function FinanceiroDREPageContent() {
       <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm font-medium">Receita Bruta × EBITDA — Últimos 6 Meses</CardTitle>
+          <CardTitle className="text-sm font-medium">{t('financeiroDre.chartTitle')}</CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -470,8 +496,8 @@ function FinanceiroDREPageContent() {
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={chartData}>
                 <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
-                <Tooltip formatter={(v, name) => [fmt(Number(v)), name === 'receita' ? 'Receita Bruta' : 'EBITDA']} />
+                <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `${currencySymbol}${(v / 1000).toFixed(0)}k`} />
+                <Tooltip formatter={(v, name) => [fmt(Number(v)), name === 'receita' ? t('financeiroDre.grossRevenue') : t('financeiroDre.ebitda')]} />
                 <Bar dataKey="receita" fill="#3b82f6" radius={[3, 3, 0, 0]} name="receita" />
                 <Bar dataKey="ebitda" fill="#22c55e" radius={[3, 3, 0, 0]} name="ebitda" />
               </BarChart>
@@ -483,8 +509,8 @@ function FinanceiroDREPageContent() {
       <Card>
         <CardHeader>
           <CardTitle className="text-sm font-medium">
-            DRE Detalhado — {period}
-            {activeComparison && ` vs ${activeComparison.prev_period}`}
+            {t('financeiroDre.detailTitle', { period })}
+            {activeComparison && ` ${t('financeiroDre.vsPeriod', { period: activeComparison.prev_period })}`}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -495,54 +521,59 @@ function FinanceiroDREPageContent() {
           ) : dre ? (
             <div>
               <DRERow
-                label="(+) RECEITA BRUTA"
+                label={t('financeiroDre.rowGrossRevenue')}
                 value={dre.gross_revenue}
                 diff={activeComparison?.gross_revenue}
                 bold
                 color="text-green-600"
+                fmt={fmt}
               />
               {Object.entries(dre.breakdown.by_category).map(([cat, val]) => (
-                <DRERow key={cat} label={catLabel(cat)} value={val} indent />
+                <DRERow key={cat} label={catLabel(cat)} value={val} indent fmt={fmt} />
               ))}
-              <DRERow label="(-) Deduções / Glosas" value={dre.deductions} bold />
-              <DRERow label="(=) RECEITA LÍQUIDA" value={dre.net_revenue} bold color="text-blue-600" />
+              <DRERow label={t('financeiroDre.rowDeductions')} value={dre.deductions} bold fmt={fmt} />
+              <DRERow label={t('financeiroDre.rowNetRevenue')} value={dre.net_revenue} bold color="text-blue-600" fmt={fmt} />
               <DRERow
-                label="(-) CMV — Custo Direto"
+                label={t('financeiroDre.rowCmv')}
                 value={dre.cmv}
                 pct={pctOfNet(dre.cmv)}
                 diff={activeComparison?.cmv}
                 diffInverse
                 bold
+                fmt={fmt}
               />
               {Object.entries(dre.breakdown.cmv_by_category ?? {}).map(([cat, val]) => (
-                <DRERow key={`cmv-${cat}`} label={catLabel(cat)} value={val} indent />
+                <DRERow key={`cmv-${cat}`} label={catLabel(cat)} value={val} indent fmt={fmt} />
               ))}
               <DRERow
-                label="(=) MARGEM BRUTA"
+                label={t('financeiroDre.rowGrossProfit')}
                 value={dre.gross_profit}
                 pct={dre.gross_margin_pct ?? 0}
                 diff={activeComparison?.gross_profit}
                 bold
                 color={dre.gross_profit >= 0 ? 'text-green-600' : 'text-red-600'}
+                fmt={fmt}
               />
               <DRERow
-                label="(-) DESPESAS OPERACIONAIS"
+                label={t('financeiroDre.rowOpex')}
                 value={dre.opex}
                 pct={pctOfNet(dre.opex)}
                 diff={activeComparison?.opex}
                 diffInverse
                 bold
+                fmt={fmt}
               />
               {Object.entries(dre.breakdown.opex_by_category ?? {}).map(([cat, val]) => (
-                <DRERow key={`opex-${cat}`} label={catLabel(cat)} value={val} indent />
+                <DRERow key={`opex-${cat}`} label={catLabel(cat)} value={val} indent fmt={fmt} />
               ))}
               <DRERow
-                label="(=) EBITDA"
+                label={t('financeiroDre.rowEbitda')}
                 value={dre.ebitda}
                 pct={dre.ebitda_margin_pct ?? 0}
                 diff={activeComparison?.ebitda}
                 bold
                 color={dre.ebitda >= 0 ? 'text-green-600' : 'text-red-600'}
+                fmt={fmt}
               />
             </div>
           ) : null}
@@ -554,8 +585,9 @@ function FinanceiroDREPageContent() {
 }
 
 export default function FinanceiroDREPage() {
+  const { t } = useTranslation();
   return (
-    <PlanUpgradeGate requiredPlan="clinica" feature="Relatórios financeiros (DRE)">
+    <PlanUpgradeGate requiredPlan="clinica" feature={t('financeiroDre.featureName')}>
       <FinanceiroDREPageContent />
     </PlanUpgradeGate>
   );

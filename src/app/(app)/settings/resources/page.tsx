@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,16 +22,17 @@ interface ResourceFormValues {
   type: string;
 }
 
-const TYPES = [
-  { value: 'room', label: 'Sala' },
-  { value: 'surgery_room', label: 'Sala cirúrgica' },
-  { value: 'equipment', label: 'Equipamento' },
-];
-
 export default function SettingsResourcesPage() {
+  const { t } = useTranslation();
   const [listPage, setListPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const form = useForm<ResourceFormValues>();
+
+  const TYPES = [
+    { value: 'room', label: t('settingsResources.typeRoom') },
+    { value: 'surgery_room', label: t('settingsResources.typeSurgeryRoom') },
+    { value: 'equipment', label: t('settingsResources.typeEquipment') },
+  ];
 
   const { data, isLoading: loading } = useResourcesPagedQuery(listPage);
   const list = data?.items ?? [];
@@ -44,16 +46,16 @@ export default function SettingsResourcesPage() {
       setModalOpen(false);
       form.reset();
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, 'Erro ao salvar'));
+      toast.error(getApiErrorMessage(error, t('settingsResources.saveError')));
     }
   };
 
   return (
     <div>
-      <h1 className="text-2xl font-heading font-bold text-primary mb-6">Recursos</h1>
+      <h1 className="text-2xl font-heading font-bold text-primary mb-6">{t('settingsResources.title')}</h1>
       <Card>
         <CardContent className="pt-6">
-          <p className="text-muted-foreground mb-4">Salas e equipamentos para agendamento (opcional na agenda).</p>
+          <p className="text-muted-foreground mb-4">{t('settingsResources.description')}</p>
           <Button
             onClick={() => {
               form.reset();
@@ -61,7 +63,7 @@ export default function SettingsResourcesPage() {
             }}
             className="mb-4 w-full bg-primary sm:w-auto"
           >
-            <Plus className="w-4 h-4 mr-2" /> Novo recurso
+            <Plus className="w-4 h-4 mr-2" /> {t('settingsResources.newResource')}
           </Button>
 
           {loading ? (
@@ -70,7 +72,7 @@ export default function SettingsResourcesPage() {
             </div>
           ) : list.length === 0 ? (
             <div className="rounded-lg border border-gray-300 bg-white py-8 text-center text-sm text-slate-500">
-              Nenhum recurso cadastrado.
+              {t('settingsResources.emptyState')}
             </div>
           ) : (
             <div>
@@ -78,8 +80,8 @@ export default function SettingsResourcesPage() {
             <Table className="min-w-full border-collapse bg-white text-sm">
               <TableHeader>
                 <TableRow className="border-b border-gray-300 h-15">
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Tipo</TableHead>
+                  <TableHead>{t('settingsResources.columnName')}</TableHead>
+                  <TableHead>{t('settingsResources.columnType')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -108,15 +110,15 @@ export default function SettingsResourcesPage() {
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Novo recurso</DialogTitle>
+            <DialogTitle>{t('settingsResources.newResource')}</DialogTitle>
           </DialogHeader>
           <form onSubmit={form.handleSubmit(onFinish)} className="flex flex-col gap-4 mt-2">
             <div className="flex flex-col gap-1.5">
-              <Label>Nome</Label>
-              <Input {...form.register('name', { required: true })} placeholder="Ex.: Sala 1, Raio-X" />
+              <Label>{t('settingsResources.nameLabel')}</Label>
+              <Input {...form.register('name', { required: true })} placeholder={t('settingsResources.namePlaceholder')} />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label>Tipo</Label>
+              <Label>{t('settingsResources.typeLabel')}</Label>
               <Controller
                 name="type"
                 control={form.control}
@@ -124,12 +126,12 @@ export default function SettingsResourcesPage() {
                 render={({ field }) => (
                   <Select value={field.value} onValueChange={field.onChange}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
+                      <SelectValue placeholder={t('settingsResources.selectPlaceholder')} />
                     </SelectTrigger>
                     <SelectContent>
-                      {TYPES.map((t) => (
-                        <SelectItem key={t.value} value={t.value}>
-                          {t.label}
+                      {TYPES.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -138,7 +140,7 @@ export default function SettingsResourcesPage() {
               />
             </div>
             <Button type="submit" className="bg-primary">
-              Salvar
+              {t('settingsResources.save')}
             </Button>
           </form>
         </DialogContent>

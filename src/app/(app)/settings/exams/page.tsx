@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { CurrencyInput } from '@/components/ui/currency-input';
@@ -28,6 +29,7 @@ import {
   useDeleteExamPlanPriceMutation,
 } from '@/hooks/apiHooks/useExamCatalog';
 import { useHealthPlansListQuery } from '@/hooks/apiHooks/useHealthPlans';
+import { useCurrencyFormatter } from '@/lib/i18n/currency';
 import type { Exam } from '@/app/types/exam-request';
 
 type FormValues = {
@@ -39,11 +41,6 @@ type FormValues = {
   is_third_party?: boolean;
 };
 
-function fmtBRL(v?: number | null) {
-  if (v == null) return '—';
-  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
-}
-
 function PlanPricesDialog({
   exam,
   open,
@@ -53,6 +50,8 @@ function PlanPricesDialog({
   open: boolean;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
+  const fmt = useCurrencyFormatter();
   const [addMode, setAddMode] = useState(false);
   const [newPlanId, setNewPlanId] = useState('');
   const [newPlanPrice, setNewPlanPrice] = useState('');
@@ -83,7 +82,7 @@ function PlanPricesDialog({
       setNewPlanPrice('');
       setNewReimbursement('');
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, 'Erro ao salvar'));
+      toast.error(getApiErrorMessage(error, t('settingsExams.saveError')));
     }
   };
 
@@ -91,7 +90,7 @@ function PlanPricesDialog({
     try {
       await deleteMutation.mutateAsync(healthPlanId);
     } catch {
-      toast.error('Erro ao remover');
+      toast.error(t('settingsExams.removeError'));
     }
   };
 
@@ -102,7 +101,7 @@ function PlanPricesDialog({
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-[calc(100%-2rem)] sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Preços por convênio — {exam.name}</DialogTitle>
+          <DialogTitle>{t('settingsExams.planPricesTitle', { name: exam.name })}</DialogTitle>
         </DialogHeader>
         {loading ? (
           <div className="flex justify-center py-6">
@@ -112,7 +111,7 @@ function PlanPricesDialog({
           <div className="space-y-4">
             {prices.length === 0 && !addMode ? (
               <div className="rounded-lg border border-gray-300 bg-white py-8 text-center text-sm text-slate-500">
-                Nenhum convênio configurado
+                {t('settingsExams.emptyPlans')}
               </div>
             ) : (
               <>
@@ -121,9 +120,9 @@ function PlanPricesDialog({
                 <Table className="min-w-full border-collapse bg-white text-sm">
                   <TableHeader>
                     <TableRow className="border-b border-gray-300 h-15">
-                      <TableHead>Convênio</TableHead>
-                      <TableHead>Valor cobrado</TableHead>
-                      <TableHead>Reembolso recebido</TableHead>
+                      <TableHead>{t('settingsExams.columnPlan')}</TableHead>
+                      <TableHead>{t('settingsExams.columnChargedValue')}</TableHead>
+                      <TableHead>{t('settingsExams.columnReimbursement')}</TableHead>
                       <TableHead className="w-15" />
                     </TableRow>
                   </TableHeader>
@@ -131,15 +130,15 @@ function PlanPricesDialog({
                     {prices.map((p) => (
                       <TableRow className="border-b border-gray-300 h-15" key={p.id}>
                         <TableCell>{p.health_plan_name ?? p.health_plan_id}</TableCell>
-                        <TableCell>{fmtBRL(p.plan_price)}</TableCell>
-                        <TableCell>{fmtBRL(p.reimbursement)}</TableCell>
+                        <TableCell>{fmt(p.plan_price)}</TableCell>
+                        <TableCell>{fmt(p.reimbursement)}</TableCell>
                         <TableCell>
                           <Button
                             variant="ghost"
                             size="icon"
                             className="p-0"
-                            title="Remover"
-                            aria-label="Remover"
+                            title={t('settingsExams.removeTooltip')}
+                            aria-label={t('settingsExams.removeTooltip')}
                             onClick={() => handleDelete(p.health_plan_id)}
                           >
                             <X className="w-4 h-4 text-red-500" />
@@ -152,7 +151,7 @@ function PlanPricesDialog({
                         <TableCell>
                           <Select value={newPlanId} onValueChange={setNewPlanId}>
                             <SelectTrigger className="h-8">
-                              <SelectValue placeholder="Selecionar convênio" />
+                              <SelectValue placeholder={t('settingsExams.selectPlanPlaceholder')} />
                             </SelectTrigger>
                             <SelectContent>
                               {availablePlans.map((p) => (
@@ -172,8 +171,8 @@ function PlanPricesDialog({
                             variant="ghost"
                             size="icon"
                             className="p-0"
-                            title="Salvar"
-                            aria-label="Salvar"
+                            title={t('settingsExams.saveTooltip')}
+                            aria-label={t('settingsExams.saveTooltip')}
                             disabled={saving}
                             onClick={handleSaveNew}
                           >
@@ -196,8 +195,8 @@ function PlanPricesDialog({
                           variant="ghost"
                           size="icon"
                           className="h-7 w-7 shrink-0 p-0"
-                          title="Remover"
-                          aria-label="Remover"
+                          title={t('settingsExams.removeTooltip')}
+                          aria-label={t('settingsExams.removeTooltip')}
                           onClick={() => handleDelete(p.health_plan_id)}
                         >
                           <X className="w-4 h-4 text-red-500" />
@@ -205,12 +204,12 @@ function PlanPricesDialog({
                       </div>
                       <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
                         <div>
-                          <p className="text-xs text-muted-foreground">Valor cobrado</p>
-                          <p className="tabular-nums">{fmtBRL(p.plan_price)}</p>
+                          <p className="text-xs text-muted-foreground">{t('settingsExams.columnChargedValue')}</p>
+                          <p className="tabular-nums">{fmt(p.plan_price)}</p>
                         </div>
                         <div>
-                          <p className="text-xs text-muted-foreground">Reembolso recebido</p>
-                          <p className="tabular-nums">{fmtBRL(p.reimbursement)}</p>
+                          <p className="text-xs text-muted-foreground">{t('settingsExams.columnReimbursement')}</p>
+                          <p className="tabular-nums">{fmt(p.reimbursement)}</p>
                         </div>
                       </div>
                     </div>
@@ -219,10 +218,10 @@ function PlanPricesDialog({
                   {addMode && (
                     <div className="space-y-3 rounded-lg border border-gray-300 p-3">
                       <div className="space-y-1.5">
-                        <Label>Convênio</Label>
+                        <Label>{t('settingsExams.columnPlan')}</Label>
                         <Select value={newPlanId} onValueChange={setNewPlanId}>
                           <SelectTrigger>
-                            <SelectValue placeholder="Selecionar convênio" />
+                            <SelectValue placeholder={t('settingsExams.selectPlanPlaceholder')} />
                           </SelectTrigger>
                           <SelectContent>
                             {availablePlans.map((p) => (
@@ -233,21 +232,21 @@ function PlanPricesDialog({
                       </div>
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1.5">
-                          <Label>Valor cobrado</Label>
+                          <Label>{t('settingsExams.columnChargedValue')}</Label>
                           <CurrencyInput value={newPlanPrice} onValueChange={setNewPlanPrice} />
                         </div>
                         <div className="space-y-1.5">
-                          <Label>Reembolso</Label>
+                          <Label>{t('settingsExams.reimbursementLabel')}</Label>
                           <CurrencyInput value={newReimbursement} onValueChange={setNewReimbursement} />
                         </div>
                       </div>
                       <div className="flex justify-end gap-2">
                         <Button variant="outline" size="sm" onClick={() => setAddMode(false)}>
-                          Cancelar
+                          {t('settingsExams.cancel')}
                         </Button>
                         <Button size="sm" disabled={saving} onClick={handleSaveNew} className="bg-primary">
                           {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                          Salvar
+                          {t('settingsExams.save')}
                         </Button>
                       </div>
                     </div>
@@ -257,7 +256,7 @@ function PlanPricesDialog({
             )}
             {!addMode && availablePlans.length > 0 && (
               <Button variant="outline" size="sm" onClick={() => setAddMode(true)} className="w-full sm:w-auto">
-                <Plus className="w-4 h-4 mr-1" /> Adicionar convênio
+                <Plus className="w-4 h-4 mr-1" /> {t('settingsExams.addPlanButton')}
               </Button>
             )}
           </div>
@@ -268,6 +267,8 @@ function PlanPricesDialog({
 }
 
 export default function SettingsExamsPage() {
+  const { t } = useTranslation();
+  const fmt = useCurrencyFormatter();
   const [listPage, setListPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -307,7 +308,7 @@ export default function SettingsExamsPage() {
     try {
       await deleteMutation.mutateAsync(id);
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, 'Erro ao remover'));
+      toast.error(getApiErrorMessage(error, t('settingsExams.removeError')));
     }
   };
 
@@ -328,17 +329,17 @@ export default function SettingsExamsPage() {
       }
       setModalOpen(false);
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, 'Erro ao salvar'));
+      toast.error(getApiErrorMessage(error, t('settingsExams.saveError')));
     }
   };
 
   return (
     <div>
-      <h1 className="text-2xl font-heading font-bold mb-6">Exames</h1>
+      <h1 className="text-2xl font-heading font-bold mb-6">{t('settingsExams.title')}</h1>
       <Card className="rounded-none border-0 bg-transparent py-0 shadow-none sm:rounded-xl sm:border sm:border-border/80 sm:bg-card sm:py-6 sm:shadow-(--shadow-card)">
         <CardContent className="px-0 pt-0 sm:px-6 sm:pt-6">
           <Button onClick={openCreate} className="mb-4 w-full bg-primary sm:w-auto">
-            <Plus className="w-4 h-4 mr-2" /> Novo exame
+            <Plus className="w-4 h-4 mr-2" /> {t('settingsExams.newExam')}
           </Button>
           {loading ? (
             <div className="flex justify-center py-8">
@@ -351,12 +352,12 @@ export default function SettingsExamsPage() {
               <Table className="min-w-full border-collapse bg-white text-sm">
                 <TableHeader>
                   <TableRow className="border-b border-gray-300 h-15">
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Área</TableHead>
-                    <TableHead>Particular</TableHead>
-                    <TableHead>Custo Lab</TableHead>
-                    <TableHead>Margem</TableHead>
-                    <TableHead className="w-[140px]">Ações</TableHead>
+                    <TableHead>{t('settingsExams.columnName')}</TableHead>
+                    <TableHead>{t('settingsExams.columnArea')}</TableHead>
+                    <TableHead>{t('settingsExams.columnPrivate')}</TableHead>
+                    <TableHead>{t('settingsExams.columnLabCost')}</TableHead>
+                    <TableHead>{t('settingsExams.columnMargin')}</TableHead>
+                    <TableHead className="w-[140px]">{t('settingsExams.columnActions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -369,8 +370,8 @@ export default function SettingsExamsPage() {
                       <TableRow className="border-b border-gray-300 h-15" key={r.id}>
                         <TableCell>{r.name}</TableCell>
                         <TableCell>{r.exam_area?.name ?? r.exam_area_id ?? '—'}</TableCell>
-                        <TableCell>{fmtBRL(r.private_price)}</TableCell>
-                        <TableCell>{fmtBRL(r.lab_cost)}</TableCell>
+                        <TableCell>{fmt(r.private_price)}</TableCell>
+                        <TableCell>{fmt(r.lab_cost)}</TableCell>
                         <TableCell>
                           {margin !== '—' ? (
                             <Badge variant="secondary">{margin}</Badge>
@@ -378,10 +379,10 @@ export default function SettingsExamsPage() {
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1">
-                            <Button variant="ghost" size="sm" onClick={() => openEdit(r)} title="Editar">
+                            <Button variant="ghost" size="sm" onClick={() => openEdit(r)} title={t('settingsExams.editTooltip')}>
                               <Pencil className="w-4 h-4" />
                             </Button>
-                            <Button variant="ghost" size="sm" onClick={() => setPlanPricesFor(r)} title="Preços por convênio">
+                            <Button variant="ghost" size="sm" onClick={() => setPlanPricesFor(r)} title={t('settingsExams.planPricesTooltip')}>
                               <DollarSign className="w-4 h-4 text-blue-500" />
                             </Button>
                             <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" onClick={() => handleDelete(r.id)}>
@@ -414,19 +415,19 @@ export default function SettingsExamsPage() {
                       </div>
                       <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
                         <div>
-                          <p className="text-xs text-muted-foreground">Particular</p>
-                          <p className="tabular-nums">{fmtBRL(r.private_price)}</p>
+                          <p className="text-xs text-muted-foreground">{t('settingsExams.columnPrivate')}</p>
+                          <p className="tabular-nums">{fmt(r.private_price)}</p>
                         </div>
                         <div>
-                          <p className="text-xs text-muted-foreground">Custo Lab</p>
-                          <p className="tabular-nums">{fmtBRL(r.lab_cost)}</p>
+                          <p className="text-xs text-muted-foreground">{t('settingsExams.columnLabCost')}</p>
+                          <p className="tabular-nums">{fmt(r.lab_cost)}</p>
                         </div>
                       </div>
                       <div className="mt-3 flex items-center justify-end gap-1 border-t border-gray-200 pt-2">
-                        <Button variant="ghost" size="sm" onClick={() => openEdit(r)} title="Editar">
+                        <Button variant="ghost" size="sm" onClick={() => openEdit(r)} title={t('settingsExams.editTooltip')}>
                           <Pencil className="w-4 h-4" />
                         </Button>
-                        <Button variant="ghost" size="sm" onClick={() => setPlanPricesFor(r)} title="Preços por convênio">
+                        <Button variant="ghost" size="sm" onClick={() => setPlanPricesFor(r)} title={t('settingsExams.planPricesTooltip')}>
                           <DollarSign className="w-4 h-4 text-blue-500" />
                         </Button>
                         <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" onClick={() => handleDelete(r.id)}>
@@ -454,7 +455,7 @@ export default function SettingsExamsPage() {
       <DashboardCreateFormDialog
         open={modalOpen}
         onOpenChange={setModalOpen}
-        title={editingId ? 'Editar exame' : 'Novo exame'}
+        title={editingId ? t('settingsExams.editExam') : t('settingsExams.newExam')}
         contentClassName="modal-responsive"
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
@@ -464,24 +465,24 @@ export default function SettingsExamsPage() {
               className="border border-gray-300"
               onClick={() => setModalOpen(false)}
             >
-              Cancelar
+              {t('settingsExams.cancel')}
             </Button>
             <Button type="submit" form="exam-form" className="bg-primary">
-              {editingId ? 'Salvar' : 'Criar'}
+              {editingId ? t('settingsExams.save') : t('settingsExams.create')}
             </Button>
           </div>
         }
       >
         <form id="exam-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4 md:space-y-6">
           <div className="space-y-2">
-            <Label>Área de exame</Label>
+            <Label>{t('settingsExams.areaLabel')}</Label>
             <Controller
               name="area_id"
               control={control}
               render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione" />
+                    <SelectValue placeholder={t('settingsExams.selectPlaceholder')} />
                   </SelectTrigger>
                   <SelectContent>
                     {areas.map((a) => (
@@ -493,15 +494,15 @@ export default function SettingsExamsPage() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="name">Nome</Label>
-            <Input id="name" placeholder="Nome do exame" {...register('name', { required: true })} />
-            {errors.name && <p className="text-sm text-destructive">Campo obrigatório</p>}
+            <Label htmlFor="name">{t('settingsExams.nameLabel')}</Label>
+            <Input id="name" placeholder={t('settingsExams.namePlaceholder')} {...register('name', { required: true })} />
+            {errors.name && <p className="text-sm text-destructive">{t('settingsExams.requiredField')}</p>}
           </div>
           <div className="border-t border-gray-200 pt-4">
-            <p className="mb-3 text-sm font-medium text-muted-foreground">Precificação</p>
+            <p className="mb-3 text-sm font-medium text-muted-foreground">{t('settingsExams.pricingSectionTitle')}</p>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="private_price">Preço Particular</Label>
+                <Label htmlFor="private_price">{t('settingsExams.privatePriceLabel')}</Label>
                 <Controller
                   name="private_price"
                   control={control}
@@ -511,7 +512,7 @@ export default function SettingsExamsPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="lab_cost">Custo Lab</Label>
+                <Label htmlFor="lab_cost">{t('settingsExams.labCostLabel')}</Label>
                 <Controller
                   name="lab_cost"
                   control={control}
@@ -521,7 +522,7 @@ export default function SettingsExamsPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="tax_percentage">Imposto (%)</Label>
+                <Label htmlFor="tax_percentage">{t('settingsExams.taxLabel')}</Label>
                 <Input
                   id="tax_percentage"
                   type="number"
@@ -534,11 +535,11 @@ export default function SettingsExamsPage() {
               </div>
               <label className="flex items-center gap-2 self-end pb-2 text-sm">
                 <input type="checkbox" {...register('is_third_party')} className="size-4" />
-                Exame de laboratório terceiro
+                {t('settingsExams.thirdPartyLabel')}
               </label>
             </div>
             <p className="mt-2 text-xs text-muted-foreground">
-              Imposto é adicionado por cima do preço (cliente paga preço + imposto). Margem = preço − custo.
+              {t('settingsExams.taxHint')}
             </p>
           </div>
         </form>

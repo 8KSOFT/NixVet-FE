@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import type { ApiRequestError } from '@/app/types/api-error';
 import { getApiMessage } from '@/app/types/api-response';
 import { Button } from '@/components/ui/button';
@@ -78,6 +79,7 @@ function getApiErrorMessage(error: unknown, fallbackMessage: string): string {
 }
 
 export default function SettingsPage() {
+  const { t } = useTranslation();
   const { register, setValue, getValues, handleSubmit } = useForm<ClinicFormValues>();
   const {
     register: registerTenant,
@@ -123,13 +125,13 @@ export default function SettingsPage() {
     try {
       const url = await googleConnectMutation.mutateAsync();
       if (!url) {
-        toast.error('Não foi possível iniciar conexão Google');
+        toast.error(t('settingsHub.google.connectFailedToast'));
         return;
       }
       window.open(url, '_blank', 'noopener,noreferrer');
-      toast.info('Após autorizar no Google, clique em "Atualizar Status".');
+      toast.info(t('settingsHub.google.connectInfoToast'));
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, 'Erro ao conectar Google'));
+      toast.error(getApiErrorMessage(error, t('settingsHub.google.connectErrorToast')));
     }
   };
 
@@ -137,7 +139,7 @@ export default function SettingsPage() {
     try {
       await googleDisconnectMutation.mutateAsync();
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, 'Erro ao desconectar Google'));
+      toast.error(getApiErrorMessage(error, t('settingsHub.google.disconnectErrorToast')));
     }
   };
 
@@ -145,7 +147,7 @@ export default function SettingsPage() {
     try {
       await saveGoogleCalendarMutation.mutateAsync({ calendarId: selectedCalendarId, syncDirection });
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, 'Erro ao salvar'));
+      toast.error(getApiErrorMessage(error, t('settingsHub.google.saveErrorToast')));
     }
   };
 
@@ -153,7 +155,7 @@ export default function SettingsPage() {
     try {
       await googleForceSyncMutation.mutateAsync();
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, 'Erro ao sincronizar'));
+      toast.error(getApiErrorMessage(error, t('settingsHub.google.syncErrorToast')));
     }
   };
 
@@ -213,7 +215,7 @@ export default function SettingsPage() {
 
     const cep = cepValue.replace(/\D/g, '');
     if (cep.length !== 8) {
-      toast.warning('CEP inválido');
+      toast.warning(t('settingsHub.clinic.cepInvalidToast'));
       return;
     }
 
@@ -226,7 +228,7 @@ export default function SettingsPage() {
     try {
       const response = await axios.get(`https://viacep.com.br/ws/${cep}/json/`);
       if (response.data.erro) {
-        toast.error('CEP não encontrado');
+        toast.error(t('settingsHub.clinic.cepNotFoundToast'));
         return;
       }
       const { logradouro, bairro, localidade, uf } = response.data;
@@ -236,7 +238,7 @@ export default function SettingsPage() {
       setValue('state', uf);
     } catch (error) {
       console.error('Error fetching CEP:', error);
-      toast.error('Erro ao buscar CEP');
+      toast.error(t('settingsHub.clinic.cepFetchErrorToast'));
     } finally {
       setLoadingCep(false);
     }
@@ -244,7 +246,7 @@ export default function SettingsPage() {
 
   const onFinish = async (values: ClinicFormValues) => {
     try {
-      toast.loading('Salvando configurações...', { id: 'saving' });
+      toast.loading(t('settingsHub.clinic.savingToast'), { id: 'saving' });
       const fullAddress = values.street
         ? `${values.street}, ${values.number}${values.complement ? ` - ${values.complement}` : ''} - ${values.neighborhood} - ${values.city}/${values.state}`
         : '';
@@ -260,16 +262,16 @@ export default function SettingsPage() {
         address: fullAddress,
         cep: values.cep,
       });
-      toast.success(getApiMessage(result) ?? 'Configurações salvas com sucesso!', { id: 'saving' });
+      toast.success(getApiMessage(result) ?? t('settingsHub.clinic.saveSuccessToast'), { id: 'saving' });
     } catch (error) {
       console.error('Error saving settings:', error);
-      toast.error('Erro ao salvar configurações', { id: 'saving' });
+      toast.error(t('settingsHub.clinic.saveErrorToast'), { id: 'saving' });
     }
   };
 
   const onCreateTenant = async (values: TenantFormValues) => {
     if (!values.name?.trim() || !values.code?.trim()) {
-      toast.warning('Preencha nome e código');
+      toast.warning(t('settingsHub.newClinic.fillRequiredToast'));
       return;
     }
     try {
@@ -287,16 +289,19 @@ export default function SettingsPage() {
       await createTenantMutation.mutateAsync(payload);
       resetTenant();
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, 'Erro ao criar clínica'));
+      toast.error(getApiErrorMessage(error, t('settingsHub.newClinic.createErrorToast')));
     }
   };
 
   const saveChatbotToggle = async (enabled: boolean) => {
     try {
       const result = await updateTenantMutation.mutateAsync({ whatsapp_ai_chatbot_enabled: enabled });
-      toast.success(getApiMessage(result) ?? (enabled ? 'Chatbot de IA ativado' : 'Chatbot de IA desativado'));
+      toast.success(
+        getApiMessage(result) ??
+          (enabled ? t('settingsHub.chatbot.enabledToast') : t('settingsHub.chatbot.disabledToast')),
+      );
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, 'Erro ao salvar'));
+      toast.error(getApiErrorMessage(error, t('settingsHub.chatbot.saveErrorToast')));
     }
   };
 
@@ -311,14 +316,14 @@ export default function SettingsPage() {
   return (
     <div>
       <h1 className="text-2xl font-heading font-semibold text-foreground flex items-center gap-2 mb-6">
-        <Settings className="w-6 h-6 text-primary" /> Configurações
+        <Settings className="w-6 h-6 text-primary" /> {t('settingsHub.title')}
       </h1>
 
       {canManageChatbot && (
         <Card className="mb-6 shadow-sm border-primary/20 bg-gradient-to-br from-primary/5 to-background">
           <CardHeader>
             <CardTitle className="text-foreground font-semibold text-base">
-              Chatbot WhatsApp — respostas automáticas com IA
+              {t('settingsHub.chatbot.title')}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -330,18 +335,20 @@ export default function SettingsPage() {
                   onCheckedChange={(v) => void saveChatbotToggle(v)}
                 />
                 {chatbotSaving && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
-                <span className="font-semibold">{chatbotEnabled ? 'Ativo' : 'Desativado'}</span>
+                <span className="font-semibold">
+                  {chatbotEnabled ? t('settingsHub.chatbot.active') : t('settingsHub.chatbot.inactive')}
+                </span>
               </div>
               <p className="text-sm text-muted-foreground mb-0">
-                Quando <strong>ativo</strong>, cada mensagem de texto recebida no WhatsApp pode receber uma resposta
-                gerada pela IA (após classificação). Requer <code className="text-xs">OPENAI_API_KEY</code> e worker da
-                fila de IA no servidor. Casos de emergência usam texto fixo. Quem não é gestor/admin não vê esta opção.
+                {t('settingsHub.chatbot.descriptionPart1')} <strong>{t('settingsHub.chatbot.descriptionActive')}</strong>{' '}
+                {t('settingsHub.chatbot.descriptionPart2')} <code className="text-xs">OPENAI_API_KEY</code>{' '}
+                {t('settingsHub.chatbot.descriptionPart3')}
               </p>
               <a
                 href="/chatbot-workflows"
                 className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 mt-2"
               >
-                Configurar Workflow Visual do Chatbot →
+                {t('settingsHub.chatbot.workflowLink')} →
               </a>
             </div>
           </CardContent>
@@ -352,16 +359,16 @@ export default function SettingsPage() {
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base text-foreground font-semibold">
             <Bell className="size-4 text-blue-600" />
-            Lembretes Automáticos de Consulta
+            {t('settingsHub.reminders.title')}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground mb-3">
-            Configure quando o sistema envia confirmações de presença, lembretes e mensagens de acompanhamento pós-consulta via WhatsApp.
+            {t('settingsHub.reminders.description')}
           </p>
           <Link href="/settings/reminders">
             <Button variant="outline" size="sm">
-              Configurar lembretes →
+              {t('settingsHub.reminders.configureButton')} →
             </Button>
           </Link>
         </CardContent>
@@ -370,55 +377,55 @@ export default function SettingsPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card className="shadow-sm">
           <CardHeader>
-            <CardTitle>Dados da Clínica</CardTitle>
+            <CardTitle>{t('settingsHub.clinic.title')}</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit(onFinish)} className="flex flex-col gap-4 md:gap-6">
               <div className="flex flex-col gap-2">
-                <Label>Nome da Clínica</Label>
+                <Label>{t('settingsHub.clinic.clinicName')}</Label>
                 <Input {...register('clinicName')} />
               </div>
               <div className="flex flex-col gap-2">
-                <Label>Email de Contato</Label>
+                <Label>{t('settingsHub.clinic.email')}</Label>
                 <Input {...register('email')} />
               </div>
               <div className="flex flex-col gap-2">
-                <Label>Telefone</Label>
+                <Label>{t('settingsHub.clinic.phone')}</Label>
                 <Input {...register('phone')} />
               </div>
               <div id="identidade-visual" className="flex flex-col gap-4 scroll-mt-24">
                 <Separator />
                 <div>
-                  <h3 className="text-sm font-bold text-foreground">Identidade Visual</h3>
-                  <p className="text-xs text-muted-foreground">Logo, cor, subdomínio e domínio customizado usados no white-label da clínica.</p>
+                  <h3 className="text-sm font-bold text-foreground">{t('settingsHub.clinic.visualIdentityTitle')}</h3>
+                  <p className="text-xs text-muted-foreground">{t('settingsHub.clinic.visualIdentityDescription')}</p>
                 </div>
                 <div className="flex flex-col gap-2">
-                  <Label>Nome da marca (white-label)</Label>
-                  <Input {...register('brandName')} placeholder="Ex: Vixen Vet" />
+                  <Label>{t('settingsHub.clinic.brandName')}</Label>
+                  <Input {...register('brandName')} placeholder={t('settingsHub.clinic.brandNamePlaceholder')} />
                 </div>
                 <div className="flex flex-col gap-2">
-                  <Label>URL do logo</Label>
+                  <Label>{t('settingsHub.clinic.logoUrl')}</Label>
                   <Input {...register('logoUrl')} placeholder="https://cdn.empresa.com/logo.png" />
                 </div>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="flex flex-col gap-2">
-                    <Label>Cor principal</Label>
+                    <Label>{t('settingsHub.clinic.primaryColor')}</Label>
                     <Input {...register('primaryColor')} placeholder="#2563eb" />
                   </div>
                   <div className="flex flex-col gap-2">
-                    <Label>Subdomínio</Label>
+                    <Label>{t('settingsHub.clinic.subdomain')}</Label>
                     <Input {...register('subdomain')} placeholder="vixen" />
                   </div>
                 </div>
                 <div className="flex flex-col gap-2">
-                  <Label>Domínio customizado (opcional)</Label>
+                  <Label>{t('settingsHub.clinic.customDomain')}</Label>
                   <Input {...register('customDomain')} placeholder="app.empresa.com.br" />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div className="sm:col-span-1 flex flex-col gap-2">
-                  <Label>CEP</Label>
+                  <Label>{t('settingsHub.clinic.cep')}</Label>
                   <div className="flex gap-2">
                     <Input {...register('cep')} disabled={loadingCep} placeholder="00000-000" className="flex-1" />
                     <Button
@@ -435,11 +442,11 @@ export default function SettingsPage() {
                 <div className="sm:col-span-2">
                   <div className="grid grid-cols-3 gap-4">
                     <div className="col-span-2 flex flex-col gap-2">
-                      <Label>Logradouro</Label>
-                      <Input {...register('street')} placeholder="Rua, Av, etc" />
+                      <Label>{t('settingsHub.clinic.street')}</Label>
+                      <Input {...register('street')} placeholder={t('settingsHub.clinic.streetPlaceholder')} />
                     </div>
                     <div className="flex flex-col gap-2">
-                      <Label>Número</Label>
+                      <Label>{t('settingsHub.clinic.number')}</Label>
                       <Input {...register('number')} placeholder="123" />
                     </div>
                   </div>
@@ -448,22 +455,22 @@ export default function SettingsPage() {
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div className="flex flex-col gap-2">
-                  <Label>Complemento</Label>
-                  <Input {...register('complement')} placeholder="Apto 101" />
+                  <Label>{t('settingsHub.clinic.complement')}</Label>
+                  <Input {...register('complement')} placeholder={t('settingsHub.clinic.complementPlaceholder')} />
                 </div>
                 <div className="flex flex-col gap-2">
-                  <Label>Bairro</Label>
+                  <Label>{t('settingsHub.clinic.neighborhood')}</Label>
                   <Input {...register('neighborhood')} />
                 </div>
                 <div className="flex flex-col gap-2">
-                  <Label>Cidade</Label>
+                  <Label>{t('settingsHub.clinic.city')}</Label>
                   <Input {...register('city')} />
                 </div>
               </div>
 
               <div className="grid grid-cols-3 gap-4">
                 <div className="flex flex-col gap-2">
-                  <Label>UF</Label>
+                  <Label>{t('settingsHub.clinic.state')}</Label>
                   <Input {...register('state')} maxLength={2} />
                 </div>
               </div>
@@ -471,7 +478,7 @@ export default function SettingsPage() {
               <div>
                 <Button type="submit" className="bg-primary">
                   <Save className="w-4 h-4 mr-2" />
-                  Salvar Alterações
+                  {t('settingsHub.clinic.saveButton')}
                 </Button>
               </div>
             </form>
@@ -480,22 +487,22 @@ export default function SettingsPage() {
 
         <Card id="google-agenda" className="shadow-sm scroll-mt-24">
           <CardHeader>
-            <CardTitle>Integração Google Agenda</CardTitle>
+            <CardTitle>{t('settingsHub.google.title')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-col gap-3">
               <div>
-                <h4 className="font-bold text-foreground">Status</h4>
+                <h4 className="font-bold text-foreground">{t('settingsHub.google.status')}</h4>
                 <p className="text-muted-foreground">
                   {googleStatus.connected
-                    ? `Conectado${googleStatus.accountEmail ? ` (${googleStatus.accountEmail})` : ''}`
-                    : 'Desconectado'}
+                    ? `${t('settingsHub.google.connectedLabel')}${googleStatus.accountEmail ? ` (${googleStatus.accountEmail})` : ''}`
+                    : t('settingsHub.google.disconnectedLabel')}
                 </p>
               </div>
               <div className="flex gap-2 flex-wrap">
                 <Button onClick={handleGoogleConnect} disabled={googleLoading} className="bg-primary">
                   {googleLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                  Conectar Google
+                  {t('settingsHub.google.connectButton')}
                 </Button>
                 <Button
                   variant="outline"
@@ -503,11 +510,11 @@ export default function SettingsPage() {
                   disabled={googleLoading}
                 >
                   {googleLoading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                  Atualizar Status
+                  {t('settingsHub.google.refreshButton')}
                 </Button>
                 {googleStatus.connected && (
                   <Button variant="destructive" onClick={handleGoogleDisconnect} disabled={googleLoading}>
-                    Desconectar
+                    {t('settingsHub.google.disconnectButton')}
                   </Button>
                 )}
               </div>
@@ -516,7 +523,7 @@ export default function SettingsPage() {
                   <Separator />
                   <div className="flex flex-col gap-3">
                     <div>
-                      <Label className="text-sm font-semibold">Calendário</Label>
+                      <Label className="text-sm font-semibold">{t('settingsHub.google.calendarLabel')}</Label>
                       {googleCalendars.length > 0 ? (
                         <select
                           className="w-full border rounded px-3 py-2 text-sm mt-1"
@@ -525,7 +532,7 @@ export default function SettingsPage() {
                         >
                           {googleCalendars.map((c) => (
                             <option key={c.id} value={c.id}>
-                              {c.summary}{c.primary ? ' (principal)' : ''}
+                              {c.summary}{c.primary ? ` ${t('settingsHub.google.primaryCalendarSuffix')}` : ''}
                             </option>
                           ))}
                         </select>
@@ -533,37 +540,37 @@ export default function SettingsPage() {
                         <Input
                           value={selectedCalendarId}
                           onChange={(e) => setSelectedCalendarId(e.target.value)}
-                          placeholder="ID do calendário (ex: primary)"
+                          placeholder={t('settingsHub.google.calendarIdPlaceholder')}
                         />
                       )}
                     </div>
                     <div>
-                      <Label className="text-sm font-semibold">Direção de sincronização</Label>
+                      <Label className="text-sm font-semibold">{t('settingsHub.google.syncDirectionLabel')}</Label>
                       <select
                         className="w-full border rounded px-3 py-2 text-sm mt-1"
                         value={syncDirection}
                         onChange={(e) => setSyncDirection(e.target.value)}
                       >
-                        <option value="both">Bidirecional (NixVet ↔ Google)</option>
-                        <option value="nixvet_to_google">NixVet → Google (somente enviar)</option>
-                        <option value="google_to_nixvet">Google → NixVet (somente receber)</option>
+                        <option value="both">{t('settingsHub.google.syncBoth')}</option>
+                        <option value="nixvet_to_google">{t('settingsHub.google.syncToGoogle')}</option>
+                        <option value="google_to_nixvet">{t('settingsHub.google.syncToNixvet')}</option>
                       </select>
                         <p className="text-xs text-muted-foreground/60 mt-1">
-                        Com &quot;Bidirecional&quot;, eventos criados no Google Calendar aparecem automaticamente na agenda do NixVet (sync a cada 1 minuto).
+                        {t('settingsHub.google.syncBidirectionalNote')}
                       </p>
                     </div>
                     <div className="flex gap-2">
                       <Button onClick={handleGoogleSaveCalendar} disabled={googleLoading} className="bg-primary">
-                        Salvar configurações
+                        {t('settingsHub.google.saveButton')}
                       </Button>
                       <Button onClick={handleForceSync} disabled={forceSyncing} variant="outline">
                         {forceSyncing && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                        Sincronizar agora
+                        {t('settingsHub.google.syncNowButton')}
                       </Button>
                     </div>
                     {googleStatus.lastSyncAt && (
                       <p className="text-xs text-muted-foreground/60">
-                        Última sincronização: {new Date(googleStatus.lastSyncAt).toLocaleString('pt-BR')}
+                        {t('settingsHub.google.lastSyncLabel')} {new Date(googleStatus.lastSyncAt).toLocaleString('pt-BR')}
                       </p>
                     )}
                   </div>
@@ -575,18 +582,18 @@ export default function SettingsPage() {
 
         <Card className="shadow-sm md:col-span-2">
           <CardHeader>
-            <CardTitle>Sistema</CardTitle>
+            <CardTitle>{t('settingsHub.system.title')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex flex-col sm:flex-row sm:items-start sm:gap-10 gap-4">
               <div>
-                <h4 className="font-bold text-foreground">Versão do Sistema</h4>
+                <h4 className="font-bold text-foreground">{t('settingsHub.system.versionLabel')}</h4>
                 <p className="text-muted-foreground">v1.0.0</p>
               </div>
               <div className="sm:border-l sm:border-border sm:pl-10 flex-1 min-w-0">
-                <h4 className="font-bold text-foreground">Tenant ID</h4>
+                <h4 className="font-bold text-foreground">{t('settingsHub.system.tenantIdLabel')}</h4>
                 <p className="text-muted-foreground font-mono text-xs bg-muted p-2 rounded break-all mt-1">
-                  {typeof window !== 'undefined' ? localStorage.getItem('tenantId') : 'Loading...'}
+                  {typeof window !== 'undefined' ? localStorage.getItem('tenantId') : t('settingsHub.system.loadingLabel')}
                 </p>
               </div>
             </div>
@@ -596,35 +603,35 @@ export default function SettingsPage() {
         {isSuperAdmin && (
           <Card className="shadow-sm md:col-span-2">
             <CardHeader>
-              <CardTitle>Nova clínica (para testes)</CardTitle>
+              <CardTitle>{t('settingsHub.newClinic.title')}</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-muted-foreground mb-4">
-                Crie uma clínica para usuários testarem. Informe o <strong>código</strong> na tela de login. Opcional:
-                cadastre o primeiro usuário (admin) da clínica.
+                {t('settingsHub.newClinic.descriptionPrefix')} <strong>{t('settingsHub.newClinic.descriptionStrong')}</strong>{' '}
+                {t('settingsHub.newClinic.descriptionSuffix')}
               </p>
               <form onSubmit={handleSubmitTenant(onCreateTenant)} className="max-w-md flex flex-col gap-4">
                 <div className="flex flex-col gap-1.5">
-                  <Label>Nome da clínica *</Label>
-                  <Input {...registerTenant('name', { required: true })} placeholder="Ex: Clínica Teste" />
+                  <Label>{t('settingsHub.newClinic.nameLabel')}</Label>
+                  <Input {...registerTenant('name', { required: true })} placeholder={t('settingsHub.newClinic.namePlaceholder')} />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <Label>Código (usado no login) *</Label>
-                  <Input {...registerTenant('code', { required: true })} placeholder="Ex: TESTE" />
+                  <Label>{t('settingsHub.newClinic.codeLabel')}</Label>
+                  <Input {...registerTenant('code', { required: true })} placeholder={t('settingsHub.newClinic.codePlaceholder')} />
                 </div>
                 <Separator />
-                <p className="text-xs text-muted-foreground">Primeiro usuário (opcional)</p>
+                <p className="text-xs text-muted-foreground">{t('settingsHub.newClinic.firstUserLabel')}</p>
                 <div className="flex flex-col gap-1.5">
-                  <Label>Nome do usuário</Label>
-                  <Input {...registerTenant('initialUserName')} placeholder="Ex: Admin Teste" />
+                  <Label>{t('settingsHub.newClinic.userNameLabel')}</Label>
+                  <Input {...registerTenant('initialUserName')} placeholder={t('settingsHub.newClinic.userNamePlaceholder')} />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <Label>Email</Label>
-                  <Input {...registerTenant('initialUserEmail')} type="email" placeholder="Ex: admin@teste.com" />
+                  <Label>{t('settingsHub.newClinic.emailLabel')}</Label>
+                  <Input {...registerTenant('initialUserEmail')} type="email" placeholder={t('settingsHub.newClinic.emailPlaceholder')} />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <Label>Senha</Label>
-                  <Input {...registerTenant('initialUserPassword')} type="password" placeholder="Senha de acesso" />
+                  <Label>{t('settingsHub.newClinic.passwordLabel')}</Label>
+                  <Input {...registerTenant('initialUserPassword')} type="password" placeholder={t('settingsHub.newClinic.passwordPlaceholder')} />
                 </div>
                 <div>
                   <Button type="submit" disabled={creatingTenant} className="bg-primary">
@@ -633,7 +640,7 @@ export default function SettingsPage() {
                     ) : (
                       <Plus className="w-4 h-4 mr-2" />
                     )}
-                    Criar clínica
+                    {t('settingsHub.newClinic.createButton')}
                   </Button>
                 </div>
               </form>

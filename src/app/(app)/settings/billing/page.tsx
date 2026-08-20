@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import {
   CreditCard,
   CheckCircle2,
@@ -23,17 +24,20 @@ import {
   useCancelBillingMutation,
 } from '@/hooks/apiHooks/useBilling';
 import { planFullLabel } from '@/lib/plans';
+import { useCurrencyFormatter } from '@/lib/i18n/currency';
 
-const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ElementType }> = {
-  active: { label: 'Ativo', color: 'text-green-600 bg-green-50 border-green-200', icon: CheckCircle2 },
-  trial: { label: 'Período de teste', color: 'text-blue-600 bg-blue-50 border-blue-200', icon: Clock },
-  trial_expired: { label: 'Trial expirado', color: 'text-orange-600 bg-orange-50 border-orange-200', icon: AlertTriangle },
-  overdue: { label: 'Pagamento em atraso', color: 'text-red-600 bg-red-50 border-red-200', icon: AlertTriangle },
-  suspended: { label: 'Suspenso', color: 'text-slate-600 bg-slate-50 border-slate-200', icon: XCircle },
-  cancelled: { label: 'Cancelado', color: 'text-slate-600 bg-slate-50 border-slate-200', icon: XCircle },
+const STATUS_CONFIG: Record<string, { labelKey: string; color: string; icon: React.ElementType }> = {
+  active: { labelKey: 'settingsBilling.status.active', color: 'text-green-600 bg-green-50 border-green-200', icon: CheckCircle2 },
+  trial: { labelKey: 'settingsBilling.status.trial', color: 'text-blue-600 bg-blue-50 border-blue-200', icon: Clock },
+  trial_expired: { labelKey: 'settingsBilling.status.trialExpired', color: 'text-orange-600 bg-orange-50 border-orange-200', icon: AlertTriangle },
+  overdue: { labelKey: 'settingsBilling.status.overdue', color: 'text-red-600 bg-red-50 border-red-200', icon: AlertTriangle },
+  suspended: { labelKey: 'settingsBilling.status.suspended', color: 'text-slate-600 bg-slate-50 border-slate-200', icon: XCircle },
+  cancelled: { labelKey: 'settingsBilling.status.cancelled', color: 'text-slate-600 bg-slate-50 border-slate-200', icon: XCircle },
 };
 
 export default function BillingSettingsPage() {
+  const { t } = useTranslation();
+  const fmt = useCurrencyFormatter();
   const [confirmCancel, setConfirmCancel] = useState(false);
 
   const { data: billing, isLoading: loadingStatus } = useBillingStatusQuery();
@@ -49,10 +53,10 @@ export default function BillingSettingsPage() {
       if (data?.paymentUrl) {
         window.location.href = data.paymentUrl;
       } else {
-        toast.info('Nenhuma cobrança pendente encontrada.');
+        toast.info(t('settingsBilling.noPendingCharge'));
       }
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, 'Erro ao obter a cobrança.'));
+      toast.error(getApiErrorMessage(error, t('settingsBilling.getChargeError')));
     }
   };
 
@@ -62,7 +66,7 @@ export default function BillingSettingsPage() {
       await cancelMutation.mutateAsync();
       setConfirmCancel(false);
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, 'Erro ao cancelar plano.'));
+      toast.error(getApiErrorMessage(error, t('settingsBilling.cancelPlanError')));
     }
   };
 
@@ -77,8 +81,8 @@ export default function BillingSettingsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-bold text-slate-900">Assinatura e Faturamento</h1>
-        <p className="mt-1 text-sm text-slate-500">Gerencie seu plano, forma de pagamento e notas fiscais.</p>
+        <h1 className="text-xl font-bold text-slate-900">{t('settingsBilling.title')}</h1>
+        <p className="mt-1 text-sm text-slate-500">{t('settingsBilling.subtitle')}</p>
       </div>
 
       {/* Status card */}
@@ -92,7 +96,7 @@ export default function BillingSettingsPage() {
             <div className="space-y-2">
               <div className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-semibold ${cfg.color}`}>
                 <cfg.icon className="size-3.5" />
-                {cfg.label}
+                {t(cfg.labelKey)}
               </div>
 
               {billing.billingPlan && (
@@ -103,14 +107,14 @@ export default function BillingSettingsPage() {
 
               {billing.status === 'trial' && daysLeft !== null && (
                 <p className="text-sm text-slate-600">
-                  Trial expira em <strong>{daysLeft} {daysLeft === 1 ? 'dia' : 'dias'}</strong>
+                  {t('settingsBilling.trialExpiresPrefix')} <strong>{t('settingsBilling.daysCount', { count: daysLeft })}</strong>
                   {billing.trialEndsAt && ` (${new Date(billing.trialEndsAt).toLocaleDateString('pt-BR')})`}
                 </p>
               )}
 
               {cancelAtDate && (
                 <p className="text-sm text-orange-700">
-                  ⚠️ Cancelamento agendado — acesso até <strong>{cancelAtDate}</strong>
+                  {t('settingsBilling.cancelScheduledPrefix')} <strong>{cancelAtDate}</strong>
                 </p>
               )}
             </div>
@@ -120,7 +124,7 @@ export default function BillingSettingsPage() {
                 <Link href="/billing/upgrade">
                   <Button size="sm" className="w-full sm:w-auto">
                     <CreditCard className="mr-2 size-4" />
-                    {billing.status === 'overdue' ? 'Regularizar pagamento' : 'Escolher plano'}
+                    {billing.status === 'overdue' ? t('settingsBilling.regularizePayment') : t('settingsBilling.choosePlan')}
                   </Button>
                 </Link>
               )}
@@ -128,14 +132,14 @@ export default function BillingSettingsPage() {
               {(billing.status === 'active' || billing.status === 'overdue') && (
                 <Button size="sm" onClick={handlePayPending} disabled={paying}>
                   {paying ? <Loader2 className="mr-2 size-4 animate-spin" /> : <CreditCard className="mr-2 size-4" />}
-                  Pagar cobrança pendente
+                  {t('settingsBilling.payPendingCharge')}
                 </Button>
               )}
 
               {billing.status === 'active' && !cancelAtDate && (
                 <Link href="/billing/upgrade">
                   <Button size="sm" variant="outline" className="w-full sm:w-auto">
-                    Trocar de plano
+                    {t('settingsBilling.changePlan')}
                   </Button>
                 </Link>
               )}
@@ -149,13 +153,13 @@ export default function BillingSettingsPage() {
                       className="border-red-200 text-red-600 hover:bg-red-50"
                       onClick={() => setConfirmCancel(true)}
                     >
-                      Cancelar assinatura
+                      {t('settingsBilling.cancelSubscription')}
                     </Button>
                   ) : (
                     <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-800">
-                      <p className="mb-3 font-medium">Confirmar cancelamento?</p>
+                      <p className="mb-3 font-medium">{t('settingsBilling.confirmCancelTitle')}</p>
                       <p className="mb-3 text-xs text-red-700">
-                        Seu acesso continuará ativo até o fim do período pago. Após isso, a conta será suspensa.
+                        {t('settingsBilling.confirmCancelDescription')}
                       </p>
                       <div className="flex gap-2">
                         <Button
@@ -165,7 +169,7 @@ export default function BillingSettingsPage() {
                           onClick={() => setConfirmCancel(false)}
                           disabled={cancelling}
                         >
-                          Manter plano
+                          {t('settingsBilling.keepPlan')}
                         </Button>
                         <Button
                           size="sm"
@@ -174,7 +178,7 @@ export default function BillingSettingsPage() {
                           disabled={cancelling}
                         >
                           {cancelling ? <Loader2 className="mr-1 size-3 animate-spin" /> : null}
-                          Confirmar cancelamento
+                          {t('settingsBilling.confirmCancelButton')}
                         </Button>
                       </div>
                     </div>
@@ -188,18 +192,18 @@ export default function BillingSettingsPage() {
 
       {/* Invoices */}
       <div>
-        <h2 className="mb-3 text-base font-semibold text-slate-800">Histórico de Pagamentos e NFS-e</h2>
+        <h2 className="mb-3 text-base font-semibold text-slate-800">{t('settingsBilling.invoicesTitle')}</h2>
         <p className="text-xs text-slate-500 mb-3">
-          As Notas Fiscais de Serviço (NFS-e) são emitidas automaticamente após confirmação de cada pagamento via Asaas.
+          {t('settingsBilling.invoicesDescription')}
         </p>
         {loadingInvoices ? (
           <div className="flex items-center gap-2 text-sm text-slate-400">
-            <Loader2 className="size-4 animate-spin" /> Carregando...
+            <Loader2 className="size-4 animate-spin" /> {t('settingsBilling.loading')}
           </div>
         ) : invoices.length === 0 ? (
           <Card className="flex flex-col items-center gap-2 p-8 text-center">
             <FileText className="size-8 text-slate-200" />
-            <p className="text-sm text-slate-400">Nenhum pagamento registrado ainda.</p>
+            <p className="text-sm text-slate-400">{t('settingsBilling.noInvoices')}</p>
           </Card>
         ) : (
           <Card className="divide-y overflow-hidden">
@@ -212,12 +216,12 @@ export default function BillingSettingsPage() {
                       {new Date(inv.date).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
                     </p>
                     <p className="text-xs text-slate-400">
-                      {inv.status === 'DONE' ? '✅ NFS-e emitida' : inv.status === 'PENDING' ? '⏳ Nota pendente' : inv.status}
+                      {inv.status === 'DONE' ? t('settingsBilling.nfseIssued') : inv.status === 'PENDING' ? t('settingsBilling.notePending') : inv.status}
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center gap-3">
                     <span className="text-sm font-semibold text-slate-700">
-                      R${inv.value.toFixed(2).replace('.', ',')}
+                      {fmt(inv.value)}
                     </span>
                     {hasNfse ? (
                       <a
@@ -226,7 +230,7 @@ export default function BillingSettingsPage() {
                         rel="noopener noreferrer"
                         className="flex items-center gap-1 rounded-md bg-green-50 border border-green-200 text-green-700 px-2 py-1 text-xs font-medium hover:bg-green-100 transition-colors"
                       >
-                        <FileText className="size-3" /> Baixar NFS-e <ExternalLink className="size-3" />
+                        <FileText className="size-3" /> {t('settingsBilling.downloadNfse')} <ExternalLink className="size-3" />
                       </a>
                     ) : (inv.invoiceUrl || inv.pdfUrl) ? (
                       <a
@@ -235,7 +239,7 @@ export default function BillingSettingsPage() {
                         rel="noopener noreferrer"
                         className="flex items-center gap-1 text-xs text-primary hover:underline"
                       >
-                        Ver nota <ExternalLink className="size-3" />
+                        {t('settingsBilling.viewInvoice')} <ExternalLink className="size-3" />
                       </a>
                     ) : null}
                   </div>

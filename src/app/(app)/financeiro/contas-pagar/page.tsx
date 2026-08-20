@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { AlertTriangle, CalendarClock, CircleDollarSign, MoreHorizontal, Plus, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -49,6 +50,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import api from '@/lib/axios';
 import { toast } from 'sonner';
+import { useCurrencyFormatter } from '@/lib/i18n/currency';
 
 type PayableStatus = 'pending' | 'paid' | 'overdue' | 'cancelled';
 
@@ -78,49 +80,6 @@ interface PayablesSummary {
   by_category: Record<string, number>;
 }
 
-const CATEGORY_OPTIONS: { value: string; label: string }[] = [
-  { value: 'rent', label: 'Aluguel' },
-  { value: 'personnel', label: 'Pessoal / Salários' },
-  { value: 'utilities', label: 'Energia/Água/Internet' },
-  { value: 'marketing', label: 'Marketing' },
-  { value: 'equipment', label: 'Equipamentos' },
-  { value: 'tax', label: 'Impostos / Taxas' },
-  { value: 'lab_cost', label: 'Custo de Laboratório' },
-  { value: 'medication_purchase', label: 'Compra de Medicamentos' },
-  { value: 'material_purchase', label: 'Compra de Materiais' },
-  { value: 'other', label: 'Outros' },
-];
-
-const RECURRENCE_OPTIONS: { value: string; label: string }[] = [
-  { value: 'none', label: 'Não repete' },
-  { value: 'monthly', label: 'Mensal' },
-  { value: 'weekly', label: 'Semanal' },
-  { value: 'yearly', label: 'Anual' },
-];
-
-const PAY_METHODS: { value: string; label: string }[] = [
-  { value: 'cash', label: 'Dinheiro' },
-  { value: 'pix', label: 'Pix' },
-  { value: 'debit', label: 'Débito' },
-  { value: 'transfer', label: 'Transferência' },
-  { value: 'boleto', label: 'Boleto' },
-];
-
-const STATUS_META: Record<PayableStatus, { label: string; variant: 'secondary' | 'destructive' | 'default' | 'outline'; className?: string }> = {
-  pending: { label: 'Pendente', variant: 'secondary' },
-  overdue: { label: 'Vencida', variant: 'destructive' },
-  paid: { label: 'Paga', variant: 'default', className: 'bg-green-600 hover:bg-green-600' },
-  cancelled: { label: 'Cancelada', variant: 'outline' },
-};
-
-function fmt(n: number | null | undefined) {
-  return Number(n ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-}
-
-function catLabel(cat: string) {
-  return CATEGORY_OPTIONS.find((c) => c.value === cat)?.label ?? cat;
-}
-
 function todayISO() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -147,6 +106,46 @@ const EMPTY_FORM = {
 const STATUS_ORDER: Record<PayableStatus, number> = { overdue: 0, pending: 1, paid: 2, cancelled: 3 };
 
 export default function ContasPagarPage() {
+  const { t } = useTranslation();
+  const fmt = useCurrencyFormatter();
+
+  const CATEGORY_OPTIONS: { value: string; label: string }[] = [
+    { value: 'rent', label: t('financeiroContasPagar.categories.rent') },
+    { value: 'personnel', label: t('financeiroContasPagar.categories.personnel') },
+    { value: 'utilities', label: t('financeiroContasPagar.categories.utilities') },
+    { value: 'marketing', label: t('financeiroContasPagar.categories.marketing') },
+    { value: 'equipment', label: t('financeiroContasPagar.categories.equipment') },
+    { value: 'tax', label: t('financeiroContasPagar.categories.tax') },
+    { value: 'lab_cost', label: t('financeiroContasPagar.categories.labCost') },
+    { value: 'medication_purchase', label: t('financeiroContasPagar.categories.medicationPurchase') },
+    { value: 'material_purchase', label: t('financeiroContasPagar.categories.materialPurchase') },
+    { value: 'other', label: t('financeiroContasPagar.categories.other') },
+  ];
+
+  const RECURRENCE_OPTIONS: { value: string; label: string }[] = [
+    { value: 'none', label: t('financeiroContasPagar.recurrence.none') },
+    { value: 'monthly', label: t('financeiroContasPagar.recurrence.monthly') },
+    { value: 'weekly', label: t('financeiroContasPagar.recurrence.weekly') },
+    { value: 'yearly', label: t('financeiroContasPagar.recurrence.yearly') },
+  ];
+
+  const PAY_METHODS: { value: string; label: string }[] = [
+    { value: 'cash', label: t('financeiroContasPagar.payMethods.cash') },
+    { value: 'pix', label: t('financeiroContasPagar.payMethods.pix') },
+    { value: 'debit', label: t('financeiroContasPagar.payMethods.debit') },
+    { value: 'transfer', label: t('financeiroContasPagar.payMethods.transfer') },
+    { value: 'boleto', label: t('financeiroContasPagar.payMethods.boleto') },
+  ];
+
+  const STATUS_META: Record<PayableStatus, { label: string; variant: 'secondary' | 'destructive' | 'default' | 'outline'; className?: string }> = {
+    pending: { label: t('financeiroContasPagar.statusPending'), variant: 'secondary' },
+    overdue: { label: t('financeiroContasPagar.statusOverdue'), variant: 'destructive' },
+    paid: { label: t('financeiroContasPagar.statusPaid'), variant: 'default', className: 'bg-green-600 hover:bg-green-600' },
+    cancelled: { label: t('financeiroContasPagar.statusCancelled'), variant: 'outline' },
+  };
+
+  const catLabel = (cat: string) => CATEGORY_OPTIONS.find((c) => c.value === cat)?.label ?? cat;
+
   const now = new Date();
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
@@ -190,11 +189,11 @@ export default function ContasPagarPage() {
       setPayables(list);
       setSummary(summaryRes.data);
     } catch {
-      toast.error('Erro ao carregar contas a pagar');
+      toast.error(t('financeiroContasPagar.loadError'));
     } finally {
       setLoading(false);
     }
-  }, [month, statusFilter, categoryFilter]);
+  }, [month, statusFilter, categoryFilter, t]);
 
   useEffect(() => {
     fetchData();
@@ -229,7 +228,7 @@ export default function ContasPagarPage() {
   const submitForm = async () => {
     const amount = Number(form.amount) || 0;
     if (!form.description || !form.category || amount <= 0 || !form.due_date) {
-      toast.error('Preencha descrição, categoria, valor e vencimento');
+      toast.error(t('financeiroContasPagar.formValidationError'));
       return;
     }
     setSaving(true);
@@ -246,15 +245,15 @@ export default function ContasPagarPage() {
       };
       if (editing) {
         await api.patch(`/payables/${editing.id}`, payload);
-        toast.success('Conta atualizada');
+        toast.success(t('financeiroContasPagar.updateSuccess'));
       } else {
         await api.post('/payables', payload);
-        toast.success('Conta criada');
+        toast.success(t('financeiroContasPagar.createSuccess'));
       }
       setDrawerOpen(false);
       fetchData();
     } catch {
-      toast.error('Erro ao salvar conta');
+      toast.error(t('financeiroContasPagar.saveError'));
     } finally {
       setSaving(false);
     }
@@ -268,17 +267,17 @@ export default function ContasPagarPage() {
 
   const submitPay = async () => {
     if (!paying || !payMethod) {
-      toast.error('Selecione a forma de pagamento');
+      toast.error(t('financeiroContasPagar.selectPaymentMethodError'));
       return;
     }
     setSubmittingPay(true);
     try {
       await api.patch(`/payables/${paying.id}/pay`, { payment_method: payMethod, paid_at: payDate });
-      toast.success('Conta paga e lançamento financeiro criado');
+      toast.success(t('financeiroContasPagar.paySuccess'));
       setPaying(null);
       fetchData();
     } catch {
-      toast.error('Erro ao registrar pagamento');
+      toast.error(t('financeiroContasPagar.payError'));
     } finally {
       setSubmittingPay(false);
     }
@@ -287,10 +286,10 @@ export default function ContasPagarPage() {
   const cancelPayable = async (p: Payable) => {
     try {
       await api.patch(`/payables/${p.id}/cancel`, {});
-      toast.success('Conta cancelada');
+      toast.success(t('financeiroContasPagar.cancelSuccess'));
       fetchData();
     } catch {
-      toast.error('Erro ao cancelar conta');
+      toast.error(t('financeiroContasPagar.cancelError'));
     }
   };
 
@@ -298,14 +297,14 @@ export default function ContasPagarPage() {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Contas a Pagar</h1>
+          <h1 className="text-2xl font-bold">{t('financeiroContasPagar.title')}</h1>
           <p className="text-sm text-muted-foreground">
-            Controle de despesas com vencimento; ao pagar, o lançamento financeiro é criado automaticamente.
+            {t('financeiroContasPagar.subtitle')}
           </p>
         </div>
         <Button onClick={openCreate}>
           <Plus className="mr-2 size-4" />
-          Nova Conta
+          {t('financeiroContasPagar.newButton')}
         </Button>
       </div>
 
@@ -313,7 +312,7 @@ export default function ContasPagarPage() {
         <div className="flex items-center gap-2 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-800">
           <AlertTriangle className="size-4 shrink-0" />
           <span>
-            Você tem {summary.overdue} conta{summary.overdue === 1 ? '' : 's'} vencida{summary.overdue === 1 ? '' : 's'} totalizando{' '}
+            {t('financeiroContasPagar.overdueAlert', { count: summary.overdue })}{' '}
             <strong>{fmt(summary.overdue_amount)}</strong>
           </span>
         </div>
@@ -322,7 +321,7 @@ export default function ContasPagarPage() {
       <div className="grid gap-4 sm:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Vencido</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t('financeiroContasPagar.totalOverdue')}</CardTitle>
             <AlertTriangle className="size-4 text-red-600" />
           </CardHeader>
           <CardContent>
@@ -331,7 +330,7 @@ export default function ContasPagarPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">A Vencer em 7 dias</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t('financeiroContasPagar.dueIn7Days')}</CardTitle>
             <CalendarClock className="size-4 text-orange-500" />
           </CardHeader>
           <CardContent>
@@ -340,7 +339,7 @@ export default function ContasPagarPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total previsto no mês</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t('financeiroContasPagar.totalForecastMonth')}</CardTitle>
             <CircleDollarSign className="size-4 text-blue-600" />
           </CardHeader>
           <CardContent>
@@ -351,7 +350,7 @@ export default function ContasPagarPage() {
 
       <div className="flex flex-wrap items-end gap-3">
         <div>
-          <Label className="text-xs text-muted-foreground">Mês</Label>
+          <Label className="text-xs text-muted-foreground">{t('financeiroContasPagar.monthLabel')}</Label>
           <Select value={month} onValueChange={setMonth}>
             <SelectTrigger className="w-[130px]">
               <SelectValue />
@@ -364,13 +363,13 @@ export default function ContasPagarPage() {
           </Select>
         </div>
         <div>
-          <Label className="text-xs text-muted-foreground">Categoria</Label>
+          <Label className="text-xs text-muted-foreground">{t('financeiroContasPagar.categoryLabel')}</Label>
           <Select value={categoryFilter} onValueChange={setCategoryFilter}>
             <SelectTrigger className="w-[200px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todas</SelectItem>
+              <SelectItem value="all">{t('financeiroContasPagar.allCategories')}</SelectItem>
               {CATEGORY_OPTIONS.map((c) => (
                 <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
               ))}
@@ -378,17 +377,17 @@ export default function ContasPagarPage() {
           </Select>
         </div>
         <div>
-          <Label className="text-xs text-muted-foreground">Status</Label>
+          <Label className="text-xs text-muted-foreground">{t('financeiroContasPagar.statusLabel')}</Label>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-[150px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
-              <SelectItem value="pending">Pendente</SelectItem>
-              <SelectItem value="overdue">Vencida</SelectItem>
-              <SelectItem value="paid">Paga</SelectItem>
-              <SelectItem value="cancelled">Cancelada</SelectItem>
+              <SelectItem value="all">{t('financeiroContasPagar.allStatuses')}</SelectItem>
+              <SelectItem value="pending">{t('financeiroContasPagar.statusPending')}</SelectItem>
+              <SelectItem value="overdue">{t('financeiroContasPagar.statusOverdue')}</SelectItem>
+              <SelectItem value="paid">{t('financeiroContasPagar.statusPaid')}</SelectItem>
+              <SelectItem value="cancelled">{t('financeiroContasPagar.statusCancelled')}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -396,7 +395,7 @@ export default function ContasPagarPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm font-medium">Contas do mês {month}</CardTitle>
+          <CardTitle className="text-sm font-medium">{t('financeiroContasPagar.monthCardTitle', { month })}</CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -406,19 +405,19 @@ export default function ContasPagarPage() {
               ))}
             </div>
           ) : payables.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">Nenhuma conta encontrada.</p>
+            <p className="py-8 text-center text-sm text-muted-foreground">{t('financeiroContasPagar.emptyState')}</p>
           ) : (
             <div className="overflow-x-auto rounded-lg border border-slate-200">
               <Table className="min-w-full border-collapse bg-white text-sm">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Vencimento</TableHead>
-                    <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Fornecedor</TableHead>
-                    <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Descrição</TableHead>
-                    <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Categoria</TableHead>
-                    <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">Valor</TableHead>
-                    <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Status</TableHead>
-                    <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">Ações</TableHead>
+                    <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('financeiroContasPagar.tableHeaderDueDate')}</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('financeiroContasPagar.supplierLabel')}</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('financeiroContasPagar.descriptionLabel')}</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('financeiroContasPagar.categoryLabel')}</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('financeiroContasPagar.amountLabel')}</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('financeiroContasPagar.statusLabel')}</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('financeiroContasPagar.tableHeaderActions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -443,7 +442,7 @@ export default function ContasPagarPage() {
                             <div className="flex justify-end gap-2">
                               <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => openPay(p)}>
                                 <Wallet className="mr-1 size-3.5" />
-                                Pagar
+                                {t('financeiroContasPagar.payButton')}
                               </Button>
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
@@ -452,9 +451,9 @@ export default function ContasPagarPage() {
                                   </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => openEdit(p)}>Editar</DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => openEdit(p)}>{t('financeiroContasPagar.editItem')}</DropdownMenuItem>
                                   <DropdownMenuItem className="text-red-600" onClick={() => cancelPayable(p)}>
-                                    Cancelar
+                                    {t('financeiroContasPagar.cancel')}
                                   </DropdownMenuItem>
                                 </DropdownMenuContent>
                               </DropdownMenu>
@@ -465,7 +464,7 @@ export default function ContasPagarPage() {
                               target="_blank"
                               className="text-xs text-blue-600 hover:underline"
                             >
-                              Ver lançamento
+                              {t('financeiroContasPagar.viewEntry')}
                             </Link>
                           ) : (
                             <span className="text-xs text-muted-foreground">—</span>
@@ -485,33 +484,33 @@ export default function ContasPagarPage() {
       <Sheet open={drawerOpen} onOpenChange={(o) => !o && setDrawerOpen(false)}>
         <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-md">
           <SheetHeader>
-            <SheetTitle>{editing ? 'Editar conta' : 'Nova conta a pagar'}</SheetTitle>
+            <SheetTitle>{editing ? t('financeiroContasPagar.editSheetTitle') : t('financeiroContasPagar.createSheetTitle')}</SheetTitle>
           </SheetHeader>
 
           <div className="space-y-4 py-4">
             <div>
-              <Label htmlFor="p-description">Descrição *</Label>
+              <Label htmlFor="p-description">{t('financeiroContasPagar.descriptionFieldLabel')}</Label>
               <Input
                 id="p-description"
                 value={form.description}
                 onChange={(ev) => setField('description', ev.target.value)}
-                placeholder="Ex.: Aluguel julho 2026"
+                placeholder={t('financeiroContasPagar.descriptionPlaceholder')}
               />
             </div>
             <div>
-              <Label htmlFor="p-supplier">Fornecedor</Label>
+              <Label htmlFor="p-supplier">{t('financeiroContasPagar.supplierLabel')}</Label>
               <Input
                 id="p-supplier"
                 value={form.supplier}
                 onChange={(ev) => setField('supplier', ev.target.value)}
-                placeholder="Opcional"
+                placeholder={t('financeiroContasPagar.supplierPlaceholder')}
               />
             </div>
             <div>
-              <Label>Categoria *</Label>
+              <Label>{t('financeiroContasPagar.categoryFieldLabel')}</Label>
               <Select value={form.category} onValueChange={(v) => setField('category', v)}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione" />
+                  <SelectValue placeholder={t('financeiroContasPagar.selectPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
                   {CATEGORY_OPTIONS.map((c) => (
@@ -522,7 +521,7 @@ export default function ContasPagarPage() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label htmlFor="p-amount">Valor *</Label>
+                <Label htmlFor="p-amount">{t('financeiroContasPagar.amountFieldLabel')}</Label>
                 <CurrencyInput
                   id="p-amount"
                   value={form.amount}
@@ -530,7 +529,7 @@ export default function ContasPagarPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="p-due">Vencimento *</Label>
+                <Label htmlFor="p-due">{t('financeiroContasPagar.dueDateFieldLabel')}</Label>
                 <Input
                   id="p-due"
                   type="date"
@@ -540,7 +539,7 @@ export default function ContasPagarPage() {
               </div>
             </div>
             <div>
-              <Label>Recorrência</Label>
+              <Label>{t('financeiroContasPagar.recurrenceFieldLabel')}</Label>
               <Select value={form.recurrence} onValueChange={(v) => setField('recurrence', v)}>
                 <SelectTrigger>
                   <SelectValue />
@@ -553,7 +552,7 @@ export default function ContasPagarPage() {
               </Select>
             </div>
             <div>
-              <Label htmlFor="p-notes">Observações</Label>
+              <Label htmlFor="p-notes">{t('financeiroContasPagar.notesFieldLabel')}</Label>
               <Textarea
                 id="p-notes"
                 value={form.notes}
@@ -562,22 +561,22 @@ export default function ContasPagarPage() {
               />
             </div>
             <div>
-              <Label htmlFor="p-doc">Documento (URL)</Label>
+              <Label htmlFor="p-doc">{t('financeiroContasPagar.documentFieldLabel')}</Label>
               <Input
                 id="p-doc"
                 value={form.document_url}
                 onChange={(ev) => setField('document_url', ev.target.value)}
-                placeholder="https://..."
+                placeholder={t('financeiroContasPagar.documentPlaceholder')}
               />
             </div>
           </div>
 
           <SheetFooter>
             <Button variant="outline" onClick={() => setDrawerOpen(false)} disabled={saving}>
-              Cancelar
+              {t('financeiroContasPagar.cancel')}
             </Button>
             <Button onClick={submitForm} disabled={saving}>
-              {editing ? 'Salvar alterações' : 'Criar conta'}
+              {editing ? t('financeiroContasPagar.saveChangesButton') : t('financeiroContasPagar.createButton')}
             </Button>
           </SheetFooter>
         </SheetContent>
@@ -587,33 +586,33 @@ export default function ContasPagarPage() {
       <Dialog open={!!paying} onOpenChange={(o) => !o && setPaying(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Confirmar Pagamento</DialogTitle>
+            <DialogTitle>{t('financeiroContasPagar.confirmPayment')}</DialogTitle>
           </DialogHeader>
 
           {paying && (
             <div className="space-y-4">
               <div className="rounded-md bg-muted/50 p-3 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Descrição</span>
+                  <span className="text-muted-foreground">{t('financeiroContasPagar.descriptionLabel')}</span>
                   <span className="font-medium">{paying.description}</span>
                 </div>
                 {paying.supplier && (
                   <div className="mt-1 flex justify-between">
-                    <span className="text-muted-foreground">Fornecedor</span>
+                    <span className="text-muted-foreground">{t('financeiroContasPagar.supplierLabel')}</span>
                     <span>{paying.supplier}</span>
                   </div>
                 )}
                 <div className="mt-1 flex justify-between">
-                  <span className="text-muted-foreground">Valor</span>
+                  <span className="text-muted-foreground">{t('financeiroContasPagar.amountLabel')}</span>
                   <span className="font-semibold">{fmt(paying.amount)}</span>
                 </div>
               </div>
 
               <div>
-                <Label>Forma de pagamento *</Label>
+                <Label>{t('financeiroContasPagar.paymentMethodFieldLabel')}</Label>
                 <Select value={payMethod} onValueChange={setPayMethod}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione" />
+                    <SelectValue placeholder={t('financeiroContasPagar.selectPlaceholder')} />
                   </SelectTrigger>
                   <SelectContent>
                     {PAY_METHODS.map((m) => (
@@ -624,7 +623,7 @@ export default function ContasPagarPage() {
               </div>
 
               <div>
-                <Label htmlFor="pay-date">Data do pagamento</Label>
+                <Label htmlFor="pay-date">{t('financeiroContasPagar.paymentDateFieldLabel')}</Label>
                 <Input
                   id="pay-date"
                   type="date"
@@ -637,7 +636,7 @@ export default function ContasPagarPage() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setPaying(null)} disabled={submittingPay}>
-              Cancelar
+              {t('financeiroContasPagar.cancel')}
             </Button>
             <Button
               className="bg-green-600 hover:bg-green-700"
@@ -645,7 +644,7 @@ export default function ContasPagarPage() {
               disabled={submittingPay || !payMethod}
             >
               <Wallet className="mr-2 size-4" />
-              Confirmar Pagamento
+              {t('financeiroContasPagar.confirmPayment')}
             </Button>
           </DialogFooter>
         </DialogContent>

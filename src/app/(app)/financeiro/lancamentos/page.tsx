@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import {
   CheckCircle,
   XCircle,
@@ -49,41 +51,44 @@ import {
   useFinancialEntriesSummaryQuery,
   usePaymentOptionsMutation,
 } from '@/hooks/apiHooks/useFinancialReports';
+import { useCurrencyFormatter, resolveAppLanguage, CURRENCY_BY_LANGUAGE } from '@/lib/i18n/currency';
 
 type Status = FinancialEntryStatus;
 
-const CATEGORY_LABELS: Record<string, string> = {
-  consultation: 'Consulta',
-  hospitalization: 'Internação',
-  procedure: 'Procedimento',
-  exam: 'Exame',
-  vaccine: 'Vacina',
-  product: 'Produto',
-  medication: 'Medicamento',
-  material: 'Material',
-  other: 'Outro',
+// Mapeia o código bruto da categoria (vindo do backend) para a chave de
+// tradução em `financeiroLancamentos.categoryLabels`.
+const CATEGORY_LABEL_KEYS: Record<string, string> = {
+  consultation: 'consultation',
+  hospitalization: 'hospitalization',
+  procedure: 'procedure',
+  exam: 'exam',
+  vaccine: 'vaccine',
+  product: 'product',
+  medication: 'medication',
+  material: 'material',
+  other: 'other',
   // Custos e despesas (lançamento manual)
-  medication_purchase: 'Compra de Medicamentos',
-  material_purchase: 'Compra de Materiais',
-  lab_cost: 'Custo de Laboratório',
-  rent: 'Aluguel',
-  personnel: 'Pessoal',
-  utilities: 'Energia/Água/Internet',
-  marketing: 'Marketing',
-  equipment: 'Equipamento',
-  tax: 'Impostos',
+  medication_purchase: 'medicationPurchase',
+  material_purchase: 'materialPurchase',
+  lab_cost: 'labCost',
+  rent: 'rent',
+  personnel: 'personnel',
+  utilities: 'utilities',
+  marketing: 'marketing',
+  equipment: 'equipment',
+  tax: 'tax',
 };
 
-const METHOD_LABELS: Record<string, string> = {
-  cash: 'Dinheiro',
-  pix: 'Pix',
-  debit: 'Débito',
-  credit_1x: 'Crédito à vista',
-  credit_2_6x: 'Crédito 2-6x',
-  credit_7_12x: 'Crédito 7-12x',
-  credit_installment: 'Crédito parcelado',
-  boleto: 'Boleto',
-  transfer: 'Transferência',
+const METHOD_LABEL_KEYS: Record<string, string> = {
+  cash: 'cash',
+  pix: 'pix',
+  debit: 'debit',
+  credit_1x: 'credit1x',
+  credit_2_6x: 'credit26x',
+  credit_7_12x: 'credit712x',
+  credit_installment: 'creditInstallment',
+  boleto: 'boleto',
+  transfer: 'transfer',
 };
 
 const METHOD_ICONS: Record<string, React.ElementType> = {
@@ -99,44 +104,43 @@ const METHOD_ICONS: Record<string, React.ElementType> = {
 };
 
 /** "Sugerido via X" — de onde o lançamento automático veio. */
-const ORIGIN_LABELS: Record<string, string> = {
-  consultation: 'Sugerido via agenda',
-  hospitalization: 'Sugerido via internação',
-  budget: 'Sugerido via orçamento',
-  product_sale: 'Sugerido via venda',
+const ORIGIN_LABEL_KEYS: Record<string, string> = {
+  consultation: 'consultation',
+  hospitalization: 'hospitalization',
+  budget: 'budget',
+  product_sale: 'productSale',
 };
 
 // Tipos de lançamento manual e categorias por tipo.
-const TYPE_LABELS: Record<string, string> = {
-  revenue: 'Receita',
-  cost: 'Custo Direto / CMV',
-  expense: 'Despesa Operacional',
-};
+// (a chave de tradução do tipo é o próprio valor: revenue/cost/expense)
 
-const CATEGORIES_BY_TYPE: Record<string, { value: string; label: string }[]> = {
+const CATEGORIES_BY_TYPE: Record<string, { value: string; labelKey: string }[]> = {
   revenue: [
-    { value: 'consultation', label: 'Consulta' },
-    { value: 'hospitalization', label: 'Internação' },
-    { value: 'exam', label: 'Exame' },
-    { value: 'procedure', label: 'Procedimento' },
-    { value: 'product', label: 'Produto' },
-    { value: 'medication', label: 'Medicamento' },
-    { value: 'other', label: 'Outro' },
+    { value: 'consultation', labelKey: 'consultation' },
+    { value: 'hospitalization', labelKey: 'hospitalization' },
+    { value: 'exam', labelKey: 'exam' },
+    { value: 'procedure', labelKey: 'procedure' },
+    { value: 'product', labelKey: 'product' },
+    { value: 'medication', labelKey: 'medication' },
+    { value: 'other', labelKey: 'other' },
   ],
   cost: [
-    { value: 'medication_purchase', label: 'Compra de Medicamentos' },
-    { value: 'lab_cost', label: 'Custo de Laboratório' },
-    { value: 'material', label: 'Materiais' },
-    { value: 'other', label: 'Outro' },
+    { value: 'medication_purchase', labelKey: 'medicationPurchase' },
+    { value: 'lab_cost', labelKey: 'labCost' },
+    // Nota: aqui o rótulo é "Materiais" (plural) — diferente de
+    // CATEGORY_LABEL_KEYS.material ("Material", singular, usado no badge da
+    // tabela). Comportamento original preservado via chave própria.
+    { value: 'material', labelKey: 'materialsCost' },
+    { value: 'other', labelKey: 'other' },
   ],
   expense: [
-    { value: 'rent', label: 'Aluguel' },
-    { value: 'personnel', label: 'Pessoal' },
-    { value: 'utilities', label: 'Energia/Água/Internet' },
-    { value: 'marketing', label: 'Marketing' },
-    { value: 'equipment', label: 'Equipamento' },
-    { value: 'tax', label: 'Impostos' },
-    { value: 'other', label: 'Outro' },
+    { value: 'rent', labelKey: 'rent' },
+    { value: 'personnel', labelKey: 'personnel' },
+    { value: 'utilities', labelKey: 'utilities' },
+    { value: 'marketing', labelKey: 'marketing' },
+    { value: 'equipment', labelKey: 'equipment' },
+    { value: 'tax', labelKey: 'tax' },
+    { value: 'other', labelKey: 'other' },
   ],
 };
 
@@ -149,26 +153,44 @@ const ALL_CATEGORY_OPTIONS = Object.values(CATEGORIES_BY_TYPE)
 
 const PAGE_SIZE = 50;
 
-function fmt(n: number | null | undefined) {
-  return Number(n ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+function categoryLabel(category: string, t: TFunction): string {
+  const key = CATEGORY_LABEL_KEYS[category];
+  return key ? t(`financeiroLancamentos.categoryLabels.${key}`) : category;
 }
 
-function fmtCompact(n: number | null | undefined) {
-  return Number(n ?? 0).toLocaleString('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-    maximumFractionDigits: 0,
-  });
+function categoryOptionLabel(labelKey: string, t: TFunction): string {
+  return t(`financeiroLancamentos.categoryLabels.${labelKey}`);
 }
 
-function fmtPct(n: number | null) {
+function methodLabel(method: string, t: TFunction): string {
+  const key = METHOD_LABEL_KEYS[method];
+  return key ? t(`financeiroLancamentos.methodLabels.${key}`) : method;
+}
+
+function originLabel(referenceType: string, t: TFunction): string | null {
+  const key = ORIGIN_LABEL_KEYS[referenceType];
+  return key ? t(`financeiroLancamentos.originLabels.${key}`) : null;
+}
+
+function typeLabel(type: string, t: TFunction): string {
+  return t(`financeiroLancamentos.typeLabels.${type}`);
+}
+
+function fmtPct(n: number | null, t: TFunction) {
   if (n === null) return null;
   const abs = Math.round(Math.abs(n));
-  return `${n >= 0 ? '↑' : '↓'} ${abs}% vs. período anterior`;
+  return t('financeiroLancamentos.deltaVsPreviousPeriod', { arrow: n >= 0 ? '↑' : '↓', pct: abs });
 }
 
-function methodLabel(m: string) {
-  return METHOD_LABELS[m] ?? m;
+/** Formatação compacta (sem casas decimais) usada nos mini-cards mobile. Segue
+ * o mesmo símbolo/locale do idioma ativo que `useCurrencyFormatter`, mas sem
+ * decimais — por isso não reaproveita o hook compartilhado diretamente. */
+function useCompactCurrencyFormatter() {
+  const { i18n } = useTranslation();
+  const lang = resolveAppLanguage(i18n.language);
+  const { symbol, locale } = CURRENCY_BY_LANGUAGE[lang];
+  return (n: number | null | undefined) =>
+    `${symbol} ${Number(n ?? 0).toLocaleString(locale, { maximumFractionDigits: 0 })}`;
 }
 
 function todayISO() {
@@ -286,6 +308,7 @@ function MiniStat({
 
 /** Badge de categoria — verde para receita, vermelho para custo/despesa. */
 function CategoryBadge({ category, type }: { category: string; type: string }) {
+  const { t } = useTranslation();
   const isIn = type === 'revenue';
   return (
     <span
@@ -294,13 +317,14 @@ function CategoryBadge({ category, type }: { category: string; type: string }) {
         isIn ? 'bg-wa-in-bg text-wa-in' : 'bg-wa-out-bg text-wa-out',
       )}
     >
-      {CATEGORY_LABELS[category] ?? category}
+      {categoryLabel(category, t)}
     </span>
   );
 }
 
 /** Valor com sinal e cor conforme o tipo (entrada/saída). */
 function EntryAmount({ entry, status, className }: { entry: FinancialEntry; status: Status; className?: string }) {
+  const fmt = useCurrencyFormatter();
   const isIn = entry.type === 'revenue';
   const amount = status === 'confirmed' ? entry.net_amount : (entry.base_amount ?? entry.gross_amount);
   return (
@@ -313,17 +337,19 @@ function EntryAmount({ entry, status, className }: { entry: FinancialEntry; stat
 
 /** Ícone + rótulo da forma de pagamento. */
 function PaymentMethodTag({ method }: { method: string }) {
+  const { t } = useTranslation();
   const Icon = METHOD_ICONS[method] ?? Banknote;
   return (
     <span className="inline-flex items-center gap-1.5 text-[12.5px] text-wa-ink-2">
       <Icon className="size-3.5 shrink-0" />
-      {methodLabel(method)}
+      {methodLabel(method, t)}
     </span>
   );
 }
 
 /** Pill "Confirmar" — dispara o dialog de confirmação já existente. */
 function ConfirmButton({ onClick, full }: { onClick: () => void; full?: boolean }) {
+  const { t } = useTranslation();
   return (
     <button
       type="button"
@@ -334,18 +360,28 @@ function ConfirmButton({ onClick, full }: { onClick: () => void; full?: boolean 
       )}
     >
       <CheckCircle className="size-3.5" />
-      Confirmar
+      {t('financeiroLancamentos.confirmButton')}
     </button>
   );
 }
 
-const STATUS_TABS: { key: Status; label: string; icon: React.ElementType }[] = [
-  { key: 'suggested', label: 'Sugeridos', icon: Clock },
-  { key: 'confirmed', label: 'Confirmados', icon: CheckCircle },
-  { key: 'cancelled', label: 'Cancelados', icon: XCircle },
-];
-
 export default function LancamentosPage() {
+  const { t } = useTranslation();
+  const fmt = useCurrencyFormatter();
+  const fmtCompact = useCompactCurrencyFormatter();
+
+  const STATUS_TABS: { key: Status; label: string; icon: React.ElementType }[] = [
+    { key: 'suggested', label: t('financeiroLancamentos.statusTabs.suggested'), icon: Clock },
+    { key: 'confirmed', label: t('financeiroLancamentos.statusTabs.confirmed'), icon: CheckCircle },
+    { key: 'cancelled', label: t('financeiroLancamentos.statusTabs.cancelled'), icon: XCircle },
+  ];
+
+  const TYPE_OPTIONS: { value: string; label: string }[] = [
+    { value: 'revenue', label: typeLabel('revenue', t) },
+    { value: 'cost', label: typeLabel('cost', t) },
+    { value: 'expense', label: typeLabel('expense', t) },
+  ];
+
   const [status, setStatus] = useState<Status>('suggested');
 
   // Filtros avançados
@@ -359,8 +395,8 @@ export default function LancamentosPage() {
 
   // Debounce da busca por texto (400ms)
   useEffect(() => {
-    const t = setTimeout(() => setDebouncedSearch(search), 400);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setDebouncedSearch(search), 400);
+    return () => clearTimeout(timer);
   }, [search]);
 
   // Ao mudar qualquer filtro, volta para a primeira página.
@@ -407,7 +443,7 @@ export default function LancamentosPage() {
       a.click();
       URL.revokeObjectURL(url);
     } catch {
-      toast.error('Erro ao exportar lançamentos');
+      toast.error(t('financeiroLancamentos.exportError'));
     }
   };
 
@@ -447,7 +483,7 @@ export default function LancamentosPage() {
 
   const submitCreate = async () => {
     if (!form.category || !form.payment_method || formGross <= 0) {
-      toast.error('Preencha tipo, categoria, valor e forma de pagamento');
+      toast.error(t('financeiroLancamentos.createValidationError'));
       return;
     }
     try {
@@ -461,15 +497,15 @@ export default function LancamentosPage() {
         discount_amount: formDiscount,
         net_amount: formNet,
         fee_amount: 0,
-        description: form.description || `${TYPE_LABELS[form.type]} — ${form.category}`,
+        description: form.description || `${typeLabel(form.type, t)} — ${form.category}`,
         status: 'confirmed',
       });
-      toast.success('Lançamento criado com sucesso');
+      toast.success(t('financeiroLancamentos.createSuccess'));
       setCreateOpen(false);
       // Lançamento manual nasce confirmado → mostra a aba certa.
       if (status !== 'confirmed') setStatus('confirmed');
     } catch {
-      toast.error('Erro ao criar lançamento');
+      toast.error(t('financeiroLancamentos.createError'));
     }
   };
 
@@ -483,7 +519,7 @@ export default function LancamentosPage() {
       const result = await paymentOptions.mutateAsync(base);
       setOptions(result);
     } catch {
-      toast.error('Erro ao carregar formas de pagamento');
+      toast.error(t('financeiroLancamentos.paymentOptionsLoadError'));
     }
   };
 
@@ -507,7 +543,7 @@ export default function LancamentosPage() {
 
   const submitConfirm = async () => {
     if (!confirmEntry || !selectedMethod) {
-      toast.error('Selecione a forma de pagamento');
+      toast.error(t('financeiroLancamentos.selectPaymentMethodError'));
       return;
     }
     try {
@@ -518,7 +554,7 @@ export default function LancamentosPage() {
       });
       setConfirmEntry(null);
     } catch {
-      toast.error('Erro ao confirmar lançamento');
+      toast.error(t('financeiroLancamentos.confirmError'));
     }
   };
 
@@ -526,21 +562,25 @@ export default function LancamentosPage() {
     try {
       await cancelEntryMutation.mutateAsync(entry.id);
     } catch {
-      toast.error('Erro ao cancelar lançamento');
+      toast.error(t('financeiroLancamentos.cancelError'));
     }
   };
 
   const emptyMessage =
-    status === 'suggested' ? 'Nenhum lançamento sugerido.' : status === 'confirmed' ? 'Nenhum lançamento confirmado.' : 'Nenhum lançamento cancelado.';
+    status === 'suggested'
+      ? t('financeiroLancamentos.emptyStateSuggested')
+      : status === 'confirmed'
+        ? t('financeiroLancamentos.emptyStateConfirmed')
+        : t('financeiroLancamentos.emptyStateCancelled');
 
   return (
     <div className="space-y-5 pb-6">
       {/* ── Header ── */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-wa-ink">Lançamentos Financeiros</h1>
+          <h1 className="text-2xl font-bold text-wa-ink">{t('financeiroLancamentos.title')}</h1>
           <p className="mt-1 text-sm text-wa-ink-2">
-            Lançamentos sugeridos automaticamente; confirme a forma de pagamento usada para registrar o valor real.
+            {t('financeiroLancamentos.subtitle')}
           </p>
         </div>
         <Button
@@ -548,7 +588,7 @@ export default function LancamentosPage() {
           className="hidden shrink-0 gap-1.5 rounded-wa font-bold shadow-[0_8px_18px_-6px_rgba(18,179,127,0.45)] md:inline-flex"
         >
           <Plus className="size-4" />
-          Lançamento
+          {t('financeiroLancamentos.newEntryButton')}
         </Button>
       </div>
 
@@ -556,16 +596,16 @@ export default function LancamentosPage() {
       <div className="flex flex-col gap-3 md:hidden">
         <StatCard
           tone="result"
-          label="Resultado do período"
+          label={t('financeiroLancamentos.statResultLabel')}
           value={fmt(summary?.result)}
-          delta={fmtPct(summary?.result_diff_pct ?? null)}
+          delta={fmtPct(summary?.result_diff_pct ?? null, t)}
           icon={Wallet}
           loading={summaryLoading}
         />
         <div className="-mx-4 flex gap-2.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <MiniStat tone="in" label="Receitas" value={fmtCompact(summary?.revenue)} icon={TrendingUp} loading={summaryLoading} />
-          <MiniStat tone="out" label="Despesas" value={fmtCompact(summary?.expense)} icon={TrendingDown} loading={summaryLoading} />
-          <MiniStat tone="warn" label="Pendentes" value={String(summary?.pending_count ?? 0)} icon={Clock} loading={summaryLoading} />
+          <MiniStat tone="in" label={t('financeiroLancamentos.statRevenueShortLabel')} value={fmtCompact(summary?.revenue)} icon={TrendingUp} loading={summaryLoading} />
+          <MiniStat tone="out" label={t('financeiroLancamentos.statExpenseShortLabel')} value={fmtCompact(summary?.expense)} icon={TrendingDown} loading={summaryLoading} />
+          <MiniStat tone="warn" label={t('financeiroLancamentos.statPendingShortLabel')} value={String(summary?.pending_count ?? 0)} icon={Clock} loading={summaryLoading} />
         </div>
       </div>
 
@@ -573,36 +613,36 @@ export default function LancamentosPage() {
       <div className="hidden gap-3.5 md:grid md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           tone="in"
-          label="Receitas do período"
+          label={t('financeiroLancamentos.statRevenueLabel')}
           value={fmt(summary?.revenue)}
-          delta={fmtPct(summary?.revenue_diff_pct ?? null)}
+          delta={fmtPct(summary?.revenue_diff_pct ?? null, t)}
           deltaTone="in"
           icon={TrendingUp}
           loading={summaryLoading}
         />
         <StatCard
           tone="out"
-          label="Despesas do período"
+          label={t('financeiroLancamentos.statExpenseLabel')}
           value={fmt(summary?.expense)}
-          delta={fmtPct(summary?.expense_diff_pct ?? null)}
+          delta={fmtPct(summary?.expense_diff_pct ?? null, t)}
           deltaTone="out"
           icon={TrendingDown}
           loading={summaryLoading}
         />
         <StatCard
           tone="warn"
-          label="Pendentes de confirmação"
+          label={t('financeiroLancamentos.statPendingLabel')}
           value={String(summary?.pending_count ?? 0)}
-          delta={summary ? `${fmt(summary.pending_amount)} em sugestões` : undefined}
+          delta={summary ? t('financeiroLancamentos.pendingAmountSuggested', { amount: fmt(summary.pending_amount) }) : undefined}
           deltaTone="neutral"
           icon={Clock}
           loading={summaryLoading}
         />
         <StatCard
           tone="result"
-          label="Resultado do período"
+          label={t('financeiroLancamentos.statResultLabel')}
           value={fmt(summary?.result)}
-          delta={fmtPct(summary?.result_diff_pct ?? null)}
+          delta={fmtPct(summary?.result_diff_pct ?? null, t)}
           icon={Wallet}
           loading={summaryLoading}
         />
@@ -649,7 +689,7 @@ export default function LancamentosPage() {
             type="text"
             value={search}
             onChange={(ev) => setSearch(ev.target.value)}
-            placeholder="Buscar na descrição..."
+            placeholder={t('financeiroLancamentos.searchPlaceholder')}
             className="w-full border-none bg-transparent text-[13px] text-wa-ink outline-none placeholder:text-wa-ink-3"
           />
         </div>
@@ -658,7 +698,7 @@ export default function LancamentosPage() {
       {/* ── Filtros (desktop) ── */}
       <div className="hidden flex-wrap items-end gap-3.5 rounded-xl border border-wa-line bg-white p-4.5 md:flex">
         <div className="flex flex-col gap-1.5">
-          <Label className="text-xs font-semibold text-wa-ink-2">De</Label>
+          <Label className="text-xs font-semibold text-wa-ink-2">{t('financeiroLancamentos.fromLabel')}</Label>
           <Input
             type="date"
             className="h-9.5 w-37.5 rounded-[9px] border-wa-line text-[13.5px]"
@@ -667,7 +707,7 @@ export default function LancamentosPage() {
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label className="text-xs font-semibold text-wa-ink-2">Até</Label>
+          <Label className="text-xs font-semibold text-wa-ink-2">{t('financeiroLancamentos.toLabel')}</Label>
           <Input
             type="date"
             className="h-9.5 w-37.5 rounded-[9px] border-wa-line text-[13.5px]"
@@ -676,39 +716,39 @@ export default function LancamentosPage() {
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label className="text-xs font-semibold text-wa-ink-2">Tipo</Label>
+          <Label className="text-xs font-semibold text-wa-ink-2">{t('financeiroLancamentos.filterTypeLabel')}</Label>
           <Select value={typeFilter} onValueChange={setTypeFilter}>
             <SelectTrigger className="h-9.5 w-42.5 rounded-[9px] border-wa-line text-[13.5px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todos</SelectItem>
-              {Object.entries(TYPE_LABELS).map(([value, label]) => (
+              <SelectItem value="all">{t('financeiroLancamentos.allTypesOption')}</SelectItem>
+              {TYPE_OPTIONS.map(({ value, label }) => (
                 <SelectItem key={value} value={value}>{label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
         <div className="flex flex-col gap-1.5">
-          <Label className="text-xs font-semibold text-wa-ink-2">Categoria</Label>
+          <Label className="text-xs font-semibold text-wa-ink-2">{t('financeiroLancamentos.filterCategoryLabel')}</Label>
           <Select value={categoryFilter} onValueChange={setCategoryFilter}>
             <SelectTrigger className="h-9.5 w-47.5 rounded-[9px] border-wa-line text-[13.5px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todas</SelectItem>
+              <SelectItem value="all">{t('financeiroLancamentos.allCategoriesOption')}</SelectItem>
               {(typeFilter !== 'all' ? CATEGORIES_BY_TYPE[typeFilter] ?? [] : ALL_CATEGORY_OPTIONS).map((c) => (
-                <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                <SelectItem key={c.value} value={c.value}>{categoryOptionLabel(c.labelKey, t)}</SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
         <div className="flex min-w-50 flex-1 flex-col gap-1.5">
-          <Label className="text-xs font-semibold text-wa-ink-2">Busca</Label>
+          <Label className="text-xs font-semibold text-wa-ink-2">{t('financeiroLancamentos.filterSearchLabel')}</Label>
           <Input
             type="text"
             className="h-9.5 rounded-[9px] border-wa-line text-[13.5px]"
-            placeholder="Buscar na descrição..."
+            placeholder={t('financeiroLancamentos.searchPlaceholder')}
             value={search}
             onChange={(ev) => setSearch(ev.target.value)}
           />
@@ -718,7 +758,7 @@ export default function LancamentosPage() {
           onClick={clearFilters}
           className="pb-2.25 text-[13px] font-semibold whitespace-nowrap text-wa-ink-2 hover:text-wa-ink"
         >
-          Limpar filtros
+          {t('financeiroLancamentos.clearFiltersButton')}
         </button>
         <button
           type="button"
@@ -726,16 +766,16 @@ export default function LancamentosPage() {
           className="inline-flex h-9.5 items-center gap-1.75 rounded-[9px] border border-wa-line bg-white px-3.5 text-[13px] font-semibold whitespace-nowrap text-wa-ink hover:bg-wa-line-2"
         >
           <Download className="size-3.5" />
-          Exportar (.xlsx)
+          {t('financeiroLancamentos.exportButton')}
         </button>
       </div>
 
       {/* ── Desktop: tabela ── */}
       <div className="hidden overflow-hidden rounded-xl border border-wa-line bg-white md:block">
         <div className="flex items-center justify-between border-b border-wa-line-2 px-5 py-4">
-          <h2 className="text-[15px] font-bold text-wa-ink">{STATUS_TABS.find((t) => t.key === status)?.label}</h2>
+          <h2 className="text-[15px] font-bold text-wa-ink">{STATUS_TABS.find((tab) => tab.key === status)?.label}</h2>
           <span className="rounded-full bg-wa-line-2 px-2.25 py-0.5 text-[12.5px] text-wa-ink-3">
-            {total} lançamento{total === 1 ? '' : 's'}
+            {t('financeiroLancamentos.entryCount', { count: total })}
           </span>
         </div>
 
@@ -752,21 +792,21 @@ export default function LancamentosPage() {
             <table className="w-full border-collapse">
               <thead>
                 <tr>
-                  <th className="border-b border-wa-line-2 px-5 py-2.75 text-left text-xs font-semibold tracking-wide text-wa-ink-3 uppercase">Descrição</th>
-                  <th className="border-b border-wa-line-2 px-5 py-2.75 text-left text-xs font-semibold tracking-wide text-wa-ink-3 uppercase">Categoria</th>
-                  <th className="border-b border-wa-line-2 px-5 py-2.75 text-left text-xs font-semibold tracking-wide text-wa-ink-3 uppercase">Data</th>
+                  <th className="border-b border-wa-line-2 px-5 py-2.75 text-left text-xs font-semibold tracking-wide text-wa-ink-3 uppercase">{t('financeiroLancamentos.tableHeaderDescription')}</th>
+                  <th className="border-b border-wa-line-2 px-5 py-2.75 text-left text-xs font-semibold tracking-wide text-wa-ink-3 uppercase">{t('financeiroLancamentos.tableHeaderCategory')}</th>
+                  <th className="border-b border-wa-line-2 px-5 py-2.75 text-left text-xs font-semibold tracking-wide text-wa-ink-3 uppercase">{t('financeiroLancamentos.tableHeaderDate')}</th>
                   {status === 'confirmed' && (
-                    <th className="border-b border-wa-line-2 px-5 py-2.75 text-left text-xs font-semibold tracking-wide text-wa-ink-3 uppercase">Forma de pagamento</th>
+                    <th className="border-b border-wa-line-2 px-5 py-2.75 text-left text-xs font-semibold tracking-wide text-wa-ink-3 uppercase">{t('financeiroLancamentos.tableHeaderPaymentMethod')}</th>
                   )}
                   <th className="border-b border-wa-line-2 px-5 py-2.75 text-right text-xs font-semibold tracking-wide text-wa-ink-3 uppercase">
-                    {status === 'confirmed' ? 'Recebido' : 'Valor à vista'}
+                    {status === 'confirmed' ? t('financeiroLancamentos.tableHeaderReceived') : t('financeiroLancamentos.tableHeaderCashValue')}
                   </th>
                   <th className="border-b border-wa-line-2 px-5 py-2.75" />
                 </tr>
               </thead>
               <tbody>
                 {entries.map((e) => {
-                  const origin = e.reference_type ? ORIGIN_LABELS[e.reference_type] : null;
+                  const origin = e.reference_type ? originLabel(e.reference_type, t) : null;
                   return (
                     <tr key={e.id} className="last:[&>td]:border-b-0">
                       <td className="border-b border-wa-line-2 px-5 py-3.5">
@@ -794,8 +834,8 @@ export default function LancamentosPage() {
                             <button
                               type="button"
                               onClick={() => cancelEntry(e)}
-                              title="Cancelar"
-                              aria-label="Cancelar"
+                              title={t('financeiroLancamentos.cancel')}
+                              aria-label={t('financeiroLancamentos.cancel')}
                               className="text-wa-ink-3 transition-colors hover:text-wa-out"
                             >
                               <XCircle className="size-4" />
@@ -816,14 +856,14 @@ export default function LancamentosPage() {
         {!loading && total > 0 && (
           <div className="flex items-center justify-between border-t border-wa-line-2 px-5 py-3.5 text-sm text-wa-ink-2">
             <span>
-              Exibindo {entries.length} de {total} lançamento{total === 1 ? '' : 's'}
+              {t('financeiroLancamentos.showingCountOfTotal', { shown: entries.length, count: total })}
             </span>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))}>
-                Anterior
+                {t('financeiroLancamentos.previousPage')}
               </Button>
               <Button variant="outline" size="sm" disabled={offset + PAGE_SIZE >= total} onClick={() => setOffset(offset + PAGE_SIZE)}>
-                Próximo
+                {t('financeiroLancamentos.nextPage')}
               </Button>
             </div>
           </div>
@@ -838,7 +878,7 @@ export default function LancamentosPage() {
           <p className="py-10 text-center text-sm text-wa-ink-3">{emptyMessage}</p>
         ) : (
           entries.map((e) => {
-            const origin = e.reference_type ? ORIGIN_LABELS[e.reference_type] : null;
+            const origin = e.reference_type ? originLabel(e.reference_type, t) : null;
             return (
               <div key={e.id} className="rounded-xl border border-wa-line bg-white p-3.5">
                 <div className="flex items-start justify-between gap-2.5">
@@ -865,13 +905,13 @@ export default function LancamentosPage() {
 
         {!loading && total > PAGE_SIZE && (
           <div className="flex items-center justify-between pt-1 text-sm text-wa-ink-2">
-            <span>Exibindo {entries.length} de {total}</span>
+            <span>{t('financeiroLancamentos.showingCountOfTotalShort', { shown: entries.length, count: total })}</span>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" disabled={offset === 0} onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))}>
-                Anterior
+                {t('financeiroLancamentos.previousPage')}
               </Button>
               <Button variant="outline" size="sm" disabled={offset + PAGE_SIZE >= total} onClick={() => setOffset(offset + PAGE_SIZE)}>
-                Próximo
+                {t('financeiroLancamentos.nextPage')}
               </Button>
             </div>
           </div>
@@ -885,13 +925,13 @@ export default function LancamentosPage() {
         className="fixed right-5 bottom-20 z-30 flex items-center gap-1.75 rounded-full bg-wa-brand-600 px-5 py-3.25 text-[13.5px] font-bold text-white shadow-[0_8px_20px_rgba(18,179,127,0.35)] transition-colors hover:bg-wa-brand-700 md:hidden"
       >
         <Plus className="size-4" />
-        Lançamento
+        {t('financeiroLancamentos.newEntryButton')}
       </button>
 
       <Dialog open={!!confirmEntry} onOpenChange={(o) => !o && setConfirmEntry(null)}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Confirmar lançamento</DialogTitle>
+            <DialogTitle>{t('financeiroLancamentos.confirmDialogTitle')}</DialogTitle>
           </DialogHeader>
 
           {confirmEntry && (
@@ -899,29 +939,29 @@ export default function LancamentosPage() {
               <div className="rounded-md bg-muted/50 p-3 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">
-                    {CATEGORY_LABELS[confirmEntry.category] ?? confirmEntry.category}
+                    {categoryLabel(confirmEntry.category, t)}
                   </span>
                   <span className="font-medium">{confirmEntry.description ?? '—'}</span>
                 </div>
                 <div className="mt-1 flex justify-between">
-                  <span className="text-muted-foreground">Valor base (à vista)</span>
+                  <span className="text-muted-foreground">{t('financeiroLancamentos.baseAmountLabel')}</span>
                   <span className="font-semibold">{fmt(baseAmount)}</span>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 items-end gap-3">
                 <div>
-                  <Label htmlFor="discount">Desconto</Label>
+                  <Label htmlFor="discount">{t('financeiroLancamentos.discountLabel')}</Label>
                   <CurrencyInput id="discount" value={discount} onValueChange={setDiscount} />
                 </div>
                 <div className="text-right text-sm">
-                  <span className="text-muted-foreground">Valor real (recebido): </span>
+                  <span className="text-muted-foreground">{t('financeiroLancamentos.netReceivedLabel')}</span>
                   <span className="font-semibold">{fmt(netBase)}</span>
                 </div>
               </div>
 
               <div>
-                <Label className="mb-2 block">Forma de pagamento usada</Label>
+                <Label className="mb-2 block">{t('financeiroLancamentos.paymentMethodUsedLabel')}</Label>
                 <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
                   {displayOptions.length === 0 ? (
                     <Skeleton className="h-12 w-full" />
@@ -938,17 +978,19 @@ export default function LancamentosPage() {
                         }`}
                       >
                         <div>
-                          <div className="font-medium">{methodLabel(o.method)}</div>
+                          <div className="font-medium">{methodLabel(o.method, t)}</div>
                           <div className="text-xs text-muted-foreground">
-                            {o.modality === 'a_vista' ? 'À vista' : `A prazo · taxa ${o.fee_percentage}%`}
-                            {o.settlement_days > 0 ? ` · ${o.settlement_days}d p/ receber` : ''}
+                            {o.modality === 'a_vista'
+                              ? t('financeiroLancamentos.paymentModalityCash')
+                              : t('financeiroLancamentos.paymentModalityInstallment', { pct: o.fee_percentage })}
+                            {o.settlement_days > 0 ? t('financeiroLancamentos.settlementDaysSuffix', { days: o.settlement_days }) : ''}
                           </div>
                         </div>
                         <div className="text-right">
                           <div className="font-semibold">{fmt(o.client_pays)}</div>
                           <div className="text-xs text-muted-foreground">
-                            Recebe {fmt(o.clinic_receives)}
-                            {o.fee_amount > 0 ? ` · taxa ${fmt(o.fee_amount)}` : ''}
+                            {t('financeiroLancamentos.clinicReceivesAmount', { amount: fmt(o.clinic_receives) })}
+                            {o.fee_amount > 0 ? t('financeiroLancamentos.feeAmountSuffix', { amount: fmt(o.fee_amount) }) : ''}
                           </div>
                         </div>
                       </button>
@@ -961,11 +1003,11 @@ export default function LancamentosPage() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmEntry(null)} disabled={submitting}>
-              Cancelar
+              {t('financeiroLancamentos.cancel')}
             </Button>
             <Button onClick={submitConfirm} disabled={submitting || !selectedMethod}>
               <Wallet className="mr-2 size-4" />
-              Confirmar recebimento
+              {t('financeiroLancamentos.confirmReceiptButton')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -975,33 +1017,33 @@ export default function LancamentosPage() {
       <Dialog open={createOpen} onOpenChange={(o) => !o && setCreateOpen(false)}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Novo lançamento manual</DialogTitle>
+            <DialogTitle>{t('financeiroLancamentos.createDialogTitle')}</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>Tipo *</Label>
+                <Label>{t('financeiroLancamentos.typeRequiredLabel')}</Label>
                 <Select value={form.type} onValueChange={(v) => setField('type', v)}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione" />
+                    <SelectValue placeholder={t('financeiroLancamentos.selectPlaceholder')} />
                   </SelectTrigger>
                   <SelectContent>
-                    {Object.entries(TYPE_LABELS).map(([value, label]) => (
+                    {TYPE_OPTIONS.map(({ value, label }) => (
                       <SelectItem key={value} value={value}>{label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label>Categoria *</Label>
+                <Label>{t('financeiroLancamentos.categoryRequiredLabel')}</Label>
                 <Select value={form.category} onValueChange={(v) => setField('category', v)}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione" />
+                    <SelectValue placeholder={t('financeiroLancamentos.selectPlaceholder')} />
                   </SelectTrigger>
                   <SelectContent>
                     {(CATEGORIES_BY_TYPE[form.type] ?? []).map((c) => (
-                      <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                      <SelectItem key={c.value} value={c.value}>{categoryOptionLabel(c.labelKey, t)}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -1010,7 +1052,7 @@ export default function LancamentosPage() {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label htmlFor="entry-date">Data *</Label>
+                <Label htmlFor="entry-date">{t('financeiroLancamentos.dateRequiredLabel')}</Label>
                 <Input
                   id="entry-date"
                   type="date"
@@ -1019,14 +1061,14 @@ export default function LancamentosPage() {
                 />
               </div>
               <div>
-                <Label>Forma de pagamento *</Label>
+                <Label>{t('financeiroLancamentos.paymentMethodRequiredLabel')}</Label>
                 <Select value={form.payment_method} onValueChange={(v) => setField('payment_method', v)}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione" />
+                    <SelectValue placeholder={t('financeiroLancamentos.selectPlaceholder')} />
                   </SelectTrigger>
                   <SelectContent>
                     {MANUAL_METHODS.map((m) => (
-                      <SelectItem key={m} value={m}>{methodLabel(m)}</SelectItem>
+                      <SelectItem key={m} value={m}>{methodLabel(m, t)}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -1035,7 +1077,7 @@ export default function LancamentosPage() {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label htmlFor="gross-amount">Valor bruto *</Label>
+                <Label htmlFor="gross-amount">{t('financeiroLancamentos.grossAmountLabel')}</Label>
                 <CurrencyInput
                   id="gross-amount"
                   value={form.gross_amount}
@@ -1043,7 +1085,7 @@ export default function LancamentosPage() {
                 />
               </div>
               <div>
-                <Label htmlFor="discount-amount">Desconto</Label>
+                <Label htmlFor="discount-amount">{t('financeiroLancamentos.discountLabel')}</Label>
                 <CurrencyInput
                   id="discount-amount"
                   value={form.discount_amount}
@@ -1053,32 +1095,32 @@ export default function LancamentosPage() {
             </div>
 
             <p className="text-right text-sm">
-              <span className="text-muted-foreground">Valor líquido: </span>
+              <span className="text-muted-foreground">{t('financeiroLancamentos.netAmountLabel')}</span>
               <span className="font-semibold">{fmt(formNet)}</span>
             </p>
 
             {form.type === 'revenue' && (
               <div>
-                <Label>Fonte</Label>
+                <Label>{t('financeiroLancamentos.sourceLabel')}</Label>
                 <Select value={form.payment_source} onValueChange={(v) => setField('payment_source', v)}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="particular">Particular</SelectItem>
-                    <SelectItem value="health_plan">Plano de Saúde</SelectItem>
+                    <SelectItem value="particular">{t('financeiroLancamentos.sourceParticularOption')}</SelectItem>
+                    <SelectItem value="health_plan">{t('financeiroLancamentos.sourceHealthPlanOption')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             )}
 
             <div>
-              <Label htmlFor="entry-description">Descrição</Label>
+              <Label htmlFor="entry-description">{t('financeiroLancamentos.descriptionLabel')}</Label>
               <Textarea
                 id="entry-description"
                 value={form.description}
                 onChange={(ev) => setField('description', ev.target.value)}
-                placeholder="Ex.: Aluguel julho 2026"
+                placeholder={t('financeiroLancamentos.descriptionPlaceholder')}
                 rows={2}
               />
             </div>
@@ -1086,11 +1128,11 @@ export default function LancamentosPage() {
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setCreateOpen(false)} disabled={creating}>
-              Cancelar
+              {t('financeiroLancamentos.cancel')}
             </Button>
             <Button onClick={submitCreate} disabled={creating}>
               <Plus className="mr-2 size-4" />
-              Criar lançamento
+              {t('financeiroLancamentos.createEntryButton')}
             </Button>
           </DialogFooter>
         </DialogContent>

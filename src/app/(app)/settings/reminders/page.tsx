@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Info, Loader2, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -24,17 +25,18 @@ import {
 } from '@/hooks/apiHooks/useReminderSettings';
 import type { ReminderSettings } from '@/app/types/reminder-settings';
 
-const FIELD_INFO: Record<keyof ReminderSettings, string> = {
-  confirmation_enabled: 'Envia mensagem de confirmação de presença antes da consulta.',
-  confirmation_hours_before: 'Quantas horas antes da consulta o responsável recebe o pedido de confirmação.',
-  reminder_enabled: 'Envia lembrete próximo ao horário da consulta com o tempo restante.',
-  reminder_hours_before: 'Quantas horas antes da consulta enviar o lembrete.',
-  follow_up_enabled: 'Envia mensagem de acompanhamento após a consulta.',
-  follow_up_hours_after: 'Quantas horas após a consulta (quando marcada como concluída) enviar o acompanhamento.',
-  follow_up_only_when_completed: 'Se ativo, o acompanhamento só é enviado quando a consulta for marcada como Concluída no sistema.',
+const FIELD_INFO_KEYS: Record<keyof ReminderSettings, string> = {
+  confirmation_enabled: 'confirmationEnabled',
+  confirmation_hours_before: 'confirmationHoursBefore',
+  reminder_enabled: 'reminderEnabled',
+  reminder_hours_before: 'reminderHoursBefore',
+  follow_up_enabled: 'followUpEnabled',
+  follow_up_hours_after: 'followUpHoursAfter',
+  follow_up_only_when_completed: 'followUpOnlyWhenCompleted',
 };
 
 function FieldLabel({ label, field }: { label: string; field: keyof ReminderSettings }) {
+  const { t } = useTranslation();
   return (
     <span className="flex items-center gap-1">
       {label}
@@ -43,7 +45,9 @@ function FieldLabel({ label, field }: { label: string; field: keyof ReminderSett
           <TooltipTrigger asChild>
             <Info className="size-3.5 cursor-help text-muted-foreground/60" />
           </TooltipTrigger>
-          <TooltipContent className="max-w-[240px] text-xs">{FIELD_INFO[field]}</TooltipContent>
+          <TooltipContent className="max-w-[240px] text-xs">
+            {t(`settingsReminders.fieldInfo.${FIELD_INFO_KEYS[field]}`)}
+          </TooltipContent>
         </Tooltip>
       </TooltipProvider>
     </span>
@@ -51,6 +55,7 @@ function FieldLabel({ label, field }: { label: string; field: keyof ReminderSett
 }
 
 export default function RemindersSettingsPage() {
+  const { t } = useTranslation();
   const [settings, setSettings] = useState<ReminderSettings | null>(null);
 
   const { data: effective, isLoading: loading } = useReminderSettingsQuery();
@@ -70,7 +75,7 @@ export default function RemindersSettingsPage() {
       const saved = await saveMutation.mutateAsync(settings);
       setSettings(saved);
     } catch {
-      toast.error('Erro ao salvar configurações.');
+      toast.error(t('settingsReminders.saveError'));
     }
   };
 
@@ -79,7 +84,7 @@ export default function RemindersSettingsPage() {
       const reset = await resetMutation.mutateAsync();
       setSettings(reset);
     } catch {
-      toast.error('Erro ao redefinir configurações.');
+      toast.error(t('settingsReminders.resetError'));
     }
   };
 
@@ -104,24 +109,24 @@ export default function RemindersSettingsPage() {
           </Button>
         </Link>
         <div>
-          <h1 className="text-xl font-semibold text-foreground">Lembretes de Consulta</h1>
+          <h1 className="text-xl font-semibold text-foreground">{t('settingsReminders.title')}</h1>
           <p className="text-sm text-muted-foreground">
-            Configure quando e como os lembretes automáticos são enviados via WhatsApp.
+            {t('settingsReminders.subtitle')}
           </p>
         </div>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Confirmação de presença</CardTitle>
+          <CardTitle className="text-base">{t('settingsReminders.confirmationTitle')}</CardTitle>
           <CardDescription>
-            Enviada antes da consulta para confirmar se o responsável comparecerá.
+            {t('settingsReminders.confirmationDescription')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <Label htmlFor="conf_enabled">
-              <FieldLabel label="Ativar confirmação" field="confirmation_enabled" />
+              <FieldLabel label={t('settingsReminders.enableConfirmation')} field="confirmation_enabled" />
             </Label>
             <Switch
               id="conf_enabled"
@@ -131,7 +136,7 @@ export default function RemindersSettingsPage() {
           </div>
           <div className="flex items-center justify-between">
             <Label htmlFor="conf_hours">
-              <FieldLabel label="Horas antes da consulta" field="confirmation_hours_before" />
+              <FieldLabel label={t('settingsReminders.hoursBeforeAppointment')} field="confirmation_hours_before" />
             </Label>
             <Input
               id="conf_hours"
@@ -149,15 +154,15 @@ export default function RemindersSettingsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Lembrete próximo ao horário</CardTitle>
+          <CardTitle className="text-base">{t('settingsReminders.reminderTitle')}</CardTitle>
           <CardDescription>
-            Mensagem enviada horas antes com o tempo restante até a consulta.
+            {t('settingsReminders.reminderDescription')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <Label htmlFor="rem_enabled">
-              <FieldLabel label="Ativar lembrete" field="reminder_enabled" />
+              <FieldLabel label={t('settingsReminders.enableReminder')} field="reminder_enabled" />
             </Label>
             <Switch
               id="rem_enabled"
@@ -167,7 +172,7 @@ export default function RemindersSettingsPage() {
           </div>
           <div className="flex items-center justify-between">
             <Label htmlFor="rem_hours">
-              <FieldLabel label="Horas antes da consulta" field="reminder_hours_before" />
+              <FieldLabel label={t('settingsReminders.hoursBeforeAppointment')} field="reminder_hours_before" />
             </Label>
             <Input
               id="rem_hours"
@@ -185,15 +190,15 @@ export default function RemindersSettingsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Acompanhamento pós-consulta</CardTitle>
+          <CardTitle className="text-base">{t('settingsReminders.followUpTitle')}</CardTitle>
           <CardDescription>
-            Mensagem enviada após a consulta perguntando como está o pet.
+            {t('settingsReminders.followUpDescription')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between">
             <Label htmlFor="fu_enabled">
-              <FieldLabel label="Ativar acompanhamento" field="follow_up_enabled" />
+              <FieldLabel label={t('settingsReminders.enableFollowUp')} field="follow_up_enabled" />
             </Label>
             <Switch
               id="fu_enabled"
@@ -203,7 +208,7 @@ export default function RemindersSettingsPage() {
           </div>
           <div className="flex items-center justify-between">
             <Label htmlFor="fu_hours">
-              <FieldLabel label="Horas após a consulta" field="follow_up_hours_after" />
+              <FieldLabel label={t('settingsReminders.hoursAfterAppointment')} field="follow_up_hours_after" />
             </Label>
             <Input
               id="fu_hours"
@@ -219,7 +224,7 @@ export default function RemindersSettingsPage() {
           <div className="flex items-center justify-between">
             <Label htmlFor="fu_completed">
               <FieldLabel
-                label="Somente quando consulta for marcada como concluída"
+                label={t('settingsReminders.onlyWhenCompleted')}
                 field="follow_up_only_when_completed"
               />
             </Label>
@@ -235,9 +240,11 @@ export default function RemindersSettingsPage() {
 
       {systemDefaults && (
         <p className="text-xs text-muted-foreground">
-          Padrão do sistema: confirmação {systemDefaults.confirmation_hours_before}h antes •
-          lembrete {systemDefaults.reminder_hours_before}h antes •
-          acompanhamento {systemDefaults.follow_up_hours_after}h após
+          {t('settingsReminders.systemDefault', {
+            confirmation: systemDefaults.confirmation_hours_before,
+            reminder: systemDefaults.reminder_hours_before,
+            followUp: systemDefaults.follow_up_hours_after,
+          })}
         </p>
       )}
 
@@ -246,11 +253,11 @@ export default function RemindersSettingsPage() {
       <div className="flex items-center justify-between gap-3">
         <Button variant="outline" onClick={handleReset} disabled={resetting}>
           {resetting ? <Loader2 className="mr-2 size-4 animate-spin" /> : <RotateCcw className="mr-2 size-4" />}
-          Redefinir para padrão
+          {t('settingsReminders.resetToDefault')}
         </Button>
         <Button onClick={handleSave} disabled={saving}>
           {saving && <Loader2 className="mr-2 size-4 animate-spin" />}
-          Salvar configurações
+          {t('settingsReminders.saveSettings')}
         </Button>
       </div>
     </div>

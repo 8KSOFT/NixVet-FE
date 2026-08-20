@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -26,6 +27,7 @@ import type { Disease } from '@/app/types/disease';
 type FormValues = { name: string; category_id?: string };
 
 export default function SettingsDiseasesPage() {
+  const { t } = useTranslation();
   const [listPage, setListPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -57,7 +59,7 @@ export default function SettingsDiseasesPage() {
     try {
       await deleteMutation.mutateAsync(id);
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, 'Erro ao remover'));
+      toast.error(getApiErrorMessage(error, t('settingsDiseases.deleteError')));
     }
   };
 
@@ -74,17 +76,17 @@ export default function SettingsDiseasesPage() {
       }
       setModalOpen(false);
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, 'Erro ao salvar'));
+      toast.error(getApiErrorMessage(error, t('settingsDiseases.saveError')));
     }
   };
 
   return (
     <div>
-      <h1 className="text-2xl font-heading font-bold mb-6">Doenças</h1>
+      <h1 className="text-2xl font-heading font-bold mb-6">{t('settingsDiseases.title')}</h1>
       <Card className="rounded-none border-0 bg-transparent py-0 shadow-none sm:rounded-xl sm:border sm:border-border/80 sm:bg-card sm:py-6 sm:shadow-(--shadow-card)">
         <CardContent className="px-0 pt-0 sm:px-6 sm:pt-6">
           <Button onClick={openCreate} className="mb-4 w-full bg-primary sm:w-auto">
-            <Plus className="w-4 h-4 mr-2" /> Nova doença
+            <Plus className="w-4 h-4 mr-2" /> {t('settingsDiseases.newDisease')}
           </Button>
           {loading ? (
             <div className="flex justify-center py-8">
@@ -92,7 +94,7 @@ export default function SettingsDiseasesPage() {
             </div>
           ) : list.length === 0 ? (
             <div className="rounded-lg border border-gray-300 bg-white py-8 text-center text-sm text-slate-500">
-              Nenhuma doença cadastrada.
+              {t('settingsDiseases.emptyState')}
             </div>
           ) : (
             <div>
@@ -101,9 +103,9 @@ export default function SettingsDiseasesPage() {
               <Table className="min-w-full border-collapse bg-white text-sm">
                 <TableHeader>
                   <TableRow className="border-b border-gray-300 h-15">
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Categoria</TableHead>
-                    <TableHead className="w-30">Ações</TableHead>
+                    <TableHead>{t('settingsDiseases.columnName')}</TableHead>
+                    <TableHead>{t('settingsDiseases.columnCategory')}</TableHead>
+                    <TableHead className="w-30">{t('settingsDiseases.columnActions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -167,7 +169,7 @@ export default function SettingsDiseasesPage() {
       <DashboardCreateFormDialog
         open={modalOpen}
         onOpenChange={setModalOpen}
-        title={editingId ? 'Editar doença' : 'Nova doença'}
+        title={editingId ? t('settingsDiseases.editDisease') : t('settingsDiseases.newDisease')}
         contentClassName="modal-responsive"
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
@@ -177,24 +179,24 @@ export default function SettingsDiseasesPage() {
               className="border border-gray-300"
               onClick={() => setModalOpen(false)}
             >
-              Cancelar
+              {t('settingsDiseases.cancel')}
             </Button>
             <Button type="submit" form="disease-form" className="bg-primary">
-              {editingId ? 'Salvar' : 'Criar'}
+              {editingId ? t('settingsDiseases.save') : t('settingsDiseases.create')}
             </Button>
           </div>
         }
       >
         <form id="disease-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4 md:space-y-6">
           <div className="space-y-2">
-            <Label>Categoria</Label>
+            <Label>{t('settingsDiseases.categoryLabel')}</Label>
             <Controller
               name="category_id"
               control={control}
               render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione" />
+                    <SelectValue placeholder={t('settingsDiseases.selectPlaceholder')} />
                   </SelectTrigger>
                   <SelectContent>
                     {categories.map((c) => (
@@ -206,9 +208,9 @@ export default function SettingsDiseasesPage() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="name">Nome</Label>
-            <Input id="name" placeholder="Nome da doença" {...register('name', { required: true })} />
-            {errors.name && <p className="text-sm text-destructive">Campo obrigatório</p>}
+            <Label htmlFor="name">{t('settingsDiseases.nameLabel')}</Label>
+            <Input id="name" placeholder={t('settingsDiseases.namePlaceholder')} {...register('name', { required: true })} />
+            {errors.name && <p className="text-sm text-destructive">{t('settingsDiseases.requiredField')}</p>}
           </div>
         </form>
       </DashboardCreateFormDialog>

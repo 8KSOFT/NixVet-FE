@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Plus, Pencil, PowerOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -37,6 +38,7 @@ const EMPTY_FORM = {
 };
 
 export default function PlanosSaudePage() {
+  const { t } = useTranslation();
   const [includeInactive, setIncludeInactive] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<HealthPlan | null>(null);
@@ -75,7 +77,7 @@ export default function PlanosSaudePage() {
       }
       setModalOpen(false);
     } catch {
-      toast.error('Erro ao salvar');
+      toast.error(t('settingsPlanosSaude.saveError'));
     }
   };
 
@@ -83,7 +85,7 @@ export default function PlanosSaudePage() {
     try {
       await deactivateMutation.mutateAsync(id);
     } catch {
-      toast.error('Erro ao desativar');
+      toast.error(t('settingsPlanosSaude.deactivateError'));
     }
   };
 
@@ -91,17 +93,17 @@ export default function PlanosSaudePage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-xl font-semibold">Planos de Saúde</h2>
-          <p className="text-sm text-muted-foreground">Convênios e planos veterinários cadastrados</p>
+          <h2 className="text-xl font-semibold">{t('settingsPlanosSaude.title')}</h2>
+          <p className="text-sm text-muted-foreground">{t('settingsPlanosSaude.subtitle')}</p>
         </div>
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
           <label className="flex items-center gap-2 text-sm text-muted-foreground">
             <Switch checked={includeInactive} onCheckedChange={setIncludeInactive} />
-            Mostrar inativos
+            {t('settingsPlanosSaude.showInactive')}
           </label>
           <Button size="sm" onClick={openCreate} className="w-full sm:w-auto">
             <Plus className="mr-2 size-4" />
-            Novo Plano
+            {t('settingsPlanosSaude.newPlan')}
           </Button>
         </div>
       </div>
@@ -113,7 +115,7 @@ export default function PlanosSaudePage() {
               {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
             </div>
           ) : plans.length === 0 ? (
-            <div className="p-6 text-center text-sm text-slate-500">Nenhum plano cadastrado</div>
+            <div className="p-6 text-center text-sm text-slate-500">{t('settingsPlanosSaude.emptyState')}</div>
           ) : (
             <>
               {/* Desktop / tablet: tabela */}
@@ -121,12 +123,12 @@ export default function PlanosSaudePage() {
               <Table className="min-w-full border-collapse bg-white text-sm">
                 <TableHeader>
                   <TableRow className="border-b border-gray-300 h-15">
-                    <TableHead>Nome</TableHead>
-                    <TableHead>CNPJ</TableHead>
-                    <TableHead>Contato</TableHead>
-                    <TableHead className="text-right">Prazo Repasse</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Ações</TableHead>
+                    <TableHead>{t('settingsPlanosSaude.columns.name')}</TableHead>
+                    <TableHead>{t('settingsPlanosSaude.columns.document')}</TableHead>
+                    <TableHead>{t('settingsPlanosSaude.columns.contact')}</TableHead>
+                    <TableHead className="text-right">{t('settingsPlanosSaude.columns.reimbursementDeadline')}</TableHead>
+                    <TableHead>{t('settingsPlanosSaude.columns.status')}</TableHead>
+                    <TableHead>{t('settingsPlanosSaude.columns.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -135,10 +137,10 @@ export default function PlanosSaudePage() {
                       <TableCell className="font-medium">{p.name}</TableCell>
                       <TableCell>{p.document ?? '—'}</TableCell>
                       <TableCell>{p.contact_phone ?? p.contact_email ?? '—'}</TableCell>
-                      <TableCell className="text-right">{p.reimbursement_days}d</TableCell>
+                      <TableCell className="text-right">{t('settingsPlanosSaude.daysSuffix', { days: p.reimbursement_days })}</TableCell>
                       <TableCell>
                         <Badge variant={p.active ? 'default' : 'secondary'}>
-                          {p.active ? 'Ativo' : 'Inativo'}
+                          {p.active ? t('settingsPlanosSaude.statusActive') : t('settingsPlanosSaude.statusInactive')}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -169,17 +171,17 @@ export default function PlanosSaudePage() {
                         <p className="text-xs text-muted-foreground">{p.document ?? '—'}</p>
                       </div>
                       <Badge variant={p.active ? 'default' : 'secondary'} className="shrink-0">
-                        {p.active ? 'Ativo' : 'Inativo'}
+                        {p.active ? t('settingsPlanosSaude.statusActive') : t('settingsPlanosSaude.statusInactive')}
                       </Badge>
                     </div>
                     <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
                       <div>
-                        <p className="text-xs text-muted-foreground">Contato</p>
+                        <p className="text-xs text-muted-foreground">{t('settingsPlanosSaude.columns.contact')}</p>
                         <p className="truncate">{p.contact_phone ?? p.contact_email ?? '—'}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-muted-foreground">Prazo Repasse</p>
-                        <p>{p.reimbursement_days}d</p>
+                        <p className="text-xs text-muted-foreground">{t('settingsPlanosSaude.columns.reimbursementDeadline')}</p>
+                        <p>{t('settingsPlanosSaude.daysSuffix', { days: p.reimbursement_days })}</p>
                       </div>
                     </div>
                     <div className="mt-3 flex items-center justify-end gap-1 border-t border-gray-200 pt-2">
@@ -203,7 +205,7 @@ export default function PlanosSaudePage() {
       <DashboardCreateFormDialog
         open={modalOpen}
         onOpenChange={setModalOpen}
-        title={editing ? 'Editar Plano' : 'Novo Plano de Saúde'}
+        title={editing ? t('settingsPlanosSaude.editPlan') : t('settingsPlanosSaude.newPlanModalTitle')}
         contentClassName="modal-responsive"
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
@@ -213,34 +215,34 @@ export default function PlanosSaudePage() {
               className="border border-gray-300"
               onClick={() => setModalOpen(false)}
             >
-              Cancelar
+              {t('settingsPlanosSaude.cancel')}
             </Button>
             <Button onClick={handleSave} className="bg-primary">
-              {editing ? 'Salvar' : 'Criar'}
+              {editing ? t('settingsPlanosSaude.save') : t('settingsPlanosSaude.create')}
             </Button>
           </div>
         }
       >
         <div className="space-y-4 md:space-y-6">
           <div className="space-y-2">
-            <Label>Nome *</Label>
-            <Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="Ex: Petlove Saúde" />
+            <Label>{t('settingsPlanosSaude.nameLabel')}</Label>
+            <Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder={t('settingsPlanosSaude.namePlaceholder')} />
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label>CNPJ</Label>
-              <Input value={form.document} onChange={(e) => setForm((f) => ({ ...f, document: e.target.value }))} placeholder="00.000.000/0001-00" />
+              <Label>{t('settingsPlanosSaude.documentLabel')}</Label>
+              <Input value={form.document} onChange={(e) => setForm((f) => ({ ...f, document: e.target.value }))} placeholder={t('settingsPlanosSaude.documentPlaceholder')} />
             </div>
             <div className="space-y-2">
-              <Label>Prazo de Repasse (dias)</Label>
+              <Label>{t('settingsPlanosSaude.reimbursementDaysLabel')}</Label>
               <Input type="number" value={form.reimbursement_days} onChange={(e) => setForm((f) => ({ ...f, reimbursement_days: Number(e.target.value) }))} />
             </div>
             <div className="space-y-2">
-              <Label>Telefone</Label>
+              <Label>{t('settingsPlanosSaude.phoneLabel')}</Label>
               <Input value={form.contact_phone} onChange={(e) => setForm((f) => ({ ...f, contact_phone: e.target.value }))} />
             </div>
             <div className="space-y-2">
-              <Label>E-mail</Label>
+              <Label>{t('settingsPlanosSaude.emailLabel')}</Label>
               <Input type="email" value={form.contact_email} onChange={(e) => setForm((f) => ({ ...f, contact_email: e.target.value }))} />
             </div>
           </div>

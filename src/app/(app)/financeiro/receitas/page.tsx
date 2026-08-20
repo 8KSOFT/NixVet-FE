@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -16,14 +17,11 @@ import api from '@/lib/axios';
 import { toast } from 'sonner';
 import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import { PlanUpgradeGate } from '@/components/billing/PlanUpgradeGate';
+import { useCurrencyFormatter } from '@/lib/i18n/currency';
 
 interface RevenueBySource {
   particular: number;
   health_plan: number;
-}
-
-function fmt(n: number) {
-  return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
 const COLORS = ['#3b82f6', '#22c55e'];
@@ -38,6 +36,8 @@ function formatPieLabel(payload: PieLabelPayload): string {
 }
 
 function ReceitasPageContent() {
+  const { t } = useTranslation();
+  const fmt = useCurrencyFormatter();
   const now = new Date();
   const [period, setPeriod] = useState(
     `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`,
@@ -50,15 +50,15 @@ function ReceitasPageContent() {
     api
       .get<RevenueBySource>(`/financial-reports/receitas?period=${period}`)
       .then((r) => setData(r.data))
-      .catch((error: unknown) => toast.error(getApiErrorMessage(error, 'Erro ao carregar receitas')))
+      .catch((error: unknown) => toast.error(getApiErrorMessage(error, t('financeiroReceitas.loadError'))))
       .finally(() => setLoading(false));
-  }, [period]);
+  }, [period, t]);
 
   const total = (data?.particular ?? 0) + (data?.health_plan ?? 0);
   const chartData = data
     ? [
-        { name: 'Particular', value: data.particular },
-        { name: 'Plano de Saúde', value: data.health_plan },
+        { name: t('financeiroReceitas.particular'), value: data.particular },
+        { name: t('financeiroReceitas.healthPlan'), value: data.health_plan },
       ]
     : [];
 
@@ -71,8 +71,8 @@ function ReceitasPageContent() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Receitas — Particular vs Plano</h1>
-          <p className="text-sm text-muted-foreground">Comparativo de fontes de receita</p>
+          <h1 className="text-2xl font-bold">{t('financeiroReceitas.title')}</h1>
+          <p className="text-sm text-muted-foreground">{t('financeiroReceitas.subtitle')}</p>
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -90,9 +90,9 @@ function ReceitasPageContent() {
 
       <div className="grid gap-4 sm:grid-cols-3">
         {[
-          { label: 'Total', value: total, color: 'text-foreground' },
-          { label: 'Particular', value: data?.particular ?? 0, color: 'text-blue-600' },
-          { label: 'Plano de Saúde', value: data?.health_plan ?? 0, color: 'text-green-600' },
+          { label: t('financeiroReceitas.total'), value: total, color: 'text-foreground' },
+          { label: t('financeiroReceitas.particular'), value: data?.particular ?? 0, color: 'text-blue-600' },
+          { label: t('financeiroReceitas.healthPlan'), value: data?.health_plan ?? 0, color: 'text-green-600' },
         ].map(({ label, value, color }) => (
           <Card key={label}>
             <CardHeader className="pb-2">
@@ -107,7 +107,7 @@ function ReceitasPageContent() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm font-medium">Distribuição de Receitas</CardTitle>
+          <CardTitle className="text-sm font-medium">{t('financeiroReceitas.distribution')}</CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -132,8 +132,9 @@ function ReceitasPageContent() {
 }
 
 export default function ReceitasPage() {
+  const { t } = useTranslation();
   return (
-    <PlanUpgradeGate requiredPlan="clinica" feature="Receitas por origem">
+    <PlanUpgradeGate requiredPlan="clinica" feature={t('financeiroReceitas.title')}>
       <ReceitasPageContent />
     </PlanUpgradeGate>
   );

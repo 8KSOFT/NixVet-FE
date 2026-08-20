@@ -4,20 +4,7 @@ import * as React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import type { AppLanguage } from '@/lib/i18n/resources';
-
-/**
- * Símbolo exibido e locale usado pra separador de milhar/decimal, por idioma
- * da plataforma (não é sobre o país do usuário — é o idioma ativo em
- * LanguageSwitcher). "es" mira genericamente América espanhola por ora
- * (ptBR-like: vírgula decimal); ajuste `locale` aqui se precisar mirar um
- * país específico (ex.: México usa ponto decimal, como o inglês).
- */
-const CURRENCY_BY_LANGUAGE: Record<AppLanguage, { symbol: string; locale: string }> = {
-  pt: { symbol: 'R$', locale: 'pt-BR' },
-  en: { symbol: 'U$', locale: 'en-US' },
-  es: { symbol: 'Peso', locale: 'es-AR' },
-};
+import { CURRENCY_BY_LANGUAGE, resolveAppLanguage } from '@/lib/i18n/currency';
 
 function centsToDecimalString(cents: number): string {
   return (cents / 100).toFixed(2);
@@ -45,8 +32,8 @@ export interface CurrencyInputProps
 export const CurrencyInput = React.forwardRef<HTMLInputElement, CurrencyInputProps>(
   ({ value, onValueChange, className, wrapperClassName, ...props }, ref) => {
     const { i18n } = useTranslation();
-    const lang = ((i18n.language || 'pt').split('-')[0]) as AppLanguage;
-    const { symbol, locale } = CURRENCY_BY_LANGUAGE[lang] ?? CURRENCY_BY_LANGUAGE.pt;
+    const lang = resolveAppLanguage(i18n.language);
+    const { symbol, locale } = CURRENCY_BY_LANGUAGE[lang];
 
     const display =
       value === '' || value == null ? '' : formatCents(Math.round(Number(value) * 100) || 0, locale);

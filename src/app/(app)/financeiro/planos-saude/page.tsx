@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AlertTriangle, CheckCircle, CircleDollarSign, FileWarning } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -35,6 +36,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import api from '@/lib/axios';
 import { toast } from 'sonner';
+import { useCurrencyFormatter } from '@/lib/i18n/currency';
 
 type ReceivableStatus = 'pending' | 'received' | 'partial' | 'glossed' | 'contested';
 
@@ -86,24 +88,13 @@ interface HealthPlan {
   name: string;
 }
 
-const STATUS_META: Record<ReceivableStatus, { label: string; variant: 'secondary' | 'destructive' | 'default' | 'outline'; className?: string }> = {
-  pending: { label: 'Pendente', variant: 'secondary' },
-  received: { label: 'Recebido', variant: 'default', className: 'bg-green-600 hover:bg-green-600' },
-  partial: { label: 'Parcial', variant: 'default', className: 'bg-orange-500 hover:bg-orange-500' },
-  glossed: { label: 'Glosado', variant: 'destructive' },
-  contested: { label: 'Contestado', variant: 'outline' },
+const STATUS_META: Record<ReceivableStatus, { variant: 'secondary' | 'destructive' | 'default' | 'outline'; className?: string }> = {
+  pending: { variant: 'secondary' },
+  received: { variant: 'default', className: 'bg-green-600 hover:bg-green-600' },
+  partial: { variant: 'default', className: 'bg-orange-500 hover:bg-orange-500' },
+  glossed: { variant: 'destructive' },
+  contested: { variant: 'outline' },
 };
-
-const REFERENCE_LABELS: Record<string, string> = {
-  consultation: 'Consulta',
-  hospitalization: 'Internação',
-  exam: 'Exame',
-  surgical_procedure: 'Procedimento',
-};
-
-function fmt(n: number | null | undefined) {
-  return Number(n ?? 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-}
 
 function todayISO() {
   const d = new Date();
@@ -111,6 +102,8 @@ function todayISO() {
 }
 
 export default function PlanosSaudeReceivablesPage() {
+  const { t } = useTranslation();
+  const fmt = useCurrencyFormatter();
   const now = new Date();
   const [planFilter, setPlanFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -131,6 +124,21 @@ export default function PlanosSaudeReceivablesPage() {
   const [glosaReason, setGlosaReason] = useState('');
 
   const [submitting, setSubmitting] = useState(false);
+
+  const STATUS_LABELS: Record<ReceivableStatus, string> = {
+    pending: t('financeiroPlanosSaude.statusPending'),
+    received: t('financeiroPlanosSaude.statusReceived'),
+    partial: t('financeiroPlanosSaude.statusPartial'),
+    glossed: t('financeiroPlanosSaude.statusGlossed'),
+    contested: t('financeiroPlanosSaude.statusContested'),
+  };
+
+  const REFERENCE_LABELS: Record<string, string> = {
+    consultation: t('financeiroPlanosSaude.referenceConsultation'),
+    hospitalization: t('financeiroPlanosSaude.referenceHospitalization'),
+    exam: t('financeiroPlanosSaude.referenceExam'),
+    surgical_procedure: t('financeiroPlanosSaude.referenceSurgicalProcedure'),
+  };
 
   const months = Array.from({ length: 12 }, (_, i) => {
     const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1);
@@ -153,11 +161,11 @@ export default function PlanosSaudeReceivablesPage() {
       setAging(agingRes.data);
       setPlans(Array.isArray(plansRes.data) ? plansRes.data : []);
     } catch {
-      toast.error('Erro ao carregar recebíveis de planos');
+      toast.error(t('financeiroPlanosSaude.loadError'));
     } finally {
       setLoading(false);
     }
-  }, [planFilter, statusFilter, monthFilter]);
+  }, [planFilter, statusFilter, monthFilter, t]);
 
   useEffect(() => {
     fetchData();
@@ -177,7 +185,7 @@ export default function PlanosSaudeReceivablesPage() {
     if (!receiving) return;
     const amount = Number(receivedAmount) || 0;
     if (amount <= 0) {
-      toast.error('Informe o valor recebido');
+      toast.error(t('financeiroPlanosSaude.receivedAmountRequired'));
       return;
     }
     setSubmitting(true);
@@ -186,11 +194,11 @@ export default function PlanosSaudeReceivablesPage() {
         received_amount: amount,
         received_at: receivedAt,
       });
-      toast.success('Recebimento registrado');
+      toast.success(t('financeiroPlanosSaude.receivedSuccess'));
       setReceiving(null);
       fetchData();
     } catch {
-      toast.error('Erro ao registrar recebimento');
+      toast.error(t('financeiroPlanosSaude.receivedError'));
     } finally {
       setSubmitting(false);
     }
@@ -206,7 +214,7 @@ export default function PlanosSaudeReceivablesPage() {
     if (!glossing) return;
     const amount = Number(glosaAmount) || 0;
     if (amount <= 0) {
-      toast.error('Informe o valor glosado');
+      toast.error(t('financeiroPlanosSaude.glosaAmountRequired'));
       return;
     }
     setSubmitting(true);
@@ -215,11 +223,11 @@ export default function PlanosSaudeReceivablesPage() {
         glosa_amount: amount,
         glosa_reason: glosaReason || undefined,
       });
-      toast.success('Glosa registrada');
+      toast.success(t('financeiroPlanosSaude.glosaSuccess'));
       setGlossing(null);
       fetchData();
     } catch {
-      toast.error('Erro ao registrar glosa');
+      toast.error(t('financeiroPlanosSaude.glosaError'));
     } finally {
       setSubmitting(false);
     }
@@ -228,27 +236,27 @@ export default function PlanosSaudeReceivablesPage() {
   const contest = async (r: Receivable) => {
     try {
       await api.patch(`/health-plans/receivables/${r.id}/contest`, {});
-      toast.success('Glosa contestada');
+      toast.success(t('financeiroPlanosSaude.contestSuccess'));
       fetchData();
     } catch {
-      toast.error('Erro ao contestar glosa');
+      toast.error(t('financeiroPlanosSaude.contestError'));
     }
   };
 
   const agingCols: { key: keyof Aging['by_plan'][string]; label: string; late?: boolean }[] = [
-    { key: 'on_time', label: 'No prazo' },
-    { key: 'late_1_30', label: '1-30d atraso', late: true },
-    { key: 'late_31_60', label: '31-60d', late: true },
-    { key: 'late_61_90', label: '61-90d', late: true },
-    { key: 'late_over_90', label: '+90d', late: true },
+    { key: 'on_time', label: t('financeiroPlanosSaude.agingOnTime') },
+    { key: 'late_1_30', label: t('financeiroPlanosSaude.agingLate1to30'), late: true },
+    { key: 'late_31_60', label: t('financeiroPlanosSaude.agingLate31to60'), late: true },
+    { key: 'late_61_90', label: t('financeiroPlanosSaude.agingLate61to90'), late: true },
+    { key: 'late_over_90', label: t('financeiroPlanosSaude.agingLateOver90'), late: true },
   ];
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Planos de Saúde — A Receber</h1>
+        <h1 className="text-2xl font-bold">{t('financeiroPlanosSaude.title')}</h1>
         <p className="text-sm text-muted-foreground">
-          Repasses esperados dos planos, aging de atrasos e controle de glosas.
+          {t('financeiroPlanosSaude.subtitle')}
         </p>
       </div>
 
@@ -256,7 +264,7 @@ export default function PlanosSaudeReceivablesPage() {
       <div className="grid gap-4 sm:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">A Receber (no prazo)</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t('financeiroPlanosSaude.cardReceivableOnTime')}</CardTitle>
             <CircleDollarSign className="size-4 text-blue-600" />
           </CardHeader>
           <CardContent>
@@ -265,7 +273,7 @@ export default function PlanosSaudeReceivablesPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Em Atraso</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t('financeiroPlanosSaude.cardOverdue')}</CardTitle>
             <AlertTriangle className="size-4 text-red-600" />
           </CardHeader>
           <CardContent>
@@ -274,7 +282,7 @@ export default function PlanosSaudeReceivablesPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Glosado</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">{t('financeiroPlanosSaude.cardGlossed')}</CardTitle>
             <FileWarning className="size-4 text-orange-500" />
           </CardHeader>
           <CardContent>
@@ -286,19 +294,19 @@ export default function PlanosSaudeReceivablesPage() {
       {/* Tabela de aging por plano */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm font-medium">Aging por Plano</CardTitle>
+          <CardTitle className="text-sm font-medium">{t('financeiroPlanosSaude.agingByPlan')}</CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
             <Skeleton className="h-32 w-full" />
           ) : !aging || Object.keys(aging.by_plan).length === 0 ? (
-            <p className="py-6 text-center text-sm text-muted-foreground">Nenhum repasse pendente.</p>
+            <p className="py-6 text-center text-sm text-muted-foreground">{t('financeiroPlanosSaude.noPendingTransfers')}</p>
           ) : (
             <div className="overflow-x-auto rounded-lg border border-slate-200">
               <Table className="min-w-full text-sm">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Plano</TableHead>
+                    <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('financeiroPlanosSaude.columnPlan')}</TableHead>
                     {agingCols.map((c) => (
                       <TableHead
                         key={String(c.key)}
@@ -310,7 +318,7 @@ export default function PlanosSaudeReceivablesPage() {
                         {c.label}
                       </TableHead>
                     ))}
-                    <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">Total</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('financeiroPlanosSaude.columnTotal')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -346,18 +354,18 @@ export default function PlanosSaudeReceivablesPage() {
       {/* Lista detalhada */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm font-medium">Repasses</CardTitle>
+          <CardTitle className="text-sm font-medium">{t('financeiroPlanosSaude.transfers')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-wrap items-end gap-3">
             <div>
-              <Label className="text-xs text-muted-foreground">Plano</Label>
+              <Label className="text-xs text-muted-foreground">{t('financeiroPlanosSaude.filterPlan')}</Label>
               <Select value={planFilter} onValueChange={setPlanFilter}>
                 <SelectTrigger className="w-[190px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="all">{t('financeiroPlanosSaude.all')}</SelectItem>
                   {plans.map((p) => (
                     <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
                   ))}
@@ -365,29 +373,29 @@ export default function PlanosSaudeReceivablesPage() {
               </Select>
             </div>
             <div>
-              <Label className="text-xs text-muted-foreground">Status</Label>
+              <Label className="text-xs text-muted-foreground">{t('financeiroPlanosSaude.filterStatus')}</Label>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-[160px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="pending">Pendente</SelectItem>
-                  <SelectItem value="received">Recebido</SelectItem>
-                  <SelectItem value="partial">Parcial</SelectItem>
-                  <SelectItem value="glossed">Glosado</SelectItem>
-                  <SelectItem value="contested">Contestado</SelectItem>
+                  <SelectItem value="all">{t('financeiroPlanosSaude.all')}</SelectItem>
+                  <SelectItem value="pending">{STATUS_LABELS.pending}</SelectItem>
+                  <SelectItem value="received">{STATUS_LABELS.received}</SelectItem>
+                  <SelectItem value="partial">{STATUS_LABELS.partial}</SelectItem>
+                  <SelectItem value="glossed">{STATUS_LABELS.glossed}</SelectItem>
+                  <SelectItem value="contested">{STATUS_LABELS.contested}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label className="text-xs text-muted-foreground">Mês do repasse</Label>
+              <Label className="text-xs text-muted-foreground">{t('financeiroPlanosSaude.filterMonth')}</Label>
               <Select value={monthFilter} onValueChange={setMonthFilter}>
                 <SelectTrigger className="w-[140px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="all">{t('financeiroPlanosSaude.all')}</SelectItem>
                   {months.map((m) => (
                     <SelectItem key={m} value={m}>{m}</SelectItem>
                   ))}
@@ -403,18 +411,18 @@ export default function PlanosSaudeReceivablesPage() {
               ))}
             </div>
           ) : receivables.length === 0 ? (
-            <p className="py-8 text-center text-sm text-muted-foreground">Nenhum repasse encontrado.</p>
+            <p className="py-8 text-center text-sm text-muted-foreground">{t('financeiroPlanosSaude.noTransfersFound')}</p>
           ) : (
             <div className="overflow-x-auto rounded-lg border border-slate-200">
               <Table className="min-w-full text-sm">
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Plano</TableHead>
-                    <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Referência</TableHead>
-                    <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">Valor Esperado</TableHead>
-                    <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Data Repasse</TableHead>
-                    <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">Status</TableHead>
-                    <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">Ações</TableHead>
+                    <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('financeiroPlanosSaude.columnPlan')}</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('financeiroPlanosSaude.columnReference')}</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('financeiroPlanosSaude.columnExpectedAmount')}</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('financeiroPlanosSaude.columnTransferDate')}</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('financeiroPlanosSaude.columnStatus')}</TableHead>
+                    <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('financeiroPlanosSaude.columnActions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -433,29 +441,31 @@ export default function PlanosSaudeReceivablesPage() {
                         <TableCell className="border border-slate-200 px-3 py-3 text-right tabular-nums text-slate-600">
                           {fmt(r.expected_amount)}
                           {r.status === 'partial' && (
-                            <span className="block text-xs text-orange-600">recebido {fmt(r.received_amount)}</span>
+                            <span className="block text-xs text-orange-600">
+                              {t('financeiroPlanosSaude.receivedPartial', { amount: fmt(r.received_amount) })}
+                            </span>
                           )}
                         </TableCell>
                         <TableCell className={cn('border border-slate-200 px-3 py-3', overdue ? 'font-medium text-red-700' : 'text-slate-600')}>
                           {new Date(`${r.expected_repasse_date}T12:00:00`).toLocaleDateString('pt-BR')}
                         </TableCell>
                         <TableCell className="border border-slate-200 px-3 py-3">
-                          <Badge variant={meta.variant} className={meta.className}>{meta.label}</Badge>
+                          <Badge variant={meta.variant} className={meta.className}>{STATUS_LABELS[r.status]}</Badge>
                         </TableCell>
                         <TableCell className="border border-slate-200 px-3 py-3 text-right">
                           {r.status === 'pending' || r.status === 'partial' || r.status === 'contested' ? (
                             <div className="flex justify-end gap-2">
                               <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => openReceive(r)}>
                                 <CheckCircle className="mr-1 size-3.5" />
-                                Receber
+                                {t('financeiroPlanosSaude.receiveButton')}
                               </Button>
                               <Button size="sm" variant="outline" onClick={() => openGlosa(r)}>
-                                Glosa
+                                {t('financeiroPlanosSaude.glosaButton')}
                               </Button>
                             </div>
                           ) : r.status === 'glossed' ? (
                             <Button size="sm" variant="outline" onClick={() => contest(r)}>
-                              Contestar
+                              {t('financeiroPlanosSaude.contestButton')}
                             </Button>
                           ) : (
                             <span className="text-xs text-muted-foreground">—</span>
@@ -475,7 +485,7 @@ export default function PlanosSaudeReceivablesPage() {
       <Dialog open={!!receiving} onOpenChange={(o) => !o && setReceiving(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Registrar Recebimento</DialogTitle>
+            <DialogTitle>{t('financeiroPlanosSaude.receiveModalTitle')}</DialogTitle>
           </DialogHeader>
           {receiving && (
             <div className="space-y-4">
@@ -486,16 +496,18 @@ export default function PlanosSaudeReceivablesPage() {
                 </div>
               </div>
               <div>
-                <Label htmlFor="recv-amount">Valor recebido</Label>
+                <Label htmlFor="recv-amount">{t('financeiroPlanosSaude.receivedAmountLabel')}</Label>
                 <CurrencyInput id="recv-amount" value={receivedAmount} onValueChange={setReceivedAmount} />
                 {Number(receivedAmount) > 0 && Number(receivedAmount) < Number(receiving.expected_amount) && (
                   <p className="mt-1 text-xs text-orange-600">
-                    Recebimento parcial — glosa de {fmt(Number(receiving.expected_amount) - Number(receivedAmount))}
+                    {t('financeiroPlanosSaude.partialReceiptWarning', {
+                      amount: fmt(Number(receiving.expected_amount) - Number(receivedAmount)),
+                    })}
                   </p>
                 )}
               </div>
               <div>
-                <Label htmlFor="recv-date">Data do recebimento</Label>
+                <Label htmlFor="recv-date">{t('financeiroPlanosSaude.receivedDateLabel')}</Label>
                 <Input
                   id="recv-date"
                   type="date"
@@ -507,10 +519,10 @@ export default function PlanosSaudeReceivablesPage() {
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setReceiving(null)} disabled={submitting}>
-              Cancelar
+              {t('financeiroPlanosSaude.cancel')}
             </Button>
             <Button className="bg-green-600 hover:bg-green-700" onClick={submitReceive} disabled={submitting}>
-              Confirmar
+              {t('financeiroPlanosSaude.confirm')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -520,7 +532,7 @@ export default function PlanosSaudeReceivablesPage() {
       <Dialog open={!!glossing} onOpenChange={(o) => !o && setGlossing(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Registrar Glosa</DialogTitle>
+            <DialogTitle>{t('financeiroPlanosSaude.glosaModalTitle')}</DialogTitle>
           </DialogHeader>
           {glossing && (
             <div className="space-y-4">
@@ -531,27 +543,27 @@ export default function PlanosSaudeReceivablesPage() {
                 </div>
               </div>
               <div>
-                <Label htmlFor="glosa-amount">Valor glosado</Label>
+                <Label htmlFor="glosa-amount">{t('financeiroPlanosSaude.glosaAmountLabel')}</Label>
                 <CurrencyInput id="glosa-amount" value={glosaAmount} onValueChange={setGlosaAmount} />
               </div>
               <div>
-                <Label htmlFor="glosa-reason">Motivo</Label>
+                <Label htmlFor="glosa-reason">{t('financeiroPlanosSaude.glosaReasonLabel')}</Label>
                 <Textarea
                   id="glosa-reason"
                   value={glosaReason}
                   onChange={(ev) => setGlosaReason(ev.target.value)}
                   rows={3}
-                  placeholder="Ex.: procedimento não coberto"
+                  placeholder={t('financeiroPlanosSaude.glosaReasonPlaceholder')}
                 />
               </div>
             </div>
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setGlossing(null)} disabled={submitting}>
-              Cancelar
+              {t('financeiroPlanosSaude.cancel')}
             </Button>
             <Button variant="destructive" onClick={submitGlosa} disabled={submitting}>
-              Registrar Glosa
+              {t('financeiroPlanosSaude.registerGlosaButton')}
             </Button>
           </DialogFooter>
         </DialogContent>

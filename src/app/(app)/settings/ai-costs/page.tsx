@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { DollarSign, Cpu, MessageSquare, TrendingUp, RefreshCw } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,15 +18,6 @@ import {
 import dayjs from 'dayjs';
 import { useAiUsageQuery } from '@/hooks/apiHooks/useAi';
 
-const OP_LABELS: Record<string, string> = {
-  'classify-intent': 'Classificação de intenção',
-  'chatbot-reply': 'Resposta automática (chatbot)',
-  'suggest-replies': 'Sugestões de resposta',
-  'summarize-notes': 'Resumo de consulta',
-  'structure-observations': 'Estruturação médica',
-  unknown: 'Outro',
-};
-
 function formatCost(usd: number): string {
   return `$${Number(usd).toFixed(4)}`;
 }
@@ -37,6 +29,17 @@ function formatTokens(n: number): string {
 }
 
 export default function AiCostsPage() {
+  const { t } = useTranslation();
+
+  const OP_LABELS: Record<string, string> = {
+    'classify-intent': t('settingsAiCosts.operations.classifyIntent'),
+    'chatbot-reply': t('settingsAiCosts.operations.chatbotReply'),
+    'suggest-replies': t('settingsAiCosts.operations.suggestReplies'),
+    'summarize-notes': t('settingsAiCosts.operations.summarizeNotes'),
+    'structure-observations': t('settingsAiCosts.operations.structureObservations'),
+    unknown: t('settingsAiCosts.operations.unknown'),
+  };
+
   const [from, setFrom] = useState(() => dayjs().startOf('month').format('YYYY-MM-DD'));
   const [to, setTo] = useState(() => dayjs().endOf('month').format('YYYY-MM-DD'));
 
@@ -51,24 +54,24 @@ export default function AiCostsPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-heading font-bold text-foreground">Custos de IA</h1>
+          <h1 className="text-xl font-heading font-bold text-foreground">{t('settingsAiCosts.title')}</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Acompanhe o consumo de tokens e custos estimados da OpenAI
+            {t('settingsAiCosts.subtitle')}
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={() => refetch()} disabled={loading} className="w-full sm:w-auto">
           <RefreshCw className={`size-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-          Atualizar
+          {t('settingsAiCosts.refresh')}
         </Button>
       </div>
 
       <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
         <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">De</Label>
+          <Label className="text-xs text-muted-foreground">{t('settingsAiCosts.from')}</Label>
           <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="w-full sm:w-40" />
         </div>
         <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">Até</Label>
+          <Label className="text-xs text-muted-foreground">{t('settingsAiCosts.to')}</Label>
           <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="w-full sm:w-40" />
         </div>
       </div>
@@ -81,7 +84,7 @@ export default function AiCostsPage() {
             </div>
             <div>
               <p className="text-2xl font-bold text-foreground">{formatCost(totalCost)}</p>
-              <p className="text-xs text-muted-foreground">Custo estimado (USD)</p>
+              <p className="text-xs text-muted-foreground">{t('settingsAiCosts.estimatedCost')}</p>
             </div>
           </CardContent>
         </Card>
@@ -92,7 +95,7 @@ export default function AiCostsPage() {
             </div>
             <div>
               <p className="text-2xl font-bold text-foreground">{formatTokens(totalTokens)}</p>
-              <p className="text-xs text-muted-foreground">Tokens consumidos</p>
+              <p className="text-xs text-muted-foreground">{t('settingsAiCosts.tokensConsumed')}</p>
             </div>
           </CardContent>
         </Card>
@@ -103,7 +106,7 @@ export default function AiCostsPage() {
             </div>
             <div>
               <p className="text-2xl font-bold text-foreground">{totalCalls}</p>
-              <p className="text-xs text-muted-foreground">Chamadas à API</p>
+              <p className="text-xs text-muted-foreground">{t('settingsAiCosts.apiCalls')}</p>
             </div>
           </CardContent>
         </Card>
@@ -114,17 +117,17 @@ export default function AiCostsPage() {
           <CardContent className="px-0 py-4 sm:p-5">
             <h2 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
               <TrendingUp className="size-4" />
-              Consumo por operação
+              {t('settingsAiCosts.consumptionByOperation')}
             </h2>
             {/* Desktop / tablet: tabela */}
             <div className="hidden overflow-x-auto md:block">
               <Table className="min-w-full border-collapse bg-white text-sm">
                 <TableHeader>
                   <TableRow className="border-b border-gray-300 h-15">
-                    <TableHead>Operação</TableHead>
-                    <TableHead className="text-right">Chamadas</TableHead>
-                    <TableHead className="text-right">Tokens</TableHead>
-                    <TableHead className="text-right">Custo (USD)</TableHead>
+                    <TableHead>{t('settingsAiCosts.table.operation')}</TableHead>
+                    <TableHead className="text-right">{t('settingsAiCosts.table.calls')}</TableHead>
+                    <TableHead className="text-right">{t('settingsAiCosts.table.tokens')}</TableHead>
+                    <TableHead className="text-right">{t('settingsAiCosts.table.cost')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -148,8 +151,8 @@ export default function AiCostsPage() {
                 <div key={op.operation} className="rounded-lg border border-gray-300 p-3 text-sm">
                   <p className="font-medium">{OP_LABELS[op.operation] || op.operation}</p>
                   <div className="mt-2 flex justify-between text-muted-foreground">
-                    <span>Chamadas: {Number(op.calls)}</span>
-                    <span>Tokens: {formatTokens(Number(op.tokens))}</span>
+                    <span>{t('settingsAiCosts.mobile.calls', { count: Number(op.calls) })}</span>
+                    <span>{t('settingsAiCosts.mobile.tokens', { value: formatTokens(Number(op.tokens)) })}</span>
                     <span className="font-medium text-foreground">{formatCost(Number(op.cost_usd))}</span>
                   </div>
                 </div>
@@ -162,16 +165,16 @@ export default function AiCostsPage() {
       {(data?.daily?.length ?? 0) > 0 && (
         <Card className="rounded-none border-0 bg-transparent py-0 shadow-none sm:rounded-xl sm:border sm:border-border/80 sm:bg-card sm:py-6 sm:shadow-(--shadow-card)">
           <CardContent className="px-0 py-4 sm:p-5">
-            <h2 className="text-sm font-semibold text-foreground mb-3">Consumo diário</h2>
+            <h2 className="text-sm font-semibold text-foreground mb-3">{t('settingsAiCosts.dailyConsumption')}</h2>
             {/* Desktop / tablet: tabela */}
             <div className="hidden overflow-x-auto md:block">
               <Table className="min-w-full border-collapse bg-white text-sm">
                 <TableHeader>
                   <TableRow className="border-b border-gray-300 h-15">
-                    <TableHead>Data</TableHead>
-                    <TableHead className="text-right">Chamadas</TableHead>
-                    <TableHead className="text-right">Tokens</TableHead>
-                    <TableHead className="text-right">Custo (USD)</TableHead>
+                    <TableHead>{t('settingsAiCosts.table.date')}</TableHead>
+                    <TableHead className="text-right">{t('settingsAiCosts.table.calls')}</TableHead>
+                    <TableHead className="text-right">{t('settingsAiCosts.table.tokens')}</TableHead>
+                    <TableHead className="text-right">{t('settingsAiCosts.table.cost')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -193,8 +196,8 @@ export default function AiCostsPage() {
                 <div key={d.date} className="rounded-lg border border-gray-300 p-3 text-sm">
                   <p className="font-medium">{dayjs(d.date).format('DD/MM/YYYY')}</p>
                   <div className="mt-2 flex justify-between text-muted-foreground">
-                    <span>Chamadas: {Number(d.calls)}</span>
-                    <span>Tokens: {formatTokens(Number(d.tokens))}</span>
+                    <span>{t('settingsAiCosts.mobile.calls', { count: Number(d.calls) })}</span>
+                    <span>{t('settingsAiCosts.mobile.tokens', { value: formatTokens(Number(d.tokens)) })}</span>
                     <span className="font-medium text-foreground">{formatCost(Number(d.cost_usd))}</span>
                   </div>
                 </div>
@@ -207,19 +210,19 @@ export default function AiCostsPage() {
       {(data?.recent?.length ?? 0) > 0 && (
         <Card className="rounded-none border-0 bg-transparent py-0 shadow-none sm:rounded-xl sm:border sm:border-border/80 sm:bg-card sm:py-6 sm:shadow-(--shadow-card)">
           <CardContent className="px-0 py-4 sm:p-5">
-            <h2 className="text-sm font-semibold text-foreground mb-3">Últimas chamadas</h2>
+            <h2 className="text-sm font-semibold text-foreground mb-3">{t('settingsAiCosts.recentCalls')}</h2>
             {/* Desktop / tablet: tabela */}
             <div className="hidden overflow-x-auto md:block">
               <Table className="min-w-full border-collapse bg-white text-sm">
                 <TableHeader>
                   <TableRow className="border-b border-gray-300 h-15">
-                    <TableHead>Data/Hora</TableHead>
-                    <TableHead>Operação</TableHead>
-                    <TableHead>Modelo</TableHead>
-                    <TableHead className="text-right">Prompt</TableHead>
-                    <TableHead className="text-right">Resposta</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
-                    <TableHead className="text-right">Custo</TableHead>
+                    <TableHead>{t('settingsAiCosts.table.dateTime')}</TableHead>
+                    <TableHead>{t('settingsAiCosts.table.operation')}</TableHead>
+                    <TableHead>{t('settingsAiCosts.table.model')}</TableHead>
+                    <TableHead className="text-right">{t('settingsAiCosts.table.prompt')}</TableHead>
+                    <TableHead className="text-right">{t('settingsAiCosts.table.response')}</TableHead>
+                    <TableHead className="text-right">{t('settingsAiCosts.table.total')}</TableHead>
+                    <TableHead className="text-right">{t('settingsAiCosts.table.costShort')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -252,9 +255,9 @@ export default function AiCostsPage() {
                   </div>
                   <p className="mt-0.5 font-mono text-muted-foreground">{log.model}</p>
                   <div className="mt-2 flex justify-between text-muted-foreground">
-                    <span>Prompt: {log.prompt_tokens}</span>
-                    <span>Resposta: {log.completion_tokens}</span>
-                    <span className="font-medium text-foreground">Total: {log.total_tokens}</span>
+                    <span>{t('settingsAiCosts.mobile.prompt', { value: log.prompt_tokens })}</span>
+                    <span>{t('settingsAiCosts.mobile.response', { value: log.completion_tokens })}</span>
+                    <span className="font-medium text-foreground">{t('settingsAiCosts.mobile.total', { value: log.total_tokens })}</span>
                     <span>{formatCost(Number(log.estimated_cost_usd))}</span>
                   </div>
                 </div>
@@ -266,7 +269,7 @@ export default function AiCostsPage() {
 
       {!loading && !data && (
         <div className="rounded-lg border border-gray-300 bg-white py-8 text-center text-sm text-slate-500">
-          Nenhum dado de consumo encontrado para o período selecionado.
+          {t('settingsAiCosts.noData')}
         </div>
       )}
     </div>

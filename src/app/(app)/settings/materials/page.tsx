@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { CurrencyInput } from '@/components/ui/currency-input';
@@ -21,6 +22,7 @@ import {
   useDeleteMaterialMutation,
 } from '@/hooks/apiHooks/useMaterials';
 import type { Material } from '@/app/types/material';
+import { useCurrencyFormatter } from '@/lib/i18n/currency';
 
 type FormValues = {
   name: string;
@@ -29,12 +31,10 @@ type FormValues = {
   tax_percentage?: string;
 };
 
-function fmtBRL(v?: number | null) {
-  if (v == null) return '—';
-  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
-}
-
 export default function SettingsMaterialsPage() {
+  const { t } = useTranslation();
+  const fmt = useCurrencyFormatter();
+  const fmtBRL = (v?: number | null) => (v == null ? '—' : fmt(v));
   const [listPage, setListPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -69,7 +69,7 @@ export default function SettingsMaterialsPage() {
     try {
       await deleteMutation.mutateAsync(id);
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, 'Erro ao remover'));
+      toast.error(getApiErrorMessage(error, t('settingsMaterials.deleteError')));
     }
   };
 
@@ -88,17 +88,17 @@ export default function SettingsMaterialsPage() {
       }
       setModalOpen(false);
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, 'Erro ao salvar'));
+      toast.error(getApiErrorMessage(error, t('settingsMaterials.saveError')));
     }
   };
 
   return (
     <div>
-      <h1 className="text-2xl font-heading font-bold mb-6">Materiais</h1>
+      <h1 className="text-2xl font-heading font-bold mb-6">{t('settingsMaterials.title')}</h1>
       <Card className="rounded-none border-0 bg-transparent py-0 shadow-none sm:rounded-xl sm:border sm:border-border/80 sm:bg-card sm:py-6 sm:shadow-(--shadow-card)">
         <CardContent className="px-0 pt-0 sm:px-6 sm:pt-6">
           <Button onClick={openCreate} className="mb-4 w-full bg-primary sm:w-auto">
-            <Plus className="w-4 h-4 mr-2" /> Novo material
+            <Plus className="w-4 h-4 mr-2" /> {t('settingsMaterials.newMaterial')}
           </Button>
           {loading ? (
             <div className="flex justify-center py-8">
@@ -106,7 +106,7 @@ export default function SettingsMaterialsPage() {
             </div>
           ) : list.length === 0 ? (
             <div className="rounded-lg border border-gray-300 bg-white py-8 text-center text-sm text-slate-500">
-              Nenhum material cadastrado.
+              {t('settingsMaterials.emptyState')}
             </div>
           ) : (
             <div>
@@ -115,11 +115,11 @@ export default function SettingsMaterialsPage() {
               <Table className="min-w-full border-collapse bg-white text-sm">
                 <TableHeader>
                   <TableRow className="border-b border-gray-300 h-15">
-                    <TableHead>Nome</TableHead>
-                    <TableHead className="text-right">Custo</TableHead>
-                    <TableHead className="text-right">Venda</TableHead>
-                    <TableHead className="text-right">Imposto</TableHead>
-                    <TableHead className="w-30">Ações</TableHead>
+                    <TableHead>{t('settingsMaterials.nameColumn')}</TableHead>
+                    <TableHead className="text-right">{t('settingsMaterials.costColumn')}</TableHead>
+                    <TableHead className="text-right">{t('settingsMaterials.saleColumn')}</TableHead>
+                    <TableHead className="text-right">{t('settingsMaterials.taxColumn')}</TableHead>
+                    <TableHead className="w-30">{t('settingsMaterials.actionsColumn')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -162,15 +162,15 @@ export default function SettingsMaterialsPage() {
                     </div>
                     <div className="mt-2 grid grid-cols-3 gap-2 text-sm">
                       <div>
-                        <p className="text-xs text-muted-foreground">Custo</p>
+                        <p className="text-xs text-muted-foreground">{t('settingsMaterials.costColumn')}</p>
                         <p className="tabular-nums">{fmtBRL(r.cost_price)}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-muted-foreground">Venda</p>
+                        <p className="text-xs text-muted-foreground">{t('settingsMaterials.saleColumn')}</p>
                         <p className="tabular-nums">{fmtBRL(r.private_price)}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-muted-foreground">Imposto</p>
+                        <p className="text-xs text-muted-foreground">{t('settingsMaterials.taxColumn')}</p>
                         <p className="tabular-nums">{r.tax_percentage != null ? `${Number(r.tax_percentage)}%` : '—'}</p>
                       </div>
                     </div>
@@ -194,7 +194,7 @@ export default function SettingsMaterialsPage() {
       <DashboardCreateFormDialog
         open={modalOpen}
         onOpenChange={setModalOpen}
-        title={editingId ? 'Editar material' : 'Novo material'}
+        title={editingId ? t('settingsMaterials.editMaterial') : t('settingsMaterials.newMaterial')}
         contentClassName="modal-responsive"
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
@@ -204,23 +204,23 @@ export default function SettingsMaterialsPage() {
               className="border border-gray-300"
               onClick={() => setModalOpen(false)}
             >
-              Cancelar
+              {t('settingsMaterials.cancel')}
             </Button>
             <Button type="submit" form="material-form" className="bg-primary">
-              {editingId ? 'Salvar' : 'Criar'}
+              {editingId ? t('settingsMaterials.save') : t('settingsMaterials.create')}
             </Button>
           </div>
         }
       >
         <form id="material-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4 md:space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="name">Nome</Label>
-            <Input id="name" placeholder="Nome do material" {...register('name', { required: true })} />
-            {errors.name && <p className="text-sm text-destructive">Campo obrigatório</p>}
+            <Label htmlFor="name">{t('settingsMaterials.nameLabel')}</Label>
+            <Input id="name" placeholder={t('settingsMaterials.namePlaceholder')} {...register('name', { required: true })} />
+            {errors.name && <p className="text-sm text-destructive">{t('settingsMaterials.nameRequired')}</p>}
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div className="space-y-2">
-              <Label htmlFor="cost_price">Custo</Label>
+              <Label htmlFor="cost_price">{t('settingsMaterials.costLabel')}</Label>
               <Controller
                 name="cost_price"
                 control={control}
@@ -230,7 +230,7 @@ export default function SettingsMaterialsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="private_price">Venda</Label>
+              <Label htmlFor="private_price">{t('settingsMaterials.saleLabel')}</Label>
               <Controller
                 name="private_price"
                 control={control}
@@ -240,12 +240,12 @@ export default function SettingsMaterialsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="tax_percentage">Imposto (%)</Label>
+              <Label htmlFor="tax_percentage">{t('settingsMaterials.taxLabel')}</Label>
               <Input id="tax_percentage" type="number" step="0.01" min="0" max="100" placeholder="0" {...register('tax_percentage')} />
             </div>
           </div>
           <p className="text-xs text-muted-foreground">
-            Imposto é adicionado por cima do preço de venda. Margem = venda − custo.
+            {t('settingsMaterials.taxHint')}
           </p>
         </form>
       </DashboardCreateFormDialog>

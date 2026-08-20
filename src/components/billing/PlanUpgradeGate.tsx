@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { Lock, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -23,6 +24,7 @@ interface PlanUpgradeGateProps {
  * de deixar a página tentar carregar dados e falhar com 402 silenciosamente.
  */
 export function PlanUpgradeGate({ requiredPlan, feature, children }: PlanUpgradeGateProps) {
+  const { t } = useTranslation();
   const { data: billing, isLoading } = useBillingStatusQuery();
 
   if (getStoredUserRole() === 'superadmin') return <>{children}</>;
@@ -49,14 +51,14 @@ export function PlanUpgradeGate({ requiredPlan, feature, children }: PlanUpgrade
         </div>
         <div>
           <h2 className="text-lg font-semibold text-foreground">
-            {feature} é um recurso do plano {requiredPlanName}
+            {t('billing.gate.featureOfPlan', { feature, plan: requiredPlanName })}
           </h2>
           <p className="mt-1.5 text-sm text-muted-foreground">
-            Faça upgrade para desbloquear {feature.toLowerCase()} e outros recursos avançados para a sua clínica.
+            {t('billing.gate.upgradeHint', { feature: feature.toLowerCase() })}
           </p>
         </div>
         <Link href="/billing/upgrade">
-          <Button>Ver planos</Button>
+          <Button>{t('billing.gate.viewPlans')}</Button>
         </Link>
       </Card>
     </div>
