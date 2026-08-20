@@ -7,6 +7,9 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 
+export const GOOGLE_PLAY_URL =
+  "https://play.google.com/store/apps/details?id=com.nixvetapp.equipe";
+
 const FAQ_ITEMS = [
   {
     question: "Preciso migrar meus dados atuais para o NixVetApp?",
@@ -36,12 +39,29 @@ const FAQ_ITEMS = [
   {
     question: "O sistema funciona no celular?",
     answer:
-      "Sim, o NixVetApp funciona direto do navegador, em computador ou celular, sem precisar instalar aplicativo.",
+      "Sim, o NixVetApp funciona direto do navegador, em computador ou celular, sem precisar instalar aplicativo. Também temos um aplicativo dedicado, se preferir.",
   },
   {
     question: "Os dados dos meus clientes e pacientes ficam seguros?",
     answer:
       "Sim. Seguimos a LGPD, com dados sensíveis criptografados e logs de auditoria completos sobre quem acessou o quê.",
+  },
+  {
+    question: "Tem aplicativo para celular?",
+    answer: (
+      <>
+        Sim! O NixVetApp já está disponível para Android na{" "}
+        <a
+          href={GOOGLE_PLAY_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-semibold text-brand-deep underline underline-offset-2 hover:text-brand-deep/80"
+        >
+          Google Play
+        </a>
+        . A versão para iOS (Apple Store) chega em breve.
+      </>
+    ),
   },
 ];
 

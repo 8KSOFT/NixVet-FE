@@ -30,9 +30,11 @@ export const metadata: Metadata = {
 };
 
 // Plataforma ainda não tem modo escuro — ignora o tema do SO e mantém a UI
-// nativa do navegador (inputs, scrollbars) sempre no claro.
+// nativa do navegador (inputs, scrollbars) sempre no claro. "only light"
+// (e não só "light") também desliga o force-dark automático do Chrome
+// Android, que senão reescreve as cores da página em alguns aparelhos.
 export const viewport: Viewport = {
-  colorScheme: "light",
+  colorScheme: "only light",
 };
 
 export default function RootLayout({

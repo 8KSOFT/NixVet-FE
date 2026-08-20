@@ -26,9 +26,11 @@
 :root {
   /* Plataforma não tem modo escuro pronto — força os controles nativos do
      navegador (inputs, selects, scrollbars) a sempre renderizar no claro,
-     mesmo com o SO em dark mode. Sem isso, essas peças ficam escuras e
-     destoam do resto do layout, que é sempre claro. */
-  color-scheme: light;
+     mesmo com o SO em dark mode. "only" (em vez de só "light") também
+     desliga o auto-darkening/force-dark do Chrome Android, que sem isso
+     reescreve as cores da página inteira em alguns aparelhos mesmo sem
+     nenhuma regra @media (prefers-color-scheme: dark) no nosso CSS. */
+  color-scheme: only light;
   --app-header-h: 4rem;
   --app-sidebar-w: 260px;
   --app-sidebar-w-collapsed: 72px;

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -21,7 +22,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { DogbackDynamic } from "@/components/shared/componentizedImages/DogbackDynamic";
 import { LogoColored } from "@/components/shared/componentizedImages/LogoColored";
 import { ProductTour } from "@/components/shared/landing/ProductTour";
-import { Faq } from "@/components/shared/landing/Faq";
+import { Faq, GOOGLE_PLAY_URL } from "@/components/shared/landing/Faq";
 
 const FEATURES: LandingPageFeature[] = [
   {
@@ -111,8 +112,8 @@ export default function LandingPage() {
               <p className="text-[15px] text-white/95 tracking-normal mb-8 max-w-80 lg:text-[19px] md:text-[19px] sm:text-[16px] lg:w-115 md:w-115 sm:w-90 lg:max-w-115 md:max-w-115 sm:max-w-90">
                 O NixVetApp junta prontuário, agenda e financeiro num só
                 sistema, e ainda atende seus clientes no WhatsApp: agenda
-                consulta, tira dúvida e avisa vacina fora do horário
-                comercial.
+                consulta, tira dúvida. E avisos sobre agendamentos, vacinas
+                e retornos.
               </p>
             </RevealOnScroll>
           </div>
@@ -590,6 +591,20 @@ export default function LandingPage() {
             Termos do aplicativo
           </Link>
         </div>
+        <Link
+          href={GOOGLE_PLAY_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mb-3 inline-block transition-opacity hover:opacity-80"
+        >
+          <Image
+            src="/images/badges/google-play-badge.png"
+            alt="Disponível no Google Play"
+            width={180}
+            height={53}
+            className="h-13.25 w-auto"
+          />
+        </Link>
         <p className="text-[16px] text-[#565656] lg:text-[22px] md:text-[22px] sm:text-[16px]">
           NixVetApp ©{new Date().getFullYear()} - Todos os direitos reservados.
         </p>
