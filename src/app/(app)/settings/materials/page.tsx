@@ -3,12 +3,13 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { CurrencyInput } from '@/components/ui/currency-input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DashboardCreateFormDialog } from '@/components/dashboard-create-form-dialog';
 import { toast } from 'sonner';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
 import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import { API_PAGE_SIZE } from '@/lib/pagination';
@@ -37,7 +38,7 @@ export default function SettingsMaterialsPage() {
   const [listPage, setListPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<FormValues>();
+  const { register, handleSubmit, reset, control, formState: { errors } } = useForm<FormValues>();
 
   const { data, isLoading: loading } = useMaterialsPagedQuery(listPage);
   const list = data?.items ?? [];
@@ -219,12 +220,24 @@ export default function SettingsMaterialsPage() {
           </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div className="space-y-2">
-              <Label htmlFor="cost_price">Custo (R$)</Label>
-              <Input id="cost_price" type="number" step="0.01" min="0" placeholder="0,00" {...register('cost_price')} />
+              <Label htmlFor="cost_price">Custo</Label>
+              <Controller
+                name="cost_price"
+                control={control}
+                render={({ field }) => (
+                  <CurrencyInput id="cost_price" value={field.value} onValueChange={field.onChange} />
+                )}
+              />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="private_price">Venda (R$)</Label>
-              <Input id="private_price" type="number" step="0.01" min="0" placeholder="0,00" {...register('private_price')} />
+              <Label htmlFor="private_price">Venda</Label>
+              <Controller
+                name="private_price"
+                control={control}
+                render={({ field }) => (
+                  <CurrencyInput id="private_price" value={field.value} onValueChange={field.onChange} />
+                )}
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="tax_percentage">Imposto (%)</Label>

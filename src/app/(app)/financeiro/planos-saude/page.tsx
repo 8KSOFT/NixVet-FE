@@ -29,6 +29,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
+import { CurrencyInput } from '@/components/ui/currency-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
@@ -485,15 +486,8 @@ export default function PlanosSaudeReceivablesPage() {
                 </div>
               </div>
               <div>
-                <Label htmlFor="recv-amount">Valor recebido (R$)</Label>
-                <Input
-                  id="recv-amount"
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  value={receivedAmount}
-                  onChange={(ev) => setReceivedAmount(ev.target.value)}
-                />
+                <Label htmlFor="recv-amount">Valor recebido</Label>
+                <CurrencyInput id="recv-amount" value={receivedAmount} onValueChange={setReceivedAmount} />
                 {Number(receivedAmount) > 0 && Number(receivedAmount) < Number(receiving.expected_amount) && (
                   <p className="mt-1 text-xs text-orange-600">
                     Recebimento parcial — glosa de {fmt(Number(receiving.expected_amount) - Number(receivedAmount))}
@@ -537,15 +531,8 @@ export default function PlanosSaudeReceivablesPage() {
                 </div>
               </div>
               <div>
-                <Label htmlFor="glosa-amount">Valor glosado (R$)</Label>
-                <Input
-                  id="glosa-amount"
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  value={glosaAmount}
-                  onChange={(ev) => setGlosaAmount(ev.target.value)}
-                />
+                <Label htmlFor="glosa-amount">Valor glosado</Label>
+                <CurrencyInput id="glosa-amount" value={glosaAmount} onValueChange={setGlosaAmount} />
               </div>
               <div>
                 <Label htmlFor="glosa-reason">Motivo</Label>

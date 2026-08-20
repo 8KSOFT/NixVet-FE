@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { CurrencyInput } from '@/components/ui/currency-input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -176,26 +177,10 @@ function PlanPricesDialog({
                           </Select>
                         </TableCell>
                         <TableCell>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            placeholder="0,00"
-                            className="h-8"
-                            value={newPlanPrice}
-                            onChange={(e) => setNewPlanPrice(e.target.value)}
-                          />
+                          <CurrencyInput className="h-8" value={newPlanPrice} onValueChange={setNewPlanPrice} />
                         </TableCell>
                         <TableCell>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            placeholder="0,00"
-                            className="h-8"
-                            value={newReimbursement}
-                            onChange={(e) => setNewReimbursement(e.target.value)}
-                          />
+                          <CurrencyInput className="h-8" value={newReimbursement} onValueChange={setNewReimbursement} />
                         </TableCell>
                         <TableCell>
                           <Button
@@ -264,24 +249,13 @@ function PlanPricesDialog({
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-1.5">
                           <Label>Valor cobrado</Label>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            placeholder="0,00"
-                            value={newPlanPrice}
-                            onChange={(e) => setNewPlanPrice(e.target.value)}
-                          />
+                          <CurrencyInput value={newPlanPrice} onValueChange={setNewPlanPrice} />
                         </div>
                         <div className="space-y-1.5">
                           <Label>Reembolso</Label>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            placeholder="0,00"
+                          <CurrencyInput
                             value={newReimbursement}
-                            onChange={(e) => setNewReimbursement(e.target.value)}
+                            onValueChange={setNewReimbursement}
                           />
                         </div>
                       </div>
@@ -615,25 +589,23 @@ export default function SettingsSurgicalProceduresPage() {
             <p className="mb-3 text-sm font-medium text-muted-foreground">Precificação</p>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div className="space-y-2">
-                <Label htmlFor="private_price">Preço Particular (R$)</Label>
-                <Input
-                  id="private_price"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="0,00"
-                  {...register('private_price')}
+                <Label htmlFor="private_price">Preço Particular</Label>
+                <Controller
+                  name="private_price"
+                  control={control}
+                  render={({ field }) => (
+                    <CurrencyInput id="private_price" value={field.value} onValueChange={field.onChange} />
+                  )}
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="cost_price">Custo Interno (R$)</Label>
-                <Input
-                  id="cost_price"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="0,00"
-                  {...register('cost_price')}
+                <Label htmlFor="cost_price">Custo Interno</Label>
+                <Controller
+                  name="cost_price"
+                  control={control}
+                  render={({ field }) => (
+                    <CurrencyInput id="cost_price" value={field.value} onValueChange={field.onChange} />
+                  )}
                 />
               </div>
               <div className="space-y-2">

@@ -34,6 +34,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import { CurrencyInput } from '@/components/ui/currency-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
@@ -910,16 +911,8 @@ export default function LancamentosPage() {
 
               <div className="grid grid-cols-2 items-end gap-3">
                 <div>
-                  <Label htmlFor="discount">Desconto (R$)</Label>
-                  <Input
-                    id="discount"
-                    type="number"
-                    min={0}
-                    step="0.01"
-                    value={discount}
-                    onChange={(ev) => setDiscount(ev.target.value)}
-                    placeholder="0,00"
-                  />
+                  <Label htmlFor="discount">Desconto</Label>
+                  <CurrencyInput id="discount" value={discount} onValueChange={setDiscount} />
                 </div>
                 <div className="text-right text-sm">
                   <span className="text-muted-foreground">Valor real (recebido): </span>
@@ -1042,27 +1035,19 @@ export default function LancamentosPage() {
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label htmlFor="gross-amount">Valor bruto (R$) *</Label>
-                <Input
+                <Label htmlFor="gross-amount">Valor bruto *</Label>
+                <CurrencyInput
                   id="gross-amount"
-                  type="number"
-                  min={0}
-                  step="0.01"
                   value={form.gross_amount}
-                  onChange={(ev) => setField('gross_amount', ev.target.value)}
-                  placeholder="0,00"
+                  onValueChange={(v) => setField('gross_amount', v)}
                 />
               </div>
               <div>
-                <Label htmlFor="discount-amount">Desconto (R$)</Label>
-                <Input
+                <Label htmlFor="discount-amount">Desconto</Label>
+                <CurrencyInput
                   id="discount-amount"
-                  type="number"
-                  min={0}
-                  step="0.01"
                   value={form.discount_amount}
-                  onChange={(ev) => setField('discount_amount', ev.target.value)}
-                  placeholder="0,00"
+                  onValueChange={(v) => setField('discount_amount', v)}
                 />
               </div>
             </div>
