@@ -5,6 +5,7 @@ import type { PatientFormValues, PatientRow } from '@/app/types/patient';
 import { useForm, Controller } from 'react-hook-form';
 import React, { Suspense, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 
@@ -51,9 +52,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
-const NO_TUTOR_REASON_LABELS: Record<string, string> = {
-  EMERGENCIA: 'Emergência',
-  ABANDONO: 'Abandono',
+const NO_TUTOR_REASON_LABEL_KEYS: Record<string, string> = {
+  EMERGENCIA: 'patients.noTutorReason.emergencia',
+  ABANDONO: 'patients.noTutorReason.abandono',
 };
 
 const BREED_DISCRIMINATOR: Record<string, string> = {
@@ -77,10 +78,12 @@ function getBreedDiscriminator(species: string) {
   return BREED_DISCRIMINATOR[code] ?? 'ANIMAL_RACA_OUTRO';
 }
 
-function guardianLabel(record: PatientRow): string {
+function guardianLabel(record: PatientRow, t: TFunction): string {
   if (record.tutor?.name) return record.tutor.name;
   if (record.no_tutor_reason) {
-    return `Sem responsável (${NO_TUTOR_REASON_LABELS[record.no_tutor_reason] ?? record.no_tutor_reason})`;
+    const key = NO_TUTOR_REASON_LABEL_KEYS[record.no_tutor_reason];
+    const reasonLabel = key ? t(key) : record.no_tutor_reason;
+    return t('patients.noTutorLabel', { reason: reasonLabel });
   }
   return '—';
 }
@@ -155,12 +158,12 @@ function PatientsContent() {
     if (!newBreed) return;
     try {
       await createSupportOption.mutateAsync({ discriminator: disc, description: newBreed });
-      toast.success(`Raça "${newBreed}" cadastrada`);
+      toast.success(t('patients.breedCreated', { name: newBreed }));
       setValue('breed', newBreed);
       setBreedSearchValue(newBreed);
       setBreedOpen(false);
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, 'Erro ao cadastrar raça'));
+      toast.error(getApiErrorMessage(error, t('patients.breedCreateError')));
     }
   };
 
@@ -191,7 +194,7 @@ function PatientsContent() {
       handleAdd();
       router.replace(pathname ?? '/patients', { scroll: false });
     } else if (searchParams?.get('intent') === 'start-atendimento') {
-      toast.info('Selecione o paciente para iniciar o atendimento.');
+      toast.info(t('patients.selectPatientToStart'));
       setStartAtendimentoIntent(true);
       router.replace(pathname ?? '/patients', { scroll: false });
     }
@@ -205,7 +208,7 @@ function PatientsContent() {
       router.push(`/medical-records/${created.id}`);
     } catch (error) {
       console.error('Error starting atendimento:', error);
-      toast.error('Erro ao iniciar atendimento');
+      toast.error(t('patients.startAppointmentError'));
       setCreatingRecordFor(null);
     }
   };
@@ -244,7 +247,7 @@ function PatientsContent() {
       await deletePatient.mutateAsync(id);
     } catch (error) {
       console.error('Error deleting patient:', error);
-      toast.error('Erro ao remover paciente');
+      toast.error(t('patients.deleteError'));
     }
   };
 
@@ -271,7 +274,7 @@ function PatientsContent() {
       }
     } catch (error) {
       console.error('Error saving patient:', error);
-      toast.error('Erro ao salvar paciente');
+      toast.error(t('patients.saveError'));
     }
   };
 
@@ -296,7 +299,7 @@ function PatientsContent() {
             <Input
               value={rawSearch}
               onChange={(e) => setRawSearch(e.target.value)}
-              placeholder="Buscar por nome ou nº do chip..."
+              placeholder={t('patients.searchPlaceholder')}
               className="h-9 w-full pl-8"
             />
           </div>
@@ -328,7 +331,7 @@ function PatientsContent() {
         <div className="mb-4 flex flex-col gap-2 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2 text-sm text-slate-700">
             <Stethoscope className="h-4 w-4 shrink-0 text-primary" />
-            Clique em um paciente da lista para iniciar o atendimento.
+            {t('patients.startAtendimentoBanner')}
           </div>
           <Button
             variant="ghost"
@@ -336,18 +339,18 @@ function PatientsContent() {
             className="self-end sm:self-auto"
             onClick={() => setStartAtendimentoIntent(false)}
           >
-            Cancelar
+            {t('patients.cancel')}
           </Button>
         </div>
       )}
 
       {loading ? (
-        <div className="text-center py-8 text-muted-foreground">Carregando...</div>
+        <div className="text-center py-8 text-muted-foreground">{t('patients.loading')}</div>
       ) : (
         <div>
           {patients.length === 0 ? (
             <div className="rounded-lg border border-gray-300 bg-white py-8 text-center text-sm text-slate-500">
-              {search ? `Nenhum paciente encontrado para "${search}".` : 'Nenhum paciente cadastrado.'}
+              {search ? t('patients.emptySearchResult', { search }) : t('patients.emptyState')}
             </div>
           ) : (
             <>
@@ -388,10 +391,10 @@ function PatientsContent() {
                         </TableCell>
                         <TableCell>{record.species}</TableCell>
                         <TableCell>{record.breed}</TableCell>
-                        <TableCell>{guardianLabel(record)}</TableCell>
+                        <TableCell>{guardianLabel(record, t)}</TableCell>
                         <TableCell onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center gap-1">
-                            <Button asChild variant="ghost" size="icon" className="p-0" title="Ver timeline">
+                            <Button asChild variant="ghost" size="icon" className="p-0" title={t('patients.viewTimeline')}>
                               <Link href={`/patients/${record.id}`}>
                                 <History className="w-4 h-4" />
                               </Link>
@@ -407,14 +410,14 @@ function PatientsContent() {
                               </AlertDialogTrigger>
                               <AlertDialogContent>
                                 <AlertDialogHeader>
-                                  <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+                                  <AlertDialogTitle>{t('patients.deleteConfirmTitle')}</AlertDialogTitle>
                                   <AlertDialogDescription>
-                                    Esta ação não pode ser desfeita. O paciente será removido permanentemente.
+                                    {t('patients.deleteConfirmDescription')}
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => handleDelete(record.id)}>Confirmar</AlertDialogAction>
+                                  <AlertDialogCancel>{t('patients.cancel')}</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDelete(record.id)}>{t('patients.confirm')}</AlertDialogAction>
                                 </AlertDialogFooter>
                               </AlertDialogContent>
                             </AlertDialog>
@@ -457,14 +460,14 @@ function PatientsContent() {
 
                     <div className="mt-3 text-sm">
                       <p className="text-xs text-muted-foreground">{t('patients.table.guardian')}</p>
-                      <p className="truncate">{guardianLabel(record)}</p>
+                      <p className="truncate">{guardianLabel(record, t)}</p>
                     </div>
 
                     <div
                       className="mt-3 flex items-center justify-end gap-1 border-t border-gray-200 pt-2"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <Button asChild variant="ghost" size="icon" className="p-0" title="Ver timeline">
+                      <Button asChild variant="ghost" size="icon" className="p-0" title={t('patients.viewTimeline')}>
                         <Link href={`/patients/${record.id}`}>
                           <History className="w-4 h-4" />
                         </Link>
@@ -480,14 +483,14 @@ function PatientsContent() {
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                           <AlertDialogHeader>
-                            <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+                            <AlertDialogTitle>{t('patients.deleteConfirmTitle')}</AlertDialogTitle>
                             <AlertDialogDescription>
-                              Esta ação não pode ser desfeita. O paciente será removido permanentemente.
+                              {t('patients.deleteConfirmDescription')}
                             </AlertDialogDescription>
                           </AlertDialogHeader>
                           <AlertDialogFooter>
-                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleDelete(record.id)}>Confirmar</AlertDialogAction>
+                            <AlertDialogCancel>{t('patients.cancel')}</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDelete(record.id)}>{t('patients.confirm')}</AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
                       </AlertDialog>
@@ -511,7 +514,7 @@ function PatientsContent() {
       <DashboardCreateFormDialog
         open={modalVisible}
         onOpenChange={setModalVisible}
-        title={editingId ? 'Editar Paciente' : 'Novo Paciente'}
+        title={editingId ? t('patients.dialog.editTitle') : t('patients.dialog.createTitle')}
         contentClassName="modal-responsive"
         bodyClassName="select-none"
         footer={
@@ -522,10 +525,10 @@ function PatientsContent() {
               className="border border-gray-300"
               onClick={() => setModalVisible(false)}
             >
-              Cancelar
+              {t('patients.cancel')}
             </Button>
             <Button type="submit" form="patient-create-form">
-              {editingId ? 'Salvar' : 'Criar'}
+              {editingId ? t('patients.save') : t('patients.create')}
             </Button>
           </div>
         }
@@ -543,11 +546,11 @@ function PatientsContent() {
 
           {/* Nome */}
           <div className="space-y-2">
-            <Label htmlFor="name">Nome *</Label>
+            <Label htmlFor="name">{t('patients.form.nameLabel')}</Label>
             <Controller
               name="name"
               control={control}
-              rules={{ required: 'Obrigatório' }}
+              rules={{ required: t('patients.form.required') }}
               render={({ field }) => (
                 <Input
                   className="ring-none border-gray-300 shadow-none"
@@ -562,17 +565,17 @@ function PatientsContent() {
 
           {/* Tutor choice */}
           <div className="space-y-2">
-            <Label>Responsável *</Label>
+            <Label>{t('patients.form.tutorLabel')}</Label>
             {editingId && (
               <p className="text-xs text-muted-foreground">
-                Você pode vincular ou alterar o responsável ao editar o paciente.
+                {t('patients.form.tutorEditHint')}
               </p>
             )}
             <Controller
               name="tutor_choice"
               control={control}
               rules={{
-                required: 'Defina se informa o responsável agora ou não',
+                required: t('patients.form.tutorChoiceRequired'),
               }}
               render={({ field }) => (
                 <RadioGroup
@@ -590,7 +593,7 @@ function PatientsContent() {
                       id="tutor-yes"
                       className="size-4 shrink-0 bg-gray-300 data-[state=checked]:bg-transparent flex items-center justify-center [&_span]:flex [&_span]:items-center [&_span]:justify-center [&_span]:size-full [&_svg]:!size-[85%] [&_svg]:fill-current"
                     />
-                    <span className="text-sm font-normal text-foreground">Informar responsável</span>
+                    <span className="text-sm font-normal text-foreground">{t('patients.form.tutorChoiceYes')}</span>
                   </label>
 
                   {/* Linha Divisória Central */}
@@ -606,7 +609,7 @@ function PatientsContent() {
                       id="tutor-no"
                       className="size-4 shrink-0 bg-gray-300 data-[state=checked]:bg-transparent flex items-center justify-center [&_span]:flex [&_span]:items-center [&_span]:justify-center [&_span]:size-full [&_svg]:!size-[85%] [&_svg]:fill-current"
                     />
-                    <span className="text-sm font-normal text-foreground">Não informar</span>
+                    <span className="text-sm font-normal text-foreground">{t('patients.form.tutorChoiceNo')}</span>
                   </label>
                 </RadioGroup>
               )}
@@ -625,17 +628,17 @@ function PatientsContent() {
               {/* CASO: Informar responsável agora */}
               {watchedTutorChoice === 'yes' && (
                 <>
-                  <Label>Selecione o responsável *</Label>
+                  <Label>{t('patients.form.selectTutorLabel')}</Label>
                   <Controller
                     name="tutor_id"
                     control={control}
                     rules={{
-                      required: watchedTutorChoice === 'yes' ? 'Selecione um responsável' : false,
+                      required: watchedTutorChoice === 'yes' ? t('patients.form.selectTutorRequired') : false,
                     }}
                     render={({ field }) => (
                       <Select value={field.value ?? ''} onValueChange={field.onChange}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Selecione um responsável" />
+                          <SelectValue placeholder={t('patients.form.selectTutorPlaceholder')} />
                         </SelectTrigger>
                         <SelectContent>
                           {tutors.map((tutor) => (
@@ -654,21 +657,21 @@ function PatientsContent() {
               {/* CASO: Não informar responsável */}
               {watchedTutorChoice === 'no' && (
                 <>
-                  <Label>Motivo *</Label>
+                  <Label>{t('patients.form.reasonLabel')}</Label>
                   <Controller
                     name="no_tutor_reason"
                     control={control}
                     rules={{
-                      required: watchedTutorChoice === 'no' ? 'Informe o motivo' : false,
+                      required: watchedTutorChoice === 'no' ? t('patients.form.reasonRequired') : false,
                     }}
                     render={({ field }) => (
                       <Select value={field.value ?? ''} onValueChange={field.onChange}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Selecione o motivo" />
+                          <SelectValue placeholder={t('patients.form.selectReasonPlaceholder')} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="EMERGENCIA">{NO_TUTOR_REASON_LABELS.EMERGENCIA}</SelectItem>
-                          <SelectItem value="ABANDONO">{NO_TUTOR_REASON_LABELS.ABANDONO}</SelectItem>
+                          <SelectItem value="EMERGENCIA">{t('patients.noTutorReason.emergencia')}</SelectItem>
+                          <SelectItem value="ABANDONO">{t('patients.noTutorReason.abandono')}</SelectItem>
                         </SelectContent>
                       </Select>
                     )}
@@ -684,11 +687,11 @@ function PatientsContent() {
           {/* Espécie + Raça */}
           <div className="grid grid-cols-2 md:grid-cols-2 gap-4 md:gap-4 max-md:grid-cols-2">
             <div className="space-y-1">
-              <Label>Espécie *</Label>
+              <Label>{t('patients.form.speciesLabel')}</Label>
               <Controller
                 name="species"
                 control={control}
-                rules={{ required: 'Obrigatório' }}
+                rules={{ required: t('patients.form.required') }}
                 render={({ field }) => (
                   <Select
                     value={field.value ?? ''}
@@ -699,7 +702,7 @@ function PatientsContent() {
                     }}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
+                      <SelectValue placeholder={t('patients.form.selectPlaceholder')} />
                     </SelectTrigger>
                     <SelectContent>
                       {speciesOptions.map((o) => (
@@ -716,18 +719,18 @@ function PatientsContent() {
 
             {/* Raça — autocomplete (Input + sugestões), 3+ letras */}
             <div className="space-y-1">
-              <Label>Raça *</Label>
+              <Label>{t('patients.form.breedLabel')}</Label>
               <Controller
                 name="breed"
                 control={control}
-                rules={{ required: 'Obrigatório' }}
+                rules={{ required: t('patients.form.required') }}
                 render={({ field }) => (
                   <div className="relative">
                     <Input
                       value={breedSearchValue}
                       disabled={!watchedSpecies}
                       autoComplete="off"
-                      placeholder={watchedSpecies ? 'Digite a raça (mín. 3 letras)' : 'Selecione primeiro a espécie'}
+                      placeholder={watchedSpecies ? t('patients.form.breedPlaceholder') : t('patients.form.selectSpeciesFirstPlaceholder')}
                       onFocus={() => setBreedOpen(true)}
                       onBlur={() => window.setTimeout(() => setBreedOpen(false), 150)}
                       onChange={(e) => {
@@ -741,11 +744,11 @@ function PatientsContent() {
                       <div className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border bg-popover p-1 shadow-md">
                         {!canSearchBreed ? (
                           <div className="px-2 py-3 text-center text-sm text-muted-foreground">
-                            Digite ao menos 3 letras para buscar a raça
+                            {t('patients.form.breedMinChars')}
                           </div>
                         ) : filteredBreeds.length === 0 && !showAddBreed ? (
                           <div className="px-2 py-3 text-center text-sm text-muted-foreground">
-                            Nenhuma raça encontrada.
+                            {t('patients.form.breedNotFound')}
                           </div>
                         ) : (
                           <>
@@ -771,7 +774,7 @@ function PatientsContent() {
                                 onClick={() => handleAddBreed(breedSearchValue.trim())}
                                 className="flex w-full items-center rounded-sm px-2 py-1.5 text-left text-sm text-primary hover:bg-accent"
                               >
-                                <Plus className="mr-2 h-4 w-4" /> Cadastrar &quot;{breedSearchValue.trim()}&quot;
+                                <Plus className="mr-2 h-4 w-4" /> {t('patients.form.registerBreed', { name: breedSearchValue.trim() })}
                               </button>
                             )}
                           </>
@@ -788,11 +791,11 @@ function PatientsContent() {
           {/* Idade, Peso, Sexo, Microchip */}
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
             <div className="space-y-1">
-              <Label htmlFor="age">Idade (anos) *</Label>
+              <Label htmlFor="age">{t('patients.form.ageLabel')}</Label>
               <Controller
                 name="age"
                 control={control}
-                rules={{ required: 'Obrigatório' }}
+                rules={{ required: t('patients.form.required') }}
                 render={({ field }) => (
                   <Input
                     id="age"
@@ -806,11 +809,11 @@ function PatientsContent() {
               {errors.age && <p className="text-sm text-destructive">{errors.age.message}</p>}
             </div>
             <div className="space-y-1">
-              <Label htmlFor="weight">Peso (kg) *</Label>
+              <Label htmlFor="weight">{t('patients.form.weightLabel')}</Label>
               <Controller
                 name="weight"
                 control={control}
-                rules={{ required: 'Obrigatório' }}
+                rules={{ required: t('patients.form.required') }}
                 render={({ field }) => (
                   <Input
                     id="weight"
@@ -825,15 +828,15 @@ function PatientsContent() {
               {errors.weight && <p className="text-sm text-destructive">{errors.weight.message}</p>}
             </div>
             <div className="space-y-1">
-              <Label>Sexo *</Label>
+              <Label>{t('patients.form.sexLabel')}</Label>
               <Controller
                 name="sex"
                 control={control}
-                rules={{ required: 'Obrigatório' }}
+                rules={{ required: t('patients.form.required') }}
                 render={({ field }) => (
                   <Select value={field.value ?? ''} onValueChange={field.onChange}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
+                      <SelectValue placeholder={t('patients.form.selectPlaceholder')} />
                     </SelectTrigger>
                     <SelectContent>
                       {sexOptions.map((o) => (
@@ -848,7 +851,7 @@ function PatientsContent() {
               {errors.sex && <p className="text-sm text-destructive">{errors.sex.message}</p>}
             </div>
             <div className="space-y-1">
-              <Label htmlFor="chip_number">Nº Microchip</Label>
+              <Label htmlFor="chip_number">{t('patients.form.chipLabel')}</Label>
               <Controller
                 name="chip_number"
                 control={control}
@@ -863,8 +866,9 @@ function PatientsContent() {
 }
 
 export default function PatientsPage() {
+  const { t } = useTranslation('common');
   return (
-    <Suspense fallback={<div className="p-6">Carregando...</div>}>
+    <Suspense fallback={<div className="p-6">{t('patients.loading')}</div>}>
       <PatientsContent />
     </Suspense>
   );

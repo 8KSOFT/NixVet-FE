@@ -54,6 +54,7 @@ import {
 } from 'lucide-react';
 import { formatTimeBr, formatConsultationWeekdayDate, formatTimeRangeBr } from '@/lib/datetime-br';
 import { useTranslation } from 'react-i18next';
+import { useCurrencyFormatter, resolveAppLanguage, CURRENCY_BY_LANGUAGE } from '@/lib/i18n/currency';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import type { AvailabilitySlot, Consultation } from '@/app/types/consultation';
 import type { GoogleEvent } from '@/app/types/google-integration';
@@ -90,23 +91,6 @@ function getApiErrorMessage(error: unknown, fallbackMessage: string): string {
 
 type ViewMode = 'day' | 'week' | 'month' | 'year';
 
-const WEEKDAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-const PT_MONTHS = [
-  'Janeiro',
-  'Fevereiro',
-  'Março',
-  'Abril',
-  'Maio',
-  'Junho',
-  'Julho',
-  'Agosto',
-  'Setembro',
-  'Outubro',
-  'Novembro',
-  'Dezembro',
-];
-const PT_MONTHS_SHORT = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-
 function buildCalendarDays(month: Dayjs): Dayjs[] {
   const start = month.startOf('month');
   const end = month.endOf('month');
@@ -123,14 +107,18 @@ function buildWeekDays(date: Dayjs): Dayjs[] {
   return Array.from({ length: 7 }, (_, i) => start.add(i, 'day'));
 }
 
-function formatDuration(m: number) {
-  if (m < 60) return `${m} min`;
-  const h = Math.floor(m / 60);
-  const r = m % 60;
-  return r ? `${h}h ${r}min` : `${h}h`;
-}
-
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
+
+// Valores enviados como `species` ao backend permanecem em português (dado
+// gravado no cadastro do paciente) — só o rótulo exibido é traduzido via `key`.
+const SPECIES_OPTIONS = [
+  { value: 'Canino', key: 'canine' },
+  { value: 'Felino', key: 'feline' },
+  { value: 'Ave', key: 'bird' },
+  { value: 'Coelho', key: 'rabbit' },
+  { value: 'Réptil', key: 'reptile' },
+  { value: 'Outro', key: 'other' },
+] as const;
 
 function SlotSelect({
   veterinarianId,
@@ -145,21 +133,22 @@ function SlotSelect({
   value: string;
   onChange: (v: string) => void;
 }) {
+  const { t } = useTranslation('common');
   const opts = (veterinarianId ? (availability.find((a) => a.vetId === veterinarianId)?.slots ?? []) : []).map((s) => ({
     value: s,
     label: formatTimeBr(s),
   }));
   return (
     <div className="w-full space-y-2">
-      <Label>Horário disponível *</Label>
+      <Label>{t('calendar.appointmentDialog.availableSlotLabel')}</Label>
       {availabilityLoading ? (
         <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
-          <Loader2 className="h-4 w-4 animate-spin" /> Carregando...
+          <Loader2 className="h-4 w-4 animate-spin" /> {t('calendar.loading')}
         </div>
       ) : (
         <Select value={value} onValueChange={onChange}>
           <SelectTrigger className="w-full">
-            <SelectValue placeholder="Selecione" />
+            <SelectValue placeholder={t('calendar.selectPlaceholder')} />
           </SelectTrigger>
           <SelectContent>
             {opts.map((o) => (
@@ -175,7 +164,52 @@ function SlotSelect({
 }
 
 function CalendarContent() {
-  const { t } = useTranslation('common');
+  const { t, i18n } = useTranslation('common');
+  const fmt = useCurrencyFormatter();
+  const currencySymbol = CURRENCY_BY_LANGUAGE[resolveAppLanguage(i18n.language)].symbol;
+  const WEEKDAYS = [
+    t('calendar.weekdaysShort.sun'),
+    t('calendar.weekdaysShort.mon'),
+    t('calendar.weekdaysShort.tue'),
+    t('calendar.weekdaysShort.wed'),
+    t('calendar.weekdaysShort.thu'),
+    t('calendar.weekdaysShort.fri'),
+    t('calendar.weekdaysShort.sat'),
+  ];
+  const MONTHS = [
+    t('calendar.months.jan'),
+    t('calendar.months.feb'),
+    t('calendar.months.mar'),
+    t('calendar.months.apr'),
+    t('calendar.months.may'),
+    t('calendar.months.jun'),
+    t('calendar.months.jul'),
+    t('calendar.months.aug'),
+    t('calendar.months.sep'),
+    t('calendar.months.oct'),
+    t('calendar.months.nov'),
+    t('calendar.months.dec'),
+  ];
+  const MONTHS_SHORT = [
+    t('calendar.monthsShort.jan'),
+    t('calendar.monthsShort.feb'),
+    t('calendar.monthsShort.mar'),
+    t('calendar.monthsShort.apr'),
+    t('calendar.monthsShort.may'),
+    t('calendar.monthsShort.jun'),
+    t('calendar.monthsShort.jul'),
+    t('calendar.monthsShort.aug'),
+    t('calendar.monthsShort.sep'),
+    t('calendar.monthsShort.oct'),
+    t('calendar.monthsShort.nov'),
+    t('calendar.monthsShort.dec'),
+  ];
+  const formatDuration = (m: number) => {
+    if (m < 60) return t('calendar.durationMin', { value: m });
+    const h = Math.floor(m / 60);
+    const r = m % 60;
+    return r ? t('calendar.durationHoursMin', { hours: h, minutes: r }) : t('calendar.durationHours', { hours: h });
+  };
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -360,12 +394,12 @@ function CalendarContent() {
 
   const formatStatus = (s?: string) =>
     s === 'completed'
-      ? 'Realizada'
+      ? t('calendar.status.completed')
       : s === 'cancelled'
-        ? 'Cancelada'
+        ? t('calendar.status.cancelled')
         : s === 'no_show'
-          ? 'Não Compareceu'
-          : 'Agendada';
+          ? t('calendar.status.noShow')
+          : t('calendar.status.scheduled');
   const statusColor = (s?: string) =>
     s === 'completed'
       ? 'bg-green-500'
@@ -390,7 +424,9 @@ function CalendarContent() {
     modalVisible && !!availabilityDate,
   );
   useEffect(() => {
-    if (availabilityError) toast.error(getApiErrorMessage(availabilityError, 'Erro ao carregar horários'));
+    if (availabilityError)
+      toast.error(getApiErrorMessage(availabilityError, t('calendar.appointmentDialog.loadSlotsError')));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [availabilityError]);
 
   const handleAdd = () => {
@@ -435,7 +471,7 @@ function CalendarContent() {
 
   const handleCreatePatientAndSubmit = async () => {
     if (!newPet.name || !newPet.species || !newPet.breed || !newPet.sex || !newPet.age || !newPet.weight) {
-      toast.error('Preencha todos os campos do pet');
+      toast.error(t('calendar.appointmentDialog.fillPetFields'));
       return;
     }
     setCreatingPatient(true);
@@ -443,7 +479,7 @@ function CalendarContent() {
       let tutorId: string | null = null;
       if (newTutorMode) {
         if (!newTutor.name || !newTutor.phone || !newTutor.email || !newTutor.cpf || !newTutor.cep) {
-          toast.error('Preencha nome, telefone, e-mail, CPF e CEP do tutor');
+          toast.error(t('calendar.appointmentDialog.fillTutorFields'));
           setCreatingPatient(false);
           return;
         }
@@ -473,7 +509,7 @@ function CalendarContent() {
       setNewPatientMode(false);
       setFormData((prev) => ({ ...prev, patient_id: patientId }));
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, 'Erro ao cadastrar pet/tutor'));
+      toast.error(getApiErrorMessage(error, t('calendar.appointmentDialog.createPetTutorError')));
     } finally {
       setCreatingPatient(false);
     }
@@ -481,7 +517,7 @@ function CalendarContent() {
 
   const handleSubmit = async () => {
     if (!formData.patient_id || !formData.veterinarian_id || !formData.price) {
-      toast.error('Preencha os campos obrigatórios');
+      toast.error(t('calendar.appointmentDialog.fillRequiredFields'));
       return;
     }
     const tp = appointmentTypes.find((t) => t.id === formData.appointment_type_id);
@@ -500,7 +536,7 @@ function CalendarContent() {
           .toISOString()
       : selectedDay.toISOString();
     if (dayjs(startIso).isAfter(dayjs().add(30, 'day').endOf('day'))) {
-      toast.error('Agendamentos online são permitidos apenas até 30 dias à frente.');
+      toast.error(t('calendar.appointmentDialog.onlineBookingLimit'));
       return;
     }
     const endIso = dayjs(startIso).add(durationMinutes, 'minute').toISOString();
@@ -520,7 +556,7 @@ function CalendarContent() {
       });
       setModalVisible(false);
     } catch (e: unknown) {
-      toast.error(getApiErrorMessage(e, 'Erro ao agendar consulta'));
+      toast.error(getApiErrorMessage(e, t('calendar.appointmentDialog.scheduleError')));
     }
   };
 
@@ -530,7 +566,7 @@ function CalendarContent() {
       await updateConsultation.mutateAsync({ id: selectedConsultation.id, payload: { status: 'completed' } });
       setDetailsVisible(false);
     } catch {
-      toast.error('Erro');
+      toast.error(t('calendar.genericError'));
     }
   };
   const handleConfirmPayment = async () => {
@@ -539,7 +575,7 @@ function CalendarContent() {
       await updateConsultation.mutateAsync({ id: selectedConsultation.id, payload: { paid: true } });
       setDetailsVisible(false);
     } catch {
-      toast.error('Erro');
+      toast.error(t('calendar.genericError'));
     }
   };
 
@@ -554,7 +590,7 @@ function CalendarContent() {
       });
       router.push(`/medical-records/${record.id}`);
     } catch (e: unknown) {
-      toast.error(getApiErrorMessage(e, 'Erro ao iniciar atendimento'));
+      toast.error(getApiErrorMessage(e, t('calendar.details.startAttendanceError')));
     }
   };
 
@@ -562,10 +598,10 @@ function CalendarContent() {
     if (!selectedConsultation) return;
     try {
       await markNoShowConsultation.mutateAsync(selectedConsultation.id);
-      toast.success('Consulta marcada como não comparecimento.');
+      toast.success(t('calendar.details.noShowSuccess'));
       setDetailsVisible(false);
     } catch (e: unknown) {
-      toast.error(getApiErrorMessage(e, 'Erro ao marcar não comparecimento'));
+      toast.error(getApiErrorMessage(e, t('calendar.details.noShowError')));
     }
   };
 
@@ -573,10 +609,10 @@ function CalendarContent() {
     if (!selectedConsultation) return;
     try {
       await cancelConsultation.mutateAsync(selectedConsultation.id);
-      toast.success('Consulta cancelada.');
+      toast.success(t('calendar.details.cancelSuccess'));
       setDetailsVisible(false);
     } catch (e: unknown) {
-      toast.error(getApiErrorMessage(e, 'Erro ao cancelar consulta'));
+      toast.error(getApiErrorMessage(e, t('calendar.details.cancelError')));
     }
   };
 
@@ -593,7 +629,7 @@ function CalendarContent() {
       setRescheduleVisible(false);
       setDetailsVisible(false);
     } catch {
-      toast.error('Erro ao reagendar');
+      toast.error(t('calendar.reschedule.error'));
     }
   };
 
@@ -611,8 +647,8 @@ function CalendarContent() {
     try {
       const r = await structureMutation.mutateAsync(formData.observations);
       const s = [
-        ...(r?.symptoms ?? []).map((x) => `Sintoma: ${x}`),
-        ...(r?.possible_diagnosis ?? []).map((x) => `Diagnóstico: ${x}`),
+        ...(r?.symptoms ?? []).map((x) => `${t('calendar.appointmentDialog.symptomPrefix')} ${x}`),
+        ...(r?.possible_diagnosis ?? []).map((x) => `${t('calendar.appointmentDialog.diagnosisPrefix')} ${x}`),
       ].join('\n');
       if (s)
         setFormData((p) => ({
@@ -638,8 +674,9 @@ function CalendarContent() {
       return `${s.format('DD/MM')} - ${e.format('DD/MM/YYYY')}`;
     }
     if (viewMode === 'year') return String(currentMonth.year());
-    return `${PT_MONTHS[currentMonth.month()]} ${currentMonth.year()}`;
-  }, [viewMode, currentMonth]);
+    return `${MONTHS[currentMonth.month()]} ${currentMonth.year()}`;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewMode, currentMonth, t]);
 
   const toggleResource = (id: string) =>
     setFormData((p) => ({
@@ -710,8 +747,12 @@ function CalendarContent() {
                       className={cn('text-xs px-2 py-1 rounded cursor-pointer', statusColor(c.status), 'text-white')}
                       onClick={() => openDetails(c)}
                     >
-                      {c.patient?.name} ({c.veterinarian?.name}) das {dayjs(c.consultation_date).format('HH:mm')} às{' '}
-                      {dayjs(c.consultation_date).add(30, 'minute').format('HH:mm')}
+                      {t('calendar.dayView.appointmentTimeRange', {
+                        patient: c.patient?.name,
+                        vet: c.veterinarian?.name,
+                        start: dayjs(c.consultation_date).format('HH:mm'),
+                        end: dayjs(c.consultation_date).add(30, 'minute').format('HH:mm'),
+                      })}
                     </div>
                   ))}
                   {hourGoogle.map((e) => (
@@ -865,7 +906,7 @@ function CalendarContent() {
               }}
             >
               <div
-                title="Ver dia"
+                title={t('calendar.monthView.viewDayTooltip')}
                 className={cn(
                   'text-sm font-medium w-6 h-6 flex items-center justify-center rounded-full mb-1 cursor-pointer hover:ring-2 ring-primary/50 transition',
                   isToday && 'bg-primary text-white',
@@ -894,7 +935,7 @@ function CalendarContent() {
                       setViewMode('day');
                     }}
                   >
-                    +{items.length - 3} mais
+                    {t('calendar.monthView.moreCount', { count: items.length - 3 })}
                   </li>
                 )}
                 {gEv.slice(0, 2).map(renderGoogleDot)}
@@ -923,7 +964,7 @@ function CalendarContent() {
                 setViewMode('month');
               }}
             >
-              <h3 className="text-sm font-semibold mb-2">{PT_MONTHS_SHORT[m]}</h3>
+              <h3 className="text-sm font-semibold mb-2">{MONTHS_SHORT[m]}</h3>
               <div className="grid grid-cols-7 gap-0.5">
                 {WEEKDAYS.map((d) => (
                   <div key={d} className="text-[8px] text-muted-foreground/60 text-center">
@@ -951,8 +992,7 @@ function CalendarContent() {
               </div>
               {monthConsultations.length > 0 && (
                 <div className="text-[10px] text-primary mt-1">
-                  {monthConsultations.length} consulta
-                  {monthConsultations.length > 1 ? 's' : ''}
+                  {t('calendar.yearView.consultationsCount', { count: monthConsultations.length })}
                 </div>
               )}
             </div>
@@ -982,10 +1022,10 @@ function CalendarContent() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="day">Dia</SelectItem>
-                  <SelectItem value="week">Semana</SelectItem>
-                  <SelectItem value="month">Mês</SelectItem>
-                  <SelectItem value="year">Ano</SelectItem>
+                  <SelectItem value="day">{t('calendar.viewModes.day')}</SelectItem>
+                  <SelectItem value="week">{t('calendar.viewModes.week')}</SelectItem>
+                  <SelectItem value="month">{t('calendar.viewModes.month')}</SelectItem>
+                  <SelectItem value="year">{t('calendar.viewModes.year')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -998,7 +1038,7 @@ function CalendarContent() {
               size="sm"
               className="flex-1"
             >
-              Hoje
+              {t('calendar.today')}
             </Button>
           </div>
 
@@ -1006,10 +1046,10 @@ function CalendarContent() {
           <div className="hidden items-center gap-2 sm:flex">
             <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as ViewMode)}>
               <TabsList>
-                <TabsTrigger value="day">Dia</TabsTrigger>
-                <TabsTrigger value="week">Semana</TabsTrigger>
-                <TabsTrigger value="month">Mês</TabsTrigger>
-                <TabsTrigger value="year">Ano</TabsTrigger>
+                <TabsTrigger value="day">{t('calendar.viewModes.day')}</TabsTrigger>
+                <TabsTrigger value="week">{t('calendar.viewModes.week')}</TabsTrigger>
+                <TabsTrigger value="month">{t('calendar.viewModes.month')}</TabsTrigger>
+                <TabsTrigger value="year">{t('calendar.viewModes.year')}</TabsTrigger>
               </TabsList>
             </Tabs>
             <Button
@@ -1020,7 +1060,7 @@ function CalendarContent() {
               variant="outline"
               size="sm"
             >
-              Hoje
+              {t('calendar.today')}
             </Button>
           </div>
 
@@ -1037,7 +1077,7 @@ function CalendarContent() {
         >
           <span className="flex items-center gap-2">
             <CalendarClock className="size-4 shrink-0" />
-            {awaitingFollowupsCount} acompanhamento{awaitingFollowupsCount > 1 ? 's' : ''} aguardando retorno
+            {t('calendar.followupsAwaiting', { count: awaitingFollowupsCount })}
           </span>
           <ChevronRight className="size-4 shrink-0" />
         </Link>
@@ -1055,13 +1095,14 @@ function CalendarContent() {
           </div>
           {googleDiag?.tokenStatus === 'expired' && (
             <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2 flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4" /> Token expirado. Desconecte e reconecte a integração Google.
+              <AlertTriangle className="w-4 h-4" /> {t('calendar.google.tokenExpired')}
             </div>
           )}
           {googleEvents.length === 0 && googleDiag?.tokenStatus === 'valid' && (
             <div className="text-xs text-primary bg-primary/10 border border-primary/20 rounded px-3 py-2">
-              Nenhum evento Google Calendar neste mês. Calendário: {String(googleDiag?.calendarId || 'primary')} | Para
-              debugar: acesse <code className="bg-blue-100 px-1 rounded">/api/integrations/google/debug-events</code>
+              {t('calendar.google.noEventsThisMonth')} {t('calendar.google.calendarLabel')}:{' '}
+              {String(googleDiag?.calendarId || 'primary')} | {t('calendar.google.debugHint')}{' '}
+              <code className="bg-blue-100 px-1 rounded">/api/integrations/google/debug-events</code>
             </div>
           )}
         </div>
@@ -1116,15 +1157,15 @@ function CalendarContent() {
       <DashboardCreateFormDialog
         open={modalVisible}
         onOpenChange={setModalVisible}
-        title="Agendar Consulta"
+        title={t('calendar.scheduleConsultation')}
         containerClassName="w-full mx-auto"
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button variant="outline" onClick={() => setModalVisible(false)}>
-              Cancelar
+              {t('calendar.cancel')}
             </Button>
             <Button onClick={handleSubmit} className="bg-primary" disabled={newPatientMode}>
-              Agendar
+              {t('calendar.appointmentDialog.submitButton')}
             </Button>
           </div>
         }
@@ -1135,7 +1176,7 @@ function CalendarContent() {
             {!newPatientMode ? (
               <div className="grid w-full grid-cols-1 gap-4 md:grid-cols-2">
                 <div className="space-y-2 min-w-0 w-full">
-                  <Label>Tutor</Label>
+                  <Label>{t('calendar.appointmentDialog.tutorLabel')}</Label>
                   <Select
                     value={patientFilterTutorId || '_all'}
                     onValueChange={(v) => {
@@ -1145,10 +1186,10 @@ function CalendarContent() {
                     }}
                   >
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Todos os tutores" />
+                      <SelectValue placeholder={t('calendar.appointmentDialog.allTutorsPlaceholder')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="_all">Todos</SelectItem>
+                      <SelectItem value="_all">{t('calendar.appointmentDialog.allOption')}</SelectItem>
                       {tutors.map((t) => (
                         <SelectItem key={t.id} value={t.id}>
                           {t.name}
@@ -1158,13 +1199,13 @@ function CalendarContent() {
                   </Select>
                 </div>
                 <div className="space-y-2 min-w-0 w-full">
-                  <Label>Paciente *</Label>
+                  <Label>{t('calendar.appointmentDialog.patientLabel')}</Label>
                   <Select
                     value={formData.patient_id}
                     onValueChange={(v) => setFormData((p) => ({ ...p, patient_id: v }))}
                   >
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Selecione" />
+                      <SelectValue placeholder={t('calendar.selectPlaceholder')} />
                     </SelectTrigger>
                     <SelectContent>
                       {patients.map((p) => (
@@ -1179,14 +1220,14 @@ function CalendarContent() {
                     className="text-xs text-primary underline flex items-center gap-1 mt-1"
                     onClick={() => setNewPatientMode(true)}
                   >
-                    <PawPrint className="w-3 h-3" /> Cadastrar novo pet
+                    <PawPrint className="w-3 h-3" /> {t('calendar.appointmentDialog.registerNewPet')}
                   </button>
                 </div>
               </div>
             ) : (
               <div className="space-y-4 md:space-y-6">
                 <div className="space-y-2">
-                  <Label>Tutor</Label>
+                  <Label>{t('calendar.appointmentDialog.tutorLabel')}</Label>
                   <Select
                     value={patientFilterTutorId || '_all'}
                     onValueChange={(v) => {
@@ -1196,10 +1237,10 @@ function CalendarContent() {
                     }}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Todos os tutores" />
+                      <SelectValue placeholder={t('calendar.appointmentDialog.allTutorsPlaceholder')} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="_all">Todos</SelectItem>
+                      <SelectItem value="_all">{t('calendar.appointmentDialog.allOption')}</SelectItem>
                       {tutors.map((t) => (
                         <SelectItem key={t.id} value={t.id}>
                           {t.name}
@@ -1211,14 +1252,14 @@ function CalendarContent() {
                 <div className="border border-primary/30 rounded-lg p-3 bg-primary/5 space-y-4">
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-medium text-primary flex items-center gap-1.5">
-                      <PawPrint className="w-4 h-4" /> Novo Pet
+                      <PawPrint className="w-4 h-4" /> {t('calendar.appointmentDialog.newPetSection')}
                     </p>
                     <button
                       type="button"
                       className="text-xs text-muted-foreground hover:text-foreground"
                       onClick={() => setNewPatientMode(false)}
                     >
-                      Cancelar
+                      {t('calendar.cancel')}
                     </button>
                   </div>
 
@@ -1226,7 +1267,7 @@ function CalendarContent() {
                   <div className="space-y-4">
                     <div className="grid grid-cols-1 gap-2 md:grid-cols-[3fr_1.25fr_1.25fr]">
                       <div className="space-y-1 min-w-0">
-                        <Label className="text-xs">Nome *</Label>
+                        <Label className="text-xs">{t('calendar.appointmentDialog.nameLabel')}</Label>
                         <Input
                           className="h-8 text-sm"
                           value={newPet.name}
@@ -1234,36 +1275,36 @@ function CalendarContent() {
                         />
                       </div>
                       <div className="space-y-1 min-w-0">
-                        <Label className="text-xs">Espécie *</Label>
+                        <Label className="text-xs">{t('calendar.appointmentDialog.speciesLabel')}</Label>
                         <Select value={newPet.species} onValueChange={(v) => setNewPet((p) => ({ ...p, species: v }))}>
                           <SelectTrigger className="h-8 w-full text-sm">
-                            <SelectValue placeholder="Selecione" />
+                            <SelectValue placeholder={t('calendar.selectPlaceholder')} />
                           </SelectTrigger>
                           <SelectContent>
-                            {['Canino', 'Felino', 'Ave', 'Coelho', 'Réptil', 'Outro'].map((s) => (
-                              <SelectItem key={s} value={s}>
-                                {s}
+                            {SPECIES_OPTIONS.map((s) => (
+                              <SelectItem key={s.value} value={s.value}>
+                                {t(`calendar.appointmentDialog.species.${s.key}`)}
                               </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                       </div>
                       <div className="space-y-1 min-w-0">
-                        <Label className="text-xs">Sexo *</Label>
+                        <Label className="text-xs">{t('calendar.appointmentDialog.sexLabel')}</Label>
                         <Select value={newPet.sex} onValueChange={(v) => setNewPet((p) => ({ ...p, sex: v }))}>
                           <SelectTrigger className="h-8 w-full text-sm">
-                            <SelectValue placeholder="Selecione" />
+                            <SelectValue placeholder={t('calendar.selectPlaceholder')} />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="Macho">Macho</SelectItem>
-                            <SelectItem value="Fêmea">Fêmea</SelectItem>
+                            <SelectItem value="Macho">{t('calendar.appointmentDialog.sex.male')}</SelectItem>
+                            <SelectItem value="Fêmea">{t('calendar.appointmentDialog.sex.female')}</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                     </div>
                     <div className="grid grid-cols-1 gap-2 md:grid-cols-[3fr_1.25fr_1.25fr]">
                       <div className="space-y-1 min-w-0">
-                        <Label className="text-xs">Raça *</Label>
+                        <Label className="text-xs">{t('calendar.appointmentDialog.breedLabel')}</Label>
                         <Input
                           className="h-8 text-sm"
                           value={newPet.breed}
@@ -1271,7 +1312,7 @@ function CalendarContent() {
                         />
                       </div>
                       <div className="space-y-1 min-w-0">
-                        <Label className="text-xs">Peso (kg) *</Label>
+                        <Label className="text-xs">{t('calendar.appointmentDialog.weightLabel')}</Label>
                         <Input
                           className="h-8 text-sm"
                           type="number"
@@ -1282,7 +1323,7 @@ function CalendarContent() {
                         />
                       </div>
                       <div className="space-y-1 min-w-0">
-                        <Label className="text-xs">Idade (anos) *</Label>
+                        <Label className="text-xs">{t('calendar.appointmentDialog.ageLabel')}</Label>
                         <Input
                           className="h-8 text-sm"
                           type="number"
@@ -1296,7 +1337,7 @@ function CalendarContent() {
 
                   {/* Tutor section */}
                   <div className="border-t pt-4 space-y-4">
-                    <p className="text-xs font-medium text-muted-foreground">Tutor</p>
+                    <p className="text-xs font-medium text-muted-foreground">{t('calendar.appointmentDialog.tutorLabel')}</p>
                     <div className="flex gap-3 text-xs">
                       <label className="flex items-center gap-1.5 cursor-pointer">
                         <input
@@ -1305,7 +1346,7 @@ function CalendarContent() {
                           onChange={() => setNewTutorMode(false)}
                           className="accent-primary"
                         />
-                        Vincular existente
+                        {t('calendar.appointmentDialog.linkExistingTutor')}
                       </label>
                       <label className="flex items-center gap-1.5 cursor-pointer">
                         <input
@@ -1314,14 +1355,14 @@ function CalendarContent() {
                           onChange={() => setNewTutorMode(true)}
                           className="accent-primary"
                         />
-                        Cadastrar novo tutor
+                        {t('calendar.appointmentDialog.registerNewTutor')}
                       </label>
                     </div>
 
                     {!newTutorMode ? (
                       <Select value={newTutorId} onValueChange={setNewTutorId}>
                         <SelectTrigger className="w-full h-8 text-sm">
-                          <SelectValue placeholder="Selecione o tutor (opcional)" />
+                          <SelectValue placeholder={t('calendar.appointmentDialog.selectTutorOptional')} />
                         </SelectTrigger>
                         <SelectContent>
                           {tutors.map((t) => (
@@ -1335,7 +1376,7 @@ function CalendarContent() {
                       <>
                         <div className="space-y-4">
                           <div className="space-y-1">
-                            <Label className="text-xs">Nome *</Label>
+                            <Label className="text-xs">{t('calendar.appointmentDialog.nameLabel')}</Label>
                             <Input
                               className="h-8 text-sm"
                               value={newTutor.name}
@@ -1348,7 +1389,7 @@ function CalendarContent() {
                             />
                           </div>
                           <div className="space-y-1">
-                            <Label className="text-xs">E-mail *</Label>
+                            <Label className="text-xs">{t('calendar.appointmentDialog.emailLabel')}</Label>
                             <Input
                               className="h-8 text-sm"
                               type="email"
@@ -1363,7 +1404,7 @@ function CalendarContent() {
                           </div>
                           <div className="grid grid-cols-1 gap-2 md:grid-cols-[1.7fr_1.7fr_1.3fr]">
                             <div className="space-y-1 min-w-0">
-                              <Label className="text-xs">Telefone *</Label>
+                              <Label className="text-xs">{t('calendar.appointmentDialog.phoneLabel')}</Label>
                               <Input
                                 className="h-8 text-sm"
                                 placeholder="(11) 99999-9999"
@@ -1377,7 +1418,7 @@ function CalendarContent() {
                               />
                             </div>
                             <div className="space-y-1 min-w-0">
-                              <Label className="text-xs">CPF *</Label>
+                              <Label className="text-xs">{t('calendar.appointmentDialog.cpfLabel')}</Label>
                               <Input
                                 className="h-8 text-sm"
                                 placeholder="000.000.000-00"
@@ -1391,7 +1432,7 @@ function CalendarContent() {
                               />
                             </div>
                             <div className="space-y-1 min-w-0">
-                              <Label className="text-xs">CEP *</Label>
+                              <Label className="text-xs">{t('calendar.appointmentDialog.cepLabel')}</Label>
                               <Input
                                 className="h-8 text-sm"
                                 placeholder="00000-000"
@@ -1419,11 +1460,11 @@ function CalendarContent() {
                   >
                     {creatingPatient ? (
                       <>
-                        <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" /> Cadastrando...
+                        <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" /> {t('calendar.appointmentDialog.registering')}
                       </>
                     ) : (
                       <>
-                        <CheckCircle2 className="w-3.5 h-3.5 mr-2" /> Salvar pet e continuar
+                        <CheckCircle2 className="w-3.5 h-3.5 mr-2" /> {t('calendar.appointmentDialog.savePetContinue')}
                       </>
                     )}
                   </Button>
@@ -1433,7 +1474,7 @@ function CalendarContent() {
           </div>
           <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-[1.7fr_3.3fr]">
             <div className="w-full space-y-2 min-w-0">
-              <Label>Data *</Label>
+              <Label>{t('calendar.appointmentDialog.dateLabel')}</Label>
               <Input
                 className="w-full"
                 type="date"
@@ -1450,7 +1491,7 @@ function CalendarContent() {
               />
             </div>
             <div className="w-full space-y-2 min-w-0">
-              <Label>Veterinário *</Label>
+              <Label>{t('calendar.appointmentDialog.vetLabel')}</Label>
               <Select
                 value={formData.veterinarian_id}
                 onValueChange={(v) =>
@@ -1462,7 +1503,7 @@ function CalendarContent() {
                 }
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Selecione" />
+                  <SelectValue placeholder={t('calendar.selectPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
                   {veterinarians.map((v) => (
@@ -1474,10 +1515,10 @@ function CalendarContent() {
               </Select>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground">Agendamento online: até 30 dias à frente.</p>
+          <p className="text-xs text-muted-foreground">{t('calendar.appointmentDialog.onlineBookingNote')}</p>
           <div className="grid grid-cols-1 items-start gap-4 md:grid-cols-[3.3fr_1.7fr]">
             <div className="w-full space-y-2 min-w-0">
-              <Label>Tipo de procedimento</Label>
+              <Label>{t('calendar.appointmentDialog.procedureTypeLabel')}</Label>
               <Select
                 value={formData.appointment_type_id || '_none'}
                 onValueChange={(v) =>
@@ -1489,10 +1530,10 @@ function CalendarContent() {
                 }
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Nenhum" />
+                  <SelectValue placeholder={t('calendar.appointmentDialog.noneOption')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="_none">Nenhum</SelectItem>
+                  <SelectItem value="_none">{t('calendar.appointmentDialog.noneOption')}</SelectItem>
                   {appointmentTypes.map((tp) => (
                     <SelectItem key={tp.id} value={tp.id}>
                       {tp.name} — {formatDuration(tp.duration_minutes)}
@@ -1500,7 +1541,7 @@ function CalendarContent() {
                   ))}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">Envie o tipo para horários alinhados à duração.</p>
+              <p className="text-xs text-muted-foreground">{t('calendar.appointmentDialog.procedureTypeHint')}</p>
             </div>
             <div className="w-full min-w-0">
               <SlotSelect
@@ -1513,7 +1554,7 @@ function CalendarContent() {
             </div>
           </div>
           <div className="space-y-2">
-            <Label>Observações</Label>
+            <Label>{t('calendar.appointmentDialog.observationsLabel')}</Label>
             <Textarea
               rows={3}
               value={formData.observations}
@@ -1521,7 +1562,7 @@ function CalendarContent() {
             />
           </div>
           <div className="space-y-2">
-            <Label className="">Valor (R$) *</Label>
+            <Label className="">{t('calendar.appointmentDialog.priceLabel', { symbol: currencySymbol })}</Label>
             <Input
               type="number"
               step="0.01"
@@ -1531,7 +1572,7 @@ function CalendarContent() {
           </div>
           {resources.length > 0 && (
             <div className="space-y-2">
-              <Label>Recursos</Label>
+              <Label>{t('calendar.appointmentDialog.resourcesLabel')}</Label>
               <div className="flex flex-wrap gap-2 p-2 border rounded min-h-10">
                 {resources.map((r) => (
                   <button
@@ -1561,7 +1602,7 @@ function CalendarContent() {
               disabled={summarizeLoading}
             >
               {summarizeLoading && <Loader2 className="h-3 w-3 animate-spin" />}
-              Resumir
+              {t('calendar.appointmentDialog.summarizeButton')}
             </Button>
             <Button
               type="button"
@@ -1572,7 +1613,7 @@ function CalendarContent() {
               disabled={structureLoading}
             >
               {structureLoading && <Loader2 className="h-3 w-3 animate-spin mr-1" />}
-              Estruturar
+              {t('calendar.appointmentDialog.structureButton')}
             </Button>
           </div>
         </div>
@@ -1596,7 +1637,7 @@ function CalendarContent() {
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <SheetTitle className="text-xl font-heading leading-tight">
-                    {selectedConsultation?.patient?.name || 'Consulta'}
+                    {selectedConsultation?.patient?.name || t('calendar.details.fallbackTitle')}
                   </SheetTitle>
                   {(selectedConsultation?.patient?.species || selectedConsultation?.patient?.breed) && (
                     <p className="text-sm text-muted-foreground mt-0.5">
@@ -1616,7 +1657,7 @@ function CalendarContent() {
                         : 'bg-orange-400 text-white text-xs'
                     }
                   >
-                    {selectedConsultation?.paid ? 'Pago' : 'Pendente'}
+                    {selectedConsultation?.paid ? t('calendar.status.paid') : t('calendar.status.pending')}
                   </Badge>
                 </div>
               </div>
@@ -1654,7 +1695,7 @@ function CalendarContent() {
                 <div className="flex items-center gap-3">
                   <Stethoscope className="w-4 h-4 text-muted-foreground/60 shrink-0" />
                   <div>
-                    <p className="text-xs text-muted-foreground">Veterinário</p>
+                    <p className="text-xs text-muted-foreground">{t('calendar.details.vetLabel')}</p>
                     <p className="text-sm font-medium">{selectedConsultation.veterinarian?.name || '—'}</p>
                   </div>
                 </div>
@@ -1663,7 +1704,7 @@ function CalendarContent() {
                 <div className="flex items-center gap-3">
                   <User2 className="w-4 h-4 text-muted-foreground/60 shrink-0" />
                   <div>
-                    <p className="text-xs text-muted-foreground">Paciente</p>
+                    <p className="text-xs text-muted-foreground">{t('calendar.details.patientLabel')}</p>
                     <p className="text-sm font-medium">{selectedConsultation.patient?.name}</p>
                   </div>
                 </div>
@@ -1673,7 +1714,7 @@ function CalendarContent() {
                   <div className="flex items-center gap-3">
                     <CalendarRange className="w-4 h-4 text-muted-foreground/60 shrink-0" />
                     <div>
-                      <p className="text-xs text-muted-foreground">Procedimento</p>
+                      <p className="text-xs text-muted-foreground">{t('calendar.details.procedureLabel')}</p>
                       <p className="text-sm font-medium">
                         {selectedConsultation.appointment_type.name}{' '}
                         <span className="text-muted-foreground font-normal">
@@ -1689,8 +1730,8 @@ function CalendarContent() {
                   <div className="flex items-center gap-3">
                     <DollarSign className="w-4 h-4 text-muted-foreground/60 shrink-0" />
                     <div>
-                      <p className="text-xs text-muted-foreground">Valor</p>
-                      <p className="text-sm font-medium">R$ {Number(selectedConsultation.price).toFixed(2)}</p>
+                      <p className="text-xs text-muted-foreground">{t('calendar.details.priceLabel')}</p>
+                      <p className="text-sm font-medium">{fmt(selectedConsultation.price)}</p>
                     </div>
                   </div>
                 )}
@@ -1700,7 +1741,7 @@ function CalendarContent() {
                   <div className="flex items-start gap-3">
                     <FileText className="w-4 h-4 text-muted-foreground/60 mt-0.5 shrink-0" />
                     <div className="flex-1">
-                      <p className="text-xs text-muted-foreground mb-1">Observações</p>
+                      <p className="text-xs text-muted-foreground mb-1">{t('calendar.details.observationsLabel')}</p>
                       <p className="text-sm bg-muted/50 rounded-md p-3 whitespace-pre-wrap">
                         {selectedConsultation.observations}
                       </p>
@@ -1725,7 +1766,7 @@ function CalendarContent() {
                       ) : (
                         <Stethoscope className="w-3.5 h-3.5" />
                       )}{' '}
-                      Iniciar atendimento
+                      {t('calendar.details.startAttendance')}
                     </Button>
                   )}
                   {selectedConsultation?.patient?.id && (
@@ -1737,7 +1778,7 @@ function CalendarContent() {
                         router.push(`/medical-records?patient_id=${selectedConsultation!.patient!.id}`)
                       }
                     >
-                      <FileText className="w-3.5 h-3.5" /> Prontuário
+                      <FileText className="w-3.5 h-3.5" /> {t('calendar.details.medicalRecord')}
                     </Button>
                   )}
                   <Button
@@ -1756,7 +1797,7 @@ function CalendarContent() {
                       setRescheduleVisible(true);
                     }}
                   >
-                    <CalendarRange className="w-3.5 h-3.5" /> Reagendar
+                    <CalendarRange className="w-3.5 h-3.5" /> {t('calendar.details.reschedule')}
                   </Button>
                   <Button
                     size="sm"
@@ -1769,7 +1810,7 @@ function CalendarContent() {
                     ) : (
                       <CheckCircle2 className="w-3.5 h-3.5" />
                     )}{' '}
-                    Realizada
+                    {t('calendar.status.completed')}
                   </Button>
                   <Button
                     size="sm"
@@ -1782,7 +1823,7 @@ function CalendarContent() {
                     ) : (
                       <CreditCard className="w-3.5 h-3.5" />
                     )}{' '}
-                    Pagamento
+                    {t('calendar.details.confirmPayment')}
                   </Button>
 
                   <AlertDialog>
@@ -1801,22 +1842,17 @@ function CalendarContent() {
                         ) : (
                           <UserX className="w-3.5 h-3.5" />
                         )}{' '}
-                        Não compareceu
+                        {t('calendar.details.markNoShowButton')}
                       </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>Marcar não comparecimento?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Isso libera o horário na agenda e registra uma ficha de não
-                          comparecimento no prontuário do paciente (fica no histórico
-                          permanentemente). O tutor recebe uma mensagem de WhatsApp
-                          oferecendo reagendar.
-                        </AlertDialogDescription>
+                        <AlertDialogTitle>{t('calendar.details.noShowConfirmTitle')}</AlertDialogTitle>
+                        <AlertDialogDescription>{t('calendar.details.noShowConfirmDescription')}</AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel>Voltar</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleMarkNoShow}>Confirmar</AlertDialogAction>
+                        <AlertDialogCancel>{t('calendar.back')}</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleMarkNoShow}>{t('calendar.confirm')}</AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>
@@ -1836,20 +1872,17 @@ function CalendarContent() {
                         ) : (
                           <Ban className="w-3.5 h-3.5" />
                         )}{' '}
-                        Cancelar
+                        {t('calendar.cancel')}
                       </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>Cancelar esta consulta?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          O horário fica liberado na agenda. O agendamento não é
-                          excluído — continua no histórico como cancelado.
-                        </AlertDialogDescription>
+                        <AlertDialogTitle>{t('calendar.details.cancelConfirmTitle')}</AlertDialogTitle>
+                        <AlertDialogDescription>{t('calendar.details.cancelConfirmDescription')}</AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel>Voltar</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleCancelConsultation}>Confirmar</AlertDialogAction>
+                        <AlertDialogCancel>{t('calendar.back')}</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleCancelConsultation}>{t('calendar.confirm')}</AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>
@@ -1864,19 +1897,19 @@ function CalendarContent() {
       <Dialog open={rescheduleVisible} onOpenChange={setRescheduleVisible}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Reagendar</DialogTitle>
+            <DialogTitle>{t('calendar.details.reschedule')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-1 py-2">
-            <Label>Nova data/hora *</Label>
+            <Label>{t('calendar.reschedule.newDateTimeLabel')}</Label>
             <Input type="datetime-local" value={rescheduleDate} onChange={(e) => setRescheduleDate(e.target.value)} />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setRescheduleVisible(false)}>
-              Cancelar
+              {t('calendar.cancel')}
             </Button>
             <Button onClick={handleRescheduleSubmit} disabled={rescheduleLoading} className="bg-primary">
               {rescheduleLoading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-              Confirmar
+              {t('calendar.confirm')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1886,8 +1919,9 @@ function CalendarContent() {
 }
 
 export default function CalendarPage() {
+  const { t } = useTranslation('common');
   return (
-    <Suspense fallback={<div className="p-6">Carregando...</div>}>
+    <Suspense fallback={<div className="p-6">{t('calendar.loading')}</div>}>
       <CalendarContent />
     </Suspense>
   );

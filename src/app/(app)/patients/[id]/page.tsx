@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import type {
   PatientTimelineEvent,
   TimelineMedicalRecordData,
@@ -17,36 +18,36 @@ import Link from 'next/link';
 import { patientKeys, usePatientQuery, usePatientTimelineQuery } from '@/hooks/apiHooks/usePatients';
 import { ProfilePhotoUploader } from '@/components/shared/profile-photo';
 
-const RECORD_TYPE_LABELS: Record<string, string> = {
-  atendimento: 'Atendimento',
-  retorno: 'Retorno',
-  emergencia: 'Emergência',
-  cirurgia: 'Cirurgia',
-  internacao: 'Internação',
-  no_show: 'Não Compareceu',
+const RECORD_TYPE_LABEL_KEYS: Record<string, string> = {
+  atendimento: 'patientDetail.recordTypes.atendimento',
+  retorno: 'patientDetail.recordTypes.retorno',
+  emergencia: 'patientDetail.recordTypes.emergencia',
+  cirurgia: 'patientDetail.recordTypes.cirurgia',
+  internacao: 'patientDetail.recordTypes.internacao',
+  no_show: 'patientDetail.recordTypes.noShow',
 };
 
-const typeConfig: Record<string, { label: string; colorClass: string; dotClass: string; icon: React.ReactNode }> = {
+const typeConfig: Record<string, { labelKey: string; colorClass: string; dotClass: string; icon: React.ReactNode }> = {
   medical_record: {
-    label: 'Ficha',
+    labelKey: 'patientDetail.eventTypes.medicalRecord',
     colorClass: 'border-blue-400',
     dotClass: 'bg-blue-100 text-primary',
     icon: <FileText className="w-4 h-4" />,
   },
   vaccine: {
-    label: 'Vacina',
+    labelKey: 'patientDetail.eventTypes.vaccine',
     colorClass: 'border-green-400',
     dotClass: 'bg-green-100 text-green-600',
     icon: <FlaskConical className="w-4 h-4" />,
   },
   exam_request: {
-    label: 'Exame',
+    labelKey: 'patientDetail.eventTypes.examRequest',
     colorClass: 'border-purple-400',
     dotClass: 'bg-purple-100 text-purple-600',
     icon: <ClipboardList className="w-4 h-4" />,
   },
   prescription: {
-    label: 'Prescrição',
+    labelKey: 'patientDetail.eventTypes.prescription',
     colorClass: 'border-orange-400',
     dotClass: 'bg-orange-100 text-orange-600',
     icon: <BookOpen className="w-4 h-4" />,
@@ -70,6 +71,7 @@ function getPrescriptionData(event: PatientTimelineEvent): TimelinePrescriptionD
 }
 
 export default function PatientDetailPage() {
+  const { t } = useTranslation('common');
   const params = useParams();
   const router = useRouter();
   const id = typeof params?.id === 'string' ? params.id : '';
@@ -89,9 +91,9 @@ export default function PatientDetailPage() {
     return (
       <div>
         <Button variant="ghost" onClick={() => router.push('/patients')}>
-          <ChevronLeft className="w-4 h-4 mr-1" /> Voltar
+          <ChevronLeft className="w-4 h-4 mr-1" /> {t('patientDetail.back')}
         </Button>
-        <p className="text-muted-foreground mt-4">Paciente não encontrado.</p>
+        <p className="text-muted-foreground mt-4">{t('patientDetail.notFound')}</p>
       </div>
     );
   }
@@ -99,12 +101,12 @@ export default function PatientDetailPage() {
   const sortedEvents = [...events].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const descriptionFields = [
-    { label: 'Espécie', value: patient.species },
-    { label: 'Raça', value: patient.breed },
-    { label: 'Idade', value: `${patient.age} ano(s)` },
-    { label: 'Peso', value: `${patient.weight} kg` },
-    { label: 'Sexo', value: patient.sex },
-    { label: 'Responsável', value: patient.tutor?.name ?? '—' },
+    { label: t('patientDetail.fields.species'), value: patient.species },
+    { label: t('patientDetail.fields.breed'), value: patient.breed },
+    { label: t('patientDetail.fields.age'), value: t('patientDetail.ageValue', { age: patient.age }) },
+    { label: t('patientDetail.fields.weight'), value: t('patientDetail.weightValue', { weight: patient.weight }) },
+    { label: t('patientDetail.fields.sex'), value: patient.sex },
+    { label: t('patientDetail.fields.guardian'), value: patient.tutor?.name ?? '—' },
   ];
 
   return (
@@ -112,7 +114,7 @@ export default function PatientDetailPage() {
       <div className="flex items-center gap-4 mb-6">
         <Button asChild variant="ghost">
           <Link href="/patients">
-            <ChevronLeft className="w-4 h-4 mr-1" /> Voltar
+            <ChevronLeft className="w-4 h-4 mr-1" /> {t('patientDetail.back')}
           </Link>
         </Button>
       </div>
@@ -131,7 +133,7 @@ export default function PatientDetailPage() {
           </div>
           <Button asChild size="sm" className="w-full bg-primary hover:bg-blue-700 sm:w-auto">
             <Link href={`/medical-records?patient=${id}`}>
-              <FileText className="w-4 h-4 mr-1" /> Fichas
+              <FileText className="w-4 h-4 mr-1" /> {t('patientDetail.recordsButton')}
             </Link>
           </Button>
         </CardHeader>
@@ -149,16 +151,16 @@ export default function PatientDetailPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Linha do tempo</CardTitle>
+          <CardTitle>{t('patientDetail.timelineTitle')}</CardTitle>
         </CardHeader>
         <CardContent>
           {sortedEvents.length === 0 ? (
-            <p className="text-muted-foreground">Nenhum evento registrado.</p>
+            <p className="text-muted-foreground">{t('patientDetail.noEvents')}</p>
           ) : (
             <div className="space-y-0">
               {sortedEvents.map((ev, idx) => {
                 const meta = typeConfig[ev.type] ?? {
-                  label: ev.type,
+                  labelKey: '',
                   colorClass: 'border-border',
                   dotClass: 'bg-muted text-muted-foreground',
                   icon: null,
@@ -167,9 +169,11 @@ export default function PatientDetailPage() {
                 // Retorno...) em vez do genérico "Ficha", e não tem hora
                 // (record_date é só data) — mostrar "00:00" seria ruído.
                 const isRecordEvent = ev.type === 'medical_record';
-                const label = isRecordEvent
-                  ? (RECORD_TYPE_LABELS[getMedicalRecordData(ev).record_type ?? ''] ?? meta.label)
-                  : meta.label;
+                const fallbackLabel = meta.labelKey ? t(meta.labelKey) : ev.type;
+                const recordTypeKey = isRecordEvent
+                  ? RECORD_TYPE_LABEL_KEYS[getMedicalRecordData(ev).record_type ?? '']
+                  : undefined;
+                const label = recordTypeKey ? t(recordTypeKey) : fallbackLabel;
                 const dateStr = isRecordEvent
                   ? new Date(ev.date).toLocaleDateString('pt-BR')
                   : new Date(ev.date).toLocaleString('pt-BR');
@@ -202,12 +206,12 @@ export default function PatientDetailPage() {
                                 'polygon(0% 50%, 10px 0%, 100% 0%, calc(100% - 10px) 50%, 100% 100%, 10px 100%)',
                             }}
                           >
-                            Mais recente
+                            {t('patientDetail.mostRecent')}
                           </span>
                         )}
                         {isLast && !isFirst && (
                           <Badge variant="outline" className="mt-0.5 shrink-0 whitespace-nowrap text-muted-foreground">
-                            Início
+                            {t('patientDetail.start')}
                           </Badge>
                         )}
                       </div>
@@ -219,7 +223,7 @@ export default function PatientDetailPage() {
                                 const recordData = getMedicalRecordData(ev);
                                 return (
                                   <>
-                                    Status: <Badge variant="outline">{String(recordData.status ?? '—')}</Badge>
+                                    {t('patientDetail.statusLabel')} <Badge variant="outline">{String(recordData.status ?? '—')}</Badge>
                                     {recordData.chief_complaint && (
                                       <div className="mt-1">{recordData.chief_complaint}</div>
                                     )}
@@ -234,7 +238,10 @@ export default function PatientDetailPage() {
                                 const vaccineData = getVaccineData(ev);
                                 return (
                                   <>
-                                    {vaccineData.vaccine_name} — Próxima: {vaccineData.next_due_date}
+                                    {t('patientDetail.vaccineLine', {
+                                      name: vaccineData.vaccine_name,
+                                      date: vaccineData.next_due_date,
+                                    })}
                                   </>
                                 );
                               })()}
@@ -244,7 +251,9 @@ export default function PatientDetailPage() {
                             <>
                               {(() => {
                                 const examRequestData = getExamRequestData(ev);
-                                return <>Solicitação em {examRequestData.request_date ?? '—'}</>;
+                                return (
+                                  <>{t('patientDetail.examRequestLine', { date: examRequestData.request_date ?? '—' })}</>
+                                );
                               })()}
                             </>
                           )}
@@ -254,7 +263,10 @@ export default function PatientDetailPage() {
                                 const prescriptionData = getPrescriptionData(ev);
                                 return (
                                   <>
-                                    Tipo: {prescriptionData.prescription_type} — {prescriptionData.prescription_date}
+                                    {t('patientDetail.prescriptionLine', {
+                                      type: prescriptionData.prescription_type,
+                                      date: prescriptionData.prescription_date,
+                                    })}
                                   </>
                                 );
                               })()}

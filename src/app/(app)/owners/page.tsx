@@ -200,7 +200,7 @@ export default function OwnersPage() {
       await deleteTutor.mutateAsync(id);
     } catch (error) {
       console.error('Error deleting tutor:', error);
-      toast.error('Erro ao remover responsável');
+      toast.error(t('owners.deleteError'));
     }
   };
 
@@ -210,7 +210,7 @@ export default function OwnersPage() {
 
     const cep = cepValue.replace(/\D/g, '');
     if (cep.length !== 8) {
-      toast.warning('CEP inválido');
+      toast.warning(t('owners.form.cepInvalid'));
       return;
     }
 
@@ -223,7 +223,7 @@ export default function OwnersPage() {
     try {
       const response = await axios.get(`https://viacep.com.br/ws/${cep}/json/`);
       if (response.data.erro) {
-        toast.error('CEP não encontrado');
+        toast.error(t('owners.form.cepNotFound'));
         return;
       }
       const { logradouro, bairro, localidade, uf } = response.data;
@@ -233,7 +233,7 @@ export default function OwnersPage() {
       setValue('state', uf);
     } catch (error) {
       console.error('Error fetching CEP:', error);
-      toast.error('Erro ao buscar CEP');
+      toast.error(t('owners.form.cepFetchError'));
     } finally {
       setLoadingCep(false);
     }
@@ -261,7 +261,7 @@ export default function OwnersPage() {
       setEditingRecord(null);
     } catch (error) {
       console.error('Error saving tutor:', error);
-      toast.error('Erro ao salvar responsável');
+      toast.error(t('owners.saveError'));
     }
   };
 
@@ -478,12 +478,12 @@ export default function OwnersPage() {
           }
           setModalVisible(open);
         }}
-        title={editingId ? 'Editar Responsável' : 'Novo Responsável'}
+        title={editingId ? t('owners.dialog.editTitle') : t('owners.dialog.createTitle')}
         containerClassName="max-w-2xl mx-auto"
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button type="button" variant="outline" onClick={closeModal}>
-              Cancelar
+              {t('owners.cancel')}
             </Button>
             <Button
               type="submit"
@@ -492,7 +492,7 @@ export default function OwnersPage() {
               className="bg-primary hover:bg-brand-deep/80"
             >
               {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              {editingId ? 'Salvar' : 'Criar'}
+              {editingId ? t('owners.dialog.save') : t('owners.dialog.create')}
             </Button>
           </div>
         }
@@ -509,54 +509,54 @@ export default function OwnersPage() {
             />
           ) : null}
           <div className="space-y-2">
-            <Label htmlFor="name">Nome *</Label>
-            <Input id="name" {...register('name')} placeholder="Nome completo" />
-            {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
+            <Label htmlFor="name">{t('owners.form.nameLabel')}</Label>
+            <Input id="name" {...register('name')} placeholder={t('owners.form.namePlaceholder')} />
+            {errors.name && <p className="text-sm text-destructive">{t('owners.form.requiredField')}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
-              <Label htmlFor="cpf">CPF *</Label>
+              <Label htmlFor="cpf">{t('owners.form.cpfLabel')}</Label>
               <Input
                 id="cpf"
                 {...register('cpf')}
-                placeholder="000.000.000-00"
+                placeholder={t('owners.form.cpfPlaceholder')}
                 onChange={(e) => {
                   const formatted = formatCpf(e.target.value);
                   setValue('cpf', formatted);
                 }}
               />
-              {errors.cpf && <p className="text-sm text-destructive">{errors.cpf.message}</p>}
+              {errors.cpf && <p className="text-sm text-destructive">{t('owners.form.requiredField')}</p>}
             </div>
             <div className="space-y-1">
-              <Label htmlFor="phone">Telefone *</Label>
+              <Label htmlFor="phone">{t('owners.form.phoneLabel')}</Label>
               <Input
                 id="phone"
                 {...register('phone')}
-                placeholder="(00) 00000-0000"
+                placeholder={t('owners.form.phonePlaceholder')}
                 onChange={(e) => {
                   const formatted = formatPhone(e.target.value);
                   setValue('phone', formatted);
                 }}
               />
-              {errors.phone && <p className="text-sm text-destructive">{errors.phone.message}</p>}
+              {errors.phone && <p className="text-sm text-destructive">{t('owners.form.requiredField')}</p>}
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email">Email *</Label>
-            <Input id="email" type="email" {...register('email')} placeholder="email@exemplo.com" />
-            {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
+            <Label htmlFor="email">{t('owners.form.emailLabel')}</Label>
+            <Input id="email" type="email" {...register('email')} placeholder={t('owners.form.emailPlaceholder')} />
+            {errors.email && <p className="text-sm text-destructive">{t('owners.form.emailInvalid')}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
-              <Label htmlFor="cep">CEP *</Label>
+              <Label htmlFor="cep">{t('owners.form.cepLabel')}</Label>
               <div className="flex gap-2">
                 <Input
                   id="cep"
                   {...register('cep')}
-                  placeholder="00000-000"
+                  placeholder={t('owners.form.cepPlaceholder')}
                   disabled={loadingCep}
                   onChange={(e) => {
                     const formatted = formatCep(e.target.value);
@@ -574,43 +574,43 @@ export default function OwnersPage() {
                   {loadingCep ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
                 </Button>
               </div>
-              {errors.cep && <p className="text-sm text-destructive">{errors.cep.message}</p>}
+              {errors.cep && <p className="text-sm text-destructive">{t('owners.form.requiredField')}</p>}
             </div>
             <div className="space-y-1">
-              <Label htmlFor="city">Cidade *</Label>
+              <Label htmlFor="city">{t('owners.form.cityLabel')}</Label>
               <Input id="city" {...register('city')} />
-              {errors.city && <p className="text-sm text-destructive">{errors.city.message}</p>}
+              {errors.city && <p className="text-sm text-destructive">{t('owners.form.requiredField')}</p>}
             </div>
           </div>
 
           <div className="space-y-1">
-            <Label htmlFor="street">Logradouro *</Label>
-            <Input id="street" {...register('street')} placeholder="Rua, Av, etc" />
-            {errors.street && <p className="text-sm text-destructive">{errors.street.message}</p>}
+            <Label htmlFor="street">{t('owners.form.streetLabel')}</Label>
+            <Input id="street" {...register('street')} placeholder={t('owners.form.streetPlaceholder')} />
+            {errors.street && <p className="text-sm text-destructive">{t('owners.form.requiredField')}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
-              <Label htmlFor="number">Número *</Label>
-              <Input id="number" {...register('number')} placeholder="123" />
-              {errors.number && <p className="text-sm text-destructive">{errors.number.message}</p>}
+              <Label htmlFor="number">{t('owners.form.numberLabel')}</Label>
+              <Input id="number" {...register('number')} placeholder={t('owners.form.numberPlaceholder')} />
+              {errors.number && <p className="text-sm text-destructive">{t('owners.form.requiredField')}</p>}
             </div>
             <div className="space-y-1">
-              <Label htmlFor="state">UF *</Label>
-              <Input id="state" {...register('state')} placeholder="SP" maxLength={2} />
-              {errors.state && <p className="text-sm text-destructive">{errors.state.message}</p>}
+              <Label htmlFor="state">{t('owners.form.stateLabel')}</Label>
+              <Input id="state" {...register('state')} placeholder={t('owners.form.statePlaceholder')} maxLength={2} />
+              {errors.state && <p className="text-sm text-destructive">{t('owners.form.requiredField')}</p>}
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
-              <Label htmlFor="complement">Complemento</Label>
-              <Input id="complement" {...register('complement')} placeholder="Apto 101" />
+              <Label htmlFor="complement">{t('owners.form.complementLabel')}</Label>
+              <Input id="complement" {...register('complement')} placeholder={t('owners.form.complementPlaceholder')} />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="neighborhood">Bairro *</Label>
+              <Label htmlFor="neighborhood">{t('owners.form.neighborhoodLabel')}</Label>
               <Input id="neighborhood" {...register('neighborhood')} />
-              {errors.neighborhood && <p className="text-sm text-destructive">{errors.neighborhood.message}</p>}
+              {errors.neighborhood && <p className="text-sm text-destructive">{t('owners.form.requiredField')}</p>}
             </div>
           </div>
         </form>
