@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import type { ApiRequestError } from '@/app/types/api-error';
 import type {
   BackendEdge,
@@ -55,15 +57,60 @@ const NODE_TEXT_COLORS: Record<string, string> = {
   end: '#fff',
 };
 
-const ACTION_TYPES = [
-  { value: 'GET_AVAILABILITY', label: 'Buscar Disponibilidade', description: 'Consulta horários livres na agenda' },
-  { value: 'GENERATE_AI_REPLY', label: 'Resposta com IA', description: 'Gera resposta usando GPT' },
-  { value: 'SEND_MESSAGE', label: 'Enviar Mensagem Fixa', description: 'Envia texto fixo ao responsável' },
-  { value: 'CREATE_CONSULTATION', label: 'Criar Consulta', description: 'Agenda consulta automaticamente' },
-  { value: 'NOTIFY_TEAM', label: 'Notificar Equipe', description: 'Cria notificação interna' },
-  { value: 'PAUSE_BOT', label: 'Pausar Bot', description: 'Pausa respostas automáticas' },
-  { value: 'WAIT_REPLY', label: 'Aguardar Resposta', description: 'Espera próxima mensagem' },
-];
+function getActionTypes(t: TFunction) {
+  return [
+    {
+      value: 'GET_AVAILABILITY',
+      label: t('chatbotWorkflowEditor.actionTypes.getAvailability.label'),
+      description: t('chatbotWorkflowEditor.actionTypes.getAvailability.description'),
+    },
+    {
+      value: 'GENERATE_AI_REPLY',
+      label: t('chatbotWorkflowEditor.actionTypes.generateAiReply.label'),
+      description: t('chatbotWorkflowEditor.actionTypes.generateAiReply.description'),
+    },
+    {
+      value: 'SEND_MESSAGE',
+      label: t('chatbotWorkflowEditor.actionTypes.sendMessage.label'),
+      description: t('chatbotWorkflowEditor.actionTypes.sendMessage.description'),
+    },
+    {
+      value: 'CREATE_CONSULTATION',
+      label: t('chatbotWorkflowEditor.actionTypes.createConsultation.label'),
+      description: t('chatbotWorkflowEditor.actionTypes.createConsultation.description'),
+    },
+    {
+      value: 'NOTIFY_TEAM',
+      label: t('chatbotWorkflowEditor.actionTypes.notifyTeam.label'),
+      description: t('chatbotWorkflowEditor.actionTypes.notifyTeam.description'),
+    },
+    {
+      value: 'PAUSE_BOT',
+      label: t('chatbotWorkflowEditor.actionTypes.pauseBot.label'),
+      description: t('chatbotWorkflowEditor.actionTypes.pauseBot.description'),
+    },
+    {
+      value: 'WAIT_REPLY',
+      label: t('chatbotWorkflowEditor.actionTypes.waitReply.label'),
+      description: t('chatbotWorkflowEditor.actionTypes.waitReply.description'),
+    },
+  ];
+}
+
+function getNodeTypeLabel(t: TFunction, type: string): string {
+  switch (type) {
+    case 'trigger':
+      return t('chatbotWorkflowEditor.nodeTypes.trigger');
+    case 'condition':
+      return t('chatbotWorkflowEditor.nodeTypes.condition');
+    case 'action':
+      return t('chatbotWorkflowEditor.nodeTypes.action');
+    case 'end':
+      return t('chatbotWorkflowEditor.nodeTypes.end');
+    default:
+      return type;
+  }
+}
 
 type WorkflowFlowNode = Node<WorkflowNodeData>;
 type WorkflowNodeProps = NodeProps<WorkflowFlowNode>;
@@ -149,8 +196,9 @@ function ConditionNode({ data }: WorkflowNodeProps) {
 }
 
 function ActionNode({ data }: WorkflowNodeProps) {
+  const { t } = useTranslation();
   const actionType = getNodeConfig(data).action_type || '?';
-  const actionDef = ACTION_TYPES.find((a) => a.value === actionType);
+  const actionDef = getActionTypes(t).find((a) => a.value === actionType);
   return (
     <div
       className="rounded-xl border-2 shadow-md px-4 py-2.5 min-w-[170px] bg-white"
@@ -239,6 +287,7 @@ const NODE_PALETTE = [
 ] as const;
 
 function WorkflowEditorPageContent() {
+  const { t } = useTranslation();
   const params = useParams();
   const router = useRouter();
   const workflowId = typeof params?.id === 'string' ? params.id : '';
@@ -518,7 +567,7 @@ function WorkflowEditorPageContent() {
                         <SelectValue placeholder="Selecione" />
                       </SelectTrigger>
                       <SelectContent>
-                        {ACTION_TYPES.map((a) => (
+                        {getActionTypes(t).map((a) => (
                           <SelectItem key={a.value} value={a.value}>
                             <div>
                               <p className="font-medium">{a.label}</p>

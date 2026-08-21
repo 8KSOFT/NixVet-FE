@@ -1025,7 +1025,7 @@
     "title": "Overview",
     "statsToday": "Appointments today",
     "statsNewPatients": "New patients (month)",
-    "currencyPrefix": "R$",
+    "currencyPrefix": "U$",
     "statsRevenue": "Monthly revenue",
     "statsCancelled": "Cancelled (month)",
     "statsVaccines": "Vaccines (next 30 days)",

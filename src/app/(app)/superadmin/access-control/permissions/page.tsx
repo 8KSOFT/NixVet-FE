@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -46,6 +47,7 @@ type FormValues = {
 
 export default function AccessControlPermissionsPage() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [listPage, setListPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -71,22 +73,22 @@ export default function AccessControlPermissionsPage() {
     const role = getStoredUserRole();
     if (role !== 'superadmin') {
       toast.error(
-        `Você está logado como "${role ?? 'desconhecido'}". Apenas superadmin pode gerenciar o catálogo de permissões.`,
+        t('superadminPermissions.notSuperadmin', { role: role ?? t('superadminPermissions.unknownRole') }),
       );
       router.replace('/dashboard');
     }
-  }, [router]);
+  }, [router, t]);
 
   useEffect(() => {
     if (!error) return;
     const err = error as { response?: { status?: number } };
     if (err.response?.status === 403) {
-      toast.error('Apenas superadmin pode acessar o catálogo de permissões.');
+      toast.error(t('superadminPermissions.forbidden'));
       router.replace('/dashboard');
       return;
     }
-    toast.error('Falha ao carregar permissões');
-  }, [error, router]);
+    toast.error(t('superadminPermissions.loadError'));
+  }, [error, router, t]);
 
   const openCreate = () => {
     setEditingId(null);
@@ -111,7 +113,7 @@ export default function AccessControlPermissionsPage() {
     try {
       await deleteMutation.mutateAsync(id);
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, 'Erro ao remover permissão'));
+      toast.error(getApiErrorMessage(error, t('superadminPermissions.deleteError')));
     }
   };
 
@@ -132,7 +134,7 @@ export default function AccessControlPermissionsPage() {
       }
       setModalOpen(false);
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, 'Erro ao salvar permissão'));
+      toast.error(getApiErrorMessage(error, t('superadminPermissions.saveError')));
     }
   };
 
@@ -141,15 +143,14 @@ export default function AccessControlPermissionsPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
         <div>
           <h1 className="mb-2 flex items-center gap-2 text-2xl font-heading font-bold">
-            Catálogo de Permissões
+            {t('superadminPermissions.title')}
           </h1>
           <p className="text-sm text-muted-foreground">
-            Painel exclusivo do superadmin — gerencia as permissões disponíveis para montar perfis de acesso dos
-            tenants.
+            {t('superadminPermissions.subtitle')}
           </p>
         </div>
         <Button onClick={openCreate} className="w-full bg-primary sm:w-auto">
-          <Plus className="w-4 h-4 mr-2" /> Nova permissão
+          <Plus className="w-4 h-4 mr-2" /> {t('superadminPermissions.newPermission')}
         </Button>
       </div>
       {loading ? (
@@ -158,7 +159,7 @@ export default function AccessControlPermissionsPage() {
         </div>
       ) : list.length === 0 ? (
         <div className="rounded-lg border border-gray-300 bg-white py-8 text-center text-sm text-slate-500">
-          Nenhuma permissão cadastrada.
+          {t('superadminPermissions.empty')}
         </div>
       ) : (
         <div>
@@ -167,13 +168,13 @@ export default function AccessControlPermissionsPage() {
             <Table className="min-w-full border-collapse bg-white text-sm">
               <TableHeader>
                 <TableRow className="border-b border-gray-300 h-15">
-                  <TableHead>Chave</TableHead>
-                  <TableHead>Nome</TableHead>
-                  <TableHead>Recurso</TableHead>
-                  <TableHead>Ação</TableHead>
-                  <TableHead>Origem</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="w-30">Ações</TableHead>
+                  <TableHead>{t('superadminPermissions.columnKey')}</TableHead>
+                  <TableHead>{t('superadminPermissions.columnName')}</TableHead>
+                  <TableHead>{t('superadminPermissions.columnResource')}</TableHead>
+                  <TableHead>{t('superadminPermissions.columnAction')}</TableHead>
+                  <TableHead>{t('superadminPermissions.columnOrigin')}</TableHead>
+                  <TableHead>{t('superadminPermissions.columnStatus')}</TableHead>
+                  <TableHead className="w-30">{t('superadminPermissions.columnActions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -185,12 +186,12 @@ export default function AccessControlPermissionsPage() {
                     <TableCell>{r.action}</TableCell>
                     <TableCell>
                       <Badge variant={r.is_system ? 'secondary' : 'default'}>
-                        {r.is_system ? 'Sistema' : 'Customizada'}
+                        {r.is_system ? t('superadminPermissions.system') : t('superadminPermissions.custom')}
                       </Badge>
                     </TableCell>
                     <TableCell>
                       <Badge variant={r.is_active ? 'default' : 'secondary'}>
-                        {r.is_active ? 'Ativa' : 'Inativa'}
+                        {r.is_active ? t('superadminPermissions.active') : t('superadminPermissions.inactive')}
                       </Badge>
                     </TableCell>
                     <TableCell>
@@ -210,12 +211,14 @@ export default function AccessControlPermissionsPage() {
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
-                              <AlertDialogTitle>Remover permissão?</AlertDialogTitle>
+                              <AlertDialogTitle>{t('superadminPermissions.deleteConfirmTitle')}</AlertDialogTitle>
                               <AlertDialogDescription>{r.name}</AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleDelete(r.id)}>Confirmar</AlertDialogAction>
+                              <AlertDialogCancel>{t('superadminPermissions.cancel')}</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDelete(r.id)}>
+                                {t('superadminPermissions.confirm')}
+                              </AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
                         </AlertDialog>
@@ -237,23 +240,23 @@ export default function AccessControlPermissionsPage() {
                     <p className="truncate font-mono text-xs text-muted-foreground">{r.key}</p>
                   </div>
                   <Badge variant={r.is_active ? 'default' : 'secondary'} className="shrink-0">
-                    {r.is_active ? 'Ativa' : 'Inativa'}
+                    {r.is_active ? t('superadminPermissions.active') : t('superadminPermissions.inactive')}
                   </Badge>
                 </div>
 
                 <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
                   <div>
-                    <p className="text-xs text-muted-foreground">Recurso</p>
+                    <p className="text-xs text-muted-foreground">{t('superadminPermissions.columnResource')}</p>
                     <p className="truncate">{r.resource}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Ação</p>
+                    <p className="text-xs text-muted-foreground">{t('superadminPermissions.columnAction')}</p>
                     <p className="truncate">{r.action}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Origem</p>
+                    <p className="text-xs text-muted-foreground">{t('superadminPermissions.columnOrigin')}</p>
                     <Badge variant={r.is_system ? 'secondary' : 'default'}>
-                      {r.is_system ? 'Sistema' : 'Customizada'}
+                      {r.is_system ? t('superadminPermissions.system') : t('superadminPermissions.custom')}
                     </Badge>
                   </div>
                 </div>
@@ -270,12 +273,14 @@ export default function AccessControlPermissionsPage() {
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>Remover permissão?</AlertDialogTitle>
+                        <AlertDialogTitle>{t('superadminPermissions.deleteConfirmTitle')}</AlertDialogTitle>
                         <AlertDialogDescription>{r.name}</AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => handleDelete(r.id)}>Confirmar</AlertDialogAction>
+                        <AlertDialogCancel>{t('superadminPermissions.cancel')}</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => handleDelete(r.id)}>
+                          {t('superadminPermissions.confirm')}
+                        </AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>
@@ -298,34 +303,60 @@ export default function AccessControlPermissionsPage() {
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editingId ? 'Editar permissão' : 'Nova permissão'}</DialogTitle>
+            <DialogTitle>
+              {editingId ? t('superadminPermissions.editPermission') : t('superadminPermissions.newPermission')}
+            </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
-              <Label htmlFor="key">Chave</Label>
-              <Input id="key" placeholder="ex: users.export" {...register('key', { required: true })} />
-              {errors.key && <p className="text-red-500 text-xs mt-1">Campo obrigatório</p>}
+              <Label htmlFor="key">{t('superadminPermissions.fieldKey')}</Label>
+              <Input
+                id="key"
+                placeholder={t('superadminPermissions.fieldKeyPlaceholder')}
+                {...register('key', { required: true })}
+              />
+              {errors.key && <p className="text-red-500 text-xs mt-1">{t('superadminPermissions.requiredField')}</p>}
             </div>
             <div>
-              <Label htmlFor="name">Nome</Label>
-              <Input id="name" placeholder="ex: Exportar usuários" {...register('name', { required: true })} />
-              {errors.name && <p className="text-red-500 text-xs mt-1">Campo obrigatório</p>}
+              <Label htmlFor="name">{t('superadminPermissions.fieldName')}</Label>
+              <Input
+                id="name"
+                placeholder={t('superadminPermissions.fieldNamePlaceholder')}
+                {...register('name', { required: true })}
+              />
+              {errors.name && <p className="text-red-500 text-xs mt-1">{t('superadminPermissions.requiredField')}</p>}
             </div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
-                <Label htmlFor="resource">Recurso</Label>
-                <Input id="resource" placeholder="ex: users" {...register('resource', { required: true })} />
-                {errors.resource && <p className="text-red-500 text-xs mt-1">Campo obrigatório</p>}
+                <Label htmlFor="resource">{t('superadminPermissions.fieldResource')}</Label>
+                <Input
+                  id="resource"
+                  placeholder={t('superadminPermissions.fieldResourcePlaceholder')}
+                  {...register('resource', { required: true })}
+                />
+                {errors.resource && (
+                  <p className="text-red-500 text-xs mt-1">{t('superadminPermissions.requiredField')}</p>
+                )}
               </div>
               <div>
-                <Label htmlFor="action">Ação</Label>
-                <Input id="action" placeholder="ex: export" {...register('action', { required: true })} />
-                {errors.action && <p className="text-red-500 text-xs mt-1">Campo obrigatório</p>}
+                <Label htmlFor="action">{t('superadminPermissions.fieldAction')}</Label>
+                <Input
+                  id="action"
+                  placeholder={t('superadminPermissions.fieldActionPlaceholder')}
+                  {...register('action', { required: true })}
+                />
+                {errors.action && (
+                  <p className="text-red-500 text-xs mt-1">{t('superadminPermissions.requiredField')}</p>
+                )}
               </div>
             </div>
             <div>
-              <Label htmlFor="description">Descrição</Label>
-              <Input id="description" placeholder="Descrição da permissão" {...register('description')} />
+              <Label htmlFor="description">{t('superadminPermissions.fieldDescription')}</Label>
+              <Input
+                id="description"
+                placeholder={t('superadminPermissions.fieldDescriptionPlaceholder')}
+                {...register('description')}
+              />
             </div>
             <div className="flex items-center gap-2">
               <Controller
@@ -335,11 +366,11 @@ export default function AccessControlPermissionsPage() {
                   <Switch id="is_active" checked={field.value} onCheckedChange={field.onChange} />
                 )}
               />
-              <Label htmlFor="is_active">Ativa</Label>
+              <Label htmlFor="is_active">{t('superadminPermissions.active')}</Label>
             </div>
             <DialogFooter>
               <Button type="submit" className="bg-primary">
-                Salvar
+                {t('superadminPermissions.save')}
               </Button>
             </DialogFooter>
           </form>

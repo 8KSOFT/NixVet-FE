@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { ApiRequestError } from '@/app/types/api-error';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -52,6 +53,7 @@ function getApiErrorMessage(error: unknown, fallbackMessage: string): string {
 }
 
 function ChatbotWorkflowsPageContent() {
+  const { t } = useTranslation();
   const [listPage, setListPage] = useState(1);
   const [createOpen, setCreateOpen] = useState(false);
   const [newName, setNewName] = useState('');
@@ -74,7 +76,7 @@ function ChatbotWorkflowsPageContent() {
     try {
       await updateTenantMutation.mutateAsync({ whatsapp_ai_chatbot_enabled: enabled });
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, 'Erro ao salvar'));
+      toast.error(getApiErrorMessage(error, t('chatbotWorkflows.toasts.saveError')));
     }
   };
 
@@ -87,12 +89,19 @@ function ChatbotWorkflowsPageContent() {
           {
             node_type: 'trigger',
             node_key: 'message_received',
-            label: 'Mensagem Recebida',
+            label: t('chatbotWorkflows.defaultNodes.messageReceived'),
             config: {},
             position_x: 250,
             position_y: 50,
           },
-          { node_type: 'end', node_key: 'end', label: 'Fim', config: {}, position_x: 250, position_y: 300 },
+          {
+            node_type: 'end',
+            node_key: 'end',
+            label: t('chatbotWorkflows.defaultNodes.end'),
+            config: {},
+            position_x: 250,
+            position_y: 300,
+          },
         ],
         edges: [{ source_node: 'message_received', target_node: 'end' }],
       });
@@ -100,7 +109,7 @@ function ChatbotWorkflowsPageContent() {
       setNewName('');
       router.push(`/chatbot-workflows/${created.id}`);
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, 'Erro ao criar'));
+      toast.error(getApiErrorMessage(error, t('chatbotWorkflows.toasts.createError')));
     }
   };
 
@@ -108,7 +117,7 @@ function ChatbotWorkflowsPageContent() {
     try {
       await seedDefaultMutation.mutateAsync();
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, 'Erro'));
+      toast.error(getApiErrorMessage(error, t('chatbotWorkflows.toasts.genericError')));
     }
   };
 
@@ -116,16 +125,16 @@ function ChatbotWorkflowsPageContent() {
     try {
       await activateMutation.mutateAsync(id);
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, 'Erro'));
+      toast.error(getApiErrorMessage(error, t('chatbotWorkflows.toasts.genericError')));
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Tem certeza que deseja excluir?')) return;
+    if (!confirm(t('chatbotWorkflows.deleteConfirm'))) return;
     try {
       await deleteMutation.mutateAsync(id);
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, 'Erro'));
+      toast.error(getApiErrorMessage(error, t('chatbotWorkflows.toasts.genericError')));
     }
   };
 
@@ -137,15 +146,13 @@ function ChatbotWorkflowsPageContent() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-heading font-semibold text-foreground flex items-center gap-2">
-            <Bot className="w-6 h-6 text-primary" /> Chatbot / IA
+            <Bot className="w-6 h-6 text-primary" /> {t('chatbotWorkflows.header.title')}
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Gerencie o bot de WhatsApp e seus fluxos de atendimento automático.
-          </p>
+          <p className="text-sm text-muted-foreground mt-1">{t('chatbotWorkflows.header.subtitle')}</p>
         </div>
         <Link href="/settings/chatbot">
           <Button variant="outline" size="sm" className="w-full gap-1.5 sm:w-auto">
-            <Settings className="w-4 h-4" /> Persona & Mensagens
+            <Settings className="w-4 h-4" /> {t('chatbotWorkflows.header.personaButton')}
           </Button>
         </Link>
       </div>
@@ -167,15 +174,17 @@ function ChatbotWorkflowsPageContent() {
               )}
               <div>
                 <p className="font-semibold text-foreground text-sm">
-                  Bot está{' '}
+                  {t('chatbotWorkflows.statusBanner.botIsLabel')}{' '}
                   <span className={botEnabled ? 'text-primary' : 'text-muted-foreground'}>
-                    {botEnabled ? 'ATIVO' : 'INATIVO'}
+                    {botEnabled
+                      ? t('chatbotWorkflows.statusBanner.active')
+                      : t('chatbotWorkflows.statusBanner.inactive')}
                   </span>
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   {botEnabled
-                    ? 'Respostas automáticas habilitadas para novas mensagens WhatsApp.'
-                    : 'O bot não está respondendo. Ative para iniciar o atendimento automático.'}
+                    ? t('chatbotWorkflows.statusBanner.activeDescription')
+                    : t('chatbotWorkflows.statusBanner.inactiveDescription')}
                 </p>
               </div>
             </div>
@@ -198,7 +207,7 @@ function ChatbotWorkflowsPageContent() {
                 </div>
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-0.5">
-                    Workflow ativo
+                    {t('chatbotWorkflows.activeWorkflow.badge')}
                   </p>
                   <p className="font-semibold text-foreground">{activeWorkflow.name}</p>
                 </div>
@@ -209,7 +218,7 @@ function ChatbotWorkflowsPageContent() {
                 className="gap-1.5 shrink-0"
                 onClick={() => router.push(`/chatbot-workflows/${activeWorkflow.id}`)}
               >
-                <Pencil className="w-3.5 h-3.5" /> Editar
+                <Pencil className="w-3.5 h-3.5" /> {t('chatbotWorkflows.activeWorkflow.edit')}
               </Button>
             </div>
           </CardContent>
@@ -220,15 +229,17 @@ function ChatbotWorkflowsPageContent() {
       <Card>
         <CardHeader className="pb-4">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <CardTitle className="text-base font-semibold text-foreground">Workflows</CardTitle>
+            <CardTitle className="text-base font-semibold text-foreground">
+              {t('chatbotWorkflows.list.title')}
+            </CardTitle>
             <div className="flex flex-wrap gap-2">
               {workflows.length === 0 && (
                 <Button variant="outline" size="sm" onClick={handleSeedDefault} className="gap-1.5">
-                  <Zap className="w-3.5 h-3.5" /> Criar padrão
+                  <Zap className="w-3.5 h-3.5" /> {t('chatbotWorkflows.list.createDefault')}
                 </Button>
               )}
               <Button size="sm" onClick={() => setCreateOpen(true)} className="bg-primary gap-1.5">
-                <Plus className="w-3.5 h-3.5" /> Novo Workflow
+                <Plus className="w-3.5 h-3.5" /> {t('chatbotWorkflows.list.newWorkflow')}
               </Button>
             </div>
           </div>
@@ -241,10 +252,10 @@ function ChatbotWorkflowsPageContent() {
           ) : workflows.length === 0 ? (
             <div className="text-center py-14 text-muted-foreground">
               <Workflow className="w-12 h-12 mx-auto mb-3 text-muted-foreground/30" />
-              <p className="font-medium">Nenhum workflow configurado</p>
-              <p className="text-sm mt-1 mb-4">Crie o workflow padrão para começar com um fluxo pré-configurado.</p>
+              <p className="font-medium">{t('chatbotWorkflows.list.empty.title')}</p>
+              <p className="text-sm mt-1 mb-4">{t('chatbotWorkflows.list.empty.description')}</p>
               <Button variant="outline" onClick={handleSeedDefault} className="gap-1.5">
-                <Zap className="w-4 h-4" /> Criar Workflow Padrão
+                <Zap className="w-4 h-4" /> {t('chatbotWorkflows.list.empty.createDefault')}
               </Button>
             </div>
           ) : (
@@ -254,10 +265,10 @@ function ChatbotWorkflowsPageContent() {
                 <Table className="min-w-full border-collapse bg-white text-sm">
                   <TableHeader>
                     <TableRow className="border-b border-gray-300 h-15">
-                      <TableHead>Nome</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Criado em</TableHead>
-                      <TableHead className="text-right">Ações</TableHead>
+                      <TableHead>{t('chatbotWorkflows.list.table.name')}</TableHead>
+                      <TableHead>{t('chatbotWorkflows.list.table.status')}</TableHead>
+                      <TableHead>{t('chatbotWorkflows.list.table.createdAt')}</TableHead>
+                      <TableHead className="text-right">{t('chatbotWorkflows.list.table.actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -269,11 +280,11 @@ function ChatbotWorkflowsPageContent() {
                         <TableCell>
                           {wf.is_active ? (
                             <Badge className="bg-primary/10 text-primary border-primary/20 hover:bg-primary/10">
-                              <CheckCircle2 className="w-3 h-3 mr-1" /> Ativo
+                              <CheckCircle2 className="w-3 h-3 mr-1" /> {t('chatbotWorkflows.list.status.active')}
                             </Badge>
                           ) : (
                             <Badge variant="secondary" className="text-muted-foreground">
-                              Inativo
+                              {t('chatbotWorkflows.list.status.inactive')}
                             </Badge>
                           )}
                         </TableCell>
@@ -286,8 +297,8 @@ function ChatbotWorkflowsPageContent() {
                               variant="ghost"
                               size="icon"
                               className="p-0"
-                              title="Editar"
-                              aria-label="Editar"
+                              title={t('chatbotWorkflows.list.actions.edit')}
+                              aria-label={t('chatbotWorkflows.list.actions.edit')}
                               onClick={() => router.push(`/chatbot-workflows/${wf.id}`)}
                             >
                               <Pencil className="w-4 h-4" />
@@ -297,8 +308,8 @@ function ChatbotWorkflowsPageContent() {
                                 variant="ghost"
                                 size="icon"
                                 className="p-0"
-                                title="Ativar"
-                                aria-label="Ativar"
+                                title={t('chatbotWorkflows.list.actions.activate')}
+                                aria-label={t('chatbotWorkflows.list.actions.activate')}
                                 onClick={() => handleActivate(wf.id)}
                               >
                                 <Zap className="w-4 h-4 text-primary" />
@@ -308,8 +319,8 @@ function ChatbotWorkflowsPageContent() {
                               variant="ghost"
                               size="icon"
                               className="p-0"
-                              title="Excluir"
-                              aria-label="Excluir"
+                              title={t('chatbotWorkflows.list.actions.delete')}
+                              aria-label={t('chatbotWorkflows.list.actions.delete')}
                               onClick={() => handleDelete(wf.id)}
                             >
                               <Trash2 className="w-4 h-4 text-destructive" />

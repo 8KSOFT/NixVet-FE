@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { BookOpen, FileWarning, Pencil, Plus, Ticket, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
@@ -69,6 +70,7 @@ function StatCard({ label, value, icon: Icon }: { label: string; value: number; 
 }
 
 export default function SuperadminSuportePage() {
+  const { t } = useTranslation();
   const [tab, setTab] = useState('chamados');
 
   const { data: stats } = useSupportStatsQuery();
@@ -96,15 +98,19 @@ export default function SuperadminSuportePage() {
   const handleSaveArticle = async () => {
     if (!editing) return;
     if (!editing.payload.title.trim() || !editing.payload.content.trim()) {
-      toast.error('Título e conteúdo são obrigatórios');
+      toast.error(t('superadminSuporte.toasts.articleRequiredFields'));
       return;
     }
     try {
       await saveArticle.mutateAsync({ id: editing.id, payload: editing.payload });
-      toast.success(editing.id ? 'Artigo atualizado.' : 'Artigo criado.');
+      toast.success(
+        editing.id
+          ? t('superadminSuporte.toasts.articleUpdated')
+          : t('superadminSuporte.toasts.articleCreated'),
+      );
       setEditing(null);
     } catch (error) {
-      toast.error(getApiErrorMessage(error, 'Erro ao salvar artigo'));
+      toast.error(getApiErrorMessage(error, t('superadminSuporte.toasts.articleSaveError')));
     }
   };
 
@@ -112,10 +118,10 @@ export default function SuperadminSuportePage() {
     if (!toDelete) return;
     try {
       await deleteArticle.mutateAsync(toDelete.id);
-      toast.success('Artigo removido.');
+      toast.success(t('superadminSuporte.toasts.articleRemoved'));
       setToDelete(null);
     } catch (error) {
-      toast.error(getApiErrorMessage(error, 'Erro ao remover artigo'));
+      toast.error(getApiErrorMessage(error, t('superadminSuporte.toasts.articleRemoveError')));
     }
   };
 

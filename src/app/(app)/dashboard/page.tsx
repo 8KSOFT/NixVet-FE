@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/table";
 
 import { useTranslation } from "react-i18next";
+import { CURRENCY_BY_LANGUAGE, resolveAppLanguage } from "@/lib/i18n/currency";
 import { cn } from "@/lib/utils";
 import { MenuIconsColored } from "@/components/MenuIconsColored";
 import { useDashboardMetricsQuery } from "@/hooks/apiHooks/useDashboardMetrics";
@@ -93,9 +94,9 @@ const MANAGEMENT_ROLES = new Set(["superadmin", "admin", "manager"]);
 
 /** Abrevia valores grandes (ex.: "R$50 mil") — o card do grid mobile tem
  * largura fixa e "R$50000.00" por extenso não cabe em 22px. */
-function formatCompactCurrency(value: number, prefix: string): string {
+function formatCompactCurrency(value: number, prefix: string, locale: string): string {
   if (value >= 10000) {
-    return `${prefix}${new Intl.NumberFormat("pt-BR", { notation: "compact", maximumFractionDigits: 1 }).format(value)}`;
+    return `${prefix}${new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 1 }).format(value)}`;
   }
   return `${prefix}${value.toFixed(2)}`;
 }
@@ -423,7 +424,7 @@ export default function DashboardPage() {
               <div className="mt-1 flex items-center gap-1 text-[12.5px] font-semibold text-wa-brand-100">
                 <ArrowUp className={cn("size-3", heroDelta < 0 && "rotate-180")} />
                 {heroDelta > 0 ? "+" : ""}
-                {heroDelta} vs. ontem
+                {heroDelta} {t("dashboardHome.vsYesterday")}
               </div>
             </div>
 
@@ -453,7 +454,11 @@ export default function DashboardPage() {
                   </div>
                   <div>
                     <div className="text-[22px] leading-none font-extrabold tracking-tight text-wa-ink">
-                      {formatCompactCurrency(stats.revenueMonth, t("dashboardHome.currencyPrefix"))}
+                      {formatCompactCurrency(
+                        stats.revenueMonth,
+                        t("dashboardHome.currencyPrefix"),
+                        CURRENCY_BY_LANGUAGE[resolveAppLanguage(i18n.language)].locale,
+                      )}
                     </div>
                     <div className="mt-1 text-xs leading-snug text-wa-ink-2">{t("dashboardHome.statsRevenue")}</div>
                   </div>
@@ -545,7 +550,7 @@ export default function DashboardPage() {
             {t("dashboardHome.tableTitle")}
           </h3>
           <Link href="/calendar" className="text-sm font-medium text-primary hover:underline">
-            Ver agenda
+            {t("dashboardHome.viewSchedule")}
           </Link>
         </div>
         <div className="p-0">
@@ -557,7 +562,7 @@ export default function DashboardPage() {
             </div>
           ) : recentAppointments.length === 0 ? (
             <div className="rounded-lg border border-gray-300 bg-white py-8 text-center text-sm text-slate-500">
-              {t("dashboardHome.noAppointments", "Nenhuma consulta hoje")}
+              {t("dashboardHome.noAppointments")}
             </div>
           ) : (
             <>
@@ -616,9 +621,9 @@ export default function DashboardPage() {
 
       <div>
         <div className="px-2 mb-4 flex items-center justify-between">
-          <h3 className="text-[20px] font-bold text-slate-900">Tarefas pendentes</h3>
+          <h3 className="text-[20px] font-bold text-slate-900">{t("dashboardHome.pendingTasksTitle")}</h3>
           <Link href="/tasks" className="text-sm font-medium text-primary hover:underline">
-            Ver todas
+            {t("dashboardHome.viewAll")}
           </Link>
         </div>
         {loading ? (
@@ -629,7 +634,7 @@ export default function DashboardPage() {
           </div>
         ) : pendingTasks.length === 0 ? (
           <div className="rounded-lg border border-gray-300 bg-white py-8 text-center text-sm text-slate-500">
-            Nenhuma tarefa pendente.
+            {t("dashboardHome.noPendingTasks")}
           </div>
         ) : (
           <div className="space-y-2">
@@ -646,7 +651,7 @@ export default function DashboardPage() {
                   <p className="truncate text-xs text-muted-foreground">{task.patient?.name ?? t("dashboardHome.na")}</p>
                 </div>
                 <Badge variant="secondary" className="shrink-0">
-                  {task.due_date ? new Date(task.due_date).toLocaleDateString(locale) : "Sem prazo"}
+                  {task.due_date ? new Date(task.due_date).toLocaleDateString(locale) : t("dashboardHome.noDueDate")}
                 </Badge>
               </div>
             ))}
