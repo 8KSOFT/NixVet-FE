@@ -12,6 +12,7 @@ import {
   AlertOctagon,
   UserRound,
   MessageSquare,
+  PackageX,
   Menu,
   User,
   ChevronDown,
@@ -90,6 +91,9 @@ function notificationTypeMeta(type: string): {
       icon: MessageSquare,
       badgeClass: "bg-amber-100 text-amber-600",
     };
+  }
+  if (type === "low_stock") {
+    return { label: "Estoque baixo", icon: PackageX, badgeClass: "bg-amber-100 text-amber-600" };
   }
   return { label: "Notificação", icon: Bell, badgeClass: "bg-primary/10 text-primary" };
 }
@@ -552,7 +556,7 @@ function SidebarNav({
       {bottomSections.length > 0 && (
         <div
           className={cn(
-            "flex shrink-0 flex-col gap-2 border-t px-4 pt-4 [padding-bottom:calc(0.75rem+env(safe-area-inset-bottom))]",
+            "flex shrink-0 flex-col border-t px-4",
             medical ? "border-white/5" : "border-border",
           )}
         >
@@ -561,8 +565,10 @@ function SidebarNav({
               type="button"
               onClick={() => setAdminOpen((prev) => !prev)}
               className={cn(
-                "flex items-center justify-between px-0.5 text-[10.5px] font-bold tracking-[.06em] uppercase",
-                medical ? "text-white/55" : "text-muted-foreground/60",
+                "-mx-4 flex cursor-pointer items-center justify-between px-4 py-3.5 text-[10.5px] font-bold tracking-[.06em] uppercase transition-colors duration-150",
+                medical
+                  ? "text-white/90 hover:bg-white/6 hover:text-white"
+                  : "text-muted-foreground/70 hover:bg-muted hover:text-foreground",
               )}
             >
               <span>Admin</span>
@@ -574,15 +580,28 @@ function SidebarNav({
               />
             </button>
           )}
+          {/* grid-template-rows em fr (não max-height fixo) — anima suave com base
+              no tamanho real do conteúdo, em vez de esticar o easing por uma
+              distância enorme (0→999px) que fazia o movimento parecer travado.
+              Só UMA propriedade anima (a altura da track); padding-bottom fica
+              sempre presente (não é condicional) pra não mudar a altura natural
+              do conteúdo no meio da transição, e sem opacity correndo em
+              paralelo — duas propriedades animando ao mesmo tempo é o que
+              costuma parecer "com engasgo" em vez de um movimento só. */}
           <div
             className={cn(
-              "flex flex-col gap-2 overflow-hidden transition-[max-height,opacity] duration-500 ease-in-out will-change-[max-height,opacity]",
-              collapsed || adminOpen
-                ? "max-h-[999px] opacity-100 pointer-events-auto"
-                : "max-h-0 opacity-0 pointer-events-none",
+              "grid transition-[grid-template-rows] duration-300 ease-in-out will-change-[grid-template-rows]",
+              collapsed || adminOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
             )}
           >
-            {bottomSections.map(renderSectionItems)}
+            <div
+              className={cn(
+                "flex min-h-0 flex-col gap-2 overflow-hidden pt-2 [padding-bottom:calc(0.75rem+env(safe-area-inset-bottom))]",
+                collapsed || adminOpen ? "pointer-events-auto" : "pointer-events-none",
+              )}
+            >
+              {bottomSections.map(renderSectionItems)}
+            </div>
           </div>
         </div>
       )}

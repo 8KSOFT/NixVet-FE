@@ -11,6 +11,7 @@ import {
   Package,
   HelpCircle,
   LifeBuoy,
+  ShoppingCart,
 } from "lucide-react";
 import { MenuIconsWhite } from "@/components/MenuIconsWhite";
 import type { PlanId } from "@/lib/plans";
@@ -63,6 +64,12 @@ export const NAV_SECTIONS: NavSection[] = [
         icon: MenuIconsWhite.tutores,
         href: "/owners",
         labelKey: "nav.owners",
+      },
+      {
+        key: "balcao",
+        icon: ShoppingCart,
+        href: "/balcao",
+        labelKey: "nav.balcao",
       },
     ],
   },

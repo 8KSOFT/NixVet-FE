@@ -3,7 +3,7 @@
 import React, { Suspense, useEffect, useMemo, useState } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
-import { Plus, Package, ShoppingCart, Trash2, Pencil, Loader2 } from 'lucide-react';
+import { Plus, Package, ShoppingCart, Trash2, Pencil, Loader2, Tags, Truck, History, FileInput, LineChart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -32,17 +32,30 @@ import { CurrencyInput } from '@/components/ui/currency-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { toast } from 'sonner';
 import type { Product, ProductPayload } from '@/app/types/product';
 import {
   useCreateProductMutation,
-  useCreateProductSaleMutation,
   useDeleteProductMutation,
   useProductsQuery,
   useProductSalesQuery,
   useUpdateProductMutation,
 } from '@/hooks/apiHooks/useProducts';
+import { useProductCategoriesQuery, useSuppliersQuery } from '@/hooks/apiHooks/useStock';
 import { useCurrencyFormatter } from '@/lib/i18n/currency';
+import { CategoriesTab } from './_components/CategoriesTab';
+import { SuppliersTab } from './_components/SuppliersTab';
+import { MovementsTab } from './_components/MovementsTab';
+import { CategorySelect } from './_components/CategorySelect';
+import { StockEntriesTab } from './_components/StockEntriesTab';
+import { CostHistoryTab } from './_components/CostHistoryTab';
 
 function computeMargin(salePrice: number, cost: number, tax: number) {
   const tax_amount = Math.round(((salePrice * tax) / 100) * 100) / 100;
@@ -61,7 +74,23 @@ const EMPTY_FORM = {
   tax_percentage: '',
   stock_quantity: '',
   active: true,
+  item_type: 'product' as 'product' | 'consumable',
+  category_id: null as string | null,
+  supplier_id: null as string | null,
+  minimum_stock: '',
+  internal_code: '',
 };
+
+type ProdutosTab = 'products' | 'sales' | 'categories' | 'suppliers' | 'movements' | 'entries' | 'cost-history';
+const VALID_TABS: ProdutosTab[] = [
+  'products',
+  'sales',
+  'categories',
+  'suppliers',
+  'movements',
+  'entries',
+  'cost-history',
+];
 
 function ProdutosContent() {
   const { t } = useTranslation();
@@ -69,27 +98,35 @@ function ProdutosContent() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [tab, setTab] = useState<'products' | 'sales'>('products');
+  const tabParam = searchParams?.get('tab');
+  const [tab, setTab] = useState<ProdutosTab>(
+    VALID_TABS.includes(tabParam as ProdutosTab) ? (tabParam as ProdutosTab) : 'products',
+  );
+
+  const changeTab = (next: ProdutosTab) => {
+    setTab(next);
+    const params = new URLSearchParams(searchParams?.toString());
+    if (next === 'products') params.delete('tab');
+    else params.set('tab', next);
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : (pathname ?? '/settings/produtos'), { scroll: false });
+  };
 
   const { data: products = [], isLoading: loadingProducts } = useProductsQuery(true);
   const { data: sales = [], isLoading: loadingSales } = useProductSalesQuery();
+  const { data: categories = [] } = useProductCategoriesQuery();
+  const { data: suppliers = [] } = useSuppliersQuery();
 
   const createProduct = useCreateProductMutation();
   const updateProduct = useUpdateProductMutation();
   const deleteProduct = useDeleteProductMutation();
-  const createSale = useCreateProductSaleMutation();
 
-  const loading = tab === 'products' ? loadingProducts : loadingSales;
+  const loading = tab === 'products' ? loadingProducts : tab === 'sales' ? loadingSales : false;
 
   // Dialog produto
   const [editing, setEditing] = useState<Product | null>(null);
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [productDialog, setProductDialog] = useState(false);
-
-  // Dialog venda
-  const [saleDialog, setSaleDialog] = useState(false);
-  const [cart, setCart] = useState<{ product_id: string; quantity: number }[]>([]);
-  const [productSearch, setProductSearch] = useState('');
 
   const openNewProduct = () => {
     setEditing(null);
@@ -118,6 +155,11 @@ function ProdutosContent() {
       tax_percentage: String(p.tax_percentage),
       stock_quantity: String(p.stock_quantity),
       active: p.active,
+      item_type: p.item_type ?? 'product',
+      category_id: p.category_id ?? null,
+      supplier_id: p.supplier_id ?? null,
+      minimum_stock: p.minimum_stock != null ? String(p.minimum_stock) : '',
+      internal_code: p.internal_code ?? '',
     });
     setProductDialog(true);
   };
@@ -141,6 +183,11 @@ function ProdutosContent() {
       tax_percentage: form.tax_percentage ? Number(form.tax_percentage) : 0,
       stock_quantity: form.stock_quantity ? Number(form.stock_quantity) : 0,
       active: form.active,
+      item_type: form.item_type,
+      category_id: form.category_id,
+      supplier_id: form.supplier_id,
+      minimum_stock: form.minimum_stock ? Number(form.minimum_stock) : 0,
+      internal_code: form.internal_code.trim() || null,
     };
     try {
       if (editing) {
@@ -164,63 +211,6 @@ function ProdutosContent() {
     }
   };
 
-  // ----- Venda -----
-  const productById = useMemo(() => new Map(products.map((p) => [p.id, p])), [products]);
-  const filteredProducts = useMemo(() => {
-    const query = productSearch.trim().toLowerCase();
-    const active = products.filter((p) => p.active);
-    if (!query) return active;
-    return active.filter((p) => p.name.toLowerCase().includes(query) || p.sku?.toLowerCase().includes(query));
-  }, [products, productSearch]);
-
-  const addToCart = (productId: string) => {
-    setCart((prev) => {
-      const existing = prev.find((i) => i.product_id === productId);
-      if (existing) return prev.map((i) => (i.product_id === productId ? { ...i, quantity: i.quantity + 1 } : i));
-      return [...prev, { product_id: productId, quantity: 1 }];
-    });
-  };
-
-  const setQty = (productId: string, qty: number) => {
-    setCart((prev) =>
-      prev
-        .map((i) => (i.product_id === productId ? { ...i, quantity: qty } : i))
-        .filter((i) => i.quantity > 0),
-    );
-  };
-
-  const cartTotals = useMemo(() => {
-    let gross = 0;
-    let tax = 0;
-    for (const item of cart) {
-      const p = productById.get(item.product_id);
-      if (!p) continue;
-      const lineGross = Number(p.sale_price) * item.quantity;
-      gross += lineGross;
-      tax += (lineGross * Number(p.tax_percentage)) / 100;
-    }
-    return { gross, tax, total: gross + tax };
-  }, [cart, productById]);
-
-  const openSale = () => {
-    setCart([]);
-    setProductSearch('');
-    setSaleDialog(true);
-  };
-
-  const submitSale = async () => {
-    if (cart.length === 0) {
-      toast.error(t('settingsProdutos.emptyCartError'));
-      return;
-    }
-    try {
-      await createSale.mutateAsync({ items: cart });
-      setSaleDialog(false);
-    } catch {
-      toast.error(t('settingsProdutos.registerSaleError'));
-    }
-  };
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -234,23 +224,52 @@ function ProdutosContent() {
           <Button variant="outline" onClick={openNewProduct} className="w-full sm:w-auto">
             <Plus className="mr-2 size-4" /> {t('settingsProdutos.newProduct')}
           </Button>
-          <Button onClick={openSale} className="w-full sm:w-auto">
+          <Button onClick={() => router.push('/balcao')} className="w-full sm:w-auto">
             <ShoppingCart className="mr-2 size-4" /> {t('settingsProdutos.newSale')}
           </Button>
         </div>
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <Button variant={tab === 'products' ? 'default' : 'outline'} size="sm" onClick={() => setTab('products')}>
+        <Button variant={tab === 'products' ? 'default' : 'outline'} size="sm" onClick={() => changeTab('products')}>
           <Package className="mr-2 size-4" /> {t('settingsProdutos.tabProducts')}
         </Button>
-        <Button variant={tab === 'sales' ? 'default' : 'outline'} size="sm" onClick={() => setTab('sales')}>
+        <Button variant={tab === 'sales' ? 'default' : 'outline'} size="sm" onClick={() => changeTab('sales')}>
           <ShoppingCart className="mr-2 size-4" /> {t('settingsProdutos.tabSales')}
+        </Button>
+        <Button variant={tab === 'categories' ? 'default' : 'outline'} size="sm" onClick={() => changeTab('categories')}>
+          <Tags className="mr-2 size-4" /> {t('settingsProdutos.tabCategories')}
+        </Button>
+        <Button variant={tab === 'suppliers' ? 'default' : 'outline'} size="sm" onClick={() => changeTab('suppliers')}>
+          <Truck className="mr-2 size-4" /> {t('settingsProdutos.tabSuppliers')}
+        </Button>
+        <Button variant={tab === 'movements' ? 'default' : 'outline'} size="sm" onClick={() => changeTab('movements')}>
+          <History className="mr-2 size-4" /> {t('settingsProdutos.tabMovements')}
+        </Button>
+        <Button variant={tab === 'entries' ? 'default' : 'outline'} size="sm" onClick={() => changeTab('entries')}>
+          <FileInput className="mr-2 size-4" /> {t('settingsProdutos.tabEntries')}
+        </Button>
+        <Button
+          variant={tab === 'cost-history' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => changeTab('cost-history')}
+        >
+          <LineChart className="mr-2 size-4" /> {t('settingsProdutos.tabCostHistory')}
         </Button>
       </div>
 
       <div>
-        {loading ? (
+        {tab === 'categories' ? (
+          <CategoriesTab />
+        ) : tab === 'suppliers' ? (
+          <SuppliersTab />
+        ) : tab === 'movements' ? (
+          <MovementsTab products={products} />
+        ) : tab === 'entries' ? (
+          <StockEntriesTab products={products} suppliers={suppliers} />
+        ) : tab === 'cost-history' ? (
+          <CostHistoryTab products={products} />
+        ) : loading ? (
           <div className="space-y-2">
             {Array.from({ length: 5 }).map((_, i) => (
               <Skeleton key={i} className="h-10 w-full" />
@@ -537,9 +556,75 @@ function ProdutosContent() {
               <Input
                 id="stock"
                 type="number"
+                step="0.0001"
+                min={0}
                 value={form.stock_quantity}
                 onChange={(e) => setForm({ ...form, stock_quantity: e.target.value })}
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="minimum-stock">{t('settingsProdutos.minimumStockLabel')}</Label>
+              <Input
+                id="minimum-stock"
+                type="number"
+                step="0.0001"
+                min={0}
+                value={form.minimum_stock}
+                onChange={(e) => setForm({ ...form, minimum_stock: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="item-type">{t('settingsProdutos.itemTypeLabel')}</Label>
+              <Select
+                value={form.item_type}
+                onValueChange={(v) => setForm({ ...form, item_type: v as 'product' | 'consumable' })}
+              >
+                <SelectTrigger id="item-type" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="product">{t('settingsProdutos.itemTypeProduct')}</SelectItem>
+                  <SelectItem value="consumable">{t('settingsProdutos.itemTypeConsumable')}</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">{t('settingsProdutos.itemTypeHint')}</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="internal-code">{t('settingsProdutos.internalCodeLabel')}</Label>
+              <Input
+                id="internal-code"
+                value={form.internal_code}
+                onChange={(e) => setForm({ ...form, internal_code: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="category">{t('settingsProdutos.categoryLabel')}</Label>
+              <CategorySelect categories={categories} value={form.category_id} onChange={(v) => setForm({ ...form, category_id: v })} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="supplier">{t('settingsProdutos.supplierLabel')}</Label>
+              <Select
+                value={form.supplier_id ?? '__none__'}
+                onValueChange={(v) => setForm({ ...form, supplier_id: v === '__none__' ? null : v })}
+              >
+                <SelectTrigger id="supplier" className="w-full">
+                  <SelectValue placeholder={t('settingsProdutos.supplierNone')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">{t('settingsProdutos.supplierNone')}</SelectItem>
+                  {suppliers.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
@@ -570,105 +655,6 @@ function ProdutosContent() {
               <span>{fmt(formPreview.client_total)}</span>
             </div>
           </div>
-        </form>
-      </DashboardCreateFormDialog>
-
-      {/* Dialog venda */}
-      <DashboardCreateFormDialog
-        open={saleDialog}
-        onOpenChange={setSaleDialog}
-        title={t('settingsProdutos.newSale')}
-        footer={
-          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <Button type="button" variant="outline" onClick={() => setSaleDialog(false)} disabled={createSale.isPending}>
-              {t('settingsProdutos.cancel')}
-            </Button>
-            <Button
-              type="submit"
-              form="sale-create-form"
-              className="bg-primary"
-              disabled={createSale.isPending || cart.length === 0}
-            >
-              {createSale.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
-              {t('settingsProdutos.registerSale')}
-            </Button>
-          </div>
-        }
-      >
-        <form
-          id="sale-create-form"
-          onSubmit={(e) => {
-            e.preventDefault();
-            submitSale();
-          }}
-          className="space-y-4 md:space-y-6"
-        >
-          <div className="space-y-2">
-            <Label htmlFor="product-search">{t('settingsProdutos.tabProducts')}</Label>
-            <Input
-              id="product-search"
-              type="text"
-              placeholder={t('settingsProdutos.searchProductPlaceholder')}
-              value={productSearch}
-              onChange={(e) => setProductSearch(e.target.value)}
-              autoComplete="off"
-            />
-            <div className="max-h-48 space-y-1 overflow-y-auto rounded-md border border-gray-300 p-1">
-              {filteredProducts.length === 0 ? (
-                <p className="p-2 text-center text-sm text-muted-foreground">{t('settingsProdutos.noProductsFound')}</p>
-              ) : (
-                filteredProducts.map((p) => (
-                  <button
-                    type="button"
-                    key={p.id}
-                    onClick={() => addToCart(p.id)}
-                    className="flex w-full items-center justify-between rounded-md border border-transparent p-2 text-left text-sm hover:border-gray-300 hover:bg-muted/50"
-                  >
-                    <span>{p.name}</span>
-                    <span className="text-muted-foreground">{p.sale_price_formatted ?? fmt(p.sale_price)}</span>
-                  </button>
-                ))
-              )}
-            </div>
-          </div>
-
-          {cart.length > 0 && (
-            <div className="space-y-2 border-t border-gray-300 pt-3">
-              {cart.map((item) => {
-                const p = productById.get(item.product_id);
-                if (!p) return null;
-                return (
-                  <div key={item.product_id} className="flex items-center gap-2 text-sm">
-                    <span className="flex-1 truncate">{p.name}</span>
-                    <Input
-                      type="number"
-                      min={1}
-                      value={item.quantity}
-                      onChange={(e) => setQty(item.product_id, Number(e.target.value))}
-                      className="w-16"
-                    />
-                    <span className="w-24 text-right tabular-nums">
-                      {fmt(Number(p.sale_price) * item.quantity)}
-                    </span>
-                  </div>
-                );
-              })}
-              <div className="rounded-md bg-muted/50 p-3 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">{t('settingsProdutos.gross')}</span>
-                  <span>{fmt(cartTotals.gross)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">{t('settingsProdutos.tax')}</span>
-                  <span>{fmt(cartTotals.tax)}</span>
-                </div>
-                <div className="flex justify-between font-semibold">
-                  <span>{t('settingsProdutos.total')}</span>
-                  <span>{fmt(cartTotals.total)}</span>
-                </div>
-              </div>
-            </div>
-          )}
         </form>
       </DashboardCreateFormDialog>
     </div>
