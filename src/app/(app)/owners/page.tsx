@@ -7,7 +7,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
 import axios from 'axios';
-import { Plus, Pencil, Trash2, Search, Loader2 } from 'lucide-react';
+import Link from 'next/link';
+import { Plus, Pencil, Trash2, Search, Loader2, ChevronDown, PawPrint } from 'lucide-react';
 
 import { DashboardCreateFormDialog } from '@/components/dashboard-create-form-dialog';
 import { Button } from '@/components/ui/button';
@@ -37,7 +38,9 @@ import {
   useUpdateTutorMutation,
   tutorKeys,
 } from '@/hooks/apiHooks/useTutors';
+import { usePatientsListQuery } from '@/hooks/apiHooks/usePatients';
 import { ProfilePhoto, ProfilePhotoUploader } from '@/components/shared/profile-photo';
+import { cn } from '@/lib/utils';
 
 const tutorSchema = z.object({
   name: z.string().min(1, 'Obrigatório'),
@@ -93,6 +96,46 @@ const formatCpfDisplay = (text: string) => {
   return text;
 };
 
+/** Lista de pets de um responsável — só busca quando a sanfona é aberta (o componente só monta nesse momento). */
+function OwnerPetsList({ tutorId }: { tutorId: string }) {
+  const { t } = useTranslation('common');
+  const { data: pets, isLoading } = usePatientsListQuery(tutorId);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-4">
+        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!pets || pets.length === 0) {
+    return <p className="py-2 text-sm text-slate-500">{t('owners.pets.empty')}</p>;
+  }
+
+  return (
+    <ul className="divide-y divide-gray-200">
+      {pets.map((pet) => (
+        <li key={pet.id} className="flex items-center justify-between gap-3 py-2">
+          <div className="flex min-w-0 items-center gap-2">
+            <ProfilePhoto url={pet.photo_url} name={pet.name} className="size-8 shrink-0" />
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium">{pet.name}</p>
+              <p className="truncate text-xs text-muted-foreground">
+                {pet.species}
+                {pet.breed ? ` · ${pet.breed}` : ''}
+              </p>
+            </div>
+          </div>
+          <Button variant="outline" size="sm" className="shrink-0" asChild>
+            <Link href={`/medical-records/prontuario/${pet.id}`}>{t('owners.pets.viewRecord')}</Link>
+          </Button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export default function OwnersPage() {
   const { t } = useTranslation('common');
   const [listPage, setListPage] = useState(1);
@@ -100,6 +143,19 @@ export default function OwnersPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingRecord, setEditingRecord] = useState<Tutor | null>(null);
   const [loadingCep, setLoadingCep] = useState(false);
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+
+  const togglePets = (id: string) => {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
 
   const {
     register,
@@ -340,10 +396,29 @@ export default function OwnersPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {tutors.map((tutor) => (
-                  <TableRow className="border-b border-gray-300 h-15" key={tutor.id}>
+                {tutors.map((tutor) => {
+                  const expanded = expandedIds.has(tutor.id);
+                  return (
+                  <React.Fragment key={tutor.id}>
+                  <TableRow
+                    className="border-b border-gray-300 h-15 cursor-pointer"
+                    onClick={() => togglePets(tutor.id)}
+                    aria-expanded={expanded}
+                  >
                     <TableCell>
                       <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            togglePets(tutor.id);
+                          }}
+                          aria-expanded={expanded}
+                          aria-label={t('owners.pets.toggleAria', { name: tutor.name })}
+                          className="shrink-0 rounded p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                        >
+                          <ChevronDown className={cn('h-4 w-4 transition-transform', expanded && 'rotate-180')} />
+                        </button>
                         <ProfilePhoto url={tutor.photo_url} name={tutor.name} className="size-8" />
                         <span>{tutor.name}</span>
                         {tutor.incomplete_profile && (
@@ -356,7 +431,7 @@ export default function OwnersPage() {
                     <TableCell>{tutor.email}</TableCell>
                     <TableCell>{formatPhoneDisplay(tutor.phone)}</TableCell>
                     <TableCell>{formatCpfDisplay(tutor.cpf)}</TableCell>
-                    <TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center gap-1">
                         <Button variant="ghost" size="icon" className="p-0" onClick={() => handleEdit(tutor)}>
                           <Pencil className="w-4 h-4" />
@@ -390,15 +465,35 @@ export default function OwnersPage() {
                       </div>
                     </TableCell>
                   </TableRow>
-                ))}
+                  {expanded && (
+                    <TableRow className="border-b border-gray-300 bg-slate-50 hover:bg-slate-50">
+                      <TableCell colSpan={5} className="py-3">
+                        <div className="flex items-center gap-1.5 pb-1 text-xs font-medium text-slate-500">
+                          <PawPrint className="h-3.5 w-3.5" />
+                          {t('owners.pets.sectionTitle', { name: tutor.name })}
+                        </div>
+                        <OwnerPetsList tutorId={tutor.id} />
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  </React.Fragment>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
 
           {/* Mobile: cards */}
           <div className="space-y-3 md:hidden">
-            {tutors.map((tutor) => (
-              <div key={tutor.id} className="rounded-lg border border-gray-300 bg-white p-4">
+            {tutors.map((tutor) => {
+              const expanded = expandedIds.has(tutor.id);
+              return (
+              <div
+                key={tutor.id}
+                className="cursor-pointer rounded-lg border border-gray-300 bg-white p-4"
+                onClick={() => togglePets(tutor.id)}
+                aria-expanded={expanded}
+              >
                 <div className="flex items-center gap-2">
                   <ProfilePhoto url={tutor.photo_url} name={tutor.name} className="size-9 shrink-0" />
                   <p className="truncate font-medium">{tutor.name}</p>
@@ -407,6 +502,18 @@ export default function OwnersPage() {
                       {t('owners.pendingBadge')}
                     </span>
                   )}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      togglePets(tutor.id);
+                    }}
+                    aria-expanded={expanded}
+                    aria-label={t('owners.pets.toggleAria', { name: tutor.name })}
+                    className="ml-auto shrink-0 rounded p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-700"
+                  >
+                    <ChevronDown className={cn('h-4 w-4 transition-transform', expanded && 'rotate-180')} />
+                  </button>
                 </div>
 
                 <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
@@ -424,7 +531,20 @@ export default function OwnersPage() {
                   </div>
                 </div>
 
-                <div className="mt-3 flex items-center justify-end gap-1 border-t border-gray-200 pt-2">
+                {expanded && (
+                  <div className="mt-3 border-t border-gray-200 pt-2" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center gap-1.5 pb-1 text-xs font-medium text-slate-500">
+                      <PawPrint className="h-3.5 w-3.5" />
+                      {t('owners.pets.sectionTitle', { name: tutor.name })}
+                    </div>
+                    <OwnerPetsList tutorId={tutor.id} />
+                  </div>
+                )}
+
+                <div
+                  className="mt-3 flex items-center justify-end gap-1 border-t border-gray-200 pt-2"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <Button variant="ghost" size="icon" className="p-0" onClick={() => handleEdit(tutor)}>
                     <Pencil className="w-4 h-4" />
                   </Button>
@@ -456,7 +576,8 @@ export default function OwnersPage() {
                   </AlertDialog>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         </>
       )}

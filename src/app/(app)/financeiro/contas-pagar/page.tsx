@@ -15,13 +15,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetFooter,
-} from '@/components/ui/sheet';
+import { DashboardCreateFormDialog } from '@/components/dashboard-create-form-dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -480,24 +474,39 @@ export default function ContasPagarPage() {
         </CardContent>
       </Card>
 
-      {/* Drawer de criação/edição */}
-      <Sheet open={drawerOpen} onOpenChange={(o) => !o && setDrawerOpen(false)}>
-        <SheetContent side="right" className="w-full overflow-y-auto sm:max-w-md">
-          <SheetHeader>
-            <SheetTitle>{editing ? t('financeiroContasPagar.editSheetTitle') : t('financeiroContasPagar.createSheetTitle')}</SheetTitle>
-          </SheetHeader>
+      {/* Modal de criação/edição — mesmo padrão (DashboardCreateFormDialog) usado
+          no resto do financeiro (ex.: Novo Orçamento), em vez do Sheet lateral
+          que essa tela usava antes e destoava do resto do app. */}
+      <DashboardCreateFormDialog
+        open={drawerOpen}
+        onOpenChange={(o) => !o && setDrawerOpen(false)}
+        title={editing ? t('financeiroContasPagar.editSheetTitle') : t('financeiroContasPagar.createSheetTitle')}
+        contentClassName="modal-responsive sm:max-w-lg"
+        preventOutsideClose
+        footer={
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button type="button" variant="outline" className="border border-gray-300" onClick={() => setDrawerOpen(false)} disabled={saving}>
+              {t('financeiroContasPagar.cancel')}
+            </Button>
+            <Button type="button" onClick={submitForm} disabled={saving}>
+              {editing ? t('financeiroContasPagar.saveChangesButton') : t('financeiroContasPagar.createButton')}
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-4 md:space-y-6">
+          <div className="space-y-1">
+            <Label htmlFor="p-description">{t('financeiroContasPagar.descriptionFieldLabel')}</Label>
+            <Input
+              id="p-description"
+              value={form.description}
+              onChange={(ev) => setField('description', ev.target.value)}
+              placeholder={t('financeiroContasPagar.descriptionPlaceholder')}
+            />
+          </div>
 
-          <div className="space-y-4 py-4">
-            <div>
-              <Label htmlFor="p-description">{t('financeiroContasPagar.descriptionFieldLabel')}</Label>
-              <Input
-                id="p-description"
-                value={form.description}
-                onChange={(ev) => setField('description', ev.target.value)}
-                placeholder={t('financeiroContasPagar.descriptionPlaceholder')}
-              />
-            </div>
-            <div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-1">
               <Label htmlFor="p-supplier">{t('financeiroContasPagar.supplierLabel')}</Label>
               <Input
                 id="p-supplier"
@@ -506,7 +515,7 @@ export default function ContasPagarPage() {
                 placeholder={t('financeiroContasPagar.supplierPlaceholder')}
               />
             </div>
-            <div>
+            <div className="space-y-1">
               <Label>{t('financeiroContasPagar.categoryFieldLabel')}</Label>
               <Select value={form.category} onValueChange={(v) => setField('category', v)}>
                 <SelectTrigger>
@@ -519,26 +528,30 @@ export default function ContasPagarPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label htmlFor="p-amount">{t('financeiroContasPagar.amountFieldLabel')}</Label>
-                <CurrencyInput
-                  id="p-amount"
-                  value={form.amount}
-                  onValueChange={(v) => setField('amount', v)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="p-due">{t('financeiroContasPagar.dueDateFieldLabel')}</Label>
-                <Input
-                  id="p-due"
-                  type="date"
-                  value={form.due_date}
-                  onChange={(ev) => setField('due_date', ev.target.value)}
-                />
-              </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-1">
+              <Label htmlFor="p-amount">{t('financeiroContasPagar.amountFieldLabel')}</Label>
+              <CurrencyInput
+                id="p-amount"
+                value={form.amount}
+                onValueChange={(v) => setField('amount', v)}
+              />
             </div>
-            <div>
+            <div className="space-y-1">
+              <Label htmlFor="p-due">{t('financeiroContasPagar.dueDateFieldLabel')}</Label>
+              <Input
+                id="p-due"
+                type="date"
+                value={form.due_date}
+                onChange={(ev) => setField('due_date', ev.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-1">
               <Label>{t('financeiroContasPagar.recurrenceFieldLabel')}</Label>
               <Select value={form.recurrence} onValueChange={(v) => setField('recurrence', v)}>
                 <SelectTrigger>
@@ -551,16 +564,7 @@ export default function ContasPagarPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <Label htmlFor="p-notes">{t('financeiroContasPagar.notesFieldLabel')}</Label>
-              <Textarea
-                id="p-notes"
-                value={form.notes}
-                onChange={(ev) => setField('notes', ev.target.value)}
-                rows={3}
-              />
-            </div>
-            <div>
+            <div className="space-y-1">
               <Label htmlFor="p-doc">{t('financeiroContasPagar.documentFieldLabel')}</Label>
               <Input
                 id="p-doc"
@@ -571,16 +575,17 @@ export default function ContasPagarPage() {
             </div>
           </div>
 
-          <SheetFooter>
-            <Button variant="outline" onClick={() => setDrawerOpen(false)} disabled={saving}>
-              {t('financeiroContasPagar.cancel')}
-            </Button>
-            <Button onClick={submitForm} disabled={saving}>
-              {editing ? t('financeiroContasPagar.saveChangesButton') : t('financeiroContasPagar.createButton')}
-            </Button>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
+          <div className="space-y-1">
+            <Label htmlFor="p-notes">{t('financeiroContasPagar.notesFieldLabel')}</Label>
+            <Textarea
+              id="p-notes"
+              value={form.notes}
+              onChange={(ev) => setField('notes', ev.target.value)}
+              rows={3}
+            />
+          </div>
+        </div>
+      </DashboardCreateFormDialog>
 
       {/* Dialog de confirmação de pagamento */}
       <Dialog open={!!paying} onOpenChange={(o) => !o && setPaying(null)}>

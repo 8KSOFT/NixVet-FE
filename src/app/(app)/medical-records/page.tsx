@@ -10,8 +10,10 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { toast } from 'sonner';
-import { Loader2, Plus, Search, UserPlus, PawPrint, ChevronRight } from 'lucide-react';
+import { Loader2, Plus, Search, UserPlus, PawPrint, ChevronRight, ChevronsUpDown, Check, X } from 'lucide-react';
 import { API_PAGE_SIZE } from '@/lib/pagination';
 import { ListPagination } from '@/components/list-pagination';
 import { ProfilePhoto } from '@/components/shared/profile-photo';
@@ -83,6 +85,8 @@ export default function MedicalRecordsListPage() {
   const { t } = useTranslation();
   const [modalVisible, setModalVisible] = useState(false);
   const [filterPatient, setFilterPatient] = useState('');
+  const [filterTutor, setFilterTutor] = useState('');
+  const [tutorFilterOpen, setTutorFilterOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [listPage, setListPage] = useState(1);
 
@@ -94,7 +98,11 @@ export default function MedicalRecordsListPage() {
   const [patientModal, setPatientModal] = useState(false);
   const [patientForm, setPatientForm] = useState(emptyPatient());
 
-  const { data: recordsPage, isLoading: loading } = useMedicalRecordsQuery(listPage, filterPatient || undefined);
+  const { data: recordsPage, isLoading: loading } = useMedicalRecordsQuery(
+    listPage,
+    filterPatient || undefined,
+    filterTutor || undefined,
+  );
   const records = recordsPage?.items ?? [];
   const listTotal = recordsPage?.total ?? 0;
   const listTotalPages = recordsPage?.totalPages ?? 1;
@@ -111,7 +119,9 @@ export default function MedicalRecordsListPage() {
 
   useEffect(() => {
     setListPage(1);
-  }, [filterPatient]);
+  }, [filterPatient, filterTutor]);
+
+  const selectedTutorName = tutors.find((tu) => tu.id === filterTutor)?.name;
 
   const handleCreate = async () => {
     if (!form.patient_id) {
@@ -219,14 +229,86 @@ export default function MedicalRecordsListPage() {
       </div>
 
       <div className="flex flex-wrap gap-3 mb-10">
-        <div className="flex-1 min-w-50 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-7 h-7" />
-          <Input
-            placeholder={t('medicalRecords.searchPlaceholder')}
-            className="pl-12 rounded-full h-15! placeholder:text-black/80"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+        {/* Busca + filtro por responsável formam um único bloco: a busca
+            arredonda só à esquerda, o filtro só à direita (sem borda dupla
+            no meio — a borda esquerda do botão já faz de divisória), pra
+            ler como um controle só, não dois soltos lado a lado. */}
+        <div className="flex flex-1 min-w-70">
+          <div className="relative flex-1 min-w-40">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-7 h-7" />
+            <Input
+              placeholder={t('medicalRecords.searchPlaceholder')}
+              className="h-15! rounded-l-full rounded-r-none border-r-0 pl-12 placeholder:text-black/80"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+
+          {/* Filtro por responsável — combobox com busca, não Select simples: a
+              clínica pode ter centenas de tutores, e o filtro existe justamente
+              para desambiguar pets homônimos, então precisa achar o tutor certo
+              rápido. Passa tutor_id pro backend (useMedicalRecordsQuery), então
+              a paginação/contagem já vem certa, diferente do search de texto ao
+              lado (que só filtra a página atual). */}
+          <Popover open={tutorFilterOpen} onOpenChange={setTutorFilterOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                role="combobox"
+                aria-expanded={tutorFilterOpen}
+                className="h-15 w-auto shrink-0 justify-between rounded-l-none rounded-r-full font-normal sm:w-64"
+              >
+                <span className="truncate">
+                  {selectedTutorName || t('medicalRecords.tutorFilterPlaceholder')}
+                </span>
+                <span className="ml-2 flex shrink-0 items-center gap-1">
+                  {filterTutor && (
+                    <X
+                      className="h-4 w-4 text-muted-foreground hover:text-foreground"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setFilterTutor('');
+                      }}
+                    />
+                  )}
+                  <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
+                </span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64 p-0" align="start">
+              <Command>
+                <CommandInput placeholder={t('medicalRecords.tutorFilterSearchPlaceholder')} />
+                <CommandList>
+                  <CommandEmpty>{t('medicalRecords.tutorFilterEmpty')}</CommandEmpty>
+                  <CommandGroup>
+                    <CommandItem
+                      value={t('medicalRecords.tutorFilterAll')}
+                      onSelect={() => {
+                        setFilterTutor('');
+                        setTutorFilterOpen(false);
+                      }}
+                    >
+                      <Check className={cn('h-4 w-4', filterTutor ? 'opacity-0' : 'opacity-100')} />
+                      {t('medicalRecords.tutorFilterAll')}
+                    </CommandItem>
+                    {tutors.map((tutor) => (
+                      <CommandItem
+                        key={tutor.id}
+                        value={tutor.name}
+                        onSelect={() => {
+                          setFilterTutor(tutor.id);
+                          setTutorFilterOpen(false);
+                        }}
+                      >
+                        <Check className={cn('h-4 w-4', filterTutor === tutor.id ? 'opacity-100' : 'opacity-0')} />
+                        {tutor.name}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </PopoverContent>
+          </Popover>
         </div>
 
         {/* <div className="w-55">

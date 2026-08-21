@@ -487,6 +487,20 @@ body {
   }
 }
 
+/* Pisca 2x na cor de destaque da plataforma (--primary) — usado pra marcar
+   qual item da lista acabou de ser criado, sem virar um blink infinito
+   (ruim de acessibilidade). Aplicado via `style={{ animation: ... }}`, não
+   classe, mesmo padrão de wa-item-flash acima. */
+@keyframes item-created-flash {
+  0%,
+  100% {
+    background-color: transparent;
+  }
+  50% {
+    background-color: rgba(18, 179, 127, 0.18);
+  }
+}
+
 @keyframes wa-star-pop {
   0% {
     opacity: 0;

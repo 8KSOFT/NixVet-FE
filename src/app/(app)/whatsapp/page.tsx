@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import type { ApiRequestError } from '@/app/types/api-error';
 import type { ThreadStatus } from '@/app/types/whatsapp-conversation';
 import { Button } from '@/components/ui/button';
@@ -11,6 +12,9 @@ import { WhatsappMediaBubble, isMediaMessage } from '@/components/whatsapp-media
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { useBillingStatusQuery } from '@/hooks/apiHooks/useBilling';
+import { getStoredUserRole } from '@/lib/role-permissions';
+import { planMeetsRequirement } from '@/lib/plans';
 import {
   Send,
   Bot,
@@ -27,6 +31,8 @@ import {
   X,
   ChevronDown,
   ChevronLeft,
+  Lock,
+  Ban,
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -266,6 +272,17 @@ export default function WhatsAppPage() {
   const [closeDialogOpen, setCloseDialogOpen] = useState(false);
   const [classifyPopover, setClassifyPopover] = useState(false);
 
+  // Trial sem plano Clínica: a tela fica visível como "vitrine" (dá o gostinho
+  // do chatbot/WhatsApp completo), mas travada — nada de esconder tudo atrás
+  // de um bloqueio duro como o PlanUpgradeGate faz nas outras telas clínica.
+  const { data: billing, isLoading: billingLoading } = useBillingStatusQuery();
+  const isSuperadmin = getStoredUserRole() === 'superadmin';
+  const showTrialTeaser =
+    !isSuperadmin &&
+    !billingLoading &&
+    billing?.status === 'trial' &&
+    !planMeetsRequirement(billing?.billingPlan, 'clinica');
+
   const { data: conversations = [], isLoading: loadingConv } = useWhatsappConversationsQuery(
     archivedFilter,
     classificationFilter,
@@ -399,7 +416,14 @@ export default function WhatsAppPage() {
       />
     )}
     {/* main content */}
-    <div className="flex flex-col gap-5 min-h-0 h-[calc(100dvh-var(--app-header-h)-2*var(--app-main-py))] min-h-[420px]">
+    <div className="relative flex flex-col gap-5 min-h-0 h-[calc(100dvh-var(--app-header-h)-2*var(--app-main-py))] min-h-[420px]">
+    <div
+      className={cn(
+        'flex flex-1 flex-col gap-5 min-h-0',
+        showTrialTeaser && 'pointer-events-none select-none blur-[2px]',
+      )}
+      aria-hidden={showTrialTeaser}
+    >
       {/* Stats e título só fazem sentido com espaço de sobra (desktop). No
           mobile eles empurravam a lista/chat pra baixo do scroll — a tela
           vira só lista OU só chat, como no WhatsApp de verdade. */}
@@ -679,7 +703,17 @@ export default function WhatsAppPage() {
                                     : 'rounded-[14px_14px_14px_3px] bg-wa-line-2 text-wa-ink',
                                 )}
                               >
-                                {isMediaMessage(m) ? (
+                                {m.revoked_at ? (
+                                  <div
+                                    className={cn(
+                                      'flex items-center gap-1.5 italic',
+                                      mine ? 'text-white/70' : 'text-wa-ink-3',
+                                    )}
+                                  >
+                                    <Ban className="size-3.5 shrink-0" />
+                                    Mensagem apagada
+                                  </div>
+                                ) : isMediaMessage(m) ? (
                                   <div className="space-y-1.5">
                                     <WhatsappMediaBubble message={m} />
                                     {m.body_text && !m.body_text.startsWith('[') && (
@@ -770,6 +804,33 @@ export default function WhatsAppPage() {
           </div>
         </div>
       </div>
+    </div>
+
+    {showTrialTeaser && (
+      // O backdrop cobre a caixa toda (que pode ficar mais alta que a viewport
+      // quando há banners acima, tipo o de trial/confirmação de e-mail — daí o
+      // "flex items-center" sozinho centralizava no conteúdo, não na tela).
+      // O card usa "sticky" pra ficar preso ao centro do que está visível de
+      // fato, acompanhando o scroll em vez de ficar fora de lugar.
+      <div className="absolute inset-0 z-20 rounded-wa-lg bg-white/40 backdrop-blur-[1px]">
+        <div className="sticky top-1/2 flex -translate-y-1/2 justify-center p-6">
+          <div className="flex max-w-sm flex-col items-center gap-3 rounded-wa-lg border border-wa-line bg-card p-6 text-center shadow-lg">
+            <div className="flex size-12 items-center justify-center rounded-full bg-wa-brand-100 text-wa-brand-700">
+              <Lock className="size-5" />
+            </div>
+            <p className="text-[15px] font-bold text-wa-ink">
+              Essa é a visão do WhatsApp para quem tem o plano Clínica
+            </p>
+            <p className="text-sm text-wa-ink-3">
+              Assine o plano Clínica para liberar o atendimento e todas as funções desta tela.
+            </p>
+            <Link href="/billing/upgrade">
+              <Button className="mt-1">Ver planos</Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    )}
     </div>
     </>
   );

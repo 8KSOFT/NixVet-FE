@@ -60,6 +60,8 @@ export interface WhatsappMessage {
   media_size_bytes?: number | null;
   media_duration_seconds?: number | null;
   media_expires_at?: string | null;
+  /** Preenchido quando o remetente apaga a mensagem no WhatsApp ("apagar para todos"). */
+  revoked_at?: string | null;
   created_at?: string;
   createdAt?: string;
 }

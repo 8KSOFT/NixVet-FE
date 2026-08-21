@@ -289,6 +289,10 @@
     "title": "Historias Clínicas",
     "newRecordButton": "Nueva Historia Clínica",
     "searchPlaceholder": "Buscar por paciente, veterinario, motivo de consulta...",
+    "tutorFilterPlaceholder": "Filtrar por responsable",
+    "tutorFilterSearchPlaceholder": "Buscar responsable...",
+    "tutorFilterEmpty": "Ningún responsable encontrado",
+    "tutorFilterAll": "Todos los responsables",
     "emptyState": "No se encontraron historias clínicas.",
     "noGuardian": "Sin responsable",
     "fichaCount_one": "{{count}} ficha",
@@ -995,7 +999,12 @@
         "semanas": "semanas",
         "meses": "meses"
       },
-      "continuousUseLabel": "Uso continuo (imprime \"USO CONTÍNUO\" en lugar de la duración)",
+      "dosageScheduleLabel": "Posología",
+      "everyConnectorWord": "cada",
+      "forConnectorWord": "por",
+      "summaryRoutePrefix": "vía {{route}}",
+      "summaryContinuousUse": "uso continuo",
+      "continuousUseLabel": "Uso continuo",
       "usageDescriptionLabel": "Cómo usar",
       "usageDescriptionPlaceholder": "Ej.: Administrar con alimento.",
       "observationsLabel": "Observaciones",
@@ -1003,6 +1012,30 @@
       "addMedicationButton": "Agregar medicamento",
       "generalRecommendationsLabel": "Recomendaciones generales",
       "generalRecommendationsPlaceholder": "Indicaciones adicionales para el tutor..."
+    },
+    "preview": {
+      "banner": "Esto es solo una vista previa de cómo quedará el documento — no es el documento real.",
+      "draftBadge": "Borrador — vía y validez se definen al firmar",
+      "clinicFallback": "Clínica",
+      "clinicSubtitle": "Medicina veterinaria",
+      "crmvPrefix": "CRMV {{crmv}}",
+      "issuedLabel": "Emisión",
+      "titleReceita": "Receta",
+      "titleVacinas": "Comprobante de Vacunación",
+      "titleCirurgia": "Solicitud de Cirugía",
+      "patientPrefix": "Paciente",
+      "tutorPrefix": "Tutor",
+      "noTutor": "sin tutor registrado",
+      "selectPatientHint": "Seleccione un paciente para ver los datos aquí.",
+      "yearsAbbrev": "años",
+      "rxLabel": "Receta",
+      "vaccinesLabel": "Vacunas",
+      "proceduresLabel": "Procedimientos",
+      "unnamedMedication": "Medicamento sin nombre",
+      "noMedications": "Ningún medicamento agregado todavía.",
+      "noVaccines": "Ninguna vacuna seleccionada todavía.",
+      "noProcedures": "Ningún procedimiento seleccionado todavía.",
+      "footerNote": "Las vías, el código QR de verificación y la firma digital se agregan al firmar el documento."
     }
   },
   "profile": {
@@ -1168,6 +1201,12 @@
       "phone": "Teléfono",
       "cpf": "CPF",
       "actions": "Acciones"
+    },
+    "pets": {
+      "toggleAria": "Ver mascotas de {{name}}",
+      "sectionTitle": "Mascotas de {{name}}",
+      "empty": "Ninguna mascota registrada",
+      "viewRecord": "Ver historia clínica"
     },
     "confirmDeleteTitle": "Confirmar eliminación",
     "confirmDeleteDescription": "¿Está seguro que desea eliminar al responsable {{name}}? Esta acción no puede deshacerse.",

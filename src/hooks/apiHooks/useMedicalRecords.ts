@@ -16,7 +16,8 @@ import type {
 export const medicalRecordKeys = {
   all: ['medical-records'] as const,
   lists: () => [...medicalRecordKeys.all, 'list'] as const,
-  list: (page: number, patientId?: string) => [...medicalRecordKeys.lists(), { page, patientId }] as const,
+  list: (page: number, patientId?: string, tutorId?: string) =>
+    [...medicalRecordKeys.lists(), { page, patientId, tutorId }] as const,
   byPatient: (patientId: string) => [...medicalRecordKeys.all, 'by-patient', patientId] as const,
   detail: (id: string) => [...medicalRecordKeys.all, 'detail', id] as const,
   relatedPrescriptions: (patientId: string) => [...medicalRecordKeys.all, 'related-prescriptions', patientId] as const,
@@ -24,12 +25,13 @@ export const medicalRecordKeys = {
   relatedVaccines: (patientId: string) => [...medicalRecordKeys.all, 'related-vaccines', patientId] as const,
 };
 
-export function useMedicalRecordsQuery(page: number, patientId?: string) {
+export function useMedicalRecordsQuery(page: number, patientId?: string, tutorId?: string) {
   return useQuery({
-    queryKey: medicalRecordKeys.list(page, patientId),
+    queryKey: medicalRecordKeys.list(page, patientId, tutorId),
     queryFn: async () => {
       const params: Record<string, string | number> = { ...listQueryParams(page) };
       if (patientId) params.patient_id = patientId;
+      if (tutorId) params.tutor_id = tutorId;
       const { data } = await api.get('/medical-records', { params });
       return parseListResponse<MedicalRecord>(data, page);
     },

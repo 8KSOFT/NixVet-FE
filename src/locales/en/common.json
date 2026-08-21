@@ -289,6 +289,10 @@
     "title": "Medical Records",
     "newRecordButton": "New Record",
     "searchPlaceholder": "Search by patient, veterinarian, complaint...",
+    "tutorFilterPlaceholder": "Filter by owner",
+    "tutorFilterSearchPlaceholder": "Search owner...",
+    "tutorFilterEmpty": "No owner found",
+    "tutorFilterAll": "All owners",
     "emptyState": "No medical records found.",
     "noGuardian": "No owner",
     "fichaCount_one": "{{count}} record",
@@ -995,7 +999,12 @@
         "semanas": "weeks",
         "meses": "months"
       },
-      "continuousUseLabel": "Continuous use (prints \"USO CONTÍNUO\" instead of the duration)",
+      "dosageScheduleLabel": "Dosage schedule",
+      "everyConnectorWord": "every",
+      "forConnectorWord": "for",
+      "summaryRoutePrefix": "via {{route}}",
+      "summaryContinuousUse": "continuous use",
+      "continuousUseLabel": "Continuous use",
       "usageDescriptionLabel": "How to use",
       "usageDescriptionPlaceholder": "E.g.: Administer with food.",
       "observationsLabel": "Notes",
@@ -1003,6 +1012,30 @@
       "addMedicationButton": "Add medication",
       "generalRecommendationsLabel": "General recommendations",
       "generalRecommendationsPlaceholder": "Additional instructions for the guardian..."
+    },
+    "preview": {
+      "banner": "This is just a preview of how the document will look — not the actual document.",
+      "draftBadge": "Draft — copy count and validity set when signed",
+      "clinicFallback": "Clinic",
+      "clinicSubtitle": "Veterinary medicine",
+      "crmvPrefix": "License {{crmv}}",
+      "issuedLabel": "Issued",
+      "titleReceita": "Prescription",
+      "titleVacinas": "Vaccination Record",
+      "titleCirurgia": "Surgery Request",
+      "patientPrefix": "Patient",
+      "tutorPrefix": "Guardian",
+      "noTutor": "no guardian on file",
+      "selectPatientHint": "Select a patient to see their details here.",
+      "yearsAbbrev": "years",
+      "rxLabel": "Prescription",
+      "vaccinesLabel": "Vaccines",
+      "proceduresLabel": "Procedures",
+      "unnamedMedication": "Unnamed medication",
+      "noMedications": "No medications added yet.",
+      "noVaccines": "No vaccines selected yet.",
+      "noProcedures": "No procedures selected yet.",
+      "footerNote": "Copies, verification QR code and digital signature are added when the document is signed."
     }
   },
   "profile": {
@@ -1169,6 +1202,12 @@
       "phone": "Phone",
       "cpf": "CPF",
       "actions": "Actions"
+    },
+    "pets": {
+      "toggleAria": "View {{name}}'s pets",
+      "sectionTitle": "{{name}}'s pets",
+      "empty": "No pets registered",
+      "viewRecord": "View medical record"
     },
     "confirmDeleteTitle": "Confirm deletion",
     "confirmDeleteDescription": "Are you sure you want to remove owner {{name}}? This action cannot be undone.",

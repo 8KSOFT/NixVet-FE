@@ -55,6 +55,8 @@ import { useBularioItemQuery, useBularioSearchMutation } from '@/hooks/apiHooks/
 import { useSurgicalProceduresListQuery } from '@/hooks/apiHooks/useSurgicalProcedures';
 import { usePatientsListQuery } from '@/hooks/apiHooks/usePatients';
 import { useConsultationsQuery } from '@/hooks/apiHooks/useConsultations';
+import { fetchPublicBranding } from '@/lib/branding';
+import type { PatientRow } from '@/app/types/patient';
 
 const LEGAL_MODEL_OPTIONS: {
   value: PrescriptionLegalModel;
@@ -122,6 +124,42 @@ type MedicationField = {
   observations?: string;
 };
 
+type Translate = (key: string, options?: Record<string, unknown>) => string;
+
+/**
+ * Monta a parte "a cada X horas, por Y dias" da posologia a partir dos campos
+ * do medicamento. Extraído pra função pura porque é usado em dois lugares:
+ * na linha de conferência dentro de cada card de medicamento, e no preview
+ * de documento inteiro — sem isso, os dois lugares divergiam com o tempo.
+ */
+function buildDosageParts(
+  med: Pick<
+    MedicationField,
+    'dosage' | 'frequency_value' | 'frequency_unit' | 'duration_value' | 'duration_unit' | 'continuous_use' | 'form_of_administration'
+  >,
+  t: Translate,
+): { dose: string; rest: string } | null {
+  const { dosage, frequency_value, frequency_unit, duration_value, duration_unit, continuous_use, form_of_administration } = med;
+  if (!dosage && !frequency_value) return null;
+  const parts: string[] = [];
+  if (form_of_administration) {
+    parts.push(
+      t('prescriptions.form.summaryRoutePrefix', {
+        route: t(`prescriptions.form.administrationOptions.${form_of_administration}`).toLowerCase(),
+      }),
+    );
+  }
+  if (frequency_value && frequency_unit) {
+    parts.push(`${t('prescriptions.form.everyConnectorWord')} ${frequency_value} ${t(`prescriptions.form.frequencyUnits.${frequency_unit}`)}`);
+  }
+  if (continuous_use) {
+    parts.push(t('prescriptions.form.summaryContinuousUse'));
+  } else if (duration_value && duration_unit) {
+    parts.push(`${t('prescriptions.form.forConnectorWord')} ${duration_value} ${t(`prescriptions.form.durationUnits.${duration_unit}`)}`);
+  }
+  return { dose: dosage ?? '', rest: parts.join(', ') };
+}
+
 type FormValues = {
   patient_id: string;
   consultation_id?: string;
@@ -130,6 +168,216 @@ type FormValues = {
   medications: MedicationField[];
   observations?: string;
 };
+
+interface PrescriptionPreviewProps {
+  clinicName: string;
+  vetName?: string;
+  vetCrmv?: string;
+  prescriptionType: 'receita' | 'solicitacao_cirurgia' | 'vacinas';
+  prescriptionDate?: string;
+  patient?: PatientRow;
+  medications: MedicationField[];
+  vaccines: string[];
+  procedureNames: string[];
+  recommendations?: string;
+}
+
+/**
+ * Fac-símile do documento (não o PDF real — aquele nasce no backend, com
+ * numeração/QR/assinatura que só existem depois de assinado). Serve pra
+ * conferir o CONTEÚDO antes de salvar: cabeçalho, paciente/tutor e a lista
+ * de medicamentos/vacinas/procedimentos com a mesma frase de posologia do
+ * formulário. Atualiza a cada tecla via os `watch()` do form pai.
+ */
+function PrescriptionPreview({
+  clinicName,
+  vetName,
+  vetCrmv,
+  prescriptionType,
+  prescriptionDate,
+  patient,
+  medications,
+  vaccines,
+  procedureNames,
+  recommendations,
+}: PrescriptionPreviewProps) {
+  const { t } = useTranslation();
+
+  const initials = (clinicName || 'NV').trim().slice(0, 2).toUpperCase();
+  const formattedDate = dayjs(prescriptionDate || undefined).format('DD/MM/YYYY');
+
+  const documentTitle =
+    prescriptionType === 'vacinas'
+      ? t('prescriptions.preview.titleVacinas')
+      : prescriptionType === 'solicitacao_cirurgia'
+        ? t('prescriptions.preview.titleCirurgia')
+        : t('prescriptions.preview.titleReceita');
+
+  const patientDetails = patient
+    ? [
+        patient.species,
+        patient.breed,
+        patient.sex,
+        patient.age != null ? `${patient.age} ${t('prescriptions.preview.yearsAbbrev')}` : null,
+        patient.weight != null ? `${Number(patient.weight).toFixed(2)} kg` : null,
+      ]
+        .filter(Boolean)
+        .join(' · ')
+    : '';
+
+  const rxHeader =
+    prescriptionType === 'vacinas'
+      ? t('prescriptions.preview.vaccinesLabel')
+      : prescriptionType === 'solicitacao_cirurgia'
+        ? t('prescriptions.preview.proceduresLabel')
+        : t('prescriptions.preview.rxLabel');
+
+  const NumberBadge = ({ n }: { n: number }) => (
+    <span className="flex size-6 shrink-0 items-center justify-center rounded bg-primary/15 text-xs font-bold text-primary">
+      {n}
+    </span>
+  );
+
+  return (
+    <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col">
+      <div className="mb-4 flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+        <Eye className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+        {t('prescriptions.preview.banner')}
+      </div>
+
+      {/* flex-1: o "papel" estica até o fim do painel mesmo com pouco
+          conteúdo (1 medicamento), em vez de parar curto e sobrar cinza
+          embaixo — fica com cara de folha de verdade, não de card solto. */}
+      <div className="flex-1 rounded-lg border border-slate-200 bg-white p-8 text-sm shadow-sm">
+        {/* Cabeçalho */}
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary text-sm font-bold text-white">
+              {initials}
+            </div>
+            <div>
+              <p className="font-bold leading-tight text-slate-900">{clinicName || t('prescriptions.preview.clinicFallback')}</p>
+              <p className="text-xs text-slate-500">{t('prescriptions.preview.clinicSubtitle')}</p>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="font-bold leading-tight text-slate-900">{vetName || '—'}</p>
+            <p className="text-xs text-slate-500">{t('prescriptions.preview.crmvPrefix', { crmv: vetCrmv || 'N/A' })}</p>
+          </div>
+        </div>
+
+        <div className="my-4 h-0.5 bg-primary" />
+
+        {/* Título + emissão */}
+        <div className="flex items-start justify-between gap-3">
+          <p className="text-2xl font-bold leading-tight text-slate-900">{documentTitle}</p>
+          <div className="shrink-0 text-right text-xs">
+            <p className="text-slate-500">
+              {t('prescriptions.preview.issuedLabel')} <span className="font-semibold text-slate-800">{formattedDate}</span>
+            </p>
+          </div>
+        </div>
+
+        {/* Selo de rascunho — o documento real vai ter "1ª via/2ª via/3ª via"
+            conforme o modelo legal escolhido na assinatura, que ainda não
+            existe nesta etapa. Âmbar (não verde) de propósito: sinaliza que
+            essa parte é provisória, diferente do resto que já é dado real. */}
+        <span className="mt-3 inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800">
+          {t('prescriptions.preview.draftBadge')}
+        </span>
+
+        {/* Paciente / Tutor — duas caixas lado a lado, como no documento real */}
+        <div className="mt-4 grid grid-cols-2 divide-x divide-slate-200 rounded-sm border border-slate-200">
+          <div className="p-3">
+            <p className="text-xs font-bold uppercase tracking-wide text-primary">{t('prescriptions.preview.patientPrefix')}</p>
+            {patient ? (
+              <>
+                <p className="mt-0.5 font-bold text-slate-800">{patient.name}</p>
+                {patientDetails && <p className="text-xs text-slate-500">{patientDetails}</p>}
+              </>
+            ) : (
+              <p className="mt-0.5 text-xs italic text-slate-500">{t('prescriptions.preview.selectPatientHint')}</p>
+            )}
+          </div>
+          <div className="p-3">
+            <p className="text-xs font-bold uppercase tracking-wide text-primary">{t('prescriptions.preview.tutorPrefix')}</p>
+            <p className="mt-0.5 font-bold text-slate-800">{patient?.tutor?.name || t('prescriptions.preview.noTutor')}</p>
+          </div>
+        </div>
+
+        {/* Corpo — varia por tipo de prescrição */}
+        <div className="mt-5 space-y-3">
+          <p className="font-bold text-slate-900">
+            {rxHeader}
+            {prescriptionType === 'receita' && <span className="ml-1 font-normal text-slate-400">(Rp.)</span>}
+          </p>
+
+          {prescriptionType === 'receita' &&
+            (medications.length ? (
+              <div className="space-y-3">
+                {medications.map((m, i) => {
+                  const parts = buildDosageParts(m, t);
+                  const line = parts ? [parts.dose, parts.rest].filter(Boolean).join(', ') : null;
+                  return (
+                    <div key={i} className="flex items-start gap-2.5">
+                      <NumberBadge n={i + 1} />
+                      <div className="min-w-0">
+                        <p className="font-bold text-slate-800">{m.name || t('prescriptions.preview.unnamedMedication')}</p>
+                        {line && <p className="text-sm text-slate-600">{line}</p>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-xs italic text-slate-500">{t('prescriptions.preview.noMedications')}</p>
+            ))}
+
+          {prescriptionType === 'vacinas' &&
+            (vaccines.length ? (
+              <div className="space-y-3">
+                {vaccines.map((v, i) => (
+                  <div key={v} className="flex items-start gap-2.5">
+                    <NumberBadge n={i + 1} />
+                    <p className="font-bold text-slate-800">{v}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs italic text-slate-500">{t('prescriptions.preview.noVaccines')}</p>
+            ))}
+
+          {prescriptionType === 'solicitacao_cirurgia' &&
+            (procedureNames.length ? (
+              <div className="space-y-3">
+                {procedureNames.map((p, i) => (
+                  <div key={p} className="flex items-start gap-2.5">
+                    <NumberBadge n={i + 1} />
+                    <p className="font-bold text-slate-800">{p}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs italic text-slate-500">{t('prescriptions.preview.noProcedures')}</p>
+            ))}
+        </div>
+
+        {recommendations && (
+          <div className="mt-4 border-t border-dashed border-slate-200 pt-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              {t('prescriptions.form.generalRecommendationsLabel')}
+            </p>
+            <p className="mt-1 text-sm text-slate-700">{recommendations}</p>
+          </div>
+        )}
+
+        <div className="mt-5 border-t border-dashed border-slate-200 pt-3 text-center text-[11px] text-slate-500">
+          {t('prescriptions.preview.footerNote')}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function PrescriptionsContent() {
   const { t } = useTranslation();
@@ -140,6 +388,20 @@ function PrescriptionsContent() {
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null);
   const [listPage, setListPage] = useState(1);
   const [modalVisible, setModalVisible] = useState(false);
+  // Prévia do documento só existe em telas de verdade largas (md: 768px+) —
+  // um notebook de 13" pode reportar uma viewport bem menor que a resolução
+  // física por causa do escalonamento do Windows, então o corte não pode ser
+  // alto igual `lg` (1024px); md já cobre isso sem cair no território de
+  // celular. Abaixo de md nem aparece — não vale a pena como aba, o espaço
+  // já é curto até pro formulário sozinho. Nome/logo da clínica é público,
+  // busca uma vez só (fetchPublicBranding já cacheia em sessionStorage por 5min).
+  const [clinicBranding, setClinicBranding] = useState<{ name: string; logoUrl: string | null }>({
+    name: '',
+    logoUrl: null,
+  });
+  useEffect(() => {
+    fetchPublicBranding().then((b) => setClinicBranding({ name: b.appName, logoUrl: b.logoUrl }));
+  }, []);
 
   const { data: prescriptionsPage, isLoading: loading } = usePrescriptionsQuery(listPage);
   const prescriptions = prescriptionsPage?.items ?? [];
@@ -496,6 +758,16 @@ function PrescriptionsContent() {
 
   const canSign = (record: Prescription) => record.prescription_type === 'receita' || !record.prescription_type;
 
+  // Dados pro preview de documento (aba "Prévia" do modal de criação) — tudo
+  // derivado do que já está carregado/observado no form, sem chamada nova.
+  const previewPatient = patients.find((p) => p.id === watchPatientId);
+  const previewMedications = watch('medications') ?? [];
+  const previewObservations = watch('observations');
+  const previewPrescriptionDate = watch('prescription_date');
+  const previewProcedureNames = surgicalProcedures
+    .filter((s) => selectedProcedureIds.includes(s.id))
+    .map((s) => s.name);
+
   return (
     <div>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-8">
@@ -714,8 +986,8 @@ function PrescriptionsContent() {
         open={modalVisible}
         onOpenChange={setModalVisible}
         title={t('prescriptions.dialog.createTitle')}
-        containerClassName="mx-auto max-w-2xl"
-        bodyClassName="px-6 py-4"
+        contentClassName="h-[90dvh] max-w-[min(calc(100%-4rem),64rem)] sm:max-w-[min(calc(100%-4rem),64rem)]"
+        bodyClassName="overflow-hidden p-0"
         preventOutsideClose
         preventEscapeClose
         footer={
@@ -723,13 +995,18 @@ function PrescriptionsContent() {
             <Button type="button" variant="outline" className="h-10" onClick={() => setModalVisible(false)}>
               {t('prescriptions.dialog.cancel')}
             </Button>
-            <Button type="submit" form="prescription-form" className="h-10 bg-primary hover:bg-blue-700 text-white">
+            <Button type="submit" form="prescription-form" className="h-10">
               {t('prescriptions.dialog.submit')}
             </Button>
           </div>
         }
       >
-        <form id="prescription-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4 md:space-y-6">
+        {/* Form + prévia lado a lado — só em telas de verdade largas (md:
+            768px+). Em mobile a prévia nem aparece: não vale como aba, não
+            sobra espaço nem pro formulário sozinho. */}
+        <div className="flex h-full min-h-0 flex-col md:flex-row">
+          <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4 md:w-[58%] md:shrink-0 md:border-r md:border-gray-200">
+            <form id="prescription-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4 md:space-y-6">
           {/* Paciente */}
           <div className="space-y-2">
             <Label className="text-sm font-medium">{t('prescriptions.form.patientLabel')}</Label>
@@ -950,6 +1227,35 @@ function PrescriptionsContent() {
               {fields.map((field, index) => {
                 const bularioId = watch(`medications.${index}.bulario_item_id`);
                 const isContinuousUse = watch(`medications.${index}.continuous_use`);
+                // Frase-resumo da posologia ("Dipirona — 1 comp. via oral, a cada
+                // 12 horas, por 7 dias"): junta os mesmos campos do formulário
+                // pra confirmar visualmente que a combinação faz sentido, sem
+                // precisar montar isso de cabeça a partir de 3 caixas separadas.
+                const dosageVal = watch(`medications.${index}.dosage`);
+                const frequencyValue = watch(`medications.${index}.frequency_value`);
+                const frequencyUnit = watch(`medications.${index}.frequency_unit`);
+                const durationValue = watch(`medications.${index}.duration_value`);
+                const durationUnit = watch(`medications.${index}.duration_unit`);
+                const formOfAdministration = watch(`medications.${index}.form_of_administration`);
+                const medName = medInputValues[index] ?? watch(`medications.${index}.name`);
+                const dosageParts = buildDosageParts(
+                  {
+                    dosage: dosageVal,
+                    frequency_value: frequencyValue,
+                    frequency_unit: frequencyUnit,
+                    duration_value: durationValue,
+                    duration_unit: durationUnit,
+                    continuous_use: isContinuousUse,
+                    form_of_administration: formOfAdministration,
+                  },
+                  t,
+                );
+                // Quantidade primeiro, depois o ícone + nome ("1 comp. 💊
+                // Dipirona") — ícone logo antes do texto ficou mais fácil de
+                // ler que abrir a frase com ele.
+                const dosageSummary = dosageParts
+                  ? `${[dosageParts.dose, '💊', medName].filter(Boolean).join(' ')}${dosageParts.rest ? ` — ${dosageParts.rest}` : ''}`
+                  : null;
                 return (
                   <div key={field.id} className="border rounded-xl p-4 bg-muted/30 space-y-4">
                     <input type="hidden" {...register(`medications.${index}.bulario_item_id`)} />
@@ -1029,9 +1335,12 @@ function PrescriptionsContent() {
                       </Button>
                     </div>
 
-                    {/* Via / Concentração / Uso / Forma */}
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
-                      <div className="space-y-1 md:col-span-2">
+                    {/* Via / Concentração / Uso / Forma — fixo em 2x2 (não 4 numa
+                        linha só, mesmo em telas largas): com 4 apertava demais
+                        pra caber o texto das opções ("Injetável", "Uso
+                        veterinário"). 2 colunas sempre dá espaço de sobra. */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
                         <Label className="text-xs text-muted-foreground">{t('prescriptions.form.viaLabel')}</Label>
                         <Controller
                           control={control}
@@ -1041,7 +1350,7 @@ function PrescriptionsContent() {
                           )}
                         />
                       </div>
-                      <div className="space-y-1 md:col-span-3">
+                      <div className="space-y-1">
                         <Label className="text-xs text-muted-foreground">{t('prescriptions.form.concentrationLabel')}</Label>
                         <Controller
                           control={control}
@@ -1055,7 +1364,7 @@ function PrescriptionsContent() {
                           )}
                         />
                       </div>
-                      <div className="space-y-1 md:col-span-3">
+                      <div className="space-y-1">
                         <Label className="text-xs text-muted-foreground">{t('prescriptions.form.useTypeLabel')}</Label>
                         <Controller
                           control={control}
@@ -1076,7 +1385,7 @@ function PrescriptionsContent() {
                           )}
                         />
                       </div>
-                      <div className="space-y-1 md:col-span-4">
+                      <div className="space-y-1">
                         <Label className="text-xs text-muted-foreground">{t('prescriptions.form.administrationLabel')}</Label>
                         <Controller
                           control={control}
@@ -1099,85 +1408,77 @@ function PrescriptionsContent() {
                       </div>
                     </div>
 
-                    {/* Dose / Frequência / Duração */}
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-12">
-                      <div className="space-y-1 md:col-span-2">
-                        <Label className="text-xs text-muted-foreground">{t('prescriptions.form.doseLabel')}</Label>
+                    {/* Posologia — dose, frequência e duração lidas como uma frase
+                        só ("1 comp. a cada 12 horas por 7 dias"), em vez de 3
+                        caixas soltas com rótulos genéricos que não deixavam
+                        claro como os campos se relacionam. */}
+                    <div className="space-y-2">
+                      <Label className="text-xs text-muted-foreground">{t('prescriptions.form.dosageScheduleLabel')}</Label>
+                      <div className="flex flex-wrap items-center gap-2 rounded-lg border bg-white p-3">
                         <Controller
                           control={control}
                           name={`medications.${index}.dosage`}
                           render={({ field }) => (
-                            <Input className="h-9" placeholder={t('prescriptions.form.dosePlaceholder')} {...field} />
+                            <Input className="h-9 w-32" placeholder={t('prescriptions.form.dosePlaceholder')} {...field} />
                           )}
                         />
-                      </div>
-                      <div className="space-y-1 md:col-span-5">
-                        <Label className="text-xs text-muted-foreground">{t('prescriptions.form.frequencyLabel')}</Label>
-                        <div className="flex gap-1">
-                          <Controller
-                            control={control}
-                            name={`medications.${index}.frequency_value`}
-                            render={({ field }) => (
-                              <Input type="number" min="1" className="h-9 w-16 shrink-0" placeholder="12" {...field} />
-                            )}
-                          />
-                          <Controller
-                            control={control}
-                            name={`medications.${index}.frequency_unit`}
-                            render={({ field }) => (
-                              <Select value={field.value ?? ''} onValueChange={field.onChange}>
-                                <SelectTrigger className="h-9 flex-1">
-                                  <SelectValue placeholder={t('prescriptions.form.unitPlaceholder')} />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {FREQUENCY_UNIT_OPTIONS.map((o) => (
-                                    <SelectItem key={o.value} value={o.value}>
-                                      {t(`prescriptions.form.frequencyUnits.${o.value}`)}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            )}
-                          />
-                        </div>
-                      </div>
-                      <div className="space-y-1 md:col-span-5">
-                        <Label className="text-xs text-muted-foreground">{t('prescriptions.form.durationLabel')}</Label>
-                        <div className="flex gap-1">
-                          <Controller
-                            control={control}
-                            name={`medications.${index}.duration_value`}
-                            render={({ field }) => (
-                              <Input
-                                type="number"
-                                min="1"
-                                className="h-9 w-16 shrink-0"
-                                placeholder="7"
-                                disabled={!!isContinuousUse}
-                                {...field}
-                              />
-                            )}
-                          />
-                          <Controller
-                            control={control}
-                            name={`medications.${index}.duration_unit`}
-                            render={({ field }) => (
-                              <Select value={field.value ?? ''} onValueChange={field.onChange} disabled={!!isContinuousUse}>
-                                <SelectTrigger className="h-9 flex-1">
-                                  <SelectValue placeholder={t('prescriptions.form.unitPlaceholder')} />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {DURATION_UNIT_OPTIONS.map((o) => (
-                                    <SelectItem key={o.value} value={o.value}>
-                                      {t(`prescriptions.form.durationUnits.${o.value}`)}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            )}
-                          />
-                        </div>
-                        <label className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
+                        <span className="text-sm text-muted-foreground">{t('prescriptions.form.everyConnectorWord')}</span>
+                        <Controller
+                          control={control}
+                          name={`medications.${index}.frequency_value`}
+                          render={({ field }) => (
+                            <Input type="number" min="1" className="h-9 w-16 shrink-0" placeholder="12" {...field} />
+                          )}
+                        />
+                        <Controller
+                          control={control}
+                          name={`medications.${index}.frequency_unit`}
+                          render={({ field }) => (
+                            <Select value={field.value ?? ''} onValueChange={field.onChange}>
+                              <SelectTrigger className="h-9 w-28">
+                                <SelectValue placeholder={t('prescriptions.form.unitPlaceholder')} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {FREQUENCY_UNIT_OPTIONS.map((o) => (
+                                  <SelectItem key={o.value} value={o.value}>
+                                    {t(`prescriptions.form.frequencyUnits.${o.value}`)}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        />
+                        {!isContinuousUse && (
+                          <>
+                            <span className="text-sm text-muted-foreground">{t('prescriptions.form.forConnectorWord')}</span>
+                            <Controller
+                              control={control}
+                              name={`medications.${index}.duration_value`}
+                              render={({ field }) => (
+                                <Input type="number" min="1" className="h-9 w-16 shrink-0" placeholder="7" {...field} />
+                              )}
+                            />
+                            <Controller
+                              control={control}
+                              name={`medications.${index}.duration_unit`}
+                              render={({ field }) => (
+                                <Select value={field.value ?? ''} onValueChange={field.onChange}>
+                                  <SelectTrigger className="h-9 w-28">
+                                    <SelectValue placeholder={t('prescriptions.form.unitPlaceholder')} />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {DURATION_UNIT_OPTIONS.map((o) => (
+                                      <SelectItem key={o.value} value={o.value}>
+                                        {t(`prescriptions.form.durationUnits.${o.value}`)}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              )}
+                            />
+                          </>
+                        )}
+                        <label className="ml-auto flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
                           <Controller
                             control={control}
                             name={`medications.${index}.continuous_use`}
@@ -1193,10 +1494,18 @@ function PrescriptionsContent() {
                           {t('prescriptions.form.continuousUseLabel')}
                         </label>
                       </div>
+
+                      {/* Prévia legível — confirma de cara que a combinação faz
+                          sentido, sem precisar montar a frase de cabeça a partir
+                          dos campos acima. */}
+                      {dosageSummary && (
+                        <p className="rounded-md bg-primary/5 px-3 py-2 text-sm text-foreground">{dosageSummary}</p>
+                      )}
                     </div>
 
-                    {/* Descrição / Obs */}
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    {/* Descrição / Obs — em coluna (um embaixo do outro), não lado
+                        a lado: são textareas, precisam de largura pra digitar. */}
+                    <div className="space-y-4">
                       <div className="space-y-1">
                         <Label className="text-xs text-muted-foreground">{t('prescriptions.form.usageDescriptionLabel')}</Label>
                         <Controller
@@ -1274,7 +1583,24 @@ function PrescriptionsContent() {
               )}
             />
           </div>
-        </form>
+            </form>
+          </div>
+
+          <div className="hidden min-h-0 flex-1 flex-col overflow-y-auto bg-slate-50 px-6 py-4 md:flex">
+            <PrescriptionPreview
+              clinicName={clinicBranding.name}
+              vetName={myProfile?.name}
+              vetCrmv={myProfile?.crmv}
+              prescriptionType={prescriptionType}
+              prescriptionDate={previewPrescriptionDate}
+              patient={previewPatient}
+              medications={previewMedications}
+              vaccines={selectedVaccines}
+              procedureNames={previewProcedureNames}
+              recommendations={previewObservations}
+            />
+          </div>
+        </div>
       </DashboardCreateFormDialog>
 
       {/* GRUPO 4 — Preview de PDF */}
@@ -1318,7 +1644,7 @@ function PrescriptionsContent() {
             <Button variant="outline" onClick={() => setEmailModalVisible(false)}>
               {t('prescriptions.dialog.cancel')}
             </Button>
-            <Button className="bg-primary hover:bg-blue-700 text-white" onClick={handleSendEmail}>
+            <Button onClick={handleSendEmail}>
               {t('prescriptions.dialog.email.sendButton')}
             </Button>
           </DialogFooter>
@@ -1580,7 +1906,6 @@ function PrescriptionsContent() {
                 </Button>
                 <Button
                   type="button"
-                  className="bg-primary hover:bg-blue-700 text-white"
                   disabled={sipeagroMissing || signMutation.isPending}
                   onClick={handleSign}
                 >
