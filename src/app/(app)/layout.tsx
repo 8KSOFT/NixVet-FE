@@ -596,7 +596,8 @@ function SidebarNav({
           >
             <div
               className={cn(
-                "flex min-h-0 flex-col gap-2 overflow-hidden pt-2 [padding-bottom:calc(0.75rem+env(safe-area-inset-bottom))]",
+                "flex min-h-0 flex-col gap-2 overflow-hidden [padding-bottom:calc(1rem+env(safe-area-inset-bottom))]",
+                collapsed ? "pt-3" : "pt-2",
                 collapsed || adminOpen ? "pointer-events-auto" : "pointer-events-none",
               )}
             >
