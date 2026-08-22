@@ -1065,6 +1065,7 @@
     "statsVaccines": "Vacunas (próx. 30 días)",
     "statsExams": "Exámenes pend. seguimiento",
     "statsWhatsApp": "Conversaciones sin respuesta",
+    "statsAwaitingTutor": "Esperando respuesta del tutor",
     "tableTitle": "Atenciones de hoy",
     "colDate": "Fecha",
     "colTime": "Hora",
@@ -1074,7 +1075,14 @@
     "statusScheduled": "Programado",
     "statusCompleted": "Realizado",
     "statusCancelled": "Cancelado",
-    "na": "N/D"
+    "na": "N/D",
+    "vsYesterday": "vs. ayer",
+    "viewSchedule": "Ver agenda",
+    "noAppointments": "No hay atenciones hoy.",
+    "pendingTasksTitle": "Tareas pendientes",
+    "viewAll": "Ver todas",
+    "noPendingTasks": "No hay tareas pendientes.",
+    "noDueDate": "Sin fecha límite"
   },
   "superadminClinics": {
     "title": "Clínicas del sistema",

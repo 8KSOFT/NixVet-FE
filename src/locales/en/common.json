@@ -1075,7 +1075,14 @@
     "statusScheduled": "Scheduled",
     "statusCompleted": "Completed",
     "statusCancelled": "Cancelled",
-    "na": "N/A"
+    "na": "N/A",
+    "vsYesterday": "vs. yesterday",
+    "viewSchedule": "View schedule",
+    "noAppointments": "No appointments today.",
+    "pendingTasksTitle": "Pending tasks",
+    "viewAll": "View all",
+    "noPendingTasks": "No pending tasks.",
+    "noDueDate": "No due date"
   },
   "superadminClinics": {
     "title": "System clinics",

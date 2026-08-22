@@ -1012,7 +1012,14 @@
     "statusScheduled": "Agendado",
     "statusCompleted": "Realizado",
     "statusCancelled": "Cancelado",
-    "na": "N/D"
+    "na": "N/D",
+    "vsYesterday": "vs. ontem",
+    "viewSchedule": "Ver agenda",
+    "noAppointments": "Nenhuma consulta hoje.",
+    "pendingTasksTitle": "Tarefas pendentes",
+    "viewAll": "Ver todas",
+    "noPendingTasks": "Nenhuma tarefa pendente.",
+    "noDueDate": "Sem prazo"
   },
   "superadminClinics": {
     "title": "Clínicas do sistema",
