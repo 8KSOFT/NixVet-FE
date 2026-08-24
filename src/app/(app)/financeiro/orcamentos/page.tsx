@@ -449,7 +449,7 @@ export default function OrcamentosPage() {
         open={openNew}
         onOpenChange={setOpenNew}
         title={t('financeiroOrcamentos.newBudget')}
-        contentClassName="modal-responsive sm:max-w-3xl"
+        contentClassName="md:max-w-3xl"
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button type="button" variant="outline" className="border border-gray-300" onClick={() => setOpenNew(false)}>
@@ -608,14 +608,14 @@ export default function OrcamentosPage() {
       {/* Modal Detalhe */}
       {selected && (
         <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
-          <DialogContent className="max-w-[calc(100%-2rem)] sm:max-w-2xl">
+          <DialogContent className="md:max-w-2xl">
             <DialogHeader>
               <DialogTitle>
                 {t('financeiroOrcamentos.budgetDetailTitle', { id: selected.id.substring(0, 8).toUpperCase() })}
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
-              <div className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-2 text-sm md:grid-cols-2">
                 <div>
                   <span className="font-medium">{t('financeiroOrcamentos.patient')}:</span> {selected.patient?.name}
                 </div>
@@ -631,7 +631,7 @@ export default function OrcamentosPage() {
                   {getStatusLabel(t, selected.status)}
                 </div>
                 {selected.status === 'cancelled' && (
-                  <div className="sm:col-span-2 text-destructive">
+                  <div className="md:col-span-2 text-destructive">
                     <span className="font-medium">{getStatusLabel(t, 'cancelled')}</span>
                     {selected.cancelled_at
                       ? ' ' +
@@ -643,7 +643,8 @@ export default function OrcamentosPage() {
                   </div>
                 )}
               </div>
-              <div className="overflow-x-auto">
+              {/* Desktop: tabela de 4 colunas */}
+              <div className="hidden overflow-x-auto md:block">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -677,6 +678,31 @@ export default function OrcamentosPage() {
                     ))}
                   </TableBody>
                 </Table>
+              </div>
+
+              {/* Mobile: cards — descrição + qtd/unit./total não cabem numa
+                  linha só de tabela num viewport de telefone. */}
+              <div className="space-y-2 md:hidden">
+                {(selected.items ?? []).map((item) => (
+                  <div key={item.id} className="rounded-lg border p-3">
+                    <div className="flex items-center gap-2">
+                      <span className="min-w-0 flex-1 truncate text-sm font-medium">{item.description}</span>
+                      {item.reference_type === 'product' && (
+                        <Badge variant="secondary" className="shrink-0 text-[10px]">
+                          {t('financeiroOrcamentos.itemTypeProduct')}
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="mt-1.5 flex items-center justify-between text-xs text-muted-foreground">
+                      <span>
+                        {item.quantity} × {item.unit_price_formatted ?? fmt(Number(item.unit_price))}
+                      </span>
+                      <span className="text-sm font-semibold tabular-nums text-foreground">
+                        {item.total_price_formatted ?? fmt(Number(item.total_price))}
+                      </span>
+                    </div>
+                  </div>
+                ))}
               </div>
               {(() => {
                 const totals = computeTotals(selected.items ?? []);

@@ -434,7 +434,6 @@ export default function SettingsWhatsappNumbersPage() {
         open={registerOpen}
         onOpenChange={setRegisterOpen}
         title={t('settingsWhatsappNumbers.registerModal.title')}
-        contentClassName="modal-responsive"
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button

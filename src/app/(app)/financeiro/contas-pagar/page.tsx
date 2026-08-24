@@ -289,14 +289,14 @@ export default function ContasPagarPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
         <div>
           <h1 className="text-2xl font-bold">{t('financeiroContasPagar.title')}</h1>
           <p className="text-sm text-muted-foreground">
             {t('financeiroContasPagar.subtitle')}
           </p>
         </div>
-        <Button onClick={openCreate}>
+        <Button onClick={openCreate} className="w-full sm:w-auto">
           <Plus className="mr-2 size-4" />
           {t('financeiroContasPagar.newButton')}
         </Button>
@@ -343,10 +343,10 @@ export default function ContasPagarPage() {
       </div>
 
       <div className="flex flex-wrap items-end gap-3">
-        <div>
+        <div className="min-w-0 flex-1 sm:flex-none">
           <Label className="text-xs text-muted-foreground">{t('financeiroContasPagar.monthLabel')}</Label>
           <Select value={month} onValueChange={setMonth}>
-            <SelectTrigger className="w-[130px]">
+            <SelectTrigger className="w-full sm:w-[130px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -356,10 +356,14 @@ export default function ContasPagarPage() {
             </SelectContent>
           </Select>
         </div>
-        <div>
+        {/* Categoria vai pro fim da linha no mobile (order-last) e ocupa a
+            largura toda sozinha — Mês e Status ficam juntos numa linha
+            (cabem: 130px + 150px + gap). Desktop mantém a ordem/tamanho de
+            sempre (order-none desfaz o reordenamento). */}
+        <div className="order-last w-full sm:order-none sm:w-auto">
           <Label className="text-xs text-muted-foreground">{t('financeiroContasPagar.categoryLabel')}</Label>
           <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-            <SelectTrigger className="w-[200px]">
+            <SelectTrigger className="w-full sm:w-[200px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -370,10 +374,10 @@ export default function ContasPagarPage() {
             </SelectContent>
           </Select>
         </div>
-        <div>
+        <div className="min-w-0 flex-1 sm:flex-none">
           <Label className="text-xs text-muted-foreground">{t('financeiroContasPagar.statusLabel')}</Label>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[150px]">
+            <SelectTrigger className="w-full sm:w-[150px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -481,7 +485,7 @@ export default function ContasPagarPage() {
         open={drawerOpen}
         onOpenChange={(o) => !o && setDrawerOpen(false)}
         title={editing ? t('financeiroContasPagar.editSheetTitle') : t('financeiroContasPagar.createSheetTitle')}
-        contentClassName="modal-responsive sm:max-w-lg"
+        contentClassName="md:max-w-lg"
         preventOutsideClose
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">

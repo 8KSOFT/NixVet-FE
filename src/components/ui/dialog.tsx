@@ -61,11 +61,24 @@ function DialogContent({
       <DialogPrimitive.Content
         data-slot="dialog-content"
         className={cn(
-          "fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border bg-background p-6 shadow-lg duration-200 outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 sm:max-w-lg",
+          // Mobile (padrão): bottom sheet — ancorado na base, largura cheia,
+          // só os cantos de cima arredondados. Desktop (md+): dialog
+          // centralizado de sempre. A animação de entrada/saída (slide no
+          // mobile, zoom+fade no desktop) fica em globals.css, key-frames
+          // puras — o projeto não tem plugin de animação do Tailwind (ver
+          // mesmo padrão em sheet.tsx).
+          "fixed inset-x-0 bottom-0 z-50 grid max-h-[85dvh] w-full max-w-full gap-4 overflow-y-auto rounded-t-2xl border-t bg-background p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] shadow-lg outline-none",
+          // Sem translate-x/y aqui: as key-frames de globals.css já fixam o
+          // transform final (translate -50%/-50% + scale) via animation
+          // forwards. Tailwind v4 aplica translate-x/y na propriedade CSS
+          // `translate` (não `transform`) — as duas comporiam e dobrariam o
+          // deslocamento se ambas estivessem presentes.
+          "md:inset-x-auto md:top-[50%] md:left-[50%] md:bottom-auto md:max-h-none md:w-full md:max-w-lg md:overflow-visible md:rounded-lg md:border md:pb-6",
           className
         )}
         {...props}
       >
+        <div className="mx-auto mt-1 mb-2 h-1.5 w-10 shrink-0 rounded-full bg-muted md:hidden" />
         {children}
         {showCloseButton && (
           <DialogPrimitive.Close

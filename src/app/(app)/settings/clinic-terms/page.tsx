@@ -265,7 +265,6 @@ export default function ClinicTermsPage() {
         open={addOpen}
         onOpenChange={setAddOpen}
         title={t('settingsClinicTerms.addDialog.title')}
-        containerClassName="max-w-lg mx-auto"
         preventOutsideClose
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">

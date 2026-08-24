@@ -592,7 +592,7 @@ export default function LancamentosPage() {
         </Button>
       </div>
 
-      {/* ── Mobile: hero (Resultado) + mini-cards em scroll horizontal ── */}
+      {/* ── Mobile: hero (Resultado) + mini-cards em grade (sem scroll lateral) ── */}
       <div className="flex flex-col gap-3 md:hidden">
         <StatCard
           tone="result"
@@ -602,7 +602,7 @@ export default function LancamentosPage() {
           icon={Wallet}
           loading={summaryLoading}
         />
-        <div className="-mx-4 flex gap-2.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="flex flex-wrap gap-2.5">
           <MiniStat tone="in" label={t('financeiroLancamentos.statRevenueShortLabel')} value={fmtCompact(summary?.revenue)} icon={TrendingUp} loading={summaryLoading} />
           <MiniStat tone="out" label={t('financeiroLancamentos.statExpenseShortLabel')} value={fmtCompact(summary?.expense)} icon={TrendingDown} loading={summaryLoading} />
           <MiniStat tone="warn" label={t('financeiroLancamentos.statPendingShortLabel')} value={String(summary?.pending_count ?? 0)} icon={Clock} loading={summaryLoading} />
@@ -649,7 +649,7 @@ export default function LancamentosPage() {
       </div>
 
       {/* ── Tabs ── */}
-      <div className="flex gap-2 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="flex flex-wrap gap-2">
         {STATUS_TABS.map((tab) => {
           const active = status === tab.key;
           return (

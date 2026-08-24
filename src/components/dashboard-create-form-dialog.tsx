@@ -29,7 +29,19 @@ export function DashboardCreateFormDialog({
       <DialogContent
         showCloseButton={false}
         className={cn(
-          'flex h-fit max-h-[90dvh] max-w-[calc(100%-4rem)] flex-col overflow-hidden rounded-2xl border-none bg-white p-0 modal-responsive',
+          // Mobile: herda o bottom sheet do DialogContent base (fixed/bottom,
+          // largura cheia, só cantos de cima). Desktop: volta a ser o card
+          // centralizado flutuante de sempre.
+          // p-0/pb-0 cancelam o padding do DialogContent base (inclusive o
+          // md:pb-6 do dialog "normal") — este componente é 100% p-0 por
+          // fora, quem dá respiro é o próprio rodapé interno (px-5 pb-5).
+          'flex flex-col overflow-hidden border-none bg-white p-0 pb-0',
+          // Largura padrão pensada pra formulário de 1-2 colunas (a maioria
+          // das telas). Telas com conteúdo genuinamente largo (ex.: prévia
+          // lado a lado, tabela de itens) pedem um `contentClassName` maior
+          // explicitamente — não inventar `containerClassName` pra encolher
+          // por fora, isso só duplica a régua de largura em dois lugares.
+          'md:h-fit md:max-h-[90dvh] md:max-w-2xl md:rounded-2xl md:pb-0',
           contentClassName,
         )}
         onInteractOutside={preventOutsideClose ? (event) => event.preventDefault() : undefined}

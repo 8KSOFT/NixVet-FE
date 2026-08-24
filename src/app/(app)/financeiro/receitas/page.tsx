@@ -18,6 +18,7 @@ import { toast } from 'sonner';
 import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import { PlanUpgradeGate } from '@/components/billing/PlanUpgradeGate';
 import { useCurrencyFormatter } from '@/lib/i18n/currency';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface RevenueBySource {
   particular: number;
@@ -38,6 +39,7 @@ function formatPieLabel(payload: PieLabelPayload): string {
 function ReceitasPageContent() {
   const { t } = useTranslation();
   const fmt = useCurrencyFormatter();
+  const isMobile = useIsMobile(768);
   const now = new Date();
   const [period, setPeriod] = useState(
     `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`,
@@ -113,17 +115,30 @@ function ReceitasPageContent() {
           {loading ? (
             <Skeleton className="h-64 w-full" />
           ) : (
-            <ResponsiveContainer width="100%" height={280}>
-              <PieChart>
-                <Pie data={chartData} cx="50%" cy="50%" outerRadius="70%" dataKey="value" label={formatPieLabel}>
-                  {chartData.map((_, index) => (
-                    <Cell key={index} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(v) => fmt(Number(v))} />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
+            <div className="overflow-hidden">
+              <ResponsiveContainer width="100%" height={280}>
+                <PieChart>
+                  <Pie
+                    data={chartData}
+                    cx="50%"
+                    cy="50%"
+                    outerRadius="60%"
+                    dataKey="value"
+                    label={isMobile ? false : formatPieLabel}
+                  >
+                    {chartData.map((_, index) => (
+                      <Cell key={index} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    allowEscapeViewBox={{ x: false, y: false }}
+                    wrapperStyle={{ zIndex: 10 }}
+                    formatter={(v) => fmt(Number(v))}
+                  />
+                  <Legend wrapperStyle={{ fontSize: 12 }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
           )}
         </CardContent>
       </Card>

@@ -456,7 +456,6 @@ export default function SettingsExamsPage() {
         open={modalOpen}
         onOpenChange={setModalOpen}
         title={editingId ? t('settingsExams.editExam') : t('settingsExams.newExam')}
-        contentClassName="modal-responsive"
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button

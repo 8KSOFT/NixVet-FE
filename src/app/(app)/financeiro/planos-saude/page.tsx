@@ -302,51 +302,84 @@ export default function PlanosSaudeReceivablesPage() {
           ) : !aging || Object.keys(aging.by_plan).length === 0 ? (
             <p className="py-6 text-center text-sm text-muted-foreground">{t('financeiroPlanosSaude.noPendingTransfers')}</p>
           ) : (
-            <div className="overflow-x-auto rounded-lg border border-slate-200">
-              <Table className="min-w-full text-sm">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('financeiroPlanosSaude.columnPlan')}</TableHead>
-                    {agingCols.map((c) => (
-                      <TableHead
-                        key={String(c.key)}
-                        className={cn(
-                          'border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em]',
-                          c.late ? 'text-red-600' : 'text-slate-600',
-                        )}
-                      >
-                        {c.label}
-                      </TableHead>
+            <>
+              {/* Desktop: matriz plano x faixa de atraso */}
+              <div className="hidden overflow-x-auto rounded-lg border border-slate-200 md:block">
+                <Table className="min-w-full text-sm">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('financeiroPlanosSaude.columnPlan')}</TableHead>
+                      {agingCols.map((c) => (
+                        <TableHead
+                          key={String(c.key)}
+                          className={cn(
+                            'border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em]',
+                            c.late ? 'text-red-600' : 'text-slate-600',
+                          )}
+                        >
+                          {c.label}
+                        </TableHead>
+                      ))}
+                      <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('financeiroPlanosSaude.columnTotal')}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {Object.entries(aging.by_plan).map(([planId, row]) => (
+                      <TableRow key={planId}>
+                        <TableCell className="border border-slate-200 px-3 py-3 font-medium text-slate-700">{row.plan_name}</TableCell>
+                        {agingCols.map((c) => {
+                          const bucket = row[c.key] as AgingBucket;
+                          return (
+                            <TableCell
+                              key={String(c.key)}
+                              className={cn(
+                                'border border-slate-200 px-3 py-3 text-right tabular-nums',
+                                c.late && bucket.amount > 0 ? 'bg-red-50 font-medium text-red-700' : 'text-slate-600',
+                              )}
+                            >
+                              {bucket.amount > 0 ? fmt(bucket.amount) : '—'}
+                            </TableCell>
+                          );
+                        })}
+                        <TableCell className="border border-slate-200 px-3 py-3 text-right font-semibold tabular-nums text-slate-700">
+                          {fmt(row.total)}
+                        </TableCell>
+                      </TableRow>
                     ))}
-                    <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('financeiroPlanosSaude.columnTotal')}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {Object.entries(aging.by_plan).map(([planId, row]) => (
-                    <TableRow key={planId}>
-                      <TableCell className="border border-slate-200 px-3 py-3 font-medium text-slate-700">{row.plan_name}</TableCell>
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Mobile: um card por plano — 7 colunas de valor não cabem
+                  lado a lado, e essa é uma matriz densa que o usuário
+                  precisa LER, não só espiar; empilhar as faixas verticalmente
+                  por plano mantém tudo legível sem rolagem lateral. */}
+              <div className="space-y-3 md:hidden">
+                {Object.entries(aging.by_plan).map(([planId, row]) => (
+                  <div key={planId} className="rounded-lg border border-slate-200 p-3">
+                    <p className="font-medium text-slate-700">{row.plan_name}</p>
+                    <div className="mt-2 space-y-1.5">
                       {agingCols.map((c) => {
                         const bucket = row[c.key] as AgingBucket;
+                        if (bucket.amount <= 0) return null;
                         return (
-                          <TableCell
-                            key={String(c.key)}
-                            className={cn(
-                              'border border-slate-200 px-3 py-3 text-right tabular-nums',
-                              c.late && bucket.amount > 0 ? 'bg-red-50 font-medium text-red-700' : 'text-slate-600',
-                            )}
-                          >
-                            {bucket.amount > 0 ? fmt(bucket.amount) : '—'}
-                          </TableCell>
+                          <div key={String(c.key)} className="flex items-center justify-between text-sm">
+                            <span className={cn(c.late ? 'text-red-600' : 'text-slate-500')}>{c.label}</span>
+                            <span className={cn('tabular-nums', c.late ? 'font-medium text-red-700' : 'text-slate-600')}>
+                              {fmt(bucket.amount)}
+                            </span>
+                          </div>
                         );
                       })}
-                      <TableCell className="border border-slate-200 px-3 py-3 text-right font-semibold tabular-nums text-slate-700">
-                        {fmt(row.total)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                    </div>
+                    <div className="mt-2 flex items-center justify-between border-t border-slate-200 pt-2 text-sm font-semibold text-slate-700">
+                      <span>{t('financeiroPlanosSaude.columnTotal')}</span>
+                      <span className="tabular-nums">{fmt(row.total)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
@@ -357,11 +390,11 @@ export default function PlanosSaudeReceivablesPage() {
           <CardTitle className="text-sm font-medium">{t('financeiroPlanosSaude.transfers')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex flex-wrap items-end gap-3">
-            <div>
+          <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:gap-3">
+            <div className="w-full sm:w-auto">
               <Label className="text-xs text-muted-foreground">{t('financeiroPlanosSaude.filterPlan')}</Label>
               <Select value={planFilter} onValueChange={setPlanFilter}>
-                <SelectTrigger className="w-[190px]">
+                <SelectTrigger className="w-full sm:w-[190px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -372,10 +405,10 @@ export default function PlanosSaudeReceivablesPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div>
+            <div className="w-full sm:w-auto">
               <Label className="text-xs text-muted-foreground">{t('financeiroPlanosSaude.filterStatus')}</Label>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-[160px]">
+                <SelectTrigger className="w-full sm:w-[160px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -388,10 +421,10 @@ export default function PlanosSaudeReceivablesPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div>
+            <div className="w-full sm:w-auto">
               <Label className="text-xs text-muted-foreground">{t('financeiroPlanosSaude.filterMonth')}</Label>
               <Select value={monthFilter} onValueChange={setMonthFilter}>
-                <SelectTrigger className="w-[140px]">
+                <SelectTrigger className="w-full sm:w-[140px]">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -413,48 +446,111 @@ export default function PlanosSaudeReceivablesPage() {
           ) : receivables.length === 0 ? (
             <p className="py-8 text-center text-sm text-muted-foreground">{t('financeiroPlanosSaude.noTransfersFound')}</p>
           ) : (
-            <div className="overflow-x-auto rounded-lg border border-slate-200">
-              <Table className="min-w-full text-sm">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('financeiroPlanosSaude.columnPlan')}</TableHead>
-                    <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('financeiroPlanosSaude.columnReference')}</TableHead>
-                    <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('financeiroPlanosSaude.columnExpectedAmount')}</TableHead>
-                    <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('financeiroPlanosSaude.columnTransferDate')}</TableHead>
-                    <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('financeiroPlanosSaude.columnStatus')}</TableHead>
-                    <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('financeiroPlanosSaude.columnActions')}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {receivables.map((r) => {
-                    const meta = STATUS_META[r.status];
-                    const overdue =
-                      (r.status === 'pending' || r.status === 'partial') && r.expected_repasse_date < todayISO();
-                    return (
-                      <TableRow key={r.id} className={cn(overdue && 'bg-red-50/50')}>
-                        <TableCell className="border border-slate-200 px-3 py-3 font-medium text-slate-700">
-                          {r.health_plan?.name ?? '—'}
-                        </TableCell>
-                        <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
-                          {r.reference_type ? (REFERENCE_LABELS[r.reference_type] ?? r.reference_type) : '—'}
-                        </TableCell>
-                        <TableCell className="border border-slate-200 px-3 py-3 text-right tabular-nums text-slate-600">
+            <>
+              {/* Desktop: tabela de 6 colunas */}
+              <div className="hidden overflow-x-auto rounded-lg border border-slate-200 md:block">
+                <Table className="min-w-full text-sm">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('financeiroPlanosSaude.columnPlan')}</TableHead>
+                      <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('financeiroPlanosSaude.columnReference')}</TableHead>
+                      <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('financeiroPlanosSaude.columnExpectedAmount')}</TableHead>
+                      <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('financeiroPlanosSaude.columnTransferDate')}</TableHead>
+                      <TableHead className="border-l border-slate-200 px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('financeiroPlanosSaude.columnStatus')}</TableHead>
+                      <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('financeiroPlanosSaude.columnActions')}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {receivables.map((r) => {
+                      const meta = STATUS_META[r.status];
+                      const overdue =
+                        (r.status === 'pending' || r.status === 'partial') && r.expected_repasse_date < todayISO();
+                      return (
+                        <TableRow key={r.id} className={cn(overdue && 'bg-red-50/50')}>
+                          <TableCell className="border border-slate-200 px-3 py-3 font-medium text-slate-700">
+                            {r.health_plan?.name ?? '—'}
+                          </TableCell>
+                          <TableCell className="border border-slate-200 px-3 py-3 text-slate-600">
+                            {r.reference_type ? (REFERENCE_LABELS[r.reference_type] ?? r.reference_type) : '—'}
+                          </TableCell>
+                          <TableCell className="border border-slate-200 px-3 py-3 text-right tabular-nums text-slate-600">
+                            {fmt(r.expected_amount)}
+                            {r.status === 'partial' && (
+                              <span className="block text-xs text-orange-600">
+                                {t('financeiroPlanosSaude.receivedPartial', { amount: fmt(r.received_amount) })}
+                              </span>
+                            )}
+                          </TableCell>
+                          <TableCell className={cn('border border-slate-200 px-3 py-3', overdue ? 'font-medium text-red-700' : 'text-slate-600')}>
+                            {new Date(`${r.expected_repasse_date}T12:00:00`).toLocaleDateString('pt-BR')}
+                          </TableCell>
+                          <TableCell className="border border-slate-200 px-3 py-3">
+                            <Badge variant={meta.variant} className={meta.className}>{STATUS_LABELS[r.status]}</Badge>
+                          </TableCell>
+                          <TableCell className="border border-slate-200 px-3 py-3 text-right">
+                            {r.status === 'pending' || r.status === 'partial' || r.status === 'contested' ? (
+                              <div className="flex justify-end gap-2">
+                                <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => openReceive(r)}>
+                                  <CheckCircle className="mr-1 size-3.5" />
+                                  {t('financeiroPlanosSaude.receiveButton')}
+                                </Button>
+                                <Button size="sm" variant="outline" onClick={() => openGlosa(r)}>
+                                  {t('financeiroPlanosSaude.glosaButton')}
+                                </Button>
+                              </div>
+                            ) : r.status === 'glossed' ? (
+                              <Button size="sm" variant="outline" onClick={() => contest(r)}>
+                                {t('financeiroPlanosSaude.contestButton')}
+                              </Button>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Mobile: cards */}
+              <div className="space-y-3 md:hidden">
+                {receivables.map((r) => {
+                  const meta = STATUS_META[r.status];
+                  const overdue =
+                    (r.status === 'pending' || r.status === 'partial') && r.expected_repasse_date < todayISO();
+                  return (
+                    <div key={r.id} className={cn('rounded-lg border border-slate-200 p-3', overdue && 'bg-red-50/50')}>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="truncate font-medium text-slate-700">{r.health_plan?.name ?? '—'}</p>
+                          <p className="text-xs text-slate-500">
+                            {r.reference_type ? (REFERENCE_LABELS[r.reference_type] ?? r.reference_type) : '—'}
+                          </p>
+                        </div>
+                        <Badge variant={meta.variant} className={cn('shrink-0', meta.className)}>{STATUS_LABELS[r.status]}</Badge>
+                      </div>
+                      <div className="mt-2 flex items-center justify-between text-sm">
+                        <span className={cn(overdue ? 'font-medium text-red-700' : 'text-slate-600')}>
+                          {new Date(`${r.expected_repasse_date}T12:00:00`).toLocaleDateString('pt-BR')}
+                        </span>
+                        <span className="tabular-nums text-slate-700">
                           {fmt(r.expected_amount)}
                           {r.status === 'partial' && (
-                            <span className="block text-xs text-orange-600">
+                            <span className="block text-right text-xs text-orange-600">
                               {t('financeiroPlanosSaude.receivedPartial', { amount: fmt(r.received_amount) })}
                             </span>
                           )}
-                        </TableCell>
-                        <TableCell className={cn('border border-slate-200 px-3 py-3', overdue ? 'font-medium text-red-700' : 'text-slate-600')}>
-                          {new Date(`${r.expected_repasse_date}T12:00:00`).toLocaleDateString('pt-BR')}
-                        </TableCell>
-                        <TableCell className="border border-slate-200 px-3 py-3">
-                          <Badge variant={meta.variant} className={meta.className}>{STATUS_LABELS[r.status]}</Badge>
-                        </TableCell>
-                        <TableCell className="border border-slate-200 px-3 py-3 text-right">
-                          {r.status === 'pending' || r.status === 'partial' || r.status === 'contested' ? (
-                            <div className="flex justify-end gap-2">
+                        </span>
+                      </div>
+                      {(r.status === 'pending' || r.status === 'partial' || r.status === 'contested' || r.status === 'glossed') && (
+                        <div className="mt-2 flex justify-end gap-2 border-t border-slate-200 pt-2">
+                          {r.status === 'glossed' ? (
+                            <Button size="sm" variant="outline" onClick={() => contest(r)}>
+                              {t('financeiroPlanosSaude.contestButton')}
+                            </Button>
+                          ) : (
+                            <>
                               <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => openReceive(r)}>
                                 <CheckCircle className="mr-1 size-3.5" />
                                 {t('financeiroPlanosSaude.receiveButton')}
@@ -462,21 +558,15 @@ export default function PlanosSaudeReceivablesPage() {
                               <Button size="sm" variant="outline" onClick={() => openGlosa(r)}>
                                 {t('financeiroPlanosSaude.glosaButton')}
                               </Button>
-                            </div>
-                          ) : r.status === 'glossed' ? (
-                            <Button size="sm" variant="outline" onClick={() => contest(r)}>
-                              {t('financeiroPlanosSaude.contestButton')}
-                            </Button>
-                          ) : (
-                            <span className="text-xs text-muted-foreground">—</span>
+                            </>
                           )}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

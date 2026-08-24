@@ -169,7 +169,6 @@ export default function SettingsAutomationsPage() {
         open={modalOpen}
         onOpenChange={(open) => { setModalOpen(open); if (!open) reset(); }}
         title={t('settingsAutomations.createDialogTitle')}
-        contentClassName="modal-responsive"
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button

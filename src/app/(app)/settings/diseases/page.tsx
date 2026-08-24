@@ -170,7 +170,6 @@ export default function SettingsDiseasesPage() {
         open={modalOpen}
         onOpenChange={setModalOpen}
         title={editingId ? t('settingsDiseases.editDisease') : t('settingsDiseases.newDisease')}
-        contentClassName="modal-responsive"
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button

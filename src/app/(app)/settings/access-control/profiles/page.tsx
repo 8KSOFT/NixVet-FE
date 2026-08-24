@@ -339,7 +339,6 @@ export default function AccessControlProfilesPage() {
         open={modalOpen}
         onOpenChange={setModalOpen}
         title={isEditing ? t('settingsAccessProfiles.formDialog.editTitle') : t('settingsAccessProfiles.formDialog.createTitle')}
-        contentClassName="modal-responsive"
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button

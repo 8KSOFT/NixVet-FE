@@ -430,6 +430,82 @@ body {
   animation: sheet-slide-out-to-right 220ms ease-in forwards;
 }
 
+/* Dialog / AlertDialog — mobile-first: bottom sheet (slide) até 767px,
+   dialog centralizado (zoom+fade) a partir de md (768px). Mesma técnica de
+   keyframes + seletor por data-state do Sheet acima — o Radix Presence
+   detecta o fim da animação sozinho (animationend), sem plugin do Tailwind. */
+@keyframes dialog-slide-in-from-bottom {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes dialog-slide-out-to-bottom {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes dialog-zoom-fade-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes dialog-zoom-fade-out {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.95);
+  }
+}
+
+[data-slot="dialog-overlay"][data-state="open"],
+[data-slot="alert-dialog-overlay"][data-state="open"] {
+  animation: sheet-fade-in 200ms ease-out forwards;
+}
+
+[data-slot="dialog-overlay"][data-state="closed"],
+[data-slot="alert-dialog-overlay"][data-state="closed"] {
+  animation: sheet-fade-out 180ms ease-in forwards;
+}
+
+[data-slot="dialog-content"][data-state="open"],
+[data-slot="alert-dialog-content"][data-state="open"] {
+  animation: dialog-slide-in-from-bottom 280ms cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+
+[data-slot="dialog-content"][data-state="closed"],
+[data-slot="alert-dialog-content"][data-state="closed"] {
+  animation: dialog-slide-out-to-bottom 220ms ease-in forwards;
+}
+
+@media (min-width: 768px) {
+  [data-slot="dialog-content"][data-state="open"],
+  [data-slot="alert-dialog-content"][data-state="open"] {
+    animation: dialog-zoom-fade-in 180ms ease-out forwards;
+  }
+
+  [data-slot="dialog-content"][data-state="closed"],
+  [data-slot="alert-dialog-content"][data-state="closed"] {
+    animation: dialog-zoom-fade-out 150ms ease-in forwards;
+  }
+}
+
 /* Responsive modal adjustments (mobile/tablet only). Aggressive mobile-first approach
    to prevent text/input overflow and ensure proper stacking. */
 /* Reserva espaço no fim da página pro SetupChecklistWidget virar uma bottom
@@ -527,129 +603,13 @@ body {
   }
 }
 
+/* .modal-responsive existiu aqui (hack "encolhe tudo com !important" pra
+   caber o dialog centralizado no mobile). Substituído pelo bottom sheet
+   mobile-first nativo do Dialog/DashboardCreateFormDialog — ver dialog.tsx
+   e dashboard-create-form-dialog.tsx. Removido daqui porque, estando fora
+   de qualquer @layer, ele vencia incondicionalmente as classes utilitárias
+   do Tailwind (unlayered > layered na cascata), mesmo sem !important. */
 @media (max-width: 1024px) {
-  .modal-responsive {
-    width: calc(100% - 1.5rem) !important;
-    max-width: calc(100% - 1.5rem) !important;
-    /* Sem margin: o DialogContent é centralizado via left:50% + translateX(-50%)
-       (ver dialog.tsx). Margin nesse tipo de posicionamento empurra a caixa pra
-       direita em vez de dar respiro nos dois lados — o espaçamento das bordas
-       tem que vir só da largura reduzida acima. */
-    margin: 0 !important;
-    border-radius: 0.75rem;
-    padding: 0 !important;
-    max-height: 95vh;
-    /* dvh acompanha a altura real visível (barra de endereço/nav do navegador
-       mobile), evitando que o rodapé do modal fique cortado e inacessível em
-       telas curtas — vh sozinho superestima a área visível nesses casos. */
-    max-height: 95dvh;
-    overflow: hidden;
-    /* O card visível é o container interno (bg #f2f2f7 + header/body); o
-       DialogContent em si só existe pra centralizar/animar, então some com o
-       bg-white dele pra não sobrar uma faixa/moldura branca por fora do card. */
-    background-color: transparent !important;
-    box-shadow: none !important;
-  }
-
-  .modal-responsive [role="dialog"] {
-    display: flex;
-    flex-direction: column;
-    max-height: 95vh;
-  }
-
-  /* Modal header section */
-  .modal-responsive [class*="DialogHeader"] {
-    flex-shrink: 0;
-    padding: 0.75rem 1rem !important;
-    background-color: #f2f2f7 !important;
-    border-radius: 0.75rem 0.75rem 0 0;
-  }
-
-  .modal-responsive [class*="DialogTitle"] {
-    font-size: 1rem !important;
-    font-weight: 600;
-    padding: 0 !important;
-    margin: 0 !important;
-  }
-
-  .modal-responsive [class*="DialogTitle"] span {
-    padding: 0 !important;
-  }
-
-  /* Região rolável do modal (ver data-slot="dialog-scroll-body" em
-     dashboard-create-form-dialog.tsx). O scroll/altura já vêm das classes
-     Tailwind do componente — aqui só reduzimos o padding no mobile. */
-  .modal-responsive [data-slot="dialog-scroll-body"] {
-    padding: 0.75rem !important;
-    padding-top: 1.5rem !important;
-  }
-
-  /* All input fields: reduce height and padding */
-  .modal-responsive input,
-  .modal-responsive [role="button"]:not(:has(svg:only-child)) {
-    height: 2rem !important;
-    font-size: 0.875rem !important;
-    padding: 0.375rem 0.5rem !important;
-  }
-
-  /* Labels: reduce font size */
-  .modal-responsive label {
-    font-size: 0.75rem !important;
-    font-weight: 500;
-    margin-bottom: 0.25rem !important;
-  }
-
-  /* Reduce space between form groups */
-  .modal-responsive > div {
-    margin-bottom: 0.5rem !important;
-  }
-
-  /* Grid layouts: auto-fit as many columns as fit (min 8.5rem each) instead of
-     forcing a single column, so short fields (e.g. numero, UF, cep, cidade)
-     can still pair up side by side without overflowing narrow screens. */
-  .modal-responsive .grid {
-    grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr)) !important;
-    gap: 0.5rem !important;
-  }
-
-  /* Radio group: compact layout (exceto a linha divisória w-px entre opções,
-     que deve continuar um risquinho fino, igual no desktop) */
-  .modal-responsive [role="radiogroup"] {
-    gap: 0.5rem !important;
-  }
-
-  .modal-responsive [role="radiogroup"] > div:not(.w-px) {
-    height: auto !important;
-    padding: 0.5rem !important;
-    min-height: 2rem;
-  }
-
-  .modal-responsive [role="radiogroup"] > div.w-px {
-    width: 1px !important;
-    min-height: 0;
-    padding: 0 !important;
-  }
-
-  /* Texto das opções do radio group vem num <span class="text-sm"> dentro do
-     label — tem font-size próprio, então herda do label não tem efeito;
-     precisa mirar o span direto. */
-  .modal-responsive [role="radiogroup"] label span {
-    font-size: 0.75rem !important;
-  }
-
-  /* Dialog footer: reduce button sizes */
-  .modal-responsive [class*="DialogFooter"] {
-    flex-shrink: 0;
-    padding: 0.75rem !important;
-    gap: 0.5rem !important;
-  }
-
-  .modal-responsive [class*="DialogFooter"] button {
-    font-size: 0.875rem !important;
-    padding: 0.375rem 0.75rem !important;
-    height: 2rem !important;
-  }
-
   /* Popover: fit mobile screen width */
   .popover-responsive {
     width: calc(100vw - 2rem) !important;
@@ -657,62 +617,8 @@ body {
     margin: 0.5rem;
   }
 
-  /* Error messages: smaller font */
-  .modal-responsive p.text-sm {
-    font-size: 0.7rem !important;
-    margin-top: 0.25rem !important;
-  }
-
   /* Very small screens: even more aggressive spacing */
   @media (max-width: 480px) {
-    .modal-responsive {
-      margin: 0 !important;
-      width: calc(100% - 1rem) !important;
-      max-width: calc(100% - 1rem) !important;
-      border-radius: 0.75rem;
-      max-height: 96vh;
-      max-height: 96dvh;
-    }
-
-    .modal-responsive [class*="DialogHeader"] {
-      padding: 0.5rem 0.75rem !important;
-      border-radius: 0.75rem 0.75rem 0 0;
-    }
-
-    .modal-responsive [class*="DialogTitle"] {
-      font-size: 0.875rem !important;
-    }
-
-    .modal-responsive [data-slot="dialog-scroll-body"] {
-      padding: 0.5rem !important;
-      padding-top: 1.5rem !important;
-    }
-
-    .modal-responsive input,
-    .modal-responsive [role="button"] {
-      font-size: 0.8125rem !important;
-      padding: 0.3rem 0.4rem !important;
-      height: 1.75rem !important;
-    }
-
-    .modal-responsive label {
-      font-size: 0.7rem !important;
-    }
-
-    .modal-responsive [role="radiogroup"] label span {
-      font-size: 0.7rem !important;
-    }
-
-    .modal-responsive [class*="DialogFooter"] {
-      padding: 0.5rem !important;
-    }
-
-    .modal-responsive [class*="DialogFooter"] button {
-      font-size: 0.8125rem !important;
-      padding: 0.3rem 0.6rem !important;
-      height: 1.75rem !important;
-    }
-
     .popover-responsive {
       width: calc(100vw - 1rem) !important;
     }

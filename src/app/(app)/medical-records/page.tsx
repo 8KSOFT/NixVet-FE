@@ -15,6 +15,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { toast } from 'sonner';
 import { Loader2, Plus, Search, UserPlus, PawPrint, ChevronRight, ChevronsUpDown, Check, X } from 'lucide-react';
 import { API_PAGE_SIZE } from '@/lib/pagination';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { ListPagination } from '@/components/list-pagination';
 import { ProfilePhoto } from '@/components/shared/profile-photo';
 import { cn } from '@/lib/utils';
@@ -83,6 +84,7 @@ const emptyPatient = () => ({
 export default function MedicalRecordsListPage() {
   const router = useRouter();
   const { t } = useTranslation();
+  const isMobile = useIsMobile(768);
   const [modalVisible, setModalVisible] = useState(false);
   const [filterPatient, setFilterPatient] = useState('');
   const [filterTutor, setFilterTutor] = useState('');
@@ -235,10 +237,15 @@ export default function MedicalRecordsListPage() {
             ler como um controle só, não dois soltos lado a lado. */}
         <div className="flex flex-1 min-w-70">
           <div className="relative flex-1 min-w-40">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-7 h-7" />
+            <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 sm:h-7 sm:w-7" />
+            {/* Altura/fonte menores só no mobile (h-11/text-sm) — o h-15
+                original sobrava muito nas telas pequenas e a fonte grande
+                deixava pouco texto visível no campo. Desktop sem mudança. */}
             <Input
-              placeholder={t('medicalRecords.searchPlaceholder')}
-              className="h-15! rounded-l-full rounded-r-none border-r-0 pl-12 placeholder:text-black/80"
+              placeholder={
+                isMobile ? t('medicalRecords.searchPlaceholderShort') : t('medicalRecords.searchPlaceholder')
+              }
+              className="h-11! rounded-l-full rounded-r-none border-r-0 pl-10 text-sm placeholder:text-black/80 sm:h-15! sm:pl-12 sm:text-base"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -256,12 +263,17 @@ export default function MedicalRecordsListPage() {
                 variant="outline"
                 role="combobox"
                 aria-expanded={tutorFilterOpen}
-                className="h-15 w-auto shrink-0 justify-between rounded-l-none rounded-r-full font-normal sm:w-64"
+                className="h-11 w-32 shrink-0 justify-start rounded-l-none rounded-r-full pl-2 pr-1.5 font-normal sm:h-15 sm:w-64 sm:justify-between sm:px-5"
               >
-                <span className="truncate">
-                  {selectedTutorName || t('medicalRecords.tutorFilterPlaceholder')}
+                <span className="min-w-0 max-w-22 truncate sm:max-w-none">
+                  {selectedTutorName || (
+                    <>
+                      <span className="sm:hidden">{t('medicalRecords.tutorFilterPlaceholderShort')}</span>
+                      <span className="hidden sm:inline">{t('medicalRecords.tutorFilterPlaceholder')}</span>
+                    </>
+                  )}
                 </span>
-                <span className="ml-2 flex shrink-0 items-center gap-1">
+                <span className="ml-0.5 flex shrink-0 items-center gap-1 sm:ml-2">
                   {filterTutor && (
                     <X
                       className="h-4 w-4 text-muted-foreground hover:text-foreground"
@@ -340,14 +352,14 @@ export default function MedicalRecordsListPage() {
           <div className="text-center py-12 text-muted-foreground">{t('medicalRecords.emptyState')}</div>
         ) : (
           <div>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-6 pt-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+            <div className="grid grid-cols-1 justify-items-center gap-x-4 gap-y-8 pt-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
               {patientGroups.map((group) => {
                 const lastUpdated = group.records[0]?.createdAt;
                 return (
                   <Link
                     key={group.patient.id}
                     href={`/medical-records/prontuario/${group.patient.id}`}
-                    className="group relative block perspective-[900px] focus-visible:outline-none"
+                    className="group relative block w-72 perspective-[900px] focus-visible:outline-none"
                   >
                     {/* Aba da pasta — o nome do pet mora nela, como numa pasta
                         de arquivo de verdade. Gradiente simulando luz vindo de
@@ -396,7 +408,7 @@ export default function MedicalRecordsListPage() {
                         dobra de baixo), como se abrisse. */}
                     <div
                       className={cn(
-                        'relative flex aspect-9/8 origin-bottom flex-col justify-between rounded-xl rounded-tl-none border border-gray-300 bg-white p-3.5 shadow-sm transition-all duration-300',
+                        'relative flex h-64 origin-bottom flex-col justify-between rounded-xl rounded-tl-none border border-gray-300 bg-white p-3.5 shadow-sm transition-all duration-300',
                         JUICY_EASE,
                         'group-hover:border-primary/40 group-hover:shadow-xl group-hover:translate-y-0.5 group-hover:-rotate-x-14',
                         'group-focus-visible:ring-2 group-focus-visible:ring-primary/50',
@@ -516,7 +528,6 @@ export default function MedicalRecordsListPage() {
         open={modalVisible}
         onOpenChange={setModalVisible}
         title={t('medicalRecords.dialog.newRecordTitle')}
-        containerClassName="max-w-lg mx-auto"
         preventOutsideClose
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
@@ -641,7 +652,6 @@ export default function MedicalRecordsListPage() {
         open={patientModal}
         onOpenChange={setPatientModal}
         title={t('medicalRecords.dialog.newPatientTitle')}
-        containerClassName="max-w-lg mx-auto"
         preventOutsideClose
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
@@ -765,7 +775,6 @@ export default function MedicalRecordsListPage() {
         open={tutorModal}
         onOpenChange={setTutorModal}
         title={t('medicalRecords.dialog.newTutorTitle')}
-        containerClassName="max-w-lg mx-auto"
         preventOutsideClose
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">

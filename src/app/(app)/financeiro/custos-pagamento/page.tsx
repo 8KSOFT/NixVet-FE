@@ -19,6 +19,7 @@ import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import { useCustosPagamentoQuery } from '@/hooks/apiHooks/useFinancialReports';
 import { PlanUpgradeGate } from '@/components/billing/PlanUpgradeGate';
 import { useCurrencyFormatter } from '@/lib/i18n/currency';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const COLORS = ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316'];
 
@@ -34,6 +35,7 @@ function formatPieLabel(payload: PieLabelPayload): string {
 function CustosPagamentoPageContent() {
   const { t } = useTranslation();
   const fmt = useCurrencyFormatter();
+  const isMobile = useIsMobile(768);
 
   const METHOD_LABELS: Record<string, string> = {
     pix: t('financeiroCustos.methods.pix'),
@@ -121,17 +123,30 @@ function CustosPagamentoPageContent() {
             {loading ? (
               <Skeleton className="h-60 w-full" />
             ) : (
-              <ResponsiveContainer width="100%" height={250}>
-                <PieChart>
-                  <Pie data={chartData} cx="50%" cy="50%" outerRadius="70%" dataKey="value" label={formatPieLabel}>
-                    {chartData.map((_, i) => (
-                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(v) => fmt(Number(v))} />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
+              <div className="overflow-hidden">
+                <ResponsiveContainer width="100%" height={250}>
+                  <PieChart>
+                    <Pie
+                      data={chartData}
+                      cx="50%"
+                      cy="50%"
+                      outerRadius="60%"
+                      dataKey="value"
+                      label={isMobile ? false : formatPieLabel}
+                    >
+                      {chartData.map((_, i) => (
+                        <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      allowEscapeViewBox={{ x: false, y: false }}
+                      wrapperStyle={{ zIndex: 10 }}
+                      formatter={(v) => fmt(Number(v))}
+                    />
+                    <Legend wrapperStyle={{ fontSize: 12 }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -144,26 +159,44 @@ function CustosPagamentoPageContent() {
             {loading ? (
               <Skeleton className="h-60 w-full" />
             ) : (
-              <div className="overflow-x-auto">
-                <Table className="min-w-full border-collapse bg-white text-sm">
-                  <TableHeader>
-                    <TableRow className="border-b border-gray-300 h-15">
-                      <TableHead>{t('financeiroCustos.methodColumn')}</TableHead>
-                      <TableHead className="text-right">{t('financeiroCustos.volumeColumn')}</TableHead>
-                      <TableHead className="text-right">{t('financeiroCustos.totalCostColumn')}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {methods.map(([method, v]) => (
-                      <TableRow className="cursor-pointer hover:bg-muted/50 border-b border-gray-300 h-15" key={method}>
-                        <TableCell>{METHOD_LABELS[method] ?? method}</TableCell>
-                        <TableCell className="text-right tabular-nums">{fmt(v.volume)}</TableCell>
-                        <TableCell className="text-right tabular-nums text-orange-500">{fmt(v.fee_total)}</TableCell>
+              <>
+                {/* Desktop: tabela */}
+                <div className="hidden md:block">
+                  <Table className="min-w-full border-collapse bg-white text-sm">
+                    <TableHeader>
+                      <TableRow className="border-b border-gray-300 h-15">
+                        <TableHead>{t('financeiroCustos.methodColumn')}</TableHead>
+                        <TableHead className="text-right">{t('financeiroCustos.volumeColumn')}</TableHead>
+                        <TableHead className="text-right">{t('financeiroCustos.totalCostColumn')}</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                    </TableHeader>
+                    <TableBody>
+                      {methods.map(([method, v]) => (
+                        <TableRow className="cursor-pointer hover:bg-muted/50 border-b border-gray-300 h-15" key={method}>
+                          <TableCell>{METHOD_LABELS[method] ?? method}</TableCell>
+                          <TableCell className="text-right tabular-nums">{fmt(v.volume)}</TableCell>
+                          <TableCell className="text-right tabular-nums text-orange-500">{fmt(v.fee_total)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                {/* Mobile: cards — tabela de 3 colunas ainda estourava a
+                    largura da tela (nomes de método longos + 2 valores
+                    monetários não cabem lado a lado num viewport de 375px). */}
+                <div className="space-y-2 md:hidden">
+                  {methods.map(([method, v]) => (
+                    <div key={method} className="flex items-center justify-between rounded-lg border border-gray-200 p-3">
+                      <span className="text-sm font-medium">{METHOD_LABELS[method] ?? method}</span>
+                      <div className="text-right">
+                        <p className="text-sm tabular-nums">{fmt(v.volume)}</p>
+                        <p className="text-xs tabular-nums text-orange-500">{fmt(v.fee_total)}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
             )}
           </CardContent>
         </Card>

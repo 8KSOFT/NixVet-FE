@@ -240,15 +240,12 @@ function PrescriptionPreview({
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col">
-      <div className="mb-4 flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-        <Eye className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-        {t('prescriptions.preview.banner')}
-      </div>
-
-      {/* flex-1: o "papel" estica até o fim do painel mesmo com pouco
-          conteúdo (1 medicamento), em vez de parar curto e sobrar cinza
-          embaixo — fica com cara de folha de verdade, não de card solto. */}
-      <div className="flex-1 rounded-lg border border-slate-200 bg-white p-8 text-sm shadow-sm">
+      {/* flex-1 + flex-col: o "papel" estica até o fim do painel mesmo com
+          pouco conteúdo (1 medicamento), em vez de parar curto e sobrar
+          cinza embaixo — fica com cara de folha de verdade, não de card
+          solto. flex-col também deixa o rodapé (vias/QR/assinatura) grudado
+          na base via mt-auto, em vez de flutuar logo depois do conteúdo. */}
+      <div className="flex flex-1 flex-col rounded-lg border border-slate-200 bg-white p-8 text-sm shadow-sm">
         {/* Cabeçalho */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-2.5">
@@ -324,6 +321,16 @@ function PrescriptionPreview({
                       <div className="min-w-0">
                         <p className="font-bold text-slate-800">{m.name || t('prescriptions.preview.unnamedMedication')}</p>
                         {line && <p className="text-sm text-slate-600">{line}</p>}
+                        {m.usage_description && (
+                          <p className="mt-0.5 text-xs text-slate-500">
+                            {t('prescriptions.form.usageDescriptionLabel')}: {m.usage_description}
+                          </p>
+                        )}
+                        {m.observations && (
+                          <p className="mt-0.5 text-xs italic text-slate-500">
+                            {t('prescriptions.form.observationsLabel')}: {m.observations}
+                          </p>
+                        )}
                       </div>
                     </div>
                   );
@@ -371,7 +378,7 @@ function PrescriptionPreview({
           </div>
         )}
 
-        <div className="mt-5 border-t border-dashed border-slate-200 pt-3 text-center text-[11px] text-slate-500">
+        <div className="mt-auto border-t border-dashed border-slate-200 pt-3 text-center text-[11px] text-slate-500">
           {t('prescriptions.preview.footerNote')}
         </div>
       </div>
@@ -986,7 +993,7 @@ function PrescriptionsContent() {
         open={modalVisible}
         onOpenChange={setModalVisible}
         title={t('prescriptions.dialog.createTitle')}
-        contentClassName="h-[90dvh] max-w-[min(calc(100%-4rem),64rem)] sm:max-w-[min(calc(100%-4rem),64rem)]"
+        contentClassName="md:h-[90dvh] md:max-w-[min(calc(100%-4rem),64rem)]"
         bodyClassName="overflow-hidden p-0"
         preventOutsideClose
         preventEscapeClose

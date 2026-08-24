@@ -596,8 +596,15 @@ function SidebarNav({
           >
             <div
               className={cn(
-                "flex min-h-0 flex-col gap-2 overflow-hidden [padding-bottom:calc(1rem+env(safe-area-inset-bottom))]",
-                collapsed ? "pt-3" : "pt-2",
+                "flex min-h-0 flex-col gap-2 overflow-hidden",
+                // Padding só existe quando a seção está de fato aberta —
+                // aplicado incondicional, ele não comprime junto com a
+                // grid-row indo a 0fr (padding nunca fica menor que o
+                // próprio valor), sobrando uma faixa fantasma mesmo com o
+                // conteúdo "fechado". Sem padding nenhum, a altura natural
+                // do bloco vai a zero de verdade.
+                (collapsed || adminOpen) && (collapsed ? "pt-3" : "pt-2"),
+                (collapsed || adminOpen) && "[padding-bottom:calc(1rem+env(safe-area-inset-bottom))]",
                 collapsed || adminOpen ? "pointer-events-auto" : "pointer-events-none",
               )}
             >

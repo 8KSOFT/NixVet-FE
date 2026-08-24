@@ -515,7 +515,6 @@ function PatientsContent() {
         open={modalVisible}
         onOpenChange={setModalVisible}
         title={editingId ? t('patients.dialog.editTitle') : t('patients.dialog.createTitle')}
-        contentClassName="modal-responsive"
         bodyClassName="select-none"
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">

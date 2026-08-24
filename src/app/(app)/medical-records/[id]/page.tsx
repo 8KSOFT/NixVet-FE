@@ -853,7 +853,6 @@ export default function MedicalRecordDetailPage() {
         open={vaccineModal}
         onOpenChange={setVaccineModal}
         title={t('medicalRecordDetail.vaccineModal.title')}
-        contentClassName="modal-responsive"
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button variant="outline" className="border border-gray-300" onClick={() => setVaccineModal(false)}>{t('medicalRecordDetail.vaccineModal.cancel')}</Button>
@@ -874,7 +873,6 @@ export default function MedicalRecordDetailPage() {
         open={attachModal}
         onOpenChange={setAttachModal}
         title={t('medicalRecordDetail.attachModal.title')}
-        contentClassName="modal-responsive"
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button variant="outline" className="border border-gray-300" onClick={() => setAttachModal(false)}>{t('medicalRecordDetail.attachModal.cancel')}</Button>
@@ -907,7 +905,7 @@ export default function MedicalRecordDetailPage() {
         open={presModal}
         onOpenChange={setPresModal}
         title={t('medicalRecordDetail.prescriptionModal.title')}
-        contentClassName="modal-responsive sm:max-w-2xl"
+        contentClassName="md:max-w-2xl"
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button variant="outline" className="border border-gray-300" onClick={() => setPresModal(false)}>{t('medicalRecordDetail.prescriptionModal.cancel')}</Button>

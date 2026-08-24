@@ -1158,7 +1158,6 @@ function CalendarContent() {
         open={modalVisible}
         onOpenChange={setModalVisible}
         title={t('calendar.scheduleConsultation')}
-        containerClassName="w-full mx-auto"
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button variant="outline" onClick={() => setModalVisible(false)}>

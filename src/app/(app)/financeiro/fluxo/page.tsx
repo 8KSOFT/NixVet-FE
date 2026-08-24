@@ -11,7 +11,9 @@ import {
   Tooltip,
   ReferenceLine,
   ResponsiveContainer,
+  type TooltipContentProps,
 } from 'recharts';
+import type { NameType, ValueType } from 'recharts/types/component/DefaultTooltipContent';
 import { AlertTriangle, TrendingDown, TrendingUp, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -90,9 +92,35 @@ export default function FluxoCaixaPage() {
 
   const movementDays = (data?.days ?? []).filter((d) => d.inflow > 0 || d.outflow > 0);
 
+  /**
+   * Tooltip compacta e com largura travada — a caixa padrão do Recharts
+   * calcula a posição só depois de medir o próprio tamanho, então
+   * `allowEscapeViewBox` sozinho ainda deixa escapar por um frame perto da
+   * borda. Largura fixa pequena + o wrapper com overflow-hidden (abaixo)
+   * garantem que nunca force scroll horizontal da página, mesmo perto do
+   * canto direito do gráfico.
+   */
+  const renderTooltip = ({ active, payload, label }: TooltipContentProps<ValueType, NameType>) => {
+    if (!active || !payload || !payload.length) return null;
+    return (
+      <div className="w-40 rounded-md border border-slate-200 bg-white p-2 text-xs shadow-md">
+        <p className="mb-1 font-semibold text-slate-700">{label}</p>
+        {payload.map((entry) => {
+          const key = entry.name === 'entrada' ? 'tooltipInflow' : entry.name === 'saida' ? 'tooltipOutflow' : 'tooltipCumulativeBalance';
+          return (
+            <p key={String(entry.name)} className="flex justify-between gap-2" style={{ color: entry.color }}>
+              <span className="truncate">{t(`financeiroFluxo.${key}`)}</span>
+              <span className="shrink-0 tabular-nums">{fmt(Math.abs(Number(entry.value)))}</span>
+            </p>
+          );
+        })}
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
         <div>
           <h1 className="text-2xl font-bold">{t('financeiroFluxo.title')}</h1>
           <p className="text-sm text-muted-foreground">
@@ -106,6 +134,7 @@ export default function FluxoCaixaPage() {
               size="sm"
               variant={days === r ? 'default' : 'outline'}
               onClick={() => setDays(r)}
+              className="flex-1 sm:flex-none"
             >
               {t('financeiroFluxo.rangeButton', { days: r })}
             </Button>
@@ -173,26 +202,22 @@ export default function FluxoCaixaPage() {
           ) : chartData.length === 0 ? (
             <p className="py-8 text-center text-sm text-muted-foreground">{t('financeiroFluxo.noMovementInPeriod')}</p>
           ) : (
-            <ResponsiveContainer width="100%" height={280}>
-              <ComposedChart data={chartData} stackOffset="sign">
-                <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${currencySymbol}${(Number(v) / 1000).toFixed(0)}k`} />
-                <Tooltip
-                  formatter={(v, name) => [
-                    fmt(Math.abs(Number(v))),
-                    name === 'entrada'
-                      ? t('financeiroFluxo.tooltipInflow')
-                      : name === 'saida'
-                        ? t('financeiroFluxo.tooltipOutflow')
-                        : t('financeiroFluxo.tooltipCumulativeBalance'),
-                  ]}
-                />
-                <ReferenceLine y={0} stroke="#ef4444" strokeDasharray="4 4" />
-                <Bar dataKey="entrada" stackId="mov" fill="#22c55e" name="entrada" />
-                <Bar dataKey="saida" stackId="mov" fill="#ef4444" name="saida" />
-                <Line type="monotone" dataKey="saldo" stroke="#3b82f6" strokeWidth={2} dot={false} name="saldo" />
-              </ComposedChart>
-            </ResponsiveContainer>
+            // overflow-hidden é a trava final: mesmo se o Recharts calcular
+            // mal a posição perto da borda, o vazamento fica clipado aqui
+            // dentro em vez de forçar scroll horizontal da página.
+            <div className="overflow-hidden">
+              <ResponsiveContainer width="100%" height={280}>
+                <ComposedChart data={chartData} stackOffset="sign" margin={{ left: 0, right: 0 }}>
+                  <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                  <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${currencySymbol}${(Number(v) / 1000).toFixed(0)}k`} />
+                  <Tooltip allowEscapeViewBox={{ x: false, y: false }} content={renderTooltip} />
+                  <ReferenceLine y={0} stroke="#ef4444" strokeDasharray="4 4" />
+                  <Bar dataKey="entrada" stackId="mov" fill="#22c55e" name="entrada" />
+                  <Bar dataKey="saida" stackId="mov" fill="#ef4444" name="saida" />
+                  <Line type="monotone" dataKey="saldo" stroke="#3b82f6" strokeWidth={2} dot={false} name="saldo" />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -211,41 +236,78 @@ export default function FluxoCaixaPage() {
           ) : movementDays.length === 0 ? (
             <p className="py-8 text-center text-sm text-muted-foreground">{t('financeiroFluxo.noMovementDays')}</p>
           ) : (
-            <div className="overflow-x-auto rounded-lg border border-slate-200">
-              <Table className="min-w-full text-sm">
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('financeiroFluxo.columnDate')}</TableHead>
-                    <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('financeiroFluxo.columnInflows')}</TableHead>
-                    <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('financeiroFluxo.columnOutflows')}</TableHead>
-                    <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('financeiroFluxo.columnNet')}</TableHead>
-                    <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('financeiroFluxo.columnCumulativeBalance')}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {movementDays.map((d) => (
-                    <TableRow key={d.date} className={cn(d.cumulative_balance < 0 && 'bg-red-50')}>
-                      <TableCell className="border border-slate-200 px-3 py-2.5 text-slate-600">{fmtDate(d.date)}</TableCell>
-                      <TableCell className="border border-slate-200 px-3 py-2.5 text-right tabular-nums text-green-700">
-                        {d.inflow > 0 ? fmt(d.inflow) : '—'}
-                      </TableCell>
-                      <TableCell className="border border-slate-200 px-3 py-2.5 text-right tabular-nums text-red-700">
-                        {d.outflow > 0 ? fmt(d.outflow) : '—'}
-                      </TableCell>
-                      <TableCell className="border border-slate-200 px-3 py-2.5 text-right tabular-nums text-slate-600">{fmt(d.net)}</TableCell>
-                      <TableCell
-                        className={cn(
-                          'border border-slate-200 px-3 py-2.5 text-right font-medium tabular-nums',
-                          d.cumulative_balance < 0 ? 'text-red-700' : 'text-slate-700',
-                        )}
-                      >
-                        {fmt(d.cumulative_balance)}
-                      </TableCell>
+            <>
+              {/* Desktop: tabela de 5 colunas */}
+              <div className="hidden overflow-x-auto rounded-lg border border-slate-200 md:block">
+                <Table className="min-w-full text-sm">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="px-3 py-2 text-left text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('financeiroFluxo.columnDate')}</TableHead>
+                      <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('financeiroFluxo.columnInflows')}</TableHead>
+                      <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('financeiroFluxo.columnOutflows')}</TableHead>
+                      <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('financeiroFluxo.columnNet')}</TableHead>
+                      <TableHead className="border-l border-slate-200 px-3 py-2 text-right text-[11px] uppercase tracking-[0.12em] text-slate-600">{t('financeiroFluxo.columnCumulativeBalance')}</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {movementDays.map((d) => (
+                      <TableRow key={d.date} className={cn(d.cumulative_balance < 0 && 'bg-red-50')}>
+                        <TableCell className="border border-slate-200 px-3 py-2.5 text-slate-600">{fmtDate(d.date)}</TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-2.5 text-right tabular-nums text-green-700">
+                          {d.inflow > 0 ? fmt(d.inflow) : '—'}
+                        </TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-2.5 text-right tabular-nums text-red-700">
+                          {d.outflow > 0 ? fmt(d.outflow) : '—'}
+                        </TableCell>
+                        <TableCell className="border border-slate-200 px-3 py-2.5 text-right tabular-nums text-slate-600">{fmt(d.net)}</TableCell>
+                        <TableCell
+                          className={cn(
+                            'border border-slate-200 px-3 py-2.5 text-right font-medium tabular-nums',
+                            d.cumulative_balance < 0 ? 'text-red-700' : 'text-slate-700',
+                          )}
+                        >
+                          {fmt(d.cumulative_balance)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Mobile: cards — 5 colunas de valor monetário não cabem lado
+                  a lado num viewport de telefone, mesmo com scroll dentro do
+                  card (que o usuário nem deveria precisar usar). */}
+              <div className="space-y-2 md:hidden">
+                {movementDays.map((d) => (
+                  <div
+                    key={d.date}
+                    className={cn('rounded-lg border border-slate-200 p-3', d.cumulative_balance < 0 && 'bg-red-50')}
+                  >
+                    <p className="text-sm font-medium text-slate-700">{fmtDate(d.date)}</p>
+                    <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1.5 text-sm">
+                      <div>
+                        <p className="text-[11px] uppercase tracking-[0.08em] text-slate-500">{t('financeiroFluxo.columnInflows')}</p>
+                        <p className="tabular-nums text-green-700">{d.inflow > 0 ? fmt(d.inflow) : '—'}</p>
+                      </div>
+                      <div>
+                        <p className="text-[11px] uppercase tracking-[0.08em] text-slate-500">{t('financeiroFluxo.columnOutflows')}</p>
+                        <p className="tabular-nums text-red-700">{d.outflow > 0 ? fmt(d.outflow) : '—'}</p>
+                      </div>
+                      <div>
+                        <p className="text-[11px] uppercase tracking-[0.08em] text-slate-500">{t('financeiroFluxo.columnNet')}</p>
+                        <p className="tabular-nums text-slate-600">{fmt(d.net)}</p>
+                      </div>
+                      <div>
+                        <p className="text-[11px] uppercase tracking-[0.08em] text-slate-500">{t('financeiroFluxo.columnCumulativeBalance')}</p>
+                        <p className={cn('font-medium tabular-nums', d.cumulative_balance < 0 ? 'text-red-700' : 'text-slate-700')}>
+                          {fmt(d.cumulative_balance)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

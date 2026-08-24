@@ -58,25 +58,25 @@ function ReceitaLiquidaPageContent() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-heading font-bold text-primary">{t('financeiroReceita.title')}</h1>
+        <h1 className="text-2xl font-bold">{t('financeiroReceita.title')}</h1>
       </div>
 
       {/* Filtros */}
       <Card>
         <CardContent className="pt-4">
-          <div className="flex flex-wrap items-end gap-4">
-            <div>
+          <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
+            <div className="w-full sm:w-auto">
               <p className="text-xs text-muted-foreground mb-1">{t('financeiroReceita.fromLabel')}</p>
-              <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="w-40" />
+              <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="w-full sm:w-40" />
             </div>
-            <div>
+            <div className="w-full sm:w-auto">
               <p className="text-xs text-muted-foreground mb-1">{t('financeiroReceita.toLabel')}</p>
-              <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="w-40" />
+              <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="w-full sm:w-40" />
             </div>
-            <div>
+            <div className="w-full sm:w-auto">
               <p className="text-xs text-muted-foreground mb-1">{t('financeiroReceita.healthPlanLabel')}</p>
               <Select value={healthPlanId} onValueChange={setHealthPlanId}>
-                <SelectTrigger className="w-48">
+                <SelectTrigger className="w-full sm:w-48">
                   <SelectValue placeholder={t('financeiroReceita.allOption')} />
                 </SelectTrigger>
                 <SelectContent>
@@ -90,7 +90,7 @@ function ReceitaLiquidaPageContent() {
                 </SelectContent>
               </Select>
             </div>
-            <Button className="bg-primary" onClick={fetchData} disabled={loading}>
+            <Button className="w-full bg-primary sm:w-auto" onClick={fetchData} disabled={loading}>
               {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
               {t('financeiroReceita.applyButton')}
             </Button>
@@ -107,7 +107,7 @@ function ReceitaLiquidaPageContent() {
       {data && (
         <>
           {/* Cards resumo */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
@@ -161,7 +161,11 @@ function ReceitaLiquidaPageContent() {
                   <BarChart data={data.by_period}>
                     <XAxis dataKey="date" tick={{ fontSize: 11 }} />
                     <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${currencySymbol}${Number(v).toFixed(0)}`} />
-                    <Tooltip formatter={(value) => fmt(Number(value))} />
+                    <Tooltip
+                      allowEscapeViewBox={{ x: false, y: false }}
+                      wrapperStyle={{ zIndex: 10 }}
+                      formatter={(value) => fmt(Number(value))}
+                    />
                     <Legend />
                     <Bar dataKey="gross" name={t('financeiroReceita.grossRevenue')} fill="#3b82f6" radius={[3, 3, 0, 0]} />
                     <Bar dataKey="net" name={t('financeiroReceita.netRevenue')} fill="#22c55e" radius={[3, 3, 0, 0]} />
@@ -173,60 +177,99 @@ function ReceitaLiquidaPageContent() {
 
           {/* Tabela breakdown */}
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
+            <CardHeader className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle className="text-base">{t('financeiroReceita.tableTitle')}</CardTitle>
-              <Button variant="ghost" size="sm" onClick={() => setSortDir((d) => (d === 'desc' ? 'asc' : 'desc'))}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="self-start sm:self-auto"
+                onClick={() => setSortDir((d) => (d === 'desc' ? 'asc' : 'desc'))}
+              >
                 {t('financeiroReceita.netRevenue')} {sortDir === 'desc' ? '↓' : '↑'}
               </Button>
             </CardHeader>
             <CardContent className="p-0">
-              <Table className="min-w-full border-collapse bg-white text-sm">
-                <TableHeader>
-                  <TableRow className="border-b border-gray-300 h-15">
-                    <TableHead>{t('financeiroReceita.tableHeaderItem')}</TableHead>
-                    <TableHead>{t('financeiroReceita.tableHeaderType')}</TableHead>
-                    <TableHead className="text-right">{t('financeiroReceita.tableHeaderCharged')}</TableHead>
-                    <TableHead className="text-right">{t('financeiroReceita.tableHeaderCost')}</TableHead>
-                    <TableHead className="text-right">{t('financeiroReceita.tableHeaderNet')}</TableHead>
-                    <TableHead>{t('financeiroReceita.tableHeaderSource')}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {sortedItems.length === 0 && (
-                    <TableRow>
-                      <TableCell colSpan={6} className="border-t border-slate-200 py-8 text-center text-sm text-slate-500">
-                        {t('financeiroReceita.emptyState')}
-                      </TableCell>
-                    </TableRow>
-                  )}
-                  {sortedItems.map((item, i) => (
-                    <TableRow className="cursor-pointer hover:bg-muted/50 border-b border-gray-300 h-15" key={i}>
-                      <TableCell className="font-medium">{item.description ?? '—'}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{item.item_type}</Badge>
-                      </TableCell>
-                      <TableCell className="text-right">{fmt(item.charged_amount)}</TableCell>
-                      <TableCell className="text-right text-muted-foreground">{fmt(item.cost_amount)}</TableCell>
-                      <TableCell
-                        className={`text-right font-semibold ${item.net_amount >= 0 ? 'text-green-600' : 'text-red-500'}`}
-                      >
-                        {fmt(item.net_amount)}
-                      </TableCell>
-                      <TableCell>
-                        {item.payment_source === 'particular' ? (
-                          <Badge className="bg-green-100 text-green-800 border-green-300">
-                            {t('financeiroReceita.particularOption')}
-                          </Badge>
-                        ) : (
-                          <Badge className="bg-blue-100 text-blue-800 border-blue-300">
-                            {item.health_plan_name ?? t('financeiroReceita.healthPlanLabel')}
-                          </Badge>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              {sortedItems.length === 0 ? (
+                <p className="border-t border-slate-200 py-8 text-center text-sm text-slate-500">
+                  {t('financeiroReceita.emptyState')}
+                </p>
+              ) : (
+                <>
+                  {/* Desktop: tabela de 6 colunas */}
+                  <div className="hidden md:block">
+                    <Table className="min-w-full border-collapse bg-white text-sm">
+                      <TableHeader>
+                        <TableRow className="border-b border-gray-300 h-15">
+                          <TableHead>{t('financeiroReceita.tableHeaderItem')}</TableHead>
+                          <TableHead>{t('financeiroReceita.tableHeaderType')}</TableHead>
+                          <TableHead className="text-right">{t('financeiroReceita.tableHeaderCharged')}</TableHead>
+                          <TableHead className="text-right">{t('financeiroReceita.tableHeaderCost')}</TableHead>
+                          <TableHead className="text-right">{t('financeiroReceita.tableHeaderNet')}</TableHead>
+                          <TableHead>{t('financeiroReceita.tableHeaderSource')}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {sortedItems.map((item, i) => (
+                          <TableRow className="cursor-pointer hover:bg-muted/50 border-b border-gray-300 h-15" key={i}>
+                            <TableCell className="font-medium">{item.description ?? '—'}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline">{item.item_type}</Badge>
+                            </TableCell>
+                            <TableCell className="text-right">{fmt(item.charged_amount)}</TableCell>
+                            <TableCell className="text-right text-muted-foreground">{fmt(item.cost_amount)}</TableCell>
+                            <TableCell
+                              className={`text-right font-semibold ${item.net_amount >= 0 ? 'text-green-600' : 'text-red-500'}`}
+                            >
+                              {fmt(item.net_amount)}
+                            </TableCell>
+                            <TableCell>
+                              {item.payment_source === 'particular' ? (
+                                <Badge className="bg-green-100 text-green-800 border-green-300">
+                                  {t('financeiroReceita.particularOption')}
+                                </Badge>
+                              ) : (
+                                <Badge className="bg-blue-100 text-blue-800 border-blue-300">
+                                  {item.health_plan_name ?? t('financeiroReceita.healthPlanLabel')}
+                                </Badge>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {/* Mobile: cards */}
+                  <div className="space-y-2 p-4 md:hidden">
+                    {sortedItems.map((item, i) => (
+                      <div key={i} className="rounded-lg border border-gray-200 p-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <span className="min-w-0 flex-1 truncate text-sm font-medium">{item.description ?? '—'}</span>
+                          <Badge variant="outline" className="shrink-0">{item.item_type}</Badge>
+                        </div>
+                        <div className="mt-2 flex items-center justify-between">
+                          {item.payment_source === 'particular' ? (
+                            <Badge className="bg-green-100 text-green-800 border-green-300">
+                              {t('financeiroReceita.particularOption')}
+                            </Badge>
+                          ) : (
+                            <Badge className="bg-blue-100 text-blue-800 border-blue-300">
+                              {item.health_plan_name ?? t('financeiroReceita.healthPlanLabel')}
+                            </Badge>
+                          )}
+                          <span className={`text-sm font-semibold tabular-nums ${item.net_amount >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+                            {fmt(item.net_amount)}
+                          </span>
+                        </div>
+                        <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
+                          <span>{t('financeiroReceita.tableHeaderCharged')}: {fmt(item.charged_amount)}</span>
+                          <span>{t('financeiroReceita.tableHeaderCost')}: {fmt(item.cost_amount)}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
         </>

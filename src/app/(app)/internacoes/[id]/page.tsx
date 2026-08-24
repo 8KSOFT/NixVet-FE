@@ -292,7 +292,6 @@ function CustosTab({ hospitalizationId, status }: { hospitalizationId: string; s
         open={openAdd}
         onOpenChange={setOpenAdd}
         title={t('internacaoDetail.costs.dialog.title')}
-        contentClassName="modal-responsive"
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button variant="outline" className="border border-gray-300" onClick={() => setOpenAdd(false)}>
@@ -488,7 +487,6 @@ function OcorrenciasTab({ hospitalizationId }: { hospitalizationId: string }) {
         open={openNew}
         onOpenChange={setOpenNew}
         title={t('internacaoDetail.evolutions.dialog.title')}
-        contentClassName="modal-responsive"
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button variant="outline" className="border border-gray-300" onClick={() => setOpenNew(false)}>
@@ -686,7 +684,6 @@ function MedicacoesTab({ hospitalizationId }: { hospitalizationId: string }) {
         open={openNew}
         onOpenChange={setOpenNew}
         title={t('internacaoDetail.medications.dialog.title')}
-        contentClassName="modal-responsive"
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button variant="outline" className="border border-gray-300" onClick={() => setOpenNew(false)}>
@@ -1255,7 +1252,6 @@ function HospitalizationDetailPageContent() {
         open={openDischarge}
         onOpenChange={setOpenDischarge}
         title={t('internacaoDetail.discharge.title')}
-        contentClassName="modal-responsive"
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button variant="outline" className="border border-gray-300" onClick={() => setOpenDischarge(false)}>

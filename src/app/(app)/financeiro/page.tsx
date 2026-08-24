@@ -165,8 +165,8 @@ function DRERow({
         bold && 'font-semibold',
       )}
     >
-      <span className={cn('text-sm', indent && 'text-muted-foreground')}>{label}</span>
-      <span className="flex items-center gap-2">
+      <span className={cn('min-w-0 flex-1 pr-2 text-sm', indent && 'text-muted-foreground')}>{label}</span>
+      <span className="flex shrink-0 flex-wrap items-center justify-end gap-x-2 gap-y-0.5">
         <span className={cn('text-sm tabular-nums', color ?? 'text-foreground', bold && 'font-semibold')}>
           {fmt(value)}
         </span>
@@ -245,15 +245,15 @@ function FinanceiroDREPageContent() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold">{t('financeiroDre.title')}</h1>
           <p className="text-sm text-muted-foreground">{t('financeiroDre.subtitle')}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" className="w-full sm:w-auto">
                 {t('financeiroDre.compareButton', { mode: compareLabel(compare) })} <ChevronDown className="ml-2 size-3" />
               </Button>
             </DropdownMenuTrigger>
@@ -266,34 +266,45 @@ function FinanceiroDREPageContent() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                {period} <ChevronDown className="ml-2 size-3" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {periods.map((p) => (
-                <DropdownMenuItem key={p} onClick={() => setPeriod(p)}>
-                  {p}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {/* Período + Exportar formam um par no mobile (período estica,
+              exportar vira só ícone) — no desktop viram 3 botões soltos de
+              novo via `sm:contents`, que desmonta este wrapper sem mudar a
+              ordem/hierarquia dos irmãos. */}
+          <div className="flex items-center gap-2 sm:contents">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="flex-1 sm:w-auto sm:flex-none">
+                  {period} <ChevronDown className="ml-2 size-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {periods.map((p) => (
+                  <DropdownMenuItem key={p} onClick={() => setPeriod(p)}>
+                    {p}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="sm">
-                <Download className="mr-2 size-4" />
-                {t('financeiroDre.exportButton')}
-                <ChevronDown className="ml-2 size-3" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => handleExport('pdf')}>{t('financeiroDre.exportPdf')}</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExport('xlsx')}>{t('financeiroDre.exportXlsx')}</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="sm"
+                  className="shrink-0"
+                  aria-label={t('financeiroDre.exportButton')}
+                  title={t('financeiroDre.exportButton')}
+                >
+                  <Download className="size-4 sm:mr-2" />
+                  <span className="hidden sm:inline">{t('financeiroDre.exportButton')}</span>
+                  <ChevronDown className="hidden size-3 sm:ml-2 sm:inline" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleExport('pdf')}>{t('financeiroDre.exportPdf')}</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport('xlsx')}>{t('financeiroDre.exportXlsx')}</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </div>
 
@@ -497,7 +508,11 @@ function FinanceiroDREPageContent() {
               <BarChart data={chartData}>
                 <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                 <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `${currencySymbol}${(v / 1000).toFixed(0)}k`} />
-                <Tooltip formatter={(v, name) => [fmt(Number(v)), name === 'receita' ? t('financeiroDre.grossRevenue') : t('financeiroDre.ebitda')]} />
+                <Tooltip
+                  allowEscapeViewBox={{ x: false, y: false }}
+                  wrapperStyle={{ zIndex: 10 }}
+                  formatter={(v, name) => [fmt(Number(v)), name === 'receita' ? t('financeiroDre.grossRevenue') : t('financeiroDre.ebitda')]}
+                />
                 <Bar dataKey="receita" fill="#3b82f6" radius={[3, 3, 0, 0]} name="receita" />
                 <Bar dataKey="ebitda" fill="#22c55e" radius={[3, 3, 0, 0]} name="ebitda" />
               </BarChart>

@@ -600,7 +600,6 @@ export default function OwnersPage() {
           setModalVisible(open);
         }}
         title={editingId ? t('owners.dialog.editTitle') : t('owners.dialog.createTitle')}
-        containerClassName="max-w-2xl mx-auto"
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button type="button" variant="outline" onClick={closeModal}>

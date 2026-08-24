@@ -544,7 +544,6 @@ export default function SettingsSurgicalProceduresPage() {
         open={modalOpen}
         onOpenChange={setModalOpen}
         title={editingId ? t('settingsSurgicalProcedures.editProcedure') : t('settingsSurgicalProcedures.newProcedure')}
-        contentClassName="modal-responsive"
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button

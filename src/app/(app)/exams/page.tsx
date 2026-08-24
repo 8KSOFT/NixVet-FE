@@ -383,7 +383,7 @@ function ExamRequestsContent() {
         open={modalVisible}
         onOpenChange={setModalVisible}
         title={t('exams.newRequestModalTitle')}
-        containerClassName="mx-auto max-w-2xl max-h-[96dvh] sm:max-h-[90dvh]"
+        containerClassName="max-h-[96dvh] md:max-h-[90dvh]"
         bodyClassName="px-6 py-5"
         preventOutsideClose
         preventEscapeClose

@@ -148,19 +148,19 @@ function InternacoesPageContent() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="w-full sm:w-auto">
           <h1 className="text-2xl font-bold">{t('internacoes.title')}</h1>
           <p className="text-sm text-muted-foreground">{t('internacoes.subtitle')}</p>
         </div>
-        <Button onClick={() => setOpenNew(true)}>
+        <Button onClick={() => setOpenNew(true)} className="w-full sm:w-auto">
           <Plus className="mr-2 size-4" />
           {t('internacoes.newButton')}
         </Button>
       </div>
 
       <Tabs defaultValue="active">
-        <TabsList>
+        <TabsList className="w-full sm:w-fit">
           <TabsTrigger value="active">{t('internacoes.tabActive', { count: active.length })}</TabsTrigger>
           <TabsTrigger value="history">{t('internacoes.tabHistory', { count: discharged.length })}</TabsTrigger>
         </TabsList>
@@ -175,7 +175,7 @@ function InternacoesPageContent() {
           ) : active.length === 0 ? (
             <div className="py-16 text-center text-muted-foreground">{t('internacoes.emptyActive')}</div>
           ) : (
-            <div className="flex flex-wrap gap-x-6 gap-y-8 pt-3">
+            <div className="flex flex-wrap justify-center gap-x-6 gap-y-8 pt-3 sm:justify-start">
               {active.map((h) => {
                 const days = daysInternado(h.admission_date);
                 const { color, label } = severityBadge(h.severity, h.status, STATUS_LABELS, SEVERITY_LABELS);
@@ -353,7 +353,6 @@ function InternacoesPageContent() {
         open={openNew}
         onOpenChange={setOpenNew}
         title={t('internacoes.newButton')}
-        containerClassName="max-w-2xl mx-auto"
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button variant="outline" onClick={() => setOpenNew(false)}>
