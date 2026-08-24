@@ -1,6 +1,7 @@
 'use client';
 
 import React, { Suspense, useEffect, useMemo, useState } from 'react';
+import nextDynamic from 'next/dynamic';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { Plus, Package, ShoppingCart, Trash2, Pencil, Loader2, Tags, Truck, History, FileInput, LineChart } from 'lucide-react';
@@ -55,7 +56,11 @@ import { SuppliersTab } from './_components/SuppliersTab';
 import { MovementsTab } from './_components/MovementsTab';
 import { CategorySelect } from './_components/CategorySelect';
 import { StockEntriesTab } from './_components/StockEntriesTab';
-import { CostHistoryTab } from './_components/CostHistoryTab';
+
+const CostHistoryTab = nextDynamic(
+  () => import('./_components/CostHistoryTab').then((mod) => mod.CostHistoryTab),
+  { ssr: false, loading: () => <Skeleton className="h-64 w-full" /> },
+);
 
 function computeMargin(salePrice: number, cost: number, tax: number) {
   const tax_amount = Math.round(((salePrice * tax) / 100) * 100) / 100;

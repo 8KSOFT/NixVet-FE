@@ -1,19 +1,8 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useTranslation } from 'react-i18next';
-import {
-  ComposedChart,
-  Bar,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ReferenceLine,
-  ResponsiveContainer,
-  type TooltipContentProps,
-} from 'recharts';
-import type { NameType, ValueType } from 'recharts/types/component/DefaultTooltipContent';
 import { AlertTriangle, TrendingDown, TrendingUp, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,6 +19,11 @@ import { cn } from '@/lib/utils';
 import api from '@/lib/axios';
 import { toast } from 'sonner';
 import { useCurrencyFormatter, CURRENCY_BY_LANGUAGE, resolveAppLanguage } from '@/lib/i18n/currency';
+
+const CashFlowChart = dynamic(() => import('./CashFlowChart'), {
+  ssr: false,
+  loading: () => <Skeleton className="h-64 w-full" />,
+});
 
 interface CashFlowDay {
   date: string;
@@ -91,32 +85,6 @@ export default function FluxoCaixaPage() {
     }));
 
   const movementDays = (data?.days ?? []).filter((d) => d.inflow > 0 || d.outflow > 0);
-
-  /**
-   * Tooltip compacta e com largura travada — a caixa padrão do Recharts
-   * calcula a posição só depois de medir o próprio tamanho, então
-   * `allowEscapeViewBox` sozinho ainda deixa escapar por um frame perto da
-   * borda. Largura fixa pequena + o wrapper com overflow-hidden (abaixo)
-   * garantem que nunca force scroll horizontal da página, mesmo perto do
-   * canto direito do gráfico.
-   */
-  const renderTooltip = ({ active, payload, label }: TooltipContentProps<ValueType, NameType>) => {
-    if (!active || !payload || !payload.length) return null;
-    return (
-      <div className="w-40 rounded-md border border-slate-200 bg-white p-2 text-xs shadow-md">
-        <p className="mb-1 font-semibold text-slate-700">{label}</p>
-        {payload.map((entry) => {
-          const key = entry.name === 'entrada' ? 'tooltipInflow' : entry.name === 'saida' ? 'tooltipOutflow' : 'tooltipCumulativeBalance';
-          return (
-            <p key={String(entry.name)} className="flex justify-between gap-2" style={{ color: entry.color }}>
-              <span className="truncate">{t(`financeiroFluxo.${key}`)}</span>
-              <span className="shrink-0 tabular-nums">{fmt(Math.abs(Number(entry.value)))}</span>
-            </p>
-          );
-        })}
-      </div>
-    );
-  };
 
   return (
     <div className="space-y-6">
@@ -202,22 +170,7 @@ export default function FluxoCaixaPage() {
           ) : chartData.length === 0 ? (
             <p className="py-8 text-center text-sm text-muted-foreground">{t('financeiroFluxo.noMovementInPeriod')}</p>
           ) : (
-            // overflow-hidden é a trava final: mesmo se o Recharts calcular
-            // mal a posição perto da borda, o vazamento fica clipado aqui
-            // dentro em vez de forçar scroll horizontal da página.
-            <div className="overflow-hidden">
-              <ResponsiveContainer width="100%" height={280}>
-                <ComposedChart data={chartData} stackOffset="sign" margin={{ left: 0, right: 0 }}>
-                  <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                  <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${currencySymbol}${(Number(v) / 1000).toFixed(0)}k`} />
-                  <Tooltip allowEscapeViewBox={{ x: false, y: false }} content={renderTooltip} />
-                  <ReferenceLine y={0} stroke="#ef4444" strokeDasharray="4 4" />
-                  <Bar dataKey="entrada" stackId="mov" fill="#22c55e" name="entrada" />
-                  <Bar dataKey="saida" stackId="mov" fill="#ef4444" name="saida" />
-                  <Line type="monotone" dataKey="saldo" stroke="#3b82f6" strokeWidth={2} dot={false} name="saldo" />
-                </ComposedChart>
-              </ResponsiveContainer>
-            </div>
+            <CashFlowChart chartData={chartData} fmt={fmt} t={t} currencySymbol={currencySymbol} />
           )}
         </CardContent>
       </Card>

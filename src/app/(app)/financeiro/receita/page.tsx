@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,12 +11,16 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Loader2, TrendingUp, DollarSign, TrendingDown, Percent } from 'lucide-react';
 import { toast } from 'sonner';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import { useRevenueAnalysisQuery } from '@/hooks/apiHooks/useFinancialReports';
 import { useHealthPlansListQuery } from '@/hooks/apiHooks/useHealthPlans';
 import { PlanUpgradeGate } from '@/components/billing/PlanUpgradeGate';
 import { useCurrencyFormatter, CURRENCY_BY_LANGUAGE, resolveAppLanguage } from '@/lib/i18n/currency';
+
+const RevenueByPeriodChart = dynamic(() => import('./RevenueByPeriodChart'), {
+  ssr: false,
+  loading: () => <div className="h-60 animate-pulse rounded-md bg-muted" />,
+});
 
 function today() {
   return new Date().toISOString().substring(0, 10);
@@ -157,20 +162,13 @@ function ReceitaLiquidaPageContent() {
                 <CardTitle className="text-base">{t('financeiroReceita.chartTitle')}</CardTitle>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={240}>
-                  <BarChart data={data.by_period}>
-                    <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-                    <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${currencySymbol}${Number(v).toFixed(0)}`} />
-                    <Tooltip
-                      allowEscapeViewBox={{ x: false, y: false }}
-                      wrapperStyle={{ zIndex: 10 }}
-                      formatter={(value) => fmt(Number(value))}
-                    />
-                    <Legend />
-                    <Bar dataKey="gross" name={t('financeiroReceita.grossRevenue')} fill="#3b82f6" radius={[3, 3, 0, 0]} />
-                    <Bar dataKey="net" name={t('financeiroReceita.netRevenue')} fill="#22c55e" radius={[3, 3, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+                <RevenueByPeriodChart
+                  data={data.by_period}
+                  fmt={fmt}
+                  currencySymbol={currencySymbol}
+                  grossLabel={t('financeiroReceita.grossRevenue')}
+                  netLabel={t('financeiroReceita.netRevenue')}
+                />
               </CardContent>
             </Card>
           )}

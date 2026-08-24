@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useTranslation } from 'react-i18next';
-import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -20,20 +20,14 @@ import { PlanUpgradeGate } from '@/components/billing/PlanUpgradeGate';
 import { useCurrencyFormatter } from '@/lib/i18n/currency';
 import { useIsMobile } from '@/hooks/use-mobile';
 
+const RevenueDistributionChart = dynamic(() => import('./RevenueDistributionChart'), {
+  ssr: false,
+  loading: () => <Skeleton className="h-64 w-full" />,
+});
+
 interface RevenueBySource {
   particular: number;
   health_plan: number;
-}
-
-const COLORS = ['#3b82f6', '#22c55e'];
-
-type PieLabelPayload = {
-  name?: string;
-  percent?: number;
-};
-
-function formatPieLabel(payload: PieLabelPayload): string {
-  return `${payload.name ?? ''} (${((payload.percent ?? 0) * 100).toFixed(0)}%)`;
 }
 
 function ReceitasPageContent() {
@@ -115,30 +109,7 @@ function ReceitasPageContent() {
           {loading ? (
             <Skeleton className="h-64 w-full" />
           ) : (
-            <div className="overflow-hidden">
-              <ResponsiveContainer width="100%" height={280}>
-                <PieChart>
-                  <Pie
-                    data={chartData}
-                    cx="50%"
-                    cy="50%"
-                    outerRadius="60%"
-                    dataKey="value"
-                    label={isMobile ? false : formatPieLabel}
-                  >
-                    {chartData.map((_, index) => (
-                      <Cell key={index} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    allowEscapeViewBox={{ x: false, y: false }}
-                    wrapperStyle={{ zIndex: 10 }}
-                    formatter={(v) => fmt(Number(v))}
-                  />
-                  <Legend wrapperStyle={{ fontSize: 12 }} />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
+            <RevenueDistributionChart chartData={chartData} isMobile={isMobile} fmt={fmt} />
           )}
         </CardContent>
       </Card>

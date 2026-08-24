@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useTranslation } from 'react-i18next';
-import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -21,16 +21,10 @@ import { PlanUpgradeGate } from '@/components/billing/PlanUpgradeGate';
 import { useCurrencyFormatter } from '@/lib/i18n/currency';
 import { useIsMobile } from '@/hooks/use-mobile';
 
-const COLORS = ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316'];
-
-type PieLabelPayload = {
-  name?: string;
-  percent?: number;
-};
-
-function formatPieLabel(payload: PieLabelPayload): string {
-  return `${payload.name ?? ''} (${((payload.percent ?? 0) * 100).toFixed(0)}%)`;
-}
+const PaymentMethodsChart = dynamic(() => import('./PaymentMethodsChart'), {
+  ssr: false,
+  loading: () => <Skeleton className="h-60 w-full" />,
+});
 
 function CustosPagamentoPageContent() {
   const { t } = useTranslation();
@@ -123,30 +117,7 @@ function CustosPagamentoPageContent() {
             {loading ? (
               <Skeleton className="h-60 w-full" />
             ) : (
-              <div className="overflow-hidden">
-                <ResponsiveContainer width="100%" height={250}>
-                  <PieChart>
-                    <Pie
-                      data={chartData}
-                      cx="50%"
-                      cy="50%"
-                      outerRadius="60%"
-                      dataKey="value"
-                      label={isMobile ? false : formatPieLabel}
-                    >
-                      {chartData.map((_, i) => (
-                        <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      allowEscapeViewBox={{ x: false, y: false }}
-                      wrapperStyle={{ zIndex: 10 }}
-                      formatter={(v) => fmt(Number(v))}
-                    />
-                    <Legend wrapperStyle={{ fontSize: 12 }} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
+              <PaymentMethodsChart chartData={chartData} isMobile={isMobile} fmt={fmt} />
             )}
           </CardContent>
         </Card>

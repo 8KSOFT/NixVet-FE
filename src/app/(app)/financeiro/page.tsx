@@ -1,15 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useTranslation } from 'react-i18next';
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-} from 'recharts';
 import { TrendingUp, TrendingDown, DollarSign, BarChart2, Download, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,6 +25,11 @@ import {
   useMonthlyDREQuery,
 } from '@/hooks/apiHooks/useFinancialReports';
 import { useCurrencyFormatter, CURRENCY_BY_LANGUAGE, resolveAppLanguage } from '@/lib/i18n/currency';
+
+const DreChart = dynamic(() => import('./DreChart'), {
+  ssr: false,
+  loading: () => <Skeleton className="h-48 w-full" />,
+});
 
 /** Mapeia a categoria bruta (vinda da API) para o sufixo da chave de tradução em financeiroDre.categories.*. */
 const CATEGORY_LABEL_KEYS: Record<string, string> = {
@@ -504,19 +502,13 @@ function FinanceiroDREPageContent() {
           {loading ? (
             <Skeleton className="h-48 w-full" />
           ) : (
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={chartData}>
-                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `${currencySymbol}${(v / 1000).toFixed(0)}k`} />
-                <Tooltip
-                  allowEscapeViewBox={{ x: false, y: false }}
-                  wrapperStyle={{ zIndex: 10 }}
-                  formatter={(v, name) => [fmt(Number(v)), name === 'receita' ? t('financeiroDre.grossRevenue') : t('financeiroDre.ebitda')]}
-                />
-                <Bar dataKey="receita" fill="#3b82f6" radius={[3, 3, 0, 0]} name="receita" />
-                <Bar dataKey="ebitda" fill="#22c55e" radius={[3, 3, 0, 0]} name="ebitda" />
-              </BarChart>
-            </ResponsiveContainer>
+            <DreChart
+              chartData={chartData}
+              fmt={fmt}
+              currencySymbol={currencySymbol}
+              grossRevenueLabel={t('financeiroDre.grossRevenue')}
+              ebitdaLabel={t('financeiroDre.ebitda')}
+            />
           )}
         </CardContent>
       </Card>
