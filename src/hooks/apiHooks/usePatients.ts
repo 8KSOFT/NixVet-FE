@@ -46,11 +46,18 @@ export function usePatientsQuery(page: number, tutorId?: string, search?: string
   });
 }
 
-/** Lista completa de pacientes (todas as páginas) — usada em selects (ex: orçamento, agenda). Filtro opcional por tutor. */
-export function usePatientsListQuery(tutorId?: string) {
+/**
+ * Lista completa de pacientes (todas as páginas) — usada em selects (ex: orçamento, agenda).
+ * Filtro opcional por tutor. `enabled` (default true) permite adiar a busca até o
+ * select que a consome realmente aparecer (ex: só quando um modal abre) — sem isso,
+ * telas como a Agenda disparavam essa busca "todas as páginas" a cada carregamento,
+ * mesmo com o modal de agendamento fechado.
+ */
+export function usePatientsListQuery(tutorId?: string, enabled = true) {
   return useQuery({
     queryKey: patientKeys.allFlat(tutorId),
     queryFn: () => fetchAllListPages<PatientRow>('/patients', tutorId ? { tutor_id: tutorId } : {}),
+    enabled,
   });
 }
 

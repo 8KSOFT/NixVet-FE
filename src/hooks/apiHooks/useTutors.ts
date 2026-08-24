@@ -35,11 +35,16 @@ export function useTutorsQuery(page: number, options: { incomplete?: boolean } =
   });
 }
 
-/** Lista completa de tutores (todas as páginas) — usada em selects (ex: paciente, orçamento). */
-export function useTutorsListQuery() {
+/**
+ * Lista completa de tutores (todas as páginas) — usada em selects (ex: paciente, orçamento).
+ * `enabled` (default true) permite adiar a busca até o select que a consome realmente
+ * aparecer (ex: só quando um modal abre) — ver mesmo raciocínio em usePatientsListQuery.
+ */
+export function useTutorsListQuery(enabled = true) {
   return useQuery({
     queryKey: tutorKeys.allFlat(),
     queryFn: () => fetchAllListPages<Tutor>('/tutors'),
+    enabled,
   });
 }
 

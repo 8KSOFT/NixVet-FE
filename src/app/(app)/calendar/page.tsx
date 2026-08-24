@@ -346,12 +346,17 @@ function CalendarContent() {
     };
   }, [viewMode, googleConnected]);
 
-  /** Filtro opcional: `GET /patients?tutor_id=` */
+  /**
+   * Filtro opcional: `GET /patients?tutor_id=`. `usePatientsListQuery`/`useTutorsListQuery`
+   * buscam a lista COMPLETA (todas as páginas) — só usadas dentro do modal "Agendar"
+   * (selects de tutor/paciente), então ficam gated em `modalVisible` pra não disparar
+   * essas duas buscas pesadas em toda visita à Agenda com o modal fechado.
+   */
   const [patientFilterTutorId, setPatientFilterTutorId] = useState('');
-  const { data: patients = [] } = usePatientsListQuery(patientFilterTutorId || undefined);
+  const { data: patients = [] } = usePatientsListQuery(patientFilterTutorId || undefined, modalVisible);
 
   // ── Quick-register new patient/tutor inline ──
-  const { data: tutors = [] } = useTutorsListQuery();
+  const { data: tutors = [] } = useTutorsListQuery(modalVisible);
   const [newPatientMode, setNewPatientMode] = useState(false);
   const [newTutorMode, setNewTutorMode] = useState(false); // false = select existing, true = create new
   const [creatingPatient, setCreatingPatient] = useState(false);
