@@ -69,7 +69,7 @@ export function QuickCreateMenu({ menuAllow, variant = "sidebar", collapsed = fa
         <Button
           variant="ghost"
           className={cn(
-            "w-full justify-center gap-1.5 rounded-wa border border-white/7 bg-white/5 py-2.25 text-[13.5px] font-semibold text-white hover:bg-white/10 hover:text-white",
+            "w-full justify-center gap-1.5 rounded-wa border border-white/7 bg-white/5 py-1.75 text-[13.5px] font-semibold text-white hover:bg-white/10 hover:text-white md:py-2.25",
             collapsed && "px-0",
           )}
           title={collapsed ? "Novo" : undefined}

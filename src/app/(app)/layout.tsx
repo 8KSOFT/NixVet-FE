@@ -232,12 +232,14 @@ function getActiveKey(pathname: string): string {
     return "clinics-admin";
   if (pathname.includes("/patients")) return "patients";
   if (pathname.includes("/owners")) return "owners";
+  if (pathname.includes("/balcao")) return "balcao";
   if (pathname.includes("/calendar")) return "calendar";
   if (pathname.includes("/settings")) return "settings";
   if (pathname.includes("/medical-records")) return "medical-records";
   if (pathname.includes("/prescriptions")) return "prescriptions";
   if (pathname.includes("/exams")) return "exams";
   if (pathname.includes("/internacoes")) return "hospitalizations";
+  if (pathname.includes("/termos")) return "clinical-terms";
   if (pathname.includes("/financeiro/orcamentos")) return "budgets";
   if (pathname.includes("/financeiro/lancamentos"))
     return "financeiro-lancamentos";
@@ -540,7 +542,7 @@ function SidebarNav({
         </div>
       </div>
 
-      <div className={cn("px-4 pb-2", collapsed && "px-2")}>
+      <div className={cn("px-4 pb-1 md:pb-2", collapsed && "px-2")}>
         <QuickCreateMenu menuAllow={menuAllow} collapsed={collapsed} />
       </div>
 

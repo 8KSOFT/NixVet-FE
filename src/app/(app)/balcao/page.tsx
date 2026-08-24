@@ -21,6 +21,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
@@ -66,6 +67,7 @@ export default function BalcaoPage() {
   const [notes, setNotes] = useState('');
   const [step, setStep] = useState<'cart' | 'payment'>('cart');
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
+  const [cartOpen, setCartOpen] = useState(false);
 
   const sellable = useMemo(() => products.filter((p) => p.item_type === 'product' && p.active), [products]);
   const productById = useMemo(() => new Map(sellable.map((p) => [p.id, p])), [sellable]);
@@ -123,6 +125,8 @@ export default function BalcaoPage() {
     return { gross, tax, total: gross + tax };
   }, [cart, productById]);
 
+  const totalItems = useMemo(() => cart.reduce((sum, i) => sum + i.quantity, 0), [cart]);
+
   const goToPayment = async () => {
     if (cart.length === 0) {
       toast.error(t('balcao.emptyCartError'));
@@ -158,6 +162,7 @@ export default function BalcaoPage() {
       setNotes('');
       setStep('cart');
       setSelectedMethod(null);
+      setCartOpen(false);
     } catch (err) {
       const axiosError = err as AxiosError<{ message?: string }>;
       const backendMessage = axiosError.response?.data?.message;
@@ -165,9 +170,158 @@ export default function BalcaoPage() {
     }
   };
 
+  const cartStepContent = (
+    <>
+      <div className="flex items-center gap-2 font-semibold">
+        <ShoppingCart className="size-4" /> {t('balcao.cartTitle')}
+      </div>
+
+      {cart.length === 0 ? (
+        <p className="py-6 text-center text-sm text-muted-foreground">{t('balcao.emptyCart')}</p>
+      ) : (
+        <div className="max-h-96 space-y-2 overflow-y-auto">
+          {cart.map((item) => {
+            const p = productById.get(item.product_id);
+            if (!p) return null;
+            return (
+              <div key={item.product_id} className="space-y-1 rounded-md border p-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="truncate text-sm font-medium">{p.name}</span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-6 shrink-0 text-muted-foreground hover:text-destructive"
+                    onClick={() => removeFromCart(item.product_id)}
+                  >
+                    <Trash2 className="size-3.5" />
+                  </Button>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="size-7"
+                      onClick={() => setQty(item.product_id, item.quantity - 1)}
+                    >
+                      <Minus className="size-3.5" />
+                    </Button>
+                    <span className="w-8 text-center text-sm tabular-nums">{item.quantity}</span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="size-7"
+                      onClick={() => setQty(item.product_id, item.quantity + 1)}
+                      disabled={item.quantity >= Number(p.stock_quantity)}
+                    >
+                      <Plus className="size-3.5" />
+                    </Button>
+                  </div>
+                  <span className="text-sm font-medium tabular-nums">
+                    {fmt(Number(p.sale_price) * item.quantity)}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <Textarea
+        placeholder={t('balcao.notesPlaceholder')}
+        value={notes}
+        onChange={(e) => setNotes(e.target.value)}
+        className="min-h-16"
+      />
+
+      <div className="space-y-1 border-t pt-2 text-sm">
+        <div className="flex justify-between text-muted-foreground">
+          <span>{t('settingsProdutos.gross')}</span>
+          <span>{fmt(cartTotals.gross)}</span>
+        </div>
+        <div className="flex justify-between text-muted-foreground">
+          <span>{t('settingsProdutos.tax')}</span>
+          <span>{fmt(cartTotals.tax)}</span>
+        </div>
+        <div className="flex justify-between text-base font-semibold">
+          <span>{t('settingsProdutos.total')}</span>
+          <span>{fmt(cartTotals.total)}</span>
+        </div>
+      </div>
+
+      <Button className="w-full" disabled={cart.length === 0 || paymentOptions.isPending} onClick={goToPayment}>
+        {paymentOptions.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
+        {t('balcao.goToPayment')}
+      </Button>
+    </>
+  );
+
+  const paymentStepContent = (
+    <>
+      <div className="flex items-center gap-2">
+        <Button type="button" variant="ghost" size="icon" className="size-7 -ml-1" onClick={backToCart}>
+          <ArrowLeft className="size-4" />
+        </Button>
+        <div className="flex items-center gap-2 font-semibold">
+          <Wallet className="size-4" /> {t('balcao.paymentTitle')}
+        </div>
+      </div>
+
+      <div className="rounded-md bg-muted/50 p-3 text-sm">
+        <div className="flex justify-between text-base font-semibold">
+          <span>{t('settingsProdutos.total')}</span>
+          <span>{fmt(cartTotals.total)}</span>
+        </div>
+      </div>
+
+      <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
+        {paymentOptions.data === undefined || paymentOptions.data.length === 0 ? (
+          <Skeleton className="h-12 w-full" />
+        ) : (
+          paymentOptions.data.map((o) => {
+            const key = METHOD_LABEL_KEYS[o.method];
+            const label = key ? t(`balcao.methodLabels.${key}`) : o.method;
+            return (
+              <button
+                type="button"
+                key={o.method}
+                onClick={() => setSelectedMethod(o.method)}
+                className={`flex w-full items-center justify-between rounded-md border p-3 text-left text-sm transition ${
+                  selectedMethod === o.method
+                    ? 'border-primary ring-1 ring-primary'
+                    : 'border-border hover:bg-muted/50'
+                }`}
+              >
+                <span className="font-medium">{label}</span>
+                <div className="text-right">
+                  <div className="font-semibold">{fmt(o.client_pays)}</div>
+                  {o.fee_amount > 0 ? (
+                    <div className="text-xs text-muted-foreground">
+                      {t('balcao.feeAmountSuffix', { amount: fmt(o.fee_amount) })}
+                    </div>
+                  ) : null}
+                </div>
+              </button>
+            );
+          })
+        )}
+      </div>
+
+      <Button className="w-full" disabled={!selectedMethod || createSale.isPending} onClick={finishSale}>
+        {createSale.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
+        {t('balcao.finishSale')}
+      </Button>
+    </>
+  );
+
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_380px]">
-      <div className={`space-y-4 ${step === 'payment' ? 'pointer-events-none opacity-50' : ''}`}>
+      <div
+        className={`space-y-4 ${cart.length > 0 ? 'pb-24 md:pb-0' : ''} ${step === 'payment' ? 'md:pointer-events-none md:opacity-50' : ''}`}
+      >
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold">{t('balcao.title')}</h1>
@@ -251,160 +405,47 @@ export default function BalcaoPage() {
         )}
       </div>
 
-      <div className="md:sticky md:top-4 md:self-start">
+      {/* Desktop: painel do carrinho fixo ao lado, sempre visível */}
+      <div className="hidden md:sticky md:top-4 md:block md:self-start">
         <Card>
           <CardContent className="space-y-3 p-4">
-            {step === 'cart' ? (
-              <>
-                <div className="flex items-center gap-2 font-semibold">
-                  <ShoppingCart className="size-4" /> {t('balcao.cartTitle')}
-                </div>
-
-                {cart.length === 0 ? (
-                  <p className="py-6 text-center text-sm text-muted-foreground">{t('balcao.emptyCart')}</p>
-                ) : (
-                  <div className="max-h-96 space-y-2 overflow-y-auto">
-                    {cart.map((item) => {
-                      const p = productById.get(item.product_id);
-                      if (!p) return null;
-                      return (
-                        <div key={item.product_id} className="space-y-1 rounded-md border p-2">
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="truncate text-sm font-medium">{p.name}</span>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="icon"
-                              className="size-6 shrink-0 text-muted-foreground hover:text-destructive"
-                              onClick={() => removeFromCart(item.product_id)}
-                            >
-                              <Trash2 className="size-3.5" />
-                            </Button>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-1">
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="icon"
-                                className="size-7"
-                                onClick={() => setQty(item.product_id, item.quantity - 1)}
-                              >
-                                <Minus className="size-3.5" />
-                              </Button>
-                              <span className="w-8 text-center text-sm tabular-nums">{item.quantity}</span>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="icon"
-                                className="size-7"
-                                onClick={() => setQty(item.product_id, item.quantity + 1)}
-                                disabled={item.quantity >= Number(p.stock_quantity)}
-                              >
-                                <Plus className="size-3.5" />
-                              </Button>
-                            </div>
-                            <span className="text-sm font-medium tabular-nums">
-                              {fmt(Number(p.sale_price) * item.quantity)}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-
-                <Textarea
-                  placeholder={t('balcao.notesPlaceholder')}
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  className="min-h-16"
-                />
-
-                <div className="space-y-1 border-t pt-2 text-sm">
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>{t('settingsProdutos.gross')}</span>
-                    <span>{fmt(cartTotals.gross)}</span>
-                  </div>
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>{t('settingsProdutos.tax')}</span>
-                    <span>{fmt(cartTotals.tax)}</span>
-                  </div>
-                  <div className="flex justify-between text-base font-semibold">
-                    <span>{t('settingsProdutos.total')}</span>
-                    <span>{fmt(cartTotals.total)}</span>
-                  </div>
-                </div>
-
-                <Button className="w-full" disabled={cart.length === 0 || paymentOptions.isPending} onClick={goToPayment}>
-                  {paymentOptions.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
-                  {t('balcao.goToPayment')}
-                </Button>
-              </>
-            ) : (
-              <>
-                <div className="flex items-center gap-2">
-                  <Button type="button" variant="ghost" size="icon" className="size-7 -ml-1" onClick={backToCart}>
-                    <ArrowLeft className="size-4" />
-                  </Button>
-                  <div className="flex items-center gap-2 font-semibold">
-                    <Wallet className="size-4" /> {t('balcao.paymentTitle')}
-                  </div>
-                </div>
-
-                <div className="rounded-md bg-muted/50 p-3 text-sm">
-                  <div className="flex justify-between text-base font-semibold">
-                    <span>{t('settingsProdutos.total')}</span>
-                    <span>{fmt(cartTotals.total)}</span>
-                  </div>
-                </div>
-
-                <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
-                  {paymentOptions.data === undefined || paymentOptions.data.length === 0 ? (
-                    <Skeleton className="h-12 w-full" />
-                  ) : (
-                    paymentOptions.data.map((o) => {
-                      const key = METHOD_LABEL_KEYS[o.method];
-                      const label = key ? t(`balcao.methodLabels.${key}`) : o.method;
-                      return (
-                        <button
-                          type="button"
-                          key={o.method}
-                          onClick={() => setSelectedMethod(o.method)}
-                          className={`flex w-full items-center justify-between rounded-md border p-3 text-left text-sm transition ${
-                            selectedMethod === o.method
-                              ? 'border-primary ring-1 ring-primary'
-                              : 'border-border hover:bg-muted/50'
-                          }`}
-                        >
-                          <span className="font-medium">{label}</span>
-                          <div className="text-right">
-                            <div className="font-semibold">{fmt(o.client_pays)}</div>
-                            {o.fee_amount > 0 ? (
-                              <div className="text-xs text-muted-foreground">
-                                {t('balcao.feeAmountSuffix', { amount: fmt(o.fee_amount) })}
-                              </div>
-                            ) : null}
-                          </div>
-                        </button>
-                      );
-                    })
-                  )}
-                </div>
-
-                <Button
-                  className="w-full"
-                  disabled={!selectedMethod || createSale.isPending}
-                  onClick={finishSale}
-                >
-                  {createSale.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
-                  {t('balcao.finishSale')}
-                </Button>
-              </>
-            )}
+            {step === 'cart' ? cartStepContent : paymentStepContent}
           </CardContent>
         </Card>
       </div>
+
+      {/* Mobile: barra fixa no rodapé (some quando o carrinho está vazio) +
+          modal (bottom sheet, base do Dialog) com o mesmo conteúdo do
+          carrinho/checkout do desktop — abrir o carrinho não deveria exigir
+          rolar a página inteira pra baixo, passando por toda a grade de
+          produtos. */}
+      {cart.length > 0 && (
+        <button
+          type="button"
+          onClick={() => setCartOpen(true)}
+          className="fixed inset-x-4 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-40 flex items-center justify-between gap-3 rounded-full bg-primary px-5 py-3.5 text-white shadow-lg md:hidden"
+        >
+          <span className="flex items-center gap-3 font-semibold">
+            <span className="relative flex shrink-0 items-center">
+              <ShoppingCart className="size-5" />
+              <span className="absolute -top-2 -right-2 flex size-4.5 min-w-4.5 items-center justify-center rounded-full bg-white px-0.5 text-[10px] font-bold text-primary">
+                {totalItems}
+              </span>
+            </span>
+            {t('balcao.viewCart')}
+          </span>
+          <span className="font-semibold tabular-nums">{fmt(cartTotals.total)}</span>
+        </button>
+      )}
+
+      <Dialog open={cartOpen} onOpenChange={setCartOpen}>
+        <DialogContent className="md:hidden">
+          <DialogHeader className="sr-only">
+            <DialogTitle>{step === 'cart' ? t('balcao.cartTitle') : t('balcao.paymentTitle')}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">{step === 'cart' ? cartStepContent : paymentStepContent}</div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

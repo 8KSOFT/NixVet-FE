@@ -277,7 +277,31 @@ export default function AjudaPage() {
       </div>
 
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList>
+        {/* Mobile: dropdown — 3 abas com ícone+texto ("Meus chamados" é o
+            mais longo) não cabem lado a lado num viewport de telefone sem
+            quebrar ou estourar a largura. Desktop mantém as abas normais. */}
+        <div className="sm:hidden">
+          <Select value={tab} onValueChange={setTab}>
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="assistente">
+                <Bot className="mr-2 size-4" />
+                Assistente
+              </SelectItem>
+              <SelectItem value="artigos">
+                <BookOpen className="mr-2 size-4" />
+                Artigos
+              </SelectItem>
+              <SelectItem value="chamados">
+                <LifeBuoy className="mr-2 size-4" />
+                Meus chamados
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <TabsList className="hidden sm:inline-flex">
           <TabsTrigger value="assistente">
             <Bot className="mr-2 size-4" />
             Assistente
@@ -310,7 +334,13 @@ export default function AjudaPage() {
                     </div>
                     <div className="flex flex-wrap justify-center gap-2">
                       {SUGGESTIONS.map((s) => (
-                        <Button key={s} variant="outline" size="sm" onClick={() => void send(s)}>
+                        <Button
+                          key={s}
+                          variant="outline"
+                          size="sm"
+                          className="h-auto max-w-full py-1.5 text-left whitespace-normal"
+                          onClick={() => void send(s)}
+                        >
                           {s}
                         </Button>
                       ))}
@@ -462,7 +492,7 @@ export default function AjudaPage() {
               value={moduleFilter || '_all'}
               onValueChange={(v) => setModuleFilter(v === '_all' ? '' : v)}
             >
-              <SelectTrigger className="sm:w-56">
+              <SelectTrigger className="w-full sm:w-56">
                 <SelectValue placeholder="Todos os módulos" />
               </SelectTrigger>
               <SelectContent>
@@ -575,7 +605,7 @@ export default function AjudaPage() {
 
       {/* Artigo aberto */}
       <Dialog open={!!openSlug} onOpenChange={(open) => !open && setOpenSlug(null)}>
-        <DialogContent className="max-h-[85vh] max-w-[calc(100%-2rem)] overflow-y-auto sm:max-w-2xl">
+        <DialogContent className="max-h-[85vh] overflow-y-auto md:max-w-2xl">
           <DialogHeader>
             <DialogTitle>{openArticle?.title ?? 'Carregando…'}</DialogTitle>
           </DialogHeader>
@@ -612,7 +642,7 @@ export default function AjudaPage() {
 
       {/* Abrir chamado */}
       <Dialog open={ticketOpen} onOpenChange={setTicketOpen}>
-        <DialogContent className="max-h-[85vh] max-w-[calc(100%-2rem)] overflow-y-auto sm:max-w-lg">
+        <DialogContent className="max-h-[85vh] overflow-y-auto md:max-w-lg">
           <DialogHeader>
             <DialogTitle>Abrir chamado com o suporte NixVet</DialogTitle>
           </DialogHeader>

@@ -139,7 +139,7 @@ export default function SuperadminFinancePage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between sm:gap-4">
         <div>
           <h1 className="text-xl font-heading font-bold text-foreground flex items-center gap-2">
             <Wallet className="size-5" />
@@ -153,6 +153,7 @@ export default function SuperadminFinancePage() {
           variant="outline"
           size="sm"
           disabled={refreshing}
+          className="w-full sm:w-auto"
           onClick={() => {
             void refetchDashboard();
             void refetchTenants();
@@ -163,14 +164,14 @@ export default function SuperadminFinancePage() {
         </Button>
       </div>
 
-      <div className="flex flex-wrap items-end gap-4">
-        <div className="space-y-1">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:gap-4">
+        <div className="w-full space-y-1 sm:w-auto">
           <Label className="text-xs text-muted-foreground">{t('superadminFinance.filters.from')}</Label>
-          <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="w-40" />
+          <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="w-full sm:w-40" />
         </div>
-        <div className="space-y-1">
+        <div className="w-full space-y-1 sm:w-auto">
           <Label className="text-xs text-muted-foreground">{t('superadminFinance.filters.to')}</Label>
-          <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="w-40" />
+          <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="w-full sm:w-40" />
         </div>
       </div>
 
@@ -359,7 +360,7 @@ export default function SuperadminFinancePage() {
 
       <Card>
         <CardContent className="p-5 space-y-4">
-          <h2 className="text-sm font-semibold">Clínicas por status</h2>
+          <h2 className="text-sm font-semibold">{t('superadminFinance.clinicsByStatus')}</h2>
           <div className="flex flex-wrap gap-2">
             {FILTER_TABS.map((tab) => (
               <Button
@@ -375,11 +376,11 @@ export default function SuperadminFinancePage() {
 
           {loadingTenants ? (
             <div className="rounded-lg border border-gray-300 bg-white py-8 text-center text-sm text-slate-500">
-              Carregando...
+              {t('superadminFinance.loading')}
             </div>
           ) : tenants.length === 0 ? (
             <div className="rounded-lg border border-gray-300 bg-white py-8 text-center text-sm text-slate-500">
-              Nenhuma clínica neste filtro.
+              {t('superadminFinance.emptyFilterList')}
             </div>
           ) : (
             <>
@@ -388,13 +389,13 @@ export default function SuperadminFinancePage() {
                 <Table className="min-w-full border-collapse bg-white text-sm">
                   <TableHeader>
                     <TableRow className="border-b border-gray-300 h-15">
-                      <TableHead>Clínica</TableHead>
-                      <TableHead>Admin</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Plano</TableHead>
-                      <TableHead>Trial até</TableHead>
-                      <TableHead className="text-right">Chamadas IA</TableHead>
-                      <TableHead className="text-right">Custo IA</TableHead>
+                      <TableHead>{t('superadminFinance.table.clinic')}</TableHead>
+                      <TableHead>{t('superadminFinance.table.admin')}</TableHead>
+                      <TableHead>{t('superadminFinance.table.status')}</TableHead>
+                      <TableHead>{t('superadminFinance.table.plan')}</TableHead>
+                      <TableHead>{t('superadminFinance.table.trialUntil')}</TableHead>
+                      <TableHead className="text-right">{t('superadminFinance.table.aiCalls')}</TableHead>
+                      <TableHead className="text-right">{t('superadminFinance.table.aiCost')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -419,7 +420,7 @@ export default function SuperadminFinancePage() {
                                 {planShortLabel(row.billing_plan)}
                                 {row.plan_value_brl > 0 && (
                                   <span className="text-xs text-muted-foreground ml-1">
-                                    ({fmt(row.plan_value_brl)}/mês)
+                                    ({fmt(row.plan_value_brl)}{t('superadminFinance.table.perMonthSuffix')})
                                   </span>
                                 )}
                               </span>
@@ -459,11 +460,11 @@ export default function SuperadminFinancePage() {
                       </div>
                       <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
                         <div className="col-span-2">
-                          <p className="text-xs text-muted-foreground">Admin</p>
+                          <p className="text-xs text-muted-foreground">{t('superadminFinance.table.admin')}</p>
                           <p className="truncate">{row.admin_email ?? '—'}</p>
                         </div>
                         <div>
-                          <p className="text-xs text-muted-foreground">Plano</p>
+                          <p className="text-xs text-muted-foreground">{t('superadminFinance.table.plan')}</p>
                           <p>
                             {row.billing_plan ? (
                               <>
@@ -478,15 +479,15 @@ export default function SuperadminFinancePage() {
                           </p>
                         </div>
                         <div>
-                          <p className="text-xs text-muted-foreground">Trial até</p>
+                          <p className="text-xs text-muted-foreground">{t('superadminFinance.table.trialUntil')}</p>
                           <p>{row.trial_ends_at ? dayjs(row.trial_ends_at).format('DD/MM/YYYY') : '—'}</p>
                         </div>
                         <div>
-                          <p className="text-xs text-muted-foreground">Chamadas IA</p>
+                          <p className="text-xs text-muted-foreground">{t('superadminFinance.table.aiCalls')}</p>
                           <p>{row.ai_calls}</p>
                         </div>
                         <div>
-                          <p className="text-xs text-muted-foreground">Custo IA</p>
+                          <p className="text-xs text-muted-foreground">{t('superadminFinance.table.aiCost')}</p>
                           <p>{formatUsd(row.ai_cost_usd)}</p>
                         </div>
                       </div>

@@ -1113,6 +1113,88 @@
     "cancel": "Cancel",
     "confirmReset": "Save password"
   },
+  "superadminFinance": {
+    "header": {
+      "title": "Finance (global)",
+      "subtitle": "Superadmin-only financial dashboard — revenue, AI cost and clinic status.",
+      "refresh": "Refresh"
+    },
+    "filters": {
+      "from": "From",
+      "to": "To",
+      "all": "All",
+      "active": "Active",
+      "overdue": "Overdue",
+      "trialExpiring": "Trial expiring",
+      "trial": "In trial",
+      "trialExpired": "Trial expired",
+      "suspended": "Suspended"
+    },
+    "status": {
+      "active": "Active",
+      "overdue": "Overdue",
+      "trial": "Trial",
+      "trialExpired": "Trial expired",
+      "suspended": "Suspended"
+    },
+    "operations": {
+      "classifyIntent": "Classify intent",
+      "chatbotReply": "Chatbot reply",
+      "suggestReplies": "Suggested reply",
+      "summarizeNotes": "Summarize notes",
+      "structureObservations": "Structure observations"
+    },
+    "toasts": {
+      "forbidden": "Access restricted to superadmin.",
+      "dashboardLoadError": "Error loading the financial dashboard.",
+      "tenantsLoadError": "Error loading the clinic list."
+    },
+    "kpis": {
+      "mrr": { "label": "MRR", "sub": "Monthly recurring revenue" },
+      "revenuePeriod": { "label": "Revenue in period", "sub": "Confirmed payments" },
+      "paying": { "label": "Paying clinics", "sub": "of {{count}} total" },
+      "overdue": { "label": "Overdue" },
+      "trialExpiring": { "label": "Trial expiring", "sub": "next 7 days" },
+      "aiCost": {
+        "label": "AI cost",
+        "subAllTime": "{{tokens}} tokens · {{calls}} calls (all time)",
+        "subPeriod": "{{tokens}} tokens · {{calls}} calls in period"
+      }
+    },
+    "monthlyRevenue": {
+      "title": "Monthly revenue",
+      "empty": "No payments recorded in this period.",
+      "columns": { "month": "Month", "payments": "Payments", "value": "Value" }
+    },
+    "monthlyAiCost": {
+      "title": "Monthly AI cost",
+      "empty": "No AI usage recorded in this period.",
+      "columns": { "month": "Month", "calls": "Calls", "tokens": "Tokens", "usd": "Cost (USD)" }
+    },
+    "aiByOperation": {
+      "title": "AI cost by operation",
+      "empty": "No AI usage recorded in this period.",
+      "columns": { "operation": "Operation", "calls": "Calls", "usd": "Cost (USD)" }
+    },
+    "topAiTenants": {
+      "title": "Top clinics by AI usage",
+      "empty": "No AI usage recorded in this period.",
+      "columns": { "clinic": "Clinic", "calls": "Calls", "usd": "Cost (USD)" }
+    },
+    "clinicsByStatus": "Clinics by status",
+    "loading": "Loading...",
+    "emptyFilterList": "No clinics in this filter.",
+    "table": {
+      "clinic": "Clinic",
+      "admin": "Admin",
+      "status": "Status",
+      "plan": "Plan",
+      "trialUntil": "Trial until",
+      "aiCalls": "AI calls",
+      "aiCost": "AI cost",
+      "perMonthSuffix": "/mo"
+    }
+  },
   "consultation": {
     "status": {
       "scheduled": "Scheduled",
@@ -2337,6 +2419,7 @@
     "inCart_one": "{{count}} in cart",
     "inCart_other": "{{count}} in cart",
     "cartTitle": "Cart",
+    "viewCart": "View cart",
     "emptyCart": "No items in the cart.",
     "emptyCartError": "Add at least one product",
     "notesPlaceholder": "Sale notes (optional)",

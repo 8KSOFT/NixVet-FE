@@ -1113,6 +1113,88 @@
     "cancel": "Cancelar",
     "confirmReset": "Guardar contraseña"
   },
+  "superadminFinance": {
+    "header": {
+      "title": "Financiero (global)",
+      "subtitle": "Panel financiero exclusivo del superadmin — ingresos, costo de IA y estado de las clínicas.",
+      "refresh": "Actualizar"
+    },
+    "filters": {
+      "from": "Desde",
+      "to": "Hasta",
+      "all": "Todas",
+      "active": "Activas",
+      "overdue": "Morosas",
+      "trialExpiring": "Prueba por vencer",
+      "trial": "En prueba",
+      "trialExpired": "Prueba vencida",
+      "suspended": "Suspendidas"
+    },
+    "status": {
+      "active": "Activa",
+      "overdue": "Morosa",
+      "trial": "Prueba",
+      "trialExpired": "Prueba vencida",
+      "suspended": "Suspendida"
+    },
+    "operations": {
+      "classifyIntent": "Clasificar intención",
+      "chatbotReply": "Respuesta del chatbot",
+      "suggestReplies": "Sugerencia de respuesta",
+      "summarizeNotes": "Resumen de notas",
+      "structureObservations": "Estructurar observaciones"
+    },
+    "toasts": {
+      "forbidden": "Acceso restringido al superadmin.",
+      "dashboardLoadError": "Error al cargar el panel financiero.",
+      "tenantsLoadError": "Error al cargar la lista de clínicas."
+    },
+    "kpis": {
+      "mrr": { "label": "MRR", "sub": "Ingreso recurrente mensual" },
+      "revenuePeriod": { "label": "Ingresos en el período", "sub": "Pagos confirmados" },
+      "paying": { "label": "Clínicas pagantes", "sub": "de {{count}} en total" },
+      "overdue": { "label": "Morosas" },
+      "trialExpiring": { "label": "Prueba por vencer", "sub": "próximos 7 días" },
+      "aiCost": {
+        "label": "Costo de IA",
+        "subAllTime": "{{tokens}} tokens · {{calls}} llamadas (histórico)",
+        "subPeriod": "{{tokens}} tokens · {{calls}} llamadas en el período"
+      }
+    },
+    "monthlyRevenue": {
+      "title": "Ingresos mensuales",
+      "empty": "Sin pagos registrados en el período.",
+      "columns": { "month": "Mes", "payments": "Pagos", "value": "Valor" }
+    },
+    "monthlyAiCost": {
+      "title": "Costo de IA por mes",
+      "empty": "Sin uso de IA registrado en el período.",
+      "columns": { "month": "Mes", "calls": "Llamadas", "tokens": "Tokens", "usd": "Costo (USD)" }
+    },
+    "aiByOperation": {
+      "title": "Costo de IA por operación",
+      "empty": "Sin uso de IA registrado en el período.",
+      "columns": { "operation": "Operación", "calls": "Llamadas", "usd": "Costo (USD)" }
+    },
+    "topAiTenants": {
+      "title": "Clínicas con mayor uso de IA",
+      "empty": "Sin uso de IA registrado en el período.",
+      "columns": { "clinic": "Clínica", "calls": "Llamadas", "usd": "Costo (USD)" }
+    },
+    "clinicsByStatus": "Clínicas por estado",
+    "loading": "Cargando...",
+    "emptyFilterList": "Ninguna clínica en este filtro.",
+    "table": {
+      "clinic": "Clínica",
+      "admin": "Admin",
+      "status": "Estado",
+      "plan": "Plan",
+      "trialUntil": "Prueba hasta",
+      "aiCalls": "Llamadas IA",
+      "aiCost": "Costo IA",
+      "perMonthSuffix": "/mes"
+    }
+  },
   "consultation": {
     "status": {
       "scheduled": "Programado",
@@ -2337,6 +2419,7 @@
     "inCart_one": "{{count}} en el carrito",
     "inCart_other": "{{count}} en el carrito",
     "cartTitle": "Carrito",
+    "viewCart": "Ver carrito",
     "emptyCart": "No hay ítems en el carrito.",
     "emptyCartError": "Agregue al menos un producto",
     "notesPlaceholder": "Notas de la venta (opcional)",
