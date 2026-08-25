@@ -15,10 +15,16 @@ export function useUnreadNotificationsCountQuery() {
   return useQuery({
     queryKey: notificationKeys.unreadCount(),
     queryFn: async () => {
-      const { data } = await api.get<number>('/notifications/unread-count', {
+      // A API devolve { count: number } (já desembrulhado do envelope pelo interceptor
+      // do axios) — `Number(data ?? 0)` direto virava NaN (Number({}) === NaN), e o
+      // React Query nunca considerava NaN "igual" ao NaN anterior (NaN !== NaN),
+      // então cada render achava que o resultado tinha mudado e disparava outro
+      // render — loop infinito silencioso (sem erro de "Maximum update depth" porque
+      // passa pelo ciclo assíncrono de efeitos do React, não por setState síncrono).
+      const { data } = await api.get<{ count: number }>('/notifications/unread-count', {
         params: { attention_only: true },
       });
-      return Number(data ?? 0);
+      return Number(data?.count ?? 0);
     },
     refetchInterval: 60000,
     refetchIntervalInBackground: true,
