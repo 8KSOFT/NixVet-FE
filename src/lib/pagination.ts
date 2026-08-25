@@ -86,8 +86,19 @@ export function parseListResponse<T>(body: unknown, requestedPage: number, limit
   return { items: [] as T[], total: 0, page: 1, totalPages: 1 };
 }
 
+/** Quantas páginas buscar em paralelo de cada vez em `fetchAllListPages`. */
+const FETCH_ALL_CONCURRENCY = 6;
+
 /**
  * Para selects/modais: busca todas as páginas quando a API pagina; se ainda for array único, retorna de uma vez.
+ *
+ * As páginas 2+ são buscadas em lotes paralelos (não uma de cada vez) — o loop
+ * sequencial original esperava cada página terminar pra pedir a próxima, então
+ * a latência de UMA página multiplicava pelo número de páginas (visto ao vivo:
+ * catálogo de exames com 6 páginas a ~1s cada = ~7s só pra popular um select,
+ * mesmo a tela em si não tendo nenhum item pra mostrar). Em paralelo (por
+ * lotes, pra não disparar centenas de requests de uma vez numa lista muito
+ * grande), o tempo cai pro tempo da página mais lenta do lote.
  */
 export async function fetchAllListPages<T>(
   path: string,
@@ -104,24 +115,36 @@ export async function fetchAllListPages<T>(
   }
 
   const firstPage = parseListResponse<T>(first, 1, API_PAGE_SIZE);
-  const all: T[] = [...firstPage.items];
-  if (firstPage.total <= all.length || firstPage.items.length < API_PAGE_SIZE) {
-    return all;
+  if (firstPage.total <= firstPage.items.length || firstPage.items.length < API_PAGE_SIZE) {
+    return firstPage.items;
   }
 
-  let page = 2;
-  while (all.length < firstPage.total && page <= maxPages) {
-    const { data: body } = await client.get(path, {
-      params: listQueryParams(page, API_PAGE_SIZE, extraParams),
-    });
-    if (Array.isArray(body)) {
-      return body as T[];
+  const totalPages = Math.min(firstPage.totalPages, maxPages);
+  const all: T[] = [...firstPage.items];
+
+  const remainingPages = Array.from({ length: Math.max(0, totalPages - 1) }, (_, i) => i + 2);
+  for (let i = 0; i < remainingPages.length; i += FETCH_ALL_CONCURRENCY) {
+    const batch = remainingPages.slice(i, i + FETCH_ALL_CONCURRENCY);
+    const responses = await Promise.all(
+      batch.map((page) => client.get(path, { params: listQueryParams(page, API_PAGE_SIZE, extraParams) })),
+    );
+
+    let batchExhausted = false;
+    for (let j = 0; j < responses.length; j += 1) {
+      const body = responses[j].data;
+      if (Array.isArray(body)) {
+        // A API parou de paginar no meio do caminho — mesmo fallback do loop antigo.
+        return body as T[];
+      }
+      const p = parseListResponse<T>(body, batch[j], API_PAGE_SIZE);
+      if (!p.items.length) {
+        batchExhausted = true;
+        break;
+      }
+      all.push(...p.items);
+      if (p.items.length < API_PAGE_SIZE) batchExhausted = true;
     }
-    const p = parseListResponse<T>(body, page, API_PAGE_SIZE);
-    if (!p.items.length) break;
-    all.push(...p.items);
-    if (p.items.length < API_PAGE_SIZE) break;
-    page += 1;
+    if (batchExhausted) break;
   }
 
   return all;

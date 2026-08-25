@@ -986,7 +986,7 @@ function CalendarContent() {
                       className={cn(
                         'text-[9px] text-center rounded',
                         !isCur && 'text-gray-200',
-                        hasEvent && 'bg-primary/100 text-white font-bold',
+                        hasEvent && 'bg-primary text-white font-bold',
                         day.isSame(dayjs(), 'day') && !hasEvent && 'ring-1 ring-blue-400',
                       )}
                     >

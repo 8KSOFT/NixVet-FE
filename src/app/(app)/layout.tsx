@@ -104,6 +104,13 @@ function NotificationsBell() {
 
   const { data: unreadCount = 0 } = useUnreadNotificationsCountQuery();
   const { data: list = [], isLoading: loading } = useNotificationsListQuery(open);
+  // Trava defensiva: a API já é chamada com `limit: 50`, mas um backend que
+  // acumula notificação duplicada sem parar (visto ao vivo: uma conversa de
+  // WhatsApp travada gerando um alerta novo a cada ~5min, sem nunca marcar as
+  // anteriores) pode devolver muito mais que isso. Renderizar centenas/milhares
+  // de cards de uma vez trava o thread principal por vários segundos — essa
+  // é a rede de segurança do lado do cliente, independente do que a API mandar.
+  const visibleList = list.length > 50 ? list.slice(0, 50) : list;
   const markReadMutation = useMarkNotificationReadMutation();
   const markAllReadMutation = useMarkAllNotificationsReadMutation();
 
@@ -169,7 +176,7 @@ function NotificationsBell() {
               </p>
             ) : (
               <div className="flex flex-col gap-2 p-3">
-                {list.map((n) => {
+                {visibleList.map((n) => {
                   const meta = notificationTypeMeta(n.type);
                   const Icon = meta.icon;
                   return (
@@ -456,6 +463,7 @@ function SidebarNav({
                       <Link
                         href={navHref(child.key, child.href)}
                         onClick={() => onNavigate?.()}
+                        prefetch={false}
                         className={cn(
                           linkClass(activeKey === child.key, true),
                           isNavItemLocked(child.key) && "opacity-50",
@@ -484,6 +492,7 @@ function SidebarNav({
               <Link
                 href={navHref(item.key, item.href)}
                 onClick={() => onNavigate?.()}
+                prefetch={false}
                 className={cn(linkClass(isActive), isNavItemLocked(item.key) && "opacity-50")}
               >
                 <Icon
