@@ -778,7 +778,7 @@ function PrescriptionsContent() {
   return (
     <div>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-8">
-        <h1 className="text-2xl font-extrabold font-['InterDoFigma'] flex items-center gap-2">{t('prescriptions.title')}</h1>
+        <h1 className="text-2xl font-extrabold flex items-center gap-2">{t('prescriptions.title')}</h1>
         <Button onClick={handleAdd} className="w-full bg-primary hover:bg-primary/70 text-white sm:w-auto">
           <Plus className="w-4 h-4 mr-1" /> {t('prescriptions.newButton')}
         </Button>

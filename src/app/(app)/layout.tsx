@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useLayoutEffect, useState, useEffect } from "react";
+import React, { useLayoutEffect, useState, useEffect, useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { useRouter, usePathname } from "next/navigation";
@@ -73,6 +73,15 @@ import { CommandPalette } from "@/components/command-palette";
 import { QuickCreateMenu } from "@/components/quick-create-menu";
 
 const SIDEBAR_COLLAPSED_STORAGE_KEY = "nixvet:sidebar-collapsed";
+
+// Chaves dos itens filhos do grupo "Financeiro" — vive fora do componente pra
+// não virar um array novo (referência diferente) a cada render de SidebarNav.
+const FINANCE_CHILD_KEYS = [
+  "financeiro-receitas",
+  "financeiro-custos",
+  "budgets",
+  "financeiro-receita",
+];
 
 function notificationTypeMeta(type: string): {
   label: string;
@@ -339,21 +348,15 @@ function SidebarNav({
   const medical = variant === "medical";
 
   // grupos colapsáveis — auto-abre se algum filho estiver ativo
-  const financeChildKeys = [
-    "financeiro-receitas",
-    "financeiro-custos",
-    "budgets",
-    "financeiro-receita",
-  ];
   const financeActive =
-    financeChildKeys.includes(activeKey) || activeKey === "financeiro";
+    FINANCE_CHILD_KEYS.includes(activeKey) || activeKey === "financeiro";
   const [openGroups, setOpenGroups] = useState<Set<string>>(
     () => new Set(financeActive ? ["financeiro"] : []),
   );
 
   // auto-abre o grupo quando um filho se torna ativo
   React.useEffect(() => {
-    if (financeChildKeys.includes(activeKey)) {
+    if (FINANCE_CHILD_KEYS.includes(activeKey)) {
       setOpenGroups((prev) => new Set([...prev, "financeiro"]));
     }
   }, [activeKey]);
@@ -384,13 +387,21 @@ function SidebarNav({
       collapsed && "justify-center px-2",
     );
 
-  // filtra seções e itens por permissão (mesma checagem usada no Command Palette e no "+ Novo")
-  const visibleSections = getVisibleNavSections(NAV_SECTIONS, menuAllow);
-  // superadmin/configurações renderizam fora da área de scroll (ver abaixo),
-  // pra ficarem sempre ancoradas no rodapé da sidebar — e não só "o último
-  // item da lista", que soma vazio no meio quando o menu principal é curto.
-  const mainSections = visibleSections.filter((s) => !BOTTOM_SECTION_KEYS.has(s.sectionKey));
-  const bottomSections = visibleSections.filter((s) => BOTTOM_SECTION_KEYS.has(s.sectionKey));
+  // filtra seções e itens por permissão (mesma checagem usada no Command Palette e no "+ Novo").
+  // SidebarNav é instanciado duas vezes (aside desktop + Sheet mobile) com o
+  // mesmo menuAllow, então sem memo esse filtro rodava em dobro a cada render
+  // — e de novo em qualquer re-render de DashboardLayout que nada tem a ver
+  // com o menu (ex.: só o billing/onboarding terminando de carregar).
+  const { mainSections, bottomSections } = useMemo(() => {
+    const visibleSections = getVisibleNavSections(NAV_SECTIONS, menuAllow);
+    // superadmin/configurações renderizam fora da área de scroll (ver abaixo),
+    // pra ficarem sempre ancoradas no rodapé da sidebar — e não só "o último
+    // item da lista", que soma vazio no meio quando o menu principal é curto.
+    return {
+      mainSections: visibleSections.filter((s) => !BOTTOM_SECTION_KEYS.has(s.sectionKey)),
+      bottomSections: visibleSections.filter((s) => BOTTOM_SECTION_KEYS.has(s.sectionKey)),
+    };
+  }, [menuAllow]);
 
   // bloco "Admin" do rodapé vem recolhido por padrão — abre sozinho se algum item dele estiver ativo
   const adminSectionKeys = bottomSections.flatMap((s) => s.items.map((i) => i.key));

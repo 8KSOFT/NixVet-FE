@@ -216,7 +216,7 @@ export default function MedicalRecordsListPage() {
   return (
     <div>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-8">
-        <h1 className="text-2xl font-extrabold font-['InterDoFigma'] flex items-center gap-2">
+        <h1 className="text-2xl font-extrabold flex items-center gap-2">
           {t('medicalRecords.title')}
         </h1>
         <Button

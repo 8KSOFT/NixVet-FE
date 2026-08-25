@@ -8,7 +8,13 @@ const inter = Inter({
   variable: "--font-sans",
   display: "swap",
   adjustFontFallback: true,
-  weight: ["400", "500"],
+  // 200/800/900 cobrem os títulos que antes usavam a fonte customizada
+  // "InterDoFigma" (um @font-face solto em public/fonts servindo o MESMO
+  // Inter, só que como TTF de 854KB sem preload nem ajuste de fallback —
+  // medido pelo Chrome: LCP 3,02s e CLS 0,15 numa página só). Pedir os pesos
+  // aqui deixa o Next self-hostar, subsetar e fazer o ajuste de fallback
+  // automaticamente, igual já acontece com 400/500.
+  weight: ["200", "400", "500", "800", "900"],
 });
 
 const poppins = Poppins({

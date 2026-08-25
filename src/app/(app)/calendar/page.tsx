@@ -1010,7 +1010,7 @@ function CalendarContent() {
   return (
     <div>
       <div className="flex flex-wrap justify-between items-center gap-3 mb-4">
-        <h1 className="text-2xl font-extrabold font-['InterDoFigma'] flex items-center gap-2">
+        <h1 className="text-2xl font-extrabold flex items-center gap-2">
           {t('calendar.title')}
           {googleConnected && (
             <span className="text-sm font-normal text-primary bg-primary/10 px-2 py-0.5 rounded-full">

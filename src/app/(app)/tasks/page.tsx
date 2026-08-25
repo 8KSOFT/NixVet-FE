@@ -91,7 +91,7 @@ function TasksContent() {
   return (
     <div>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-8">
-        <h1 className="text-2xl font-extrabold font-['InterDoFigma'] flex items-center gap-2">Tarefas clínicas</h1>
+        <h1 className="text-2xl font-extrabold flex items-center gap-2">Tarefas clínicas</h1>
         <Button onClick={() => setModalOpen(true)} className="w-full bg-primary sm:w-auto">
           <Plus className="w-4 h-4 mr-2" /> Nova tarefa
         </Button>

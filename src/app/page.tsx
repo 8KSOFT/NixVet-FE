@@ -101,7 +101,7 @@ export default function LandingPage() {
               </span>
             </RevealOnScroll>
             <RevealOnScroll>
-              <h1 className="flex flex-col font-black font-['InterDoFigma'] text-white mb-6 text-5xl md:text-7xl sm:text-6xl tracking-wide leading-thight">
+              <h1 className="flex flex-col font-black text-white mb-6 text-5xl md:text-7xl sm:text-6xl tracking-wide leading-thight">
                 Sua clínica <p>organizada.</p>
                 <span className="text-white/65 bg-clip-text">
                   Seu WhatsApp, <p>respondendo sozinho.</p>
@@ -172,13 +172,13 @@ export default function LandingPage() {
 
             <RevealOnScroll delayClassName="motion-safe:[transition-delay:140ms]">
               {isTinyScreen ? (
-                <h2 className="text-white font-['InterDoFigma'] font-extralight text-[22px]">
+                <h2 className="text-white font-extralight text-[22px]">
                   <span>Tecnologia de ponta</span>
                   <p> desenvolvida para otimizar</p>
                   <p>cada aspecto da sua clínica</p>
                 </h2>
               ) : (
-                <h2 className="text-white font-['InterDoFigma'] font-extralight text-[25px] lg:text-[25px] md:text-[20px] sm:text-[18px]">
+                <h2 className="text-white font-extralight text-[25px] lg:text-[25px] md:text-[20px] sm:text-[18px]">
                   <span>Tecnologia de ponta desenvolvida para</span>
                   <p>otimizar cada aspecto da sua clínica</p>
                 </h2>
@@ -344,7 +344,7 @@ export default function LandingPage() {
             <span className="mb-2.5 block text-[13px] font-bold tracking-wider text-brand-deep-dark uppercase">
               Veja por dentro
             </span>
-            <h2 className="text-brand-deep-dark text-[32px] font-['InterDoFigma'] font-black leading-tight lg:text-[42px] md:text-[36px]">
+            <h2 className="text-brand-deep-dark text-[32px] font-black leading-tight lg:text-[42px] md:text-[36px]">
               O sistema, na prática
             </h2>
             <p className="mt-4 text-[16px] text-[#565656] lg:text-[18px]">
@@ -365,7 +365,7 @@ export default function LandingPage() {
             <span className="mb-2.5 block text-[13px] font-bold tracking-wider text-brand-deep-dark uppercase">
               Retorno sobre o investimento
             </span>
-            <h2 className="text-brand-deep-dark text-[32px] font-['InterDoFigma'] font-black leading-tight lg:text-[42px] md:text-[36px]">
+            <h2 className="text-brand-deep-dark text-[32px] font-black leading-tight lg:text-[42px] md:text-[36px]">
               Quanto tempo isso economiza da sua equipe?
             </h2>
           </RevealOnScroll>
@@ -412,7 +412,7 @@ export default function LandingPage() {
       <section id="planos" className="relative w-full py-20 px-4 lg:px-6 bg-white">
         <div className="mx-auto max-w-6xl">
           <RevealOnScroll className="mx-auto mb-14 max-w-2xl text-center">
-            <h2 className="text-brand-deep-dark text-[32px] font-['InterDoFigma'] font-black leading-tight lg:text-[48px] md:text-[38px]">
+            <h2 className="text-brand-deep-dark text-[32px] font-black leading-tight lg:text-[48px] md:text-[38px]">
               Planos para cada tamanho de clínica
             </h2>
             <p className="mt-4 text-[16px] text-[#565656] lg:text-[20px]">
@@ -481,7 +481,7 @@ export default function LandingPage() {
             <span className="mb-2.5 block text-[13px] font-bold tracking-wider text-brand-deep-dark uppercase">
               Dúvidas frequentes
             </span>
-            <h2 className="text-brand-deep-dark text-[32px] font-['InterDoFigma'] font-black leading-tight lg:text-[42px] md:text-[36px]">
+            <h2 className="text-brand-deep-dark text-[32px] font-black leading-tight lg:text-[42px] md:text-[36px]">
               Perguntas frequentes
             </h2>
           </RevealOnScroll>
@@ -496,7 +496,7 @@ export default function LandingPage() {
       <section className="py-20 px-0 lg:px-6">
         <div className="relative flex flex-col items-center mx-auto max-w-5xl overflow-hiddenc px-2 py-12 text-center lg:p-12">
           <RevealOnScroll>
-            <h2 className="text-brand-deep mb-6 text-[32px] font-['InterDoFigma'] font-black relative word-spacing-wide leading-tight lg:text-[60px] md:text-[42px] sm:text-[32px] ">
+            <h2 className="text-brand-deep mb-6 text-[32px] font-black relative word-spacing-wide leading-tight lg:text-[60px] md:text-[42px] sm:text-[32px] ">
               {isMobile ? (
                 <div>
                   <p className="text-[#565656]">Pronto para</p>

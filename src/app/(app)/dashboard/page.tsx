@@ -393,7 +393,7 @@ export default function DashboardPage() {
         />
       )}
 
-      <h2 className="text-[26px] sm:text-[30px] font-['InterDoFigma'] font-extrabold text-foreground mb-6">
+      <h2 className="text-[26px] sm:text-[30px] font-extrabold text-foreground mb-6">
         {t("dashboardHome.title")}
       </h2>
 
@@ -522,7 +522,7 @@ export default function DashboardPage() {
                       <p className="text-[18px] text-black font-medium">
                         {card.label}
                       </p>
-                      <p className="font-extrabold font-['InterDoFigma'] text-[40px] leading-none">
+                      <p className="font-extrabold text-[40px] leading-none">
                         {card.value}
                       </p>
                     </div>

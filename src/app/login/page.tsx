@@ -201,7 +201,7 @@ export default function LoginPage() {
 
           <div className="sm:block">
             <div>
-              <p className="text-left text-[29px] leading-9 font-black text-white sm:text-[42px] font-['InterDoFigma'] sm:leading-11 sm:tracking-wider sm:max-w-md">
+              <p className="text-left text-[29px] leading-9 font-black text-white sm:text-[42px] sm:leading-11 sm:tracking-wider sm:max-w-md">
                 {isMobile
                   ? translation("auth.heroTitle")
                       .split("\n")

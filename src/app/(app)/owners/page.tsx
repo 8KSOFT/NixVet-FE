@@ -336,7 +336,7 @@ export default function OwnersPage() {
   return (
     <div>
       <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center mb-8">
-        <h1 className="text-2xl font-extrabold font-['InterDoFigma'] flex items-center gap-2">{t('owners.title')}</h1>
+        <h1 className="text-2xl font-extrabold flex items-center gap-2">{t('owners.title')}</h1>
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex rounded-md border border-gray-300 bg-white p-0.5">
             <Button
