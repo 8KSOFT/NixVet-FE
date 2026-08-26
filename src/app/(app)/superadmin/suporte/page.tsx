@@ -173,7 +173,31 @@ export default function SuperadminSuportePage() {
       )}
 
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList>
+        {/* Mobile: dropdown — 3 abas ("Base de conhecimento" é a mais longa)
+            não cabem lado a lado num viewport de telefone sem quebrar ou
+            estourar a largura. Desktop mantém as abas normais. */}
+        <div className="sm:hidden">
+          <Select value={tab} onValueChange={setTab}>
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="chamados">
+                <Ticket className="mr-2 size-4" />
+                Chamados
+              </SelectItem>
+              <SelectItem value="lacunas">
+                <FileWarning className="mr-2 size-4" />
+                Lacunas
+              </SelectItem>
+              <SelectItem value="artigos">
+                <BookOpen className="mr-2 size-4" />
+                Base de conhecimento
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <TabsList className="hidden sm:inline-flex">
           <TabsTrigger value="chamados">Chamados</TabsTrigger>
           <TabsTrigger value="lacunas">Lacunas</TabsTrigger>
           <TabsTrigger value="artigos">Base de conhecimento</TabsTrigger>
@@ -185,7 +209,7 @@ export default function SuperadminSuportePage() {
             value={ticketStatus || '_all'}
             onValueChange={(v) => setTicketStatus(v === '_all' ? '' : v)}
           >
-            <SelectTrigger className="w-56">
+            <SelectTrigger className="w-full sm:w-56">
               <SelectValue placeholder="Todos" />
             </SelectTrigger>
             <SelectContent>
@@ -261,9 +285,9 @@ export default function SuperadminSuportePage() {
 
         {/* ── Lacunas ───────────────────────────────────────────────── */}
         <TabsContent value="lacunas" className="mt-4 space-y-3">
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
             <Select value={gapStatus} onValueChange={setGapStatus}>
-              <SelectTrigger className="w-56">
+              <SelectTrigger className="w-full sm:w-56">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

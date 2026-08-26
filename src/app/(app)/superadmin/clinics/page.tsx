@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { API_PAGE_SIZE } from "@/lib/pagination";
 import { ListPagination } from "@/components/list-pagination";
+import { DashboardCreateFormDialog } from "@/components/dashboard-create-form-dialog";
 import {
   useSuperadminTenantsQuery,
   useCreateSuperadminTenantMutation,
@@ -453,7 +454,7 @@ export default function SuperadminClinicsPage() {
             Clínicas (global)
           </h1>
           <p className="text-muted-foreground mt-1">
-            Painel exclusivo do superadmin — crie, edite e gerencie os tenants.
+            Painel exclusivo do superadmin: crie, edite e gerencie os tenants.
           </p>
         </div>
         <Button
@@ -716,136 +717,140 @@ export default function SuperadminClinicsPage() {
       </Dialog>
 
       {/* Create clinic */}
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="md:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Nova clínica</DialogTitle>
-            <DialogDescription>
-              Cria o tenant e, opcionalmente, o primeiro administrador.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid grid-cols-1 gap-3 py-2 md:grid-cols-2">
-            <div className="space-y-1">
-              <Label>Nome *</Label>
-              <Input
-                value={createForm.name}
-                onChange={(e) =>
-                  setCreateForm((p) => ({ ...p, name: e.target.value }))
-                }
-              />
-            </div>
-            <div className="space-y-1">
-              <Label>Código *</Label>
-              <Input
-                value={createForm.code}
-                onChange={(e) =>
-                  setCreateForm((p) => ({
-                    ...p,
-                    code: e.target.value.toLowerCase(),
-                  }))
-                }
-                placeholder="ex: vetazul"
-              />
-            </div>
-            <div className="space-y-1 col-span-2 border-t pt-3 mt-1">
-              <p className="text-xs text-muted-foreground">
-                Admin inicial (opcional)
-              </p>
-            </div>
-            <div className="space-y-1">
-              <Label>Nome do admin</Label>
-              <Input
-                value={createForm.adminName}
-                onChange={(e) =>
-                  setCreateForm((p) => ({ ...p, adminName: e.target.value }))
-                }
-              />
-            </div>
-            <div className="space-y-1">
-              <Label>Email do admin</Label>
-              <Input
-                type="email"
-                value={createForm.adminEmail}
-                onChange={(e) =>
-                  setCreateForm((p) => ({ ...p, adminEmail: e.target.value }))
-                }
-              />
-            </div>
-            <div className="space-y-1 col-span-2">
-              <Label>Senha (mín 8)</Label>
-              <Input
-                type="password"
-                value={createForm.adminPassword}
-                onChange={(e) =>
-                  setCreateForm((p) => ({
-                    ...p,
-                    adminPassword: e.target.value,
-                  }))
-                }
-              />
-            </div>
-            <div className="space-y-1 col-span-2 border-t pt-3 mt-1">
-              <p className="text-xs text-muted-foreground">Plano & recursos</p>
-            </div>
-            <div className="space-y-1">
-              <Label>Plano</Label>
-              <Select
-                value={createForm.billing_plan}
-                onValueChange={(v) =>
-                  setCreateForm((p) => ({ ...p, billing_plan: v }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PLAN_OPTIONS.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>
-                      {o.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-3 pt-2">
-              <label className="flex items-center gap-2 text-sm">
-                <Switch
-                  checked={createForm.whatsapp_ai_chatbot_enabled}
-                  onCheckedChange={(v) =>
-                    setCreateForm((p) => ({
-                      ...p,
-                      whatsapp_ai_chatbot_enabled: v,
-                    }))
-                  }
-                />
-                Chatbot WhatsApp
-              </label>
-              <label className="flex items-center gap-2 text-sm">
-                <Switch
-                  checked={createForm.ai_platform_enabled}
-                  onCheckedChange={(v) =>
-                    setCreateForm((p) => ({ ...p, ai_platform_enabled: v }))
-                  }
-                />
-                Plataforma IA
-              </label>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setCreateOpen(false)}>
+      <DashboardCreateFormDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        title="Nova clínica"
+        description="Cria o tenant e, opcionalmente, o primeiro administrador."
+        footer={
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              className="border border-gray-300"
+              onClick={() => setCreateOpen(false)}
+            >
               Cancelar
             </Button>
             <Button
-              className="bg-primary"
+              type="button"
               onClick={() => void submitCreate()}
               disabled={creating}
             >
               {creating && <Loader2 className="size-4 animate-spin mr-1" />}{" "}
               Criar
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        }
+      >
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="space-y-1">
+            <Label>Nome *</Label>
+            <Input
+              value={createForm.name}
+              onChange={(e) =>
+                setCreateForm((p) => ({ ...p, name: e.target.value }))
+              }
+            />
+          </div>
+          <div className="space-y-1">
+            <Label>Código *</Label>
+            <Input
+              value={createForm.code}
+              onChange={(e) =>
+                setCreateForm((p) => ({
+                  ...p,
+                  code: e.target.value.toLowerCase(),
+                }))
+              }
+              placeholder="ex: vetazul"
+            />
+          </div>
+          <div className="space-y-1 sm:col-span-2 border-t pt-3 mt-1">
+            <p className="text-xs text-muted-foreground">
+              Admin inicial (opcional)
+            </p>
+          </div>
+          <div className="space-y-1">
+            <Label>Nome do admin</Label>
+            <Input
+              value={createForm.adminName}
+              onChange={(e) =>
+                setCreateForm((p) => ({ ...p, adminName: e.target.value }))
+              }
+            />
+          </div>
+          <div className="space-y-1">
+            <Label>Email do admin</Label>
+            <Input
+              type="email"
+              value={createForm.adminEmail}
+              onChange={(e) =>
+                setCreateForm((p) => ({ ...p, adminEmail: e.target.value }))
+              }
+            />
+          </div>
+          <div className="space-y-1 sm:col-span-2">
+            <Label>Senha (mín 8)</Label>
+            <Input
+              type="password"
+              value={createForm.adminPassword}
+              onChange={(e) =>
+                setCreateForm((p) => ({
+                  ...p,
+                  adminPassword: e.target.value,
+                }))
+              }
+            />
+          </div>
+          <div className="space-y-1 sm:col-span-2 border-t pt-3 mt-1">
+            <p className="text-xs text-muted-foreground">Plano & recursos</p>
+          </div>
+          <div className="space-y-1">
+            <Label>Plano</Label>
+            <Select
+              value={createForm.billing_plan}
+              onValueChange={(v) =>
+                setCreateForm((p) => ({ ...p, billing_plan: v }))
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {PLAN_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>
+                    {o.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-3 pt-2">
+            <label className="flex items-center gap-2 text-sm">
+              <Switch
+                checked={createForm.whatsapp_ai_chatbot_enabled}
+                onCheckedChange={(v) =>
+                  setCreateForm((p) => ({
+                    ...p,
+                    whatsapp_ai_chatbot_enabled: v,
+                  }))
+                }
+              />
+              Chatbot WhatsApp
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <Switch
+                checked={createForm.ai_platform_enabled}
+                onCheckedChange={(v) =>
+                  setCreateForm((p) => ({ ...p, ai_platform_enabled: v }))
+                }
+              />
+              Plataforma IA
+            </label>
+          </div>
+        </div>
+      </DashboardCreateFormDialog>
 
       {/* Edit clinic */}
       <Dialog
