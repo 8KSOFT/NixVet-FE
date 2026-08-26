@@ -112,7 +112,7 @@ function FollowupsContent() {
   return (
     <div>
       <div className="flex flex-wrap justify-between items-center gap-3 mb-8">
-        <h1 className="text-2xl font-extrabold font-['interDoFigma'] flex items-center gap-2">
+        <h1 className="text-2xl font-extrabold flex items-center gap-2">
           {t('followups.title')}
         </h1>
         <Button onClick={() => setModalOpen(true)} className="w-full bg-primary sm:w-auto">

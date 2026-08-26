@@ -65,7 +65,7 @@ export default function BularioPage() {
   return (
     <div>
       <div className="flex justify-between items-center flex-wrap gap-2 mb-8">
-        <h1 className="text-2xl font-extrabold font-['interDoFigma'] flex items-center gap-2">
+        <h1 className="text-2xl font-extrabold flex items-center gap-2">
           {t('bulario.title')}
         </h1>
       </div>

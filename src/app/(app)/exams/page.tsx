@@ -223,7 +223,7 @@ function ExamRequestsContent() {
   return (
     <div>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-8">
-        <h1 className="text-2xl font-extrabold font-['interDoFigma'] flex items-center gap-2">
+        <h1 className="text-2xl font-extrabold flex items-center gap-2">
           {t('exams.pageTitle')}
         </h1>
         <Button onClick={handleAdd} className="w-full bg-primary hover:bg-primary/70 text-white sm:w-auto">

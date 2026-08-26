@@ -175,7 +175,7 @@ export default function SuperadminFinancePage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
         <KpiCard
           icon={TrendingUp}
           label={t('superadminFinance.kpis.mrr.label')}
@@ -532,7 +532,7 @@ function KpiCard({
           <Icon className={`size-4 ${textColor}`} />
         </div>
         <div className="min-w-0">
-          <p className="text-lg font-bold leading-tight truncate">{value}</p>
+          <p className="text-lg font-bold leading-tight wrap-break-word">{value}</p>
           <p className="text-xs text-muted-foreground">{label}</p>
           {sub && <p className="text-[10px] text-muted-foreground mt-0.5">{sub}</p>}
         </div>

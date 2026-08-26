@@ -352,7 +352,7 @@ export default function MedicalRecordsListPage() {
           <div className="text-center py-12 text-muted-foreground">{t('medicalRecords.emptyState')}</div>
         ) : (
           <div>
-            <div className="grid grid-cols-1 justify-items-center gap-x-4 gap-y-8 pt-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6">
+            <div className="flex flex-wrap justify-center gap-x-6 gap-y-8 pt-3 sm:justify-start">
               {patientGroups.map((group) => {
                 const lastUpdated = group.records[0]?.createdAt;
                 return (

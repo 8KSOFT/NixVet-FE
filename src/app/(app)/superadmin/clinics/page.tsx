@@ -677,7 +677,7 @@ export default function SuperadminClinicsPage() {
         open={Boolean(resetTenantId)}
         onOpenChange={(o) => !o && setResetTenantId(null)}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="md:max-w-md">
           <DialogHeader>
             <DialogTitle>Redefinir senha do admin</DialogTitle>
             <DialogDescription>
@@ -717,14 +717,14 @@ export default function SuperadminClinicsPage() {
 
       {/* Create clinic */}
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="md:max-w-lg">
           <DialogHeader>
             <DialogTitle>Nova clínica</DialogTitle>
             <DialogDescription>
               Cria o tenant e, opcionalmente, o primeiro administrador.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid grid-cols-1 gap-3 py-2 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 py-2 md:grid-cols-2">
             <div className="space-y-1">
               <Label>Nome *</Label>
               <Input
@@ -852,7 +852,7 @@ export default function SuperadminClinicsPage() {
         open={Boolean(editRow)}
         onOpenChange={(o) => !o && setEditRow(null)}
       >
-        <DialogContent className="sm:max-w-lg">
+        <DialogContent className="md:max-w-lg">
           <DialogHeader>
             <DialogTitle>Editar clínica</DialogTitle>
             <DialogDescription>
@@ -860,7 +860,7 @@ export default function SuperadminClinicsPage() {
               <span className="font-mono text-xs">{editRow?.code}</span>
             </DialogDescription>
           </DialogHeader>
-          <div className="grid grid-cols-1 gap-3 py-2 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 py-2 md:grid-cols-2">
             <div className="space-y-1 col-span-2">
               <Label>Nome</Label>
               <Input
@@ -1006,7 +1006,7 @@ export default function SuperadminClinicsPage() {
         open={Boolean(whatsappTenantId)}
         onOpenChange={(o) => !o && setWhatsappTenantId(null)}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="md:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <MessageCircle className="size-5 text-green-600" /> Provisionar
