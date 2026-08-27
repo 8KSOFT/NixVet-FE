@@ -187,7 +187,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
     : [];
 
   return (
-    <div className="flex flex-col gap-4 lg:flex-row lg:gap-6">
+    <div className="flex flex-col gap-4 md:flex-row md:gap-6">
       {/* Mobile / tablet: dropdown de navegação */}
       <div className="md:hidden">
         <select
