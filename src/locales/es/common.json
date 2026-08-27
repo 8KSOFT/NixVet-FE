@@ -2883,5 +2883,69 @@
     "notePending": "⏳ Factura pendiente",
     "downloadNfse": "Descargar factura",
     "viewInvoice": "Ver factura"
+  },
+  "chatbotWorkflows": {
+    "header": {
+      "title": "Workflows del Chatbot",
+      "subtitle": "Configura el flujo de atención automática de WhatsApp.",
+      "personaButton": "Persona y Mensajes"
+    },
+    "statusBanner": {
+      "botIsLabel": "El chatbot está",
+      "active": "activo",
+      "inactive": "inactivo",
+      "activeDescription": "El bot está respondiendo automáticamente a los mensajes recibidos en WhatsApp.",
+      "inactiveDescription": "Actívalo para que el bot empiece a responder automáticamente a los mensajes recibidos."
+    },
+    "activeWorkflow": {
+      "badge": "Workflow activo",
+      "edit": "Editar"
+    },
+    "list": {
+      "title": "Mis workflows",
+      "createDefault": "Crear predeterminado",
+      "newWorkflow": "Nuevo workflow",
+      "empty": {
+        "title": "No hay ningún workflow creado",
+        "description": "Crea un workflow predeterminado para empezar a automatizar la atención.",
+        "createDefault": "Crear workflow predeterminado"
+      },
+      "table": {
+        "name": "Nombre",
+        "status": "Estado",
+        "createdAt": "Creado el",
+        "actions": "Acciones"
+      },
+      "status": {
+        "active": "Activo",
+        "inactive": "Inactivo"
+      },
+      "actions": {
+        "edit": "Editar",
+        "activate": "Activar",
+        "delete": "Eliminar"
+      }
+    },
+    "defaultNodes": {
+      "messageReceived": "Mensaje recibido",
+      "end": "Fin"
+    },
+    "deleteConfirm": "¿Seguro que deseas eliminar este workflow?",
+    "toasts": {
+      "saveError": "Error al guardar",
+      "createError": "Error al crear el workflow",
+      "genericError": "Ocurrió un error, inténtalo de nuevo"
+    },
+    "quickAccess": {
+      "configurePersona": "Configurar Persona y Mensajes",
+      "aiCosts": "Costos de IA"
+    },
+    "createDialog": {
+      "title": "Nuevo Workflow",
+      "cancel": "Cancelar",
+      "create": "Crear",
+      "nameLabel": "Nombre del workflow",
+      "namePlaceholder": "Ej: Workflow Principal"
+    }
   }
 }

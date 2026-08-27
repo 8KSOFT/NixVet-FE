@@ -346,11 +346,11 @@ function ChatbotWorkflowsPageContent() {
                       </div>
                       {wf.is_active ? (
                         <Badge className="shrink-0 bg-primary/10 text-primary border-primary/20 hover:bg-primary/10">
-                          <CheckCircle2 className="w-3 h-3 mr-1" /> Ativo
+                          <CheckCircle2 className="w-3 h-3 mr-1" /> {t('chatbotWorkflows.list.status.active')}
                         </Badge>
                       ) : (
                         <Badge variant="secondary" className="shrink-0 text-muted-foreground">
-                          Inativo
+                          {t('chatbotWorkflows.list.status.inactive')}
                         </Badge>
                       )}
                     </div>
@@ -359,8 +359,8 @@ function ChatbotWorkflowsPageContent() {
                         variant="ghost"
                         size="icon"
                         className="p-0"
-                        title="Editar"
-                        aria-label="Editar"
+                        title={t('chatbotWorkflows.list.actions.edit')}
+                        aria-label={t('chatbotWorkflows.list.actions.edit')}
                         onClick={() => router.push(`/chatbot-workflows/${wf.id}`)}
                       >
                         <Pencil className="w-4 h-4" />
@@ -370,8 +370,8 @@ function ChatbotWorkflowsPageContent() {
                           variant="ghost"
                           size="icon"
                           className="p-0"
-                          title="Ativar"
-                          aria-label="Ativar"
+                          title={t('chatbotWorkflows.list.actions.activate')}
+                          aria-label={t('chatbotWorkflows.list.actions.activate')}
                           onClick={() => handleActivate(wf.id)}
                         >
                           <Zap className="w-4 h-4 text-primary" />
@@ -381,8 +381,8 @@ function ChatbotWorkflowsPageContent() {
                         variant="ghost"
                         size="icon"
                         className="p-0"
-                        title="Excluir"
-                        aria-label="Excluir"
+                        title={t('chatbotWorkflows.list.actions.delete')}
+                        aria-label={t('chatbotWorkflows.list.actions.delete')}
                         onClick={() => handleDelete(wf.id)}
                       >
                         <Trash2 className="w-4 h-4 text-destructive" />
@@ -410,13 +410,13 @@ function ChatbotWorkflowsPageContent() {
       <div className="flex flex-wrap gap-3">
         <Link href="/settings/chatbot">
           <Button variant="outline" size="sm" className="gap-1.5 text-muted-foreground">
-            <Settings className="w-4 h-4" /> Configurar Persona & Mensagens
+            <Settings className="w-4 h-4" /> {t('chatbotWorkflows.quickAccess.configurePersona')}
             <ArrowRight className="w-3.5 h-3.5" />
           </Button>
         </Link>
         <Link href="/settings/ai-costs">
           <Button variant="outline" size="sm" className="gap-1.5 text-muted-foreground">
-            Custos de IA
+            {t('chatbotWorkflows.quickAccess.aiCosts')}
             <ArrowRight className="w-3.5 h-3.5" />
           </Button>
         </Link>
@@ -426,25 +426,25 @@ function ChatbotWorkflowsPageContent() {
       <DashboardCreateFormDialog
         open={createOpen}
         onOpenChange={setCreateOpen}
-        title="Novo Workflow"
+        title={t('chatbotWorkflows.createDialog.title')}
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button variant="outline" onClick={() => setCreateOpen(false)}>
-              Cancelar
+              {t('chatbotWorkflows.createDialog.cancel')}
             </Button>
             <Button className="bg-primary" onClick={handleCreate} disabled={!newName.trim()}>
-              Criar
+              {t('chatbotWorkflows.createDialog.create')}
             </Button>
           </div>
         }
       >
         <div className="space-y-4 md:space-y-6">
           <div className="space-y-2">
-            <Label>Nome do workflow</Label>
+            <Label>{t('chatbotWorkflows.createDialog.nameLabel')}</Label>
             <Input
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
-              placeholder="Ex: Workflow Principal"
+              placeholder={t('chatbotWorkflows.createDialog.namePlaceholder')}
               onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
             />
           </div>

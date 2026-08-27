@@ -2820,5 +2820,69 @@
     "notePending": "⏳ Nota pendente",
     "downloadNfse": "Baixar NFS-e",
     "viewInvoice": "Ver nota"
+  },
+  "chatbotWorkflows": {
+    "header": {
+      "title": "Workflows do Chatbot",
+      "subtitle": "Configure o fluxo de atendimento automático do WhatsApp.",
+      "personaButton": "Persona & Mensagens"
+    },
+    "statusBanner": {
+      "botIsLabel": "O chatbot está",
+      "active": "ativo",
+      "inactive": "inativo",
+      "activeDescription": "O bot está respondendo automaticamente às mensagens recebidas no WhatsApp.",
+      "inactiveDescription": "Ative para que o bot comece a responder automaticamente às mensagens recebidas."
+    },
+    "activeWorkflow": {
+      "badge": "Workflow ativo",
+      "edit": "Editar"
+    },
+    "list": {
+      "title": "Meus workflows",
+      "createDefault": "Criar padrão",
+      "newWorkflow": "Novo workflow",
+      "empty": {
+        "title": "Nenhum workflow criado",
+        "description": "Crie um workflow padrão para começar a automatizar o atendimento.",
+        "createDefault": "Criar workflow padrão"
+      },
+      "table": {
+        "name": "Nome",
+        "status": "Status",
+        "createdAt": "Criado em",
+        "actions": "Ações"
+      },
+      "status": {
+        "active": "Ativo",
+        "inactive": "Inativo"
+      },
+      "actions": {
+        "edit": "Editar",
+        "activate": "Ativar",
+        "delete": "Excluir"
+      }
+    },
+    "defaultNodes": {
+      "messageReceived": "Mensagem recebida",
+      "end": "Fim"
+    },
+    "deleteConfirm": "Tem certeza que deseja excluir este workflow?",
+    "toasts": {
+      "saveError": "Erro ao salvar",
+      "createError": "Erro ao criar workflow",
+      "genericError": "Ocorreu um erro, tente novamente"
+    },
+    "quickAccess": {
+      "configurePersona": "Configurar Persona & Mensagens",
+      "aiCosts": "Custos de IA"
+    },
+    "createDialog": {
+      "title": "Novo Workflow",
+      "cancel": "Cancelar",
+      "create": "Criar",
+      "nameLabel": "Nome do workflow",
+      "namePlaceholder": "Ex: Workflow Principal"
+    }
   }
 }
