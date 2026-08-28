@@ -188,20 +188,19 @@ export default function HomeClient() {
           </div>
 
           {/* Container das imagens (Controlado pelo fluxo do Flexbox) */}
-          <div className="relative order-1 -mt-8 z-10 w-fit max-w-70 sm:max-w-none flex justify-center pointer-events-none select-none sm:mt-0 lg:order-2 md:order-2 sm:order-2">
+          {/* w-75: os 300px eram implícitos enquanto a arte era <svg> sem
+              largura própria — `w-fit` caía na largura intrínseca padrão do CSS
+              para elemento substituído. Com <img> a intrínseca passa a ser a do
+              arquivo, então a medida vira explícita para o herói não mudar de
+              tamanho. O max-w-70 segue limitando o mobile a 280px. */}
+          <div className="relative order-1 -mt-8 z-10 w-75 max-w-70 sm:max-w-none flex justify-center pointer-events-none select-none sm:mt-0 lg:order-2 md:order-2 sm:order-2">
             <div className="motion-safe:animate-[nix-float-slow_9s_ease-in-out_infinite] motion-safe:will-change-transform w-full max-w-100">
               {isMobile ? (
-                <DogbackDynamic
-                  width="100%"
-                  height="100%"
-                  className="w-full h-auto"
-                />
+                <DogbackDynamic className="w-full h-auto" />
               ) : (
-                <DogDynamic
-                  width="100%"
-                  height="100%"
-                  className="w-[160%] h-auto"
-                />
+                // max-w-none: o preflight do Tailwind põe max-width:100% em
+                // <img> (não punha no <svg> de antes) e clampava o 160%.
+                <DogDynamic className="w-[160%] max-w-none h-auto" />
               )}
             </div>
           </div>
