@@ -133,11 +133,11 @@ const TABS: TourTab[] = [
     caption: "Histórico completo, sem papel perdido.",
     shots: [
       {
-        src: "/landing/screenshot-prontuario-detalhe.jpg",
+        src: "/landing/screenshot-prontuario-detalhe.webp",
         alt: "Prontuário do paciente Duke no NixVetApp, com dados da tutora, espécie, raça, idade, peso, 12 fichas de atendimento e linha do tempo",
       },
       {
-        src: "/landing/screenshot-prontuario-lista.jpg",
+        src: "/landing/screenshot-prontuario-lista.webp",
         alt: "Lista de prontuários do NixVetApp em formato de pastas, uma por paciente, com contagem de fichas de cada um",
       },
     ],
@@ -149,7 +149,7 @@ const TABS: TourTab[] = [
     caption: "Veja o mês inteiro da clínica num só lugar.",
     shots: [
       {
-        src: "/landing/screenshot-agenda.jpg",
+        src: "/landing/screenshot-agenda.webp",
         alt: "Agenda mensal do NixVetApp com consultas de vários pacientes distribuídas ao longo dos dias do mês",
       },
     ],
@@ -161,7 +161,7 @@ const TABS: TourTab[] = [
     caption: "Enquanto a equipe atende no balcão, o WhatsApp continua respondendo.",
     shots: [
       {
-        src: "/landing/screenshot-whatsapp.jpg",
+        src: "/landing/screenshot-whatsapp.webp",
         alt: "Conversa de WhatsApp aberta no NixVetApp remarcando uma consulta, com várias mensagens trocadas entre a clínica e a tutora",
       },
     ],
@@ -173,7 +173,7 @@ const TABS: TourTab[] = [
     caption: "Contas a pagar, a receber e fluxo de caixa sempre atualizados.",
     shots: [
       {
-        src: "/landing/screenshot-financeiro.jpg",
+        src: "/landing/screenshot-financeiro.webp",
         alt: "Lançamentos financeiros do NixVetApp com receitas, despesas e resultado do período, além de lançamentos sugeridos automaticamente",
       },
     ],
