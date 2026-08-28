@@ -3,6 +3,7 @@
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { SUPPORTED_LANGUAGES, type AppLanguage } from '@/lib/i18n/resources';
+import { trocarIdioma } from '@/lib/i18n/instance';
 
 const LANGUAGE_LABELS: Record<AppLanguage, string> = {
   pt: 'PT',
@@ -44,7 +45,7 @@ export default function LanguageSwitcher({ className, variant = 'default' }: Lan
             role="radio"
             aria-checked={active}
             title={t(`language.${code}`)}
-            onClick={() => void i18n.changeLanguage(code)}
+            onClick={() => void trocarIdioma(code)}
             className={cn(
               'text-xs font-medium transition-colors duration-150',
               wa ? 'rounded-[7px] px-2.5 py-1.5 text-[12.5px] font-semibold' : 'rounded-full px-2.5 py-1',

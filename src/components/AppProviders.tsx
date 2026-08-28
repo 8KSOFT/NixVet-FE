@@ -8,7 +8,7 @@ import { MutationCache, QueryClient, QueryClientProvider } from '@tanstack/react
 import dayjs from 'dayjs';
 import 'dayjs/locale/pt-br';
 import 'dayjs/locale/es';
-import i18n, { persistLanguage } from '@/lib/i18n/instance';
+import i18n, { persistLanguage, trocarIdioma } from '@/lib/i18n/instance';
 import { STORAGE_KEY, SUPPORTED_LANGUAGES, type AppLanguage } from '@/lib/i18n/resources';
 import { getApiMessage } from '@/app/types/api-response';
 
@@ -65,7 +65,7 @@ export default function AppProviders({ children }: { children: React.ReactNode }
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw && SUPPORTED_LANGUAGES.includes(raw as AppLanguage)) {
-        void i18n.changeLanguage(raw as AppLanguage);
+        void trocarIdioma(raw as AppLanguage);
       }
     } catch {
       /* ignore */
