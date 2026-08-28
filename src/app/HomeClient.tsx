@@ -165,10 +165,14 @@ export default function HomeClient() {
           {/* Container dos textos (Não usa mais translate manual) */}
           <div className="w-fit order-2 -mt-15 text-pretty space-y-4 text-center sm:text-left lg:mt-30 md:mt-30 sm:mt-30">
             <RevealOnScroll>
-              <h1 className="text-white text-[32px] font-bold leading-tight lg:text-[59.61px] md:text-[45px] sm:text-[38px]">
+              {/* h2, não h1: a página só pode ter um h1, e ele é o do herói
+                  ("Sua clínica organizada..."). Duas h1 dividem o sinal de
+                  qual é o assunto da página. As classes são as mesmas — nada
+                  muda visualmente. */}
+              <h2 className="text-white text-[32px] font-bold leading-tight lg:text-[59.61px] md:text-[45px] sm:text-[38px]">
                 <span className="text-pretty">Por que escolher</span>
                 <p>o NixVetApp?</p>
-              </h1>
+              </h2>
             </RevealOnScroll>
 
             <RevealOnScroll delayClassName="motion-safe:[transition-delay:140ms]">
