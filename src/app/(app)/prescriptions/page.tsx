@@ -17,7 +17,6 @@ import { toast } from 'sonner';
 import { useForm, Controller, useFieldArray } from 'react-hook-form';
 import {
   Plus,
-  BookOpen,
   Loader2,
   X,
   Info,
@@ -433,7 +432,7 @@ function PrescriptionsContent() {
   const [prescriptionType, setPrescriptionType] = useState<'receita' | 'solicitacao_cirurgia' | 'vacinas'>('receita');
   const [vaccineInput, setVaccineInput] = useState('');
   const [selectedVaccines, setSelectedVaccines] = useState<string[]>([]);
-  const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
+  const [, setSelectedPatientId] = useState<string | null>(null);
 
   const createPrescription = useCreatePrescriptionMutation();
   const downloadPdf = useDownloadPrescriptionPdfMutation();

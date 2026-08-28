@@ -86,7 +86,7 @@ export default function MedicalRecordsListPage() {
   const { t } = useTranslation();
   const isMobile = useIsMobile(768);
   const [modalVisible, setModalVisible] = useState(false);
-  const [filterPatient, setFilterPatient] = useState('');
+  const [filterPatient] = useState('');
   const [filterTutor, setFilterTutor] = useState('');
   const [tutorFilterOpen, setTutorFilterOpen] = useState(false);
   const [search, setSearch] = useState('');

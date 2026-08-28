@@ -2,7 +2,7 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/axios';
-import { API_PAGE_SIZE, fetchAllListPages, listQueryParams, parseListResponse } from '@/lib/pagination';
+import { fetchAllListPages, listQueryParams, parseListResponse } from '@/lib/pagination';
 import type { ProfilePayload, TeamUserRow } from '@/app/types/team-user';
 import type { UserAccessProfiles } from '@/app/types/access-profile';
 

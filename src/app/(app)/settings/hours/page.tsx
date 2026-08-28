@@ -38,7 +38,7 @@ import {
   useDeleteVetScheduleMutation,
 } from '@/hooks/apiHooks/useAvailabilityConfig';
 import { useVeterinariansQuery } from '@/hooks/apiHooks/useUsers';
-import type { BusinessHour, EmergencyHour, VetSchedule } from '@/app/types/availability';
+import type { BusinessHour, EmergencyHour } from '@/app/types/availability';
 
 const getDays = (t: (key: string) => string) => [
   { value: 0, label: t('settingsHours.days.sunday') },

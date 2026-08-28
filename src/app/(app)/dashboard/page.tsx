@@ -2,7 +2,7 @@
 
 import React, { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -160,7 +160,6 @@ export default function DashboardPage() {
 
   const stats = useMemo(() => {
     const now = new Date();
-    const todayStr = localYMD(now);
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
 

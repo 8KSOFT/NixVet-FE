@@ -1,18 +1,17 @@
 import React from 'react';
 
+// primaryColor/secondaryColor foram removidas: eram declaradas, tinham
+// default e NUNCA chegavam ao SVG, que traz as cores fixas. Ninguém as
+// passava — a API prometia o que o componente não fazia.
 interface logoProps {
   width: string;
   height: string;
-  primaryColor?: string; // Cor principal (antigo 'white')
-  secondaryColor?: string; // Cor dos detalhes (antigo '#F7F7F7')
   className?: string; // 1. Adicionado aqui como opcional
 }
 
 export function LogoCompactoDynamic({
   width,
   height,
-  primaryColor = 'white',
-  secondaryColor = '#F7F7F7',
   className, // 2. Desestruturado aqui
 }: logoProps) {
   return (

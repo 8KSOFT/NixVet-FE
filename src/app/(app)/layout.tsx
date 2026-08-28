@@ -364,7 +364,11 @@ function SidebarNav({
   const toggleGroup = (key: string) => {
     setOpenGroups((prev) => {
       const next = new Set(prev);
-      next.has(key) ? next.delete(key) : next.add(key);
+      // if/else e não ternário: um ternário como statement descarta o valor
+      // que ele existe para produzir, e o lint trata isso como expressão sem
+      // efeito. O comportamento é idêntico.
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
       return next;
     });
   };

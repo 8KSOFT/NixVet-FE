@@ -43,7 +43,7 @@ export default function LoginClient() {
   const [tenantCode, setTenantCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [brandName, setBrandName] = useState("");
-  const [brandLogo, setBrandLogo] = useState<string | null>(null);
+  const [, setBrandLogo] = useState<string | null>(null);
   const [defaultTenantCode, setDefaultTenantCode] = useState<string | null>(
     null,
   );

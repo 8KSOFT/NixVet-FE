@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { useForm, Controller } from 'react-hook-form';
-import { Plus, Pencil, Trash2, Loader2, ShieldCheck } from 'lucide-react';
+import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
 import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import { API_PAGE_SIZE } from '@/lib/pagination';
 import { ListPagination } from '@/components/list-pagination';

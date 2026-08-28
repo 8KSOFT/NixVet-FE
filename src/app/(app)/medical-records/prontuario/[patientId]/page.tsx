@@ -33,7 +33,7 @@ import {
   CircleDot,
 } from "lucide-react";
 import { toast } from "sonner";
-import type { PatientTimelineEvent, TimelineMedicalRecordData } from "@/app/types/patient";
+import type { TimelineMedicalRecordData } from "@/app/types/patient";
 import dayjs from "dayjs";
 import { usePatientQuery, usePatientTimelineQuery } from "@/hooks/apiHooks/usePatients";
 import { ProfilePhoto } from "@/components/shared/profile-photo";

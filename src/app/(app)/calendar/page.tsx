@@ -33,8 +33,7 @@ import { cn } from '@/lib/utils';
 import {
   ChevronLeft,
   ChevronRight,
-  Calendar as CalendarIcon,
-  Loader2,
+  Calendar as Loader2,
   AlertTriangle,
   Clock,
   User2,
@@ -45,10 +44,7 @@ import {
   CreditCard,
   CalendarRange,
   CalendarClock,
-  X,
   PawPrint,
-  ChevronDown,
-  ChevronUp,
   UserX,
   Ban,
 } from 'lucide-react';

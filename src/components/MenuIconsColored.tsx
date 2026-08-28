@@ -3,7 +3,7 @@ import { SVGProps } from "react";
 export type IconProps = SVGProps<SVGSVGElement>;
 
 export const MenuIconsColored = {
-  atendimentos: (props: IconProps) => (
+  atendimentos: (_props: IconProps) => (
     <svg
       width="100%"
       height="100%"
@@ -49,7 +49,7 @@ export const MenuIconsColored = {
       />
     </svg>
   ),
-  pacientes: (props: IconProps) => (
+  pacientes: (_props: IconProps) => (
     <svg
       width="100%"
       height="100%"
@@ -67,7 +67,7 @@ export const MenuIconsColored = {
       />
     </svg>
   ),
-  receitaMes: (props: IconProps) => (
+  receitaMes: (_props: IconProps) => (
     <svg
       width="100%"
       height="100%"
@@ -102,7 +102,7 @@ export const MenuIconsColored = {
       />
     </svg>
   ),
-  canceladas: (props: IconProps) => (
+  canceladas: (_props: IconProps) => (
     <svg
       width="100%"
       height="100%"
@@ -137,7 +137,7 @@ export const MenuIconsColored = {
       />
     </svg>
   ),
-  vacinas: (props: IconProps) => (
+  vacinas: (_props: IconProps) => (
     <svg
       width="100%"
       height="100%"
@@ -183,7 +183,7 @@ export const MenuIconsColored = {
       />
     </svg>
   ),
-  exames: (props: IconProps) => (
+  exames: (_props: IconProps) => (
     <svg
       width="100%"
       height="100%"
@@ -201,7 +201,7 @@ export const MenuIconsColored = {
       />
     </svg>
   ),
-  naoRespondidas: (props: IconProps) => (
+  naoRespondidas: (_props: IconProps) => (
     <svg
       width="100%"
       height="100%"
@@ -234,7 +234,7 @@ export const MenuIconsColored = {
   // Mesmo glifo de "naoRespondidas" (balão de conversa), com outra cor — usado
   // em "Aguardando tutor responder" pra não ficar visualmente idêntico ao
   // card de "Conversas não respondidas" logo ao lado.
-  aguardandoTutor: (props: IconProps) => (
+  aguardandoTutor: (_props: IconProps) => (
     <svg
       width="100%"
       height="100%"
@@ -264,7 +264,7 @@ export const MenuIconsColored = {
       />
     </svg>
   ),
-  agenda: (props: IconProps) => (
+  agenda: (_props: IconProps) => (
     <svg
       width="100%"
       height="100%"

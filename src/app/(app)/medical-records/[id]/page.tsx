@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -122,7 +122,6 @@ function UnitField({
 export default function MedicalRecordDetailPage() {
   const { t } = useTranslation();
   const params = useParams();
-  const router = useRouter();
   const id = typeof params?.id === 'string' ? params.id : '';
 
   const queryClient = useQueryClient();
