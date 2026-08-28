@@ -83,6 +83,101 @@ O usuário viu o contador do React DevTools disparar (ex.: 3500→7100 em 3s) e,
 2. **Backend**: dedupe de notificação `conversation_alert` (mesmo padrão que `low_stock` já tem).
 3. **Auditoria de `useMemo`/`useCallback`/`React.memo` nas PÁGINAS DE CONTEÚDO** (pedido explícito do usuário, começado só pela navbar/`SidebarNav` nesta sessão — ver item 7 da lista de causas acima). Zero uso de `React.memo` em 149 componentes, só 49 `useMemo`/11 `useCallback` no projeto inteiro — esparso pro tamanho do app. Não é a causa das travas de 5s nem do contador do DevTools, mas contribui pra uma sensação geral de interação "pesada" (filtros, dropdowns). Próximo alvo natural: `dashboard/page.tsx` (mais citada nos prints do usuário), depois `prescriptions/page.tsx` (pior proporção vista: 9 `.filter/.sort/.reduce` pra 1 `useMemo`), `calendar/page.tsx`.
 
+## Auditoria de performance, lint e smoke (sessão 2026-08-28) — LEIA ANTES DE REFATORAR PERFORMANCE
+
+### O split `page.tsx` server + `<Nome>Client.tsx` NÃO melhora performance — não repita esperando isso
+
+62 dos 69 `page.tsx` são `"use client"`. É tentador aplicar em todos o split
+feito nas páginas públicas. **Foi medido e não rende nada**: `/profile` antes e
+depois do split ficou idêntico, 6.43 kB / 193 kB. E é esperado — um `page.tsx`
+que só renderiza `<XClient/>` não move código nenhum para o servidor, o
+conteúdo inteiro continua client, só mudou de arquivo.
+
+O split nas públicas foi feito **por SEO, não por performance**: client
+component não pode exportar `metadata`. A melhora da home veio inteira da troca
+da imagem do herói. Ganho real só existe movendo subárvores não-interativas
+para o servidor, caso a caso — e as páginas de `(app)/` estão atrás de login e
+no `Disallow` do robots, então nem metadata precisam.
+
+### Onde o peso realmente está (medido, não estimado)
+
+`(app)/layout` sozinho pesa **877 KB brutos, pagos por todas as ~60 rotas
+logadas**. Abri o chunk procurando um culpado e não há: 169 KB de React, 122 de
+compartilhado, 96 do próprio shell e uma cauda longa de radix. Cortar isso é
+refatorar o shell de 988 linhas — não é ajuste pontual.
+
+Já verificados e **sem ganho a extrair**: `recharts` já está sob `next/dynamic`
+(commit `01c0e8c`); `DashboardCreateFormDialog`, usado em 33 páginas, são 100
+linhas de primitivas já carregadas; `CommandPalette` e `QuickCreateMenu` são
+155 e 93 linhas; as fontes locais já saíram para `next/font`.
+
+### O que rendeu: i18n sob demanda (−55 KB de JS em toda rota)
+
+`resources.ts` importava pt+en+es estaticamente (~350 KB de JSON). O relatório
+do `next build` **não atribuía esse chunk às rotas**, mas medindo no navegador
+ele era baixado em todas — 85 KB comprimidos, 21% de todo o JS, inclusive na
+home, que não traduz nada. Agora só `pt` entra no bundle; `en`/`es` vêm por
+`carregarIdioma` + `trocarIdioma` (`src/lib/i18n/instance.ts`).
+
+**Regra nova: nunca chamar `i18n.changeLanguage` direto — sempre
+`trocarIdioma`.** Ela carrega o pacote ANTES de trocar; sem essa ordem a tela
+cai no fallback e fica em português sem erro nenhum.
+
+**Efeito colateral em dev, aceito conscientemente**: o hot-reload de locale
+documentado mais abaixo (`addResourceBundle` no Fast Refresh) agora só vale
+para `pt`. Editar `en`/`es` no meio de uma sessão de dev volta a exigir F5.
+
+**Lição de método**: o "First Load JS" do `next build` não é a verdade sobre o
+que o navegador baixa. Meça com CDP (`Network.responseReceived` +
+`loadingFinished`) antes de concluir que uma rota não carrega um chunk.
+
+### Lint estava morto de duas formas (corrigido)
+
+1. `npm run lint` explodia antes de olhar qualquer arquivo:
+   `minimatch does not provide an export named 'default'`. O `overrides` do
+   `package.json` forçava `minimatch: ^10` em toda a árvore, e o
+   `@eslint/eslintrc@2.1.4` faz `import minimatch from` — default que só existe
+   até a v3. **E o override não protegia nada**: o advisory aberto de minimatch
+   é justamente `10.0.0 - 10.2.2`. Forçar a v10 introduziu o ReDoS. Agora o
+   override geral é `^10.2.3` e o `@eslint/eslintrc` recebe `^3.1.2` escopado.
+2. Mesmo destravado, o script era `eslint` sem argumento — em flat config isso
+   **não analisa arquivo nenhum** e sai 0. Agora é `eslint .`, com `DOCS/` e
+   `.design-sync/` no ignores (`DOCS/nixvet-chunk/chunk.js`, artefato de build
+   commitado, respondia por 666 dos 698 erros).
+
+Os 32 erros reais foram zerados. Dois não eram sujeira, eram **API mentindo** —
+`LogoCompactoDynamic` declarava `primaryColor`/`secondaryColor` que nunca
+chegavam ao SVG (removidas), e `MenuIconsColored` recebe `IconProps` e
+descarta: o dashboard passa `className="h-11 w-11"` e o ícone ignora, porque o
+SVG fixa `width="100%"`. **Repassar mudaria o tamanho renderizado — fica como
+decisão pendente, não como bug corrigido.**
+
+### `npm run smoke` — a rede de proteção que não existia
+
+`scripts/smoke.mjs`, 33 verificações, zero dependência nova (Node 26 já tem
+fetch e WebSocket; o resto é CDP). Camada HTTP roda em qualquer lugar; a de
+navegador só se houver Chrome, senão pula com aviso.
+
+Cobre o que quebrou de verdade nesta série: h1 único, títulos distintos por
+página, JSON-LD, og:image 1200x630, robots, sitemap, **teto de peso por asset**
+(o herói já viajou 4 MB no bundle sem nada acusar) e a troca de idioma
+carregando o pacote sob demanda.
+
+Rode `npm run build` antes — ele sobe o próprio servidor. Para apontar para um
+ambiente no ar: `BASE_URL=https://nixvetapp.com.br npm run smoke`.
+
+### Pendências desta sessão
+
+1. **Dois lockfiles no repo** (`package-lock.json` e `yarn.lock`). O Dockerfile
+   usa `npm ci`, então quem vale é o do npm — mas rodar `npm install` mexeu no
+   `yarn.lock` (revertido). Escolher um e apagar o outro.
+2. **`NEXT_PUBLIC_SITE_URL`** tem default `https://app.nixvetapp.com.br` no
+   `next.config.mjs`, host que **não resolve**. Não quebra nada porque a
+   variável não é usada em lugar nenhum do `src/` — é armadilha para quem for
+   usá-la achando que vale.
+3. **GA4 e Search Console**: não há nenhum sinal de configuração no projeto.
+4. **`MenuIconsColored` descartando props** — ver acima.
+
 ## Iniciativa: responsividade mobile-first (modais + páginas) — EM ANDAMENTO
 
 Objetivo: nenhuma tela deve ter scroll horizontal ou conteúdo cortado no mobile. Modais viram bottom sheet no mobile (desktop mantém o card centralizado de sempre). Iniciativa page-by-page seguindo a ordem do menu lateral — algumas páginas já cobertas, a maioria ainda não. Retome com uma varredura sistemática usando o checklist abaixo.
