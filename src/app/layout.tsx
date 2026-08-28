@@ -25,14 +25,42 @@ const poppins = Poppins({
   weight: ["600", "700"],
 });
 
+const SITE_URL = "https://nixvetapp.com.br";
+const DEFAULT_TITLE = "NixVet — Sistema para Clínica Veterinária com IA no WhatsApp";
+const DEFAULT_DESCRIPTION =
+  "Prontuário, agenda e financeiro num só sistema — e o WhatsApp da sua clínica respondendo sozinho. Teste grátis por 14 dias, sem cartão de crédito.";
+
 export const metadata: Metadata = {
-  title: "NixVet - Sistema Veterinário",
-  description: "Gestão clínica veterinária profissional",
+  metadataBase: new URL(SITE_URL),
+  title: DEFAULT_TITLE,
+  description: DEFAULT_DESCRIPTION,
   manifest: "/manifest.json",
   // Sem bloco `icons` de propósito: os arquivos `app/favicon.ico`, `app/icon.png`
   // e `app/apple-icon.png` são detectados pelo Next e viram as tags <link>
   // automaticamente. O bloco anterior apontava para `/logo.svg`, que não existe
   // em `public/` — por isso o navegador caía no favicon padrão do Next.
+  openGraph: {
+    type: "website",
+    locale: "pt_BR",
+    url: SITE_URL,
+    siteName: "NixVet",
+    title: DEFAULT_TITLE,
+    description: DEFAULT_DESCRIPTION,
+    images: [
+      {
+        url: "/logo-512.png",
+        width: 512,
+        height: 512,
+        alt: "NixVet",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary",
+    title: DEFAULT_TITLE,
+    description: DEFAULT_DESCRIPTION,
+    images: ["/logo-512.png"],
+  },
 };
 
 // Plataforma ainda não tem modo escuro — ignora o tema do SO e mantém a UI
