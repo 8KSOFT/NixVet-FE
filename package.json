@@ -55,10 +55,13 @@
     "typescript": "^5.7.3"
   },
   "overrides": {
-    "minimatch": "^10.0.0",
+    "minimatch": "^10.2.3",
     "glob": "^10.3.10",
     "rimraf": "^5.0.5",
     "inflight": "^1.0.6",
-    "tmp": "^0.2.3"
+    "tmp": "^0.2.3",
+    "@eslint/eslintrc": {
+      "minimatch": "^3.1.2"
+    }
   }
 }
