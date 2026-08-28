@@ -1,6 +1,7 @@
 'use client';
 
 import React, { Suspense, useEffect, useMemo, useState } from 'react';
+import nextDynamic from 'next/dynamic';
 import { useTranslation } from 'react-i18next';
 import type { StoredUser } from '@/app/types/exam-request';
 import { Button } from '@/components/ui/button';
@@ -30,7 +31,9 @@ import {
   Copy,
   Download,
 } from 'lucide-react';
-import QRCode from 'react-qr-code';
+// Só aparece dentro do diálogo de assinatura, que a maioria das sessões nunca
+// abre — não precisa viajar no bundle da listagem.
+const QRCode = nextDynamic(() => import('react-qr-code'), { ssr: false });
 import { API_PAGE_SIZE } from '@/lib/pagination';
 import { ListPagination } from '@/components/list-pagination';
 import dayjs from 'dayjs';
