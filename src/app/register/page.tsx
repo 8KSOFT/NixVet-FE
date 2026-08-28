@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { OG_BASE, TWITTER_BASE } from "@/lib/seo";
 import RegisterClient from "./RegisterClient";
 
 const TITLE = "Crie sua conta grátis — NixVet";
@@ -12,11 +13,13 @@ export const metadata: Metadata = {
     canonical: "/register",
   },
   openGraph: {
+    ...OG_BASE,
     title: TITLE,
     description: DESCRIPTION,
     url: "/register",
   },
   twitter: {
+    ...TWITTER_BASE,
     title: TITLE,
     description: DESCRIPTION,
   },

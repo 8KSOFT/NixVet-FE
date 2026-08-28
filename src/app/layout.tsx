@@ -1,4 +1,11 @@
 import type { Metadata, Viewport } from "next";
+import {
+  DEFAULT_DESCRIPTION,
+  DEFAULT_TITLE,
+  OG_BASE,
+  SITE_URL,
+  TWITTER_BASE,
+} from "@/lib/seo";
 import { Inter, Poppins } from "next/font/google";
 import AppProviders from '@/components/AppProviders';
 import "./globals.css";
@@ -25,10 +32,6 @@ const poppins = Poppins({
   weight: ["600", "700"],
 });
 
-const SITE_URL = "https://nixvetapp.com.br";
-const DEFAULT_TITLE = "NixVet — Sistema para Clínica Veterinária com IA no WhatsApp";
-const DEFAULT_DESCRIPTION =
-  "Prontuário, agenda e financeiro num só sistema — e o WhatsApp da sua clínica respondendo sozinho. Teste grátis por 14 dias, sem cartão de crédito.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -40,26 +43,15 @@ export const metadata: Metadata = {
   // automaticamente. O bloco anterior apontava para `/logo.svg`, que não existe
   // em `public/` — por isso o navegador caía no favicon padrão do Next.
   openGraph: {
-    type: "website",
-    locale: "pt_BR",
+    ...OG_BASE,
     url: SITE_URL,
-    siteName: "NixVet",
     title: DEFAULT_TITLE,
     description: DEFAULT_DESCRIPTION,
-    images: [
-      {
-        url: "/logo-512.png",
-        width: 512,
-        height: 512,
-        alt: "NixVet",
-      },
-    ],
   },
   twitter: {
-    card: "summary",
+    ...TWITTER_BASE,
     title: DEFAULT_TITLE,
     description: DEFAULT_DESCRIPTION,
-    images: ["/logo-512.png"],
   },
 };
 

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { OG_BASE, TWITTER_BASE } from "@/lib/seo";
 import HomeClient from "./HomeClient";
 import { FAQ_ITEMS } from "@/components/shared/landing/faq-items";
 
@@ -13,11 +14,13 @@ export const metadata: Metadata = {
     canonical: "/",
   },
   openGraph: {
+    ...OG_BASE,
     title: TITLE,
     description: DESCRIPTION,
     url: "/",
   },
   twitter: {
+    ...TWITTER_BASE,
     title: TITLE,
     description: DESCRIPTION,
   },
