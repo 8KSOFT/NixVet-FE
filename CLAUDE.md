@@ -83,6 +83,35 @@ O usuário viu o contador do React DevTools disparar (ex.: 3500→7100 em 3s) e,
 2. **Backend**: dedupe de notificação `conversation_alert` (mesmo padrão que `low_stock` já tem).
 3. **Auditoria de `useMemo`/`useCallback`/`React.memo` nas PÁGINAS DE CONTEÚDO** (pedido explícito do usuário, começado só pela navbar/`SidebarNav` nesta sessão — ver item 7 da lista de causas acima). Zero uso de `React.memo` em 149 componentes, só 49 `useMemo`/11 `useCallback` no projeto inteiro — esparso pro tamanho do app. Não é a causa das travas de 5s nem do contador do DevTools, mas contribui pra uma sensação geral de interação "pesada" (filtros, dropdowns). Próximo alvo natural: `dashboard/page.tsx` (mais citada nos prints do usuário), depois `prescriptions/page.tsx` (pior proporção vista: 9 `.filter/.sort/.reduce` pra 1 `useMemo`), `calendar/page.tsx`.
 
+## Variáveis NEXT_PUBLIC_*: o vault é a única fonte (2026-08-28)
+
+`NEXT_PUBLIC_*` é **inlinada em tempo de build**, não lida em runtime. No deploy
+o valor vem do vault do 8khost, mas só chega ao `next build` se o Dockerfile
+declarar `ARG` + `ENV` **antes** do `RUN npm run build`. Sem isso a variável
+compila como `undefined` e o recurso morre em silêncio — foi exatamente o que
+aconteceu com o `NEXT_PUBLIC_GA_ID`: passou pelo vault e pelo deploy inteiro
+sem nunca chegar ao bundle.
+
+Duas defesas, as duas já no lugar:
+
+1. **`npm run prebuild`** (`scripts/check-build-env.mjs`) varre `src/` e o
+   `next.config.mjs` atrás de `process.env.NEXT_PUBLIC_*` e falha o build se
+   alguma não tiver `ARG` no Dockerfile, imprimindo as linhas a colar. Roda
+   junto do build local e do build do Docker.
+2. **`.env.production` saiu do versionamento.** Ele duplicava quatro variáveis
+   que já vivem no vault; como o build da plataforma vem de clone do git, o
+   arquivo simplesmente não existe lá — mas enquanto estava versionado era uma
+   segunda fonte de verdade, divergindo do vault sem ninguém notar. Segue no
+   disco local (ignorado) para quem quiser build de produção offline.
+
+Restam os fallbacks embutidos no `next.config.mjs` (`|| 'https://api...'`).
+São rede de segurança para dev, não fonte de configuração — **nunca** ajuste
+valor de produção ali achando que está configurando o ambiente.
+
+**Ao adicionar qualquer `NEXT_PUBLIC_` nova**: valor no vault (`set_secret`,
+env `hml`, que é o ativo) + `ARG`/`ENV` no Dockerfile + `deploy` (não
+`restart_app`, que reusa o manifest antigo e não repassa build arg).
+
 ## Auditoria de performance, lint e smoke (sessão 2026-08-28) — LEIA ANTES DE REFATORAR PERFORMANCE
 
 ### O split `page.tsx` server + `<Nome>Client.tsx` NÃO melhora performance — não repita esperando isso

@@ -162,6 +162,24 @@ async function camadaNavegador(chrome) {
 
     await ir('/');
     checar('home renderiza sem exceção', erros.length === 0, erros[0] || '');
+
+    // LGPD: sem aceite, nenhum script do Google pode entrar na página. Este
+    // é o teste que impede alguém reintroduzir o gtag direto no layout.
+    const semConsentimento = await ev(`(() => {
+      localStorage.removeItem('nixvet-consent-analytics');
+      return [...document.querySelectorAll('script[src]')]
+        .filter(s => /googletagmanager|google-analytics/.test(s.src)).length;
+    })()`);
+    // Sem NEXT_PUBLIC_GA_ID no build, o componente nem renderiza e a
+    // checagem passaria de graça — dizer isso é melhor que um "ok" vazio.
+    const temGa = await ev(`document.documentElement.outerHTML.includes('nixvet-consent-analytics')
+      || !!document.querySelector('[aria-label="Aviso de cookies"]')`);
+    if (temGa) {
+      checar('nenhum script do Google antes do aceite', semConsentimento === 0,
+        `${semConsentimento} script(s) carregado(s)`);
+    } else {
+      console.log('· build sem NEXT_PUBLIC_GA_ID — checagem de consentimento não se aplica');
+    }
     const h1dom = await ev(`document.querySelectorAll('h1').length`);
     checar('home tem um <h1> no DOM montado', h1dom === 1, `${h1dom} no DOM`);
 

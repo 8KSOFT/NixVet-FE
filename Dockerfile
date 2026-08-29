@@ -19,6 +19,14 @@ ARG NEXT_PUBLIC_ROOT_DOMAIN
 ENV NEXT_PUBLIC_ROOT_DOMAIN=$NEXT_PUBLIC_ROOT_DOMAIN
 ARG NEXT_PUBLIC_APP_HOSTS
 ENV NEXT_PUBLIC_APP_HOSTS=$NEXT_PUBLIC_APP_HOSTS
+# GA4. Precisa ser ARG e não só secret de runtime: o Next inlina NEXT_PUBLIC_*
+# no bundle durante o build — sem declarar aqui, o valor do vault não chega ao
+# `next build` e o componente de analytics recebe undefined, ficando mudo sem
+# erro nenhum.
+ARG NEXT_PUBLIC_GA_ID
+ENV NEXT_PUBLIC_GA_ID=$NEXT_PUBLIC_GA_ID
+ARG NEXT_PUBLIC_TURNSTILE_SITE_KEY
+ENV NEXT_PUBLIC_TURNSTILE_SITE_KEY=$NEXT_PUBLIC_TURNSTILE_SITE_KEY
 
 RUN npm run build
 
