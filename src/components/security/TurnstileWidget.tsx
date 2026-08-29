@@ -26,10 +26,24 @@ function carregarScript(): Promise<void> {
   if (promessaDoScript) return promessaDoScript;
 
   promessaDoScript = new Promise<void>((resolve, reject) => {
+    // O `load` do script NÃO significa que `window.turnstile` já existe: com
+    // render=explicit a API é publicada num tick posterior. Resolver no load
+    // fazia o `render()` ser chamado cedo demais, cair no early-return e o
+    // widget nunca ser montado — o formulário então enviava token nulo e o
+    // backend recusava todo login. Foi exatamente isso que derrubou o acesso.
+    const esperarApi = () => {
+      const limite = Date.now() + 10_000;
+      const tentar = () => {
+        if (window.turnstile?.render) return resolve();
+        if (Date.now() > limite) return reject(new Error('turnstile: API não publicada'));
+        setTimeout(tentar, 50);
+      };
+      tentar();
+    };
+
     const existente = document.getElementById(SCRIPT_ID);
     if (existente) {
-      existente.addEventListener('load', () => resolve());
-      existente.addEventListener('error', () => reject(new Error('turnstile: falha ao carregar')));
+      esperarApi();
       return;
     }
     const s = document.createElement('script');
@@ -37,7 +51,7 @@ function carregarScript(): Promise<void> {
     s.src = SCRIPT_URL;
     s.async = true;
     s.defer = true;
-    s.onload = () => resolve();
+    s.onload = esperarApi;
     s.onerror = () => reject(new Error('turnstile: falha ao carregar'));
     document.head.appendChild(s);
   });
@@ -74,7 +88,14 @@ export default function TurnstileWidget({ onToken, className }: Props) {
   aoToken.current = onToken;
 
   const montar = useCallback(() => {
-    if (!siteKey || !container.current || !window.turnstile) return;
+    if (!siteKey || !container.current) return;
+    if (!window.turnstile?.render) {
+      // Não deveria acontecer — carregarScript() só resolve com a API pronta.
+      // Avisa alto em vez de sumir: widget não montado significa login
+      // recusado por token ausente, e sem este log não há por onde começar.
+      console.error('[turnstile] API indisponível na montagem; widget não renderizado');
+      return;
+    }
     if (widgetId.current) return;
     widgetId.current = window.turnstile.render(container.current, {
       sitekey: siteKey,
