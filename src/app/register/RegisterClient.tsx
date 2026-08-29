@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import TurnstileWidget from '@/components/security/TurnstileWidget';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { trackEvent } from '@/lib/analytics';
 import {
   Building2,
   User,
@@ -273,6 +275,7 @@ function IconInput({
 
 export default function RegisterClient() {
   const router = useRouter();
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [transitioning, setTransitioning] = useState(false);
@@ -430,6 +433,7 @@ export default function RegisterClient() {
           // browser descarta o Set-Cookie e o onboarding seguiria deslogado.
           credentials: 'include',
           body: JSON.stringify({
+            turnstileToken,
             clinicName: clinicName.trim(),
             clinicCode: clinicCode.trim(),
             adminName: adminName.trim(),
@@ -457,6 +461,9 @@ export default function RegisterClient() {
           return;
         }
 
+        // Conversão: conta criada E sessão iniciada. Marcar antes disto
+        // contaria cadastro que não chegou a virar acesso.
+        trackEvent('signup_completed', { plano: 'trial' });
         establishSession(user, tenantCode || clinicCode);
       }
 
@@ -977,6 +984,11 @@ export default function RegisterClient() {
                         <span>Sem cobrança automática. Você escolhe o plano depois</span>
                       </div>
                     </div>
+
+                    {/* Montado no último passo, que é onde o cadastro é
+                        efetivamente enviado. Invisível salvo quando a
+                        Cloudflare decide desafiar. */}
+                    <TurnstileWidget onToken={setTurnstileToken} className="mt-6 flex justify-center" />
 
                     <div className="mt-8 flex justify-center gap-3">
                       <Button

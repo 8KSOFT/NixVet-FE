@@ -24,6 +24,7 @@ import { LogoColored } from "@/components/shared/componentizedImages/LogoColored
 import { ProductTour } from "@/components/shared/landing/ProductTour";
 import { Faq } from "@/components/shared/landing/Faq";
 import { GOOGLE_PLAY_URL } from "@/components/shared/landing/faq-items";
+import { trackEvent } from "@/lib/analytics";
 
 const FEATURES: LandingPageFeature[] = [
   {
@@ -74,6 +75,11 @@ const FEATURE_ANIMATION_DELAY_CLASS_NAMES = [
   "motion-safe:[transition-delay:160ms]",
   "motion-safe:[transition-delay:240ms]",
 ];
+
+// Cada CTA leva para o mesmo /register, então sem o rótulo de origem não dá
+// para saber QUAL delas converte — que é a única pergunta útil aqui.
+const aoClicarCta = (origem: string) => () =>
+  trackEvent("signup_started", { origem });
 
 export default function HomeClient() {
   const isMobile = useIsMobile();
@@ -129,6 +135,7 @@ export default function HomeClient() {
               >
                 <Link
                   href="/register"
+                  onClick={aoClicarCta("hero")}
                   className="flex w-full items-center gap-4"
                 >
                   <span className="whitespace-nowrap">Começar agora grátis</span>
@@ -468,7 +475,7 @@ export default function HomeClient() {
                           : "bg-brand-deep/10 text-brand-deep-dark hover:bg-brand-deep/20"
                       }`}
                     >
-                      <Link href="/register">Começar grátis</Link>
+                      <Link href="/register" onClick={aoClicarCta("planos")}>Começar grátis</Link>
                     </Button>
                   </CardContent>
                 </Card>
@@ -540,7 +547,7 @@ export default function HomeClient() {
               variant="secondary"
               className="group w-fit p-0 pl-6 pr-2 rounded-full flex items-center gap-4 text-[20px] text-brand-deep font-medium h-16 shadow-none bg-brand-deep/10 active:bg-brand-deep/30 hover:bg-brand-deep/25 border-none"
             >
-              <Link href="/register">
+              <Link href="/register" onClick={aoClicarCta("rodape")}>
                 Começar agora grátis
                 <div className="flex shrink-0 items-center justify-center size-12 rounded-full bg-brand-deep text-white transition-[filter] duration-200 group-hover:brightness-90">
                   <ArrowRight className="size-8" />

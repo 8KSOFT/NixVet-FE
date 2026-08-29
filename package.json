@@ -10,6 +10,7 @@
     "postinstall": "node scripts/patch-next-compiled-manifests.cjs",
     "dev": "next dev",
     "dev:hml": "next dev -p 8538",
+    "prebuild": "node scripts/check-build-env.mjs",
     "build": "next build",
     "start": "next start",
     "start:hml": "next start -p 8538",
@@ -18,6 +19,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
+    "@next/third-parties": "^16.3.3",
     "@tanstack/react-query": "^5.101.2",
     "@tanstack/react-table": "^8.21.3",
     "@xyflow/react": "^12.10.1",

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { trackEvent } from '@/lib/analytics';
 import { useRouter } from 'next/navigation';
 import { CheckCircle2, Circle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -57,6 +58,10 @@ export default function BillingUpgradePage() {
         billingType,
         cpfCnpj: cpfCnpj.replace(/\D/g, ''),
       });
+      // Conversão: a assinatura foi criada no provedor. É "iniciada", não
+      // "paga" — o pagamento só se confirma no webhook, depois do checkout.
+      trackEvent('subscription_started', { plano: selectedPlan, forma: billingType });
+
       const paymentUrl = data?.paymentUrl ?? null;
       if (paymentUrl) {
         // Redireciona para o checkout seguro da Asaas (PIX, boleto ou cartão).

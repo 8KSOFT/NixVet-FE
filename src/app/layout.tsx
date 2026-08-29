@@ -8,6 +8,8 @@ import {
 } from "@/lib/seo";
 import { Inter, Poppins } from "next/font/google";
 import AppProviders from '@/components/AppProviders';
+import Analytics from '@/components/analytics/Analytics';
+import CookieConsent from '@/components/analytics/CookieConsent';
 import "./globals.css";
 
 const inter = Inter({
@@ -72,6 +74,10 @@ export default function RootLayout({
     <html lang="pt-BR" className={`${inter.variable} ${poppins.variable}`}>
       <body className="min-h-screen bg-background font-sans text-foreground antialiased">
         <AppProviders>{children}</AppProviders>
+        {/* Fora do AppProviders: nenhum dos dois depende de react-query ou
+            i18n, e o banner precisa ficar acima de tudo no empilhamento. */}
+        <CookieConsent />
+        <Analytics />
       </body>
     </html>
   );

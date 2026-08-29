@@ -127,7 +127,34 @@ export default function PrivacidadePage() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold text-slate-900">11. Contato e Encarregado (DPO)</h2>
+        <h2 className="text-lg font-semibold text-slate-900">11. Cookies e medição de audiência no site</h2>
+        <p>
+          No site <strong>nixvetapp.com.br</strong> usamos o Google Analytics 4 para entender de forma agregada
+          como as páginas são acessadas — origem da visita, páginas vistas, dispositivo aproximado e quais chamadas
+          para ação levam a um cadastro. A finalidade é melhorar o site; não usamos esses dados para decisões
+          automatizadas sobre pessoas.
+        </p>
+        <p>
+          <strong>Esses cookies só são ativados com o seu aceite.</strong> Enquanto você não responde ao aviso de
+          cookies, ou se você recusa, nenhum script de medição é carregado e nenhuma informação é enviada ao Google.
+          Base legal: consentimento (art. 7º, I, da LGPD), revogável a qualquer momento — para revogar, limpe os dados
+          do site no seu navegador; o aviso voltará a ser exibido e você poderá recusar.
+        </p>
+        <p>
+          O Google Analytics é operado pelo Google LLC, que pode tratar os dados fora do Brasil; nesse caso aplicam-se
+          as salvaguardas do item 10. Não enviamos ao Google nome, e-mail, CPF, dados de pacientes ou qualquer
+          informação de prontuário — a medição cobre apenas a navegação nas páginas públicas e eventos de conversão
+          sem identificação pessoal.
+        </p>
+        <p className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-[13.5px] text-amber-900">
+          <strong>Rascunho.</strong> Esta seção foi redigida junto com a implementação técnica e ainda{' '}
+          <strong>não passou por revisão jurídica</strong>. Antes de tratá-la como texto definitivo, submeta a
+          advogado, em especial quanto à transferência internacional e ao prazo de retenção dos dados de medição.
+        </p>
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold text-slate-900">12. Contato e Encarregado (DPO)</h2>
         <p>
           Dúvidas ou solicitações sobre privacidade: <strong>privacidade@nixvetapp.com.br</strong>.<br />
           Encarregado pelo Tratamento de Dados (DPO): <strong>Marcelo Coppini</strong> — dpo@nixvetapp.com.br.<br />
