@@ -100,7 +100,12 @@ export default function TurnstileWidget({ onToken, className }: Props) {
     widgetId.current = window.turnstile.render(container.current, {
       sitekey: siteKey,
       language: 'pt-br',
-      appearance: 'interaction-only',
+      // 'always' e não 'interaction-only': invisível, ninguém consegue
+      // confirmar que a proteção existe — nem o usuário, nem quem opera. O
+      // widget visível é a única evidência de que o captcha está no ar, e a
+      // caixa da Cloudflare se resolve sozinha na esmagadora maioria dos
+      // casos, sem pedir clique.
+      appearance: 'always',
       callback: (token: string) => aoToken.current(token),
       'expired-callback': () => aoToken.current(null),
       'error-callback': () => aoToken.current(null),
