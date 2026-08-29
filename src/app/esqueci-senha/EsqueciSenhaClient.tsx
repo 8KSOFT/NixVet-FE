@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import TurnstileWidget from '@/components/security/TurnstileWidget';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
@@ -49,6 +50,7 @@ async function postJson(path: string, body: unknown): Promise<{ ok: boolean; dat
 export default function EsqueciSenhaClient() {
   const router = useRouter();
 
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [step, setStep] = useState<Step>('request');
   const [email, setEmail] = useState('');
   const [tenantCode, setTenantCode] = useState('');
@@ -78,6 +80,7 @@ export default function EsqueciSenhaClient() {
       const { ok, data } = await postJson('/auth/password-reset/request', {
         email: email.trim().toLowerCase(),
         tenantCode: resolvedCode,
+        turnstileToken,
       });
       if (!ok) {
         toast.error(apiMessage(data, 'Não foi possível enviar o código.'));
@@ -164,6 +167,7 @@ export default function EsqueciSenhaClient() {
                 required
               />
             </div>
+            <TurnstileWidget onToken={setTurnstileToken} className="mb-3 flex justify-center" />
             <Button type="submit" className="w-full rounded-full" disabled={loading}>
               {loading && <Loader2 className="mr-1 size-4 animate-spin" />}
               Enviar código

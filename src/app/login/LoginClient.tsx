@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import TurnstileWidget from '@/components/security/TurnstileWidget';
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
@@ -38,6 +39,7 @@ export default function LoginClient() {
   const isMobile = useIsMobile();
   const router = useRouter();
 
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [tenantCode, setTenantCode] = useState("");
@@ -112,6 +114,9 @@ export default function LoginClient() {
           email: trimmedEmail,
           password: trimmedPassword,
           tenantCode: code,
+          // Descartado pelo guard depois de verificado; quando o captcha está
+          // desligado dos dois lados, vai `null` e o backend ignora.
+          turnstileToken,
         }),
       });
       const raw = await res.text();
@@ -314,6 +319,9 @@ export default function LoginClient() {
                   >
                     {translation("auth.forgotPassword")}
                   </Link>
+                  {/* Invisível salvo quando a Cloudflare decide desafiar. Precisa estar
+                      montado mesmo assim: é ele que produz o token. */}
+                  <TurnstileWidget onToken={setTurnstileToken} className="mb-3 flex justify-center" />
                   <Button
                     type="submit"
                     className="w-full py-3.5 text-base font-medium rounded-full sm:w-35 sm:py-2.5"
