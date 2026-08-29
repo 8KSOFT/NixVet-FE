@@ -35,6 +35,21 @@ const nextConfig = {
       process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'nixvetapp.com.br',
     NEXT_PUBLIC_APP_HOSTS:
       process.env.NEXT_PUBLIC_APP_HOSTS || 'app.nixvetapp.com.br',
+    // Identificadores PÚBLICOS, não segredos: o measurement ID aparece na URL
+    // do gtag e a site key do Turnstile vai no HTML do widget — qualquer
+    // visitante lê as duas no fonte da página.
+    //
+    // Ficam aqui, versionados, e não no vault, porque o vault NÃO alimenta
+    // este build: os `ARG` do Dockerfile são resquício da época do Jenkins, e
+    // a plataforma não repassa secret como build-arg. Guardá-las lá fez o GA e
+    // o captcha subirem como `undefined` — o captcha exigido pelo backend com
+    // o front incapaz de gerar token, e o login parou.
+    //
+    // O que continua no vault é a TURNSTILE_SECRET_KEY, no backend, que é
+    // segredo de verdade e é lida em runtime.
+    NEXT_PUBLIC_GA_ID: process.env.NEXT_PUBLIC_GA_ID || 'G-J7HXFRDB6S',
+    NEXT_PUBLIC_TURNSTILE_SITE_KEY:
+      process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '0x4AAAAAAEf66kfKURDt1Dit',
   },
 };
 
