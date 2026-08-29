@@ -319,9 +319,6 @@ export default function LoginClient() {
                   >
                     {translation("auth.forgotPassword")}
                   </Link>
-                  {/* Invisível salvo quando a Cloudflare decide desafiar. Precisa estar
-                      montado mesmo assim: é ele que produz o token. */}
-                  <TurnstileWidget onToken={setTurnstileToken} className="mb-3 flex justify-center" />
                   <Button
                     type="submit"
                     className="w-full py-3.5 text-base font-medium rounded-full sm:w-35 sm:py-2.5"
@@ -341,6 +338,12 @@ export default function LoginClient() {
                     Comece grátis por 14 dias
                   </a>
                 </p>
+
+                {/* Abaixo de tudo, em linha própria: dentro da linha do botão
+                    ele espremia o "Esqueceu sua senha?" e o Entrar. A caixa da
+                    Cloudflare tem largura fixa (300px) e não cabe ao lado de
+                    mais nada em tela estreita. */}
+                <TurnstileWidget onToken={setTurnstileToken} className="flex w-full justify-center" />
               </div>
             </form>
           </div>
