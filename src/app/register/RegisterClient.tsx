@@ -67,6 +67,15 @@ function formatPhone(value: string) {
   return digits.replace(/(\d{2})(\d{5})(\d{0,4})/, '($1) $2-$3').trim().replace(/-$/, '');
 }
 
+/**
+ * Celular brasileiro: DDD de 11 a 99 e nove dígitos começando em 9. Espelha o
+ * `CELULAR_BR` do backend — fixo é recusado nos dois lados de propósito, é o
+ * número que recebe os avisos de cobrança.
+ */
+function isCelular(value: string) {
+  return /^[1-9][0-9]9[0-9]{8}$/.test(value.replace(/\D/g, ''));
+}
+
 function slugify(value: string) {
   return value
     .toLowerCase()
@@ -294,6 +303,16 @@ export default function RegisterClient() {
   // Step 3 — Dados fiscais
   const [cpfCnpj, setCpfCnpj] = useState('');
   const [phone, setPhone] = useState('');
+  // Confirmação do WhatsApp por código. `verifiedPhone` guarda os dígitos que
+  // passaram no OTP: se o usuário editar o número depois, a confirmação
+  // deixa de valer sozinha, em vez de acompanhar um número que ninguém
+  // confirmou.
+  const [phoneOtpRequired, setPhoneOtpRequired] = useState(false);
+  const [phoneCodeSent, setPhoneCodeSent] = useState(false);
+  const [phoneCode, setPhoneCode] = useState('');
+  const [verifiedPhone, setVerifiedPhone] = useState('');
+  const [phoneBusy, setPhoneBusy] = useState(false);
+  const phoneVerified = verifiedPhone !== '' && verifiedPhone === phone.replace(/\D/g, '');
 
   // Step 4 — Horário de funcionamento
   const [weekdayOpen, setWeekdayOpen] = useState('08:00');
@@ -325,6 +344,17 @@ export default function RegisterClient() {
 
   useEffect(() => {
     setResuming(hasClientSession());
+  }, []);
+
+  // A exigência do código mora no ambiente do backend (ONBOARDING_PHONE_OTP),
+  // não aqui: enquanto o canal de entrega não estiver no ar, exigir código
+  // impediria qualquer cadastro novo. Falha na consulta = não exigir, pelo
+  // mesmo motivo — quem decide barrar é o backend, no `register`.
+  useEffect(() => {
+    fetch(`${getApiBaseUrl()}/billing/register/phone`, { credentials: 'omit' })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => setPhoneOtpRequired(Boolean(d?.data?.required)))
+      .catch(() => setPhoneOtpRequired(false));
   }, []);
 
   useEffect(() => {
@@ -364,10 +394,70 @@ export default function RegisterClient() {
     return true;
   };
 
+  /** Pede o código para o número digitado. */
+  const sendPhoneCode = async () => {
+    if (!isCelular(phone)) {
+      toast.error('Informe um celular com DDD. Telefone fixo não recebe o código.');
+      return;
+    }
+    setPhoneBusy(true);
+    try {
+      const res = await fetch(`${getApiBaseUrl()}/billing/register/phone/code`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: phone.replace(/\D/g, '') }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        const msg = Array.isArray(data?.message) ? data.message[0] : data?.message;
+        toast.error(msg ?? 'Não foi possível enviar o código. Tente novamente.');
+        return;
+      }
+      setPhoneCodeSent(true);
+      setPhoneCode('');
+      toast.success(
+        data?.data?.channel === 'sms'
+          ? 'Código enviado por SMS.'
+          : 'Código enviado pelo WhatsApp.',
+      );
+    } finally {
+      setPhoneBusy(false);
+    }
+  };
+
+  const confirmPhoneCode = async () => {
+    setPhoneBusy(true);
+    try {
+      const res = await fetch(`${getApiBaseUrl()}/billing/register/phone/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: phone.replace(/\D/g, ''), code: phoneCode.trim() }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        const msg = Array.isArray(data?.message) ? data.message[0] : data?.message;
+        toast.error(msg ?? 'Código incorreto.');
+        return;
+      }
+      setVerifiedPhone(phone.replace(/\D/g, ''));
+      toast.success('WhatsApp confirmado.');
+    } finally {
+      setPhoneBusy(false);
+    }
+  };
+
   const validateStep3 = () => {
     const digits = cpfCnpj.replace(/\D/g, '');
     if (digits.length !== 11 && digits.length !== 14) {
       toast.error('Informe um CPF ou CNPJ válido.');
+      return false;
+    }
+    if (!isCelular(phone)) {
+      toast.error('Informe o WhatsApp do responsável com DDD. Telefone fixo não recebe os avisos.');
+      return false;
+    }
+    if (phoneOtpRequired && !phoneVerified) {
+      toast.error('Confirme o código enviado para o seu WhatsApp.');
       return false;
     }
     return true;
@@ -407,6 +497,7 @@ export default function RegisterClient() {
   function guessRegisterErrorStep(message: string | undefined): number {
     const m = (message ?? '').toLowerCase();
     if (m.includes('cpf') || m.includes('cnpj')) return 3;
+    if (m.includes('celular') || m.includes('whatsapp') || m.includes('código')) return 3;
     if (m.includes('e-mail') || m.includes('email')) return 2;
     return 1;
   }
@@ -440,7 +531,7 @@ export default function RegisterClient() {
             adminEmail: adminEmail.trim().toLowerCase(),
             adminPassword,
             cpfCnpj: cpfCnpj.replace(/\D/g, ''),
-            phone: phone ? phone.replace(/\D/g, '') : undefined,
+            phone: phone.replace(/\D/g, ''),
           }),
         });
 
@@ -758,14 +849,72 @@ export default function RegisterClient() {
                       </div>
 
                       <div>
-                        <FieldLabel htmlFor="phone" optional="(opcional)">Telefone / WhatsApp</FieldLabel>
-                        <IconInput
-                          id="phone"
-                          icon={<Phone />}
-                          placeholder="(51) 99999-9999"
-                          value={phone}
-                          onChange={(e) => setPhone(formatPhone(e.target.value))}
-                        />
+                        <FieldLabel htmlFor="phone" required>WhatsApp do responsável</FieldLabel>
+                        <div className="flex gap-2">
+                          <div className="flex-1">
+                            <IconInput
+                              id="phone"
+                              icon={<Phone />}
+                              placeholder="(51) 99999-9999"
+                              value={phone}
+                              onChange={(e) => {
+                                setPhone(formatPhone(e.target.value));
+                                setPhoneCodeSent(false);
+                              }}
+                            />
+                          </div>
+                          {phoneOtpRequired && !phoneVerified && (
+                            <Button
+                              variant="outline"
+                              className="rounded-wa border-[1.5px] border-wa-line px-4 text-[13.5px] font-bold text-wa-ink"
+                              disabled={phoneBusy || !isCelular(phone)}
+                              onClick={sendPhoneCode}
+                            >
+                              {phoneBusy ? (
+                                <Loader2 className="size-4 animate-spin" />
+                              ) : phoneCodeSent ? (
+                                'Reenviar'
+                              ) : (
+                                'Enviar código'
+                              )}
+                            </Button>
+                          )}
+                        </div>
+
+                        <p className="mt-1.5 text-xs text-wa-ink-3">
+                          É por aqui que avisamos sobre pagamento e vencimento da assinatura.
+                          Precisa ser um celular — fixo não recebe WhatsApp.
+                        </p>
+
+                        {phoneOtpRequired && phoneVerified && (
+                          <p className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-wa-brand-600">
+                            <CheckCircle2 className="size-3.75" /> WhatsApp confirmado.
+                          </p>
+                        )}
+
+                        {phoneOtpRequired && phoneCodeSent && !phoneVerified && (
+                          <div className="mt-3 flex gap-2">
+                            <div className="flex-1">
+                              <IconInput
+                                id="phoneCode"
+                                icon={<MessageSquare />}
+                                placeholder="Código de 6 dígitos"
+                                inputMode="numeric"
+                                value={phoneCode}
+                                onChange={(e) =>
+                                  setPhoneCode(e.target.value.replace(/\D/g, '').slice(0, 6))
+                                }
+                              />
+                            </div>
+                            <Button
+                              className="rounded-wa px-4 text-[13.5px] font-bold"
+                              disabled={phoneBusy || phoneCode.length !== 6}
+                              onClick={confirmPhoneCode}
+                            >
+                              {phoneBusy ? <Loader2 className="size-4 animate-spin" /> : 'Confirmar'}
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     </div>
 
