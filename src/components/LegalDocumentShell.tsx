@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import Logo from '@/components/Logo';
+import { LogoCompactoDynamic } from '@/components/shared/componentizedImages/LogoCompactoDynamic';
 
 export default function LegalDocumentShell({
   title,
@@ -15,7 +15,7 @@ export default function LegalDocumentShell({
       <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 backdrop-blur-sm">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-4">
           <Link href="/" className="flex items-center gap-2 font-semibold text-blue-600 hover:text-blue-700">
-            <Logo width={36} height={36} alt="NixVetApp" />
+            <LogoCompactoDynamic width="36" height="36" />
             <span>NixVetApp</span>
           </Link>
           <nav className="flex flex-wrap items-center gap-4 text-sm">

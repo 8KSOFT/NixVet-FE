@@ -10,7 +10,12 @@ interface LogoProps {
   className?: string;
 }
 
-const DEFAULT_LOGO = '/logo.svg';
+// `/logo.svg` NÃO existe em `public/` — apontar para lá fazia este componente
+// renderizar imagem quebrada sempre que o `src` não vinha. O mesmo engano já
+// tinha derrubado o favicon (ver comentário em `app/layout.tsx`). Quando o
+// logo não depende de arquivo, prefira o SVG inline
+// `LogoCompactoDynamic`, que não tem como dar 404.
+const DEFAULT_LOGO = '/logo-192.png';
 
 function mergeImgClass(className?: string) {
   // Sem rounded-xl por padrão: o PNG já traz os cantos arredondados
