@@ -1,6 +1,8 @@
 import axios, { AxiosError, AxiosRequestConfig } from 'axios';
+import { toast } from 'sonner';
 import { getApiBaseUrl } from './api-base';
 import { API_MESSAGE, isApiEnvelope } from '@/app/types/api-response';
+import { isBillingBlockCode, publishBillingBlock } from './billing-block';
 
 /**
  * A sessão vive em cookie HttpOnly emitido pelo backend (`nixvet_access` /
@@ -125,6 +127,48 @@ function renewSession(): Promise<void> {
 type RetriableConfig = AxiosRequestConfig & { _retriedAfterRefresh?: boolean };
 
 /**
+ * Um toast por código a cada 8s. Uma tela de atendimento salva vários recursos
+ * de uma vez (paciente, consulta, prescrição): sem a trava, um único clique em
+ * "salvar" empilharia meia dúzia de avisos idênticos.
+ */
+const ULTIMO_AVISO = new Map<string, number>();
+const AVISO_INTERVALO_MS = 8_000;
+
+function avisarUmaVez(codigo: string, mensagem: string): void {
+  const agora = Date.now();
+  if (agora - (ULTIMO_AVISO.get(codigo) ?? 0) < AVISO_INTERVALO_MS) return;
+  ULTIMO_AVISO.set(codigo, agora);
+  toast.error(mensagem);
+}
+
+/**
+ * 402 é o bloqueio por cobrança (`BillingActiveGuard`).
+ *
+ * Sem este tratamento o usuário via só o erro genérico da tela — "não foi
+ * possível salvar" — sem em momento algum ficar sabendo que o motivo é a
+ * assinatura. `SUBSCRIPTION_READ_ONLY` é o caso que mais confundia: a página
+ * carrega, os dados aparecem, e só o salvar falha.
+ */
+function tratarBloqueioDeCobranca(error: AxiosError): void {
+  const corpo = error.response?.data as { code?: string; message?: string } | undefined;
+  const codigo = corpo?.code;
+  if (!isBillingBlockCode(codigo)) return;
+
+  const mensagem = corpo?.message ?? 'Assinatura irregular. Regularize para continuar.';
+  publishBillingBlock({ code: codigo, message: mensagem });
+  avisarUmaVez(codigo, mensagem);
+
+  // Em somente leitura a pessoa continua trabalhando (consultando, imprimindo),
+  // então tirá-la da tela seria pior que o bloqueio. Nos outros códigos nem a
+  // leitura passa: a tela fica inútil, e o lugar onde há o que fazer é o
+  // checkout — que o backend deixa acessível de propósito (`@BillingExempt`).
+  if (codigo === 'SUBSCRIPTION_READ_ONLY') return;
+  if (typeof window === 'undefined') return;
+  if (window.location.pathname.startsWith('/billing')) return;
+  window.location.href = '/billing/upgrade';
+}
+
+/**
  * O backend esta migrando gradualmente as respostas de sucesso para o envelope
  * { success, message, data } (ver DOCS/response-phase-1-front.md e response-phase-4-front.md).
  * Aqui detectamos o envelope por formato (nao por rota) e desembrulhamos `data` de forma
@@ -148,6 +192,11 @@ api.interceptors.response.use(
     return response;
   },
   async (error: AxiosError) => {
+    if (typeof window !== 'undefined' && error.response?.status === 402) {
+      tratarBloqueioDeCobranca(error);
+      return Promise.reject(error);
+    }
+
     if (typeof window === 'undefined' || error.response?.status !== 401) {
       return Promise.reject(error);
     }
