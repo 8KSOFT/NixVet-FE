@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import TurnstileWidget from '@/components/security/TurnstileWidget';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { trackEvent } from '@/lib/analytics';
+import { GA_EVENTS, trackEvent } from '@/lib/analytics';
 import {
   Building2,
   User,
@@ -186,6 +186,21 @@ function OnboardingTransition({ onDone }: { onDone: () => void }) {
 // resto do app — ver design_handoff_whatsapp_inbox) ───────────────────────────
 
 const STEP_LABELS = ['Clínica', 'Responsável', 'Fiscal', 'Horário', 'Atendimentos', 'Pronto'];
+
+/**
+ * Nome de cada etapa no relatório — separado de STEP_LABELS de propósito.
+ * O rótulo da tela é texto de interface e vai mudar quando alguém achar uma
+ * palavra melhor; o nome do evento é a chave de uma série histórica, e mudá-lo
+ * parte o funil em dois no GA4 sem avisar ninguém.
+ */
+const ONBOARDING_STEP_NAMES: Record<number, string> = {
+  1: 'dados_clinica',
+  2: 'responsavel',
+  3: 'dados_fiscais',
+  4: 'horario_funcionamento',
+  5: 'tipos_atendimento',
+  6: 'conclusao',
+};
 
 /** Stepper de progresso: círculos numerados + linha de conexão que preenche
  * conforme as etapas são concluídas, com anel de destaque na etapa ativa. */
@@ -492,6 +507,35 @@ export default function RegisterClient() {
     return true;
   };
 
+  /**
+   * Etapas já medidas nesta passagem pelo cadastro.
+   *
+   * O wizard tem "Voltar" em todos os passos, e o mesmo passo concluído de
+   * novo dispararia o mesmo evento de novo — o que infla justamente o degrau
+   * do funil onde a pessoa teve dificuldade, invertendo a leitura: a etapa
+   * mais confusa apareceria como a de melhor conversão. Em `ref` e não em
+   * `state` porque isto não pinta nada na tela; um `setState` aqui só
+   * causaria render à toa.
+   */
+  const etapasMedidas = useRef(new Set<number>());
+
+  /**
+   * Conclui a etapa: valida, mede e avança. Medir DEPOIS da validação é o que
+   * faz o evento significar "passo concluído" em vez de "botão clicado" —
+   * clique que só produz mensagem de erro não é progresso no funil.
+   */
+  const concluirEtapa = (numero: number, valida: () => boolean) => () => {
+    if (!valida()) return;
+    if (!etapasMedidas.current.has(numero)) {
+      etapasMedidas.current.add(numero);
+      trackEvent(GA_EVENTS.ONBOARDING_STEP, {
+        step_name: ONBOARDING_STEP_NAMES[numero],
+        step_number: numero,
+      });
+    }
+    setStep(numero + 1);
+  };
+
   /** Melhor esforço pra mandar o usuário de volta pro campo certo quando o
    * cadastro falha por dado inválido (CPF/e-mail/código já em uso etc.). */
   function guessRegisterErrorStep(message: string | undefined): number {
@@ -545,7 +589,7 @@ export default function RegisterClient() {
         }
 
         // Envelope: { success, message, data: { tenantId, tenantCode, adminEmail, user } }.
-        const { user, tenantCode } = data.data ?? {};
+        const { user, tenantCode, tenantId } = data.data ?? {};
         if (!user) {
           toast.error('Conta criada, mas não foi possível entrar automaticamente. Faça login.');
           router.push(`/login?code=${clinicCode}`);
@@ -554,7 +598,15 @@ export default function RegisterClient() {
 
         // Conversão: conta criada E sessão iniciada. Marcar antes disto
         // contaria cadastro que não chegou a virar acesso.
-        trackEvent('signup_completed', { plano: 'trial' });
+        //
+        // `tenant_id` é o que costura este evento aos que vêm do servidor
+        // depois (feature_activated, purchase, week_active): sem ele, o
+        // cadastro e a clínica que ele criou seriam duas coisas sem relação
+        // no relatório.
+        trackEvent(GA_EVENTS.SIGN_UP_COMPLETE, {
+          tenant_id: tenantId ?? '',
+          plano: 'trial',
+        });
         establishSession(user, tenantCode || clinicCode);
       }
 
@@ -617,6 +669,18 @@ export default function RegisterClient() {
       }
 
       await completeOnboarding.mutateAsync();
+
+      // Última etapa medida só aqui: até esta linha o cadastro ainda podia
+      // voltar pro passo 4 ou 5 por erro de gravação. Antes disso o evento
+      // diria "concluiu" para quem não concluiu.
+      if (!etapasMedidas.current.has(6)) {
+        etapasMedidas.current.add(6);
+        trackEvent(GA_EVENTS.ONBOARDING_STEP, {
+          step_name: ONBOARDING_STEP_NAMES[6],
+          step_number: 6,
+        });
+      }
+
       setTransitioning(true);
     } catch {
       toast.error('Não foi possível concluir o cadastro. Tente novamente.');
@@ -746,7 +810,7 @@ export default function RegisterClient() {
                     <div className="mt-auto flex gap-3 pt-7">
                       <Button
                         className="flex-1 gap-1.5 rounded-wa text-[14.5px] font-bold shadow-[0_8px_18px_-6px_rgba(18,179,127,0.45)]"
-                        onClick={() => validateStep1() && setStep(2)}
+                        onClick={concluirEtapa(1, validateStep1)}
                       >
                         Continuar <ChevronRight className="size-3.75" strokeWidth={2.5} />
                       </Button>
@@ -819,7 +883,7 @@ export default function RegisterClient() {
                       </Button>
                       <Button
                         className="flex-1 gap-1.5 rounded-wa text-[14.5px] font-bold shadow-[0_8px_18px_-6px_rgba(18,179,127,0.45)]"
-                        onClick={() => validateStep2() && setStep(3)}
+                        onClick={concluirEtapa(2, validateStep2)}
                       >
                         Continuar <ChevronRight className="size-3.75" strokeWidth={2.5} />
                       </Button>
@@ -928,7 +992,7 @@ export default function RegisterClient() {
                       </Button>
                       <Button
                         className="flex-1 gap-1.5 rounded-wa text-[14.5px] font-bold shadow-[0_8px_18px_-6px_rgba(18,179,127,0.45)]"
-                        onClick={() => validateStep3() && setStep(4)}
+                        onClick={concluirEtapa(3, validateStep3)}
                       >
                         Continuar <ChevronRight className="size-3.75" strokeWidth={2.5} />
                       </Button>
@@ -1045,7 +1109,7 @@ export default function RegisterClient() {
                       )}
                       <Button
                         className="flex-1 gap-1.5 rounded-wa text-[14.5px] font-bold shadow-[0_8px_18px_-6px_rgba(18,179,127,0.45)]"
-                        onClick={() => validateStep4() && setStep(5)}
+                        onClick={concluirEtapa(4, validateStep4)}
                       >
                         Continuar <ChevronRight className="size-3.75" strokeWidth={2.5} />
                       </Button>
@@ -1093,7 +1157,7 @@ export default function RegisterClient() {
                       </Button>
                       <Button
                         className="flex-1 gap-1.5 rounded-wa text-[14.5px] font-bold shadow-[0_8px_18px_-6px_rgba(18,179,127,0.45)]"
-                        onClick={() => validateStep5() && setStep(6)}
+                        onClick={concluirEtapa(5, validateStep5)}
                       >
                         Continuar <ChevronRight className="size-3.75" strokeWidth={2.5} />
                       </Button>

@@ -24,7 +24,7 @@ import { LogoColored } from "@/components/shared/componentizedImages/LogoColored
 import { ProductTour } from "@/components/shared/landing/ProductTour";
 import { Faq } from "@/components/shared/landing/Faq";
 import { GOOGLE_PLAY_URL } from "@/components/shared/landing/faq-items";
-import { trackEvent } from "@/lib/analytics";
+import { GA_EVENTS, trackEvent } from "@/lib/analytics";
 
 const FEATURES: LandingPageFeature[] = [
   {
@@ -79,7 +79,7 @@ const FEATURE_ANIMATION_DELAY_CLASS_NAMES = [
 // Cada CTA leva para o mesmo /register, então sem o rótulo de origem não dá
 // para saber QUAL delas converte — que é a única pergunta útil aqui.
 const aoClicarCta = (origem: string) => () =>
-  trackEvent("signup_started", { origem });
+  trackEvent(GA_EVENTS.SIGN_UP_START, { origem });
 
 export default function HomeClient() {
   const isMobile = useIsMobile();

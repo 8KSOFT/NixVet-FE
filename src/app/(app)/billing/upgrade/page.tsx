@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { trackEvent } from '@/lib/analytics';
+import { GA_EVENTS, trackEvent } from '@/lib/analytics';
 import { useRouter } from 'next/navigation';
 import { CheckCircle2, Circle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { PLANS, type PlanId } from '@/lib/plans';
+import { PLANS, PLAN_BY_ID, type PlanId } from '@/lib/plans';
 
 type PlanName = PlanId;
 type BillingType = 'CREDIT_CARD' | 'BOLETO' | 'PIX';
@@ -52,15 +52,25 @@ export default function BillingUpgradePage() {
       toast.error('Informe seu CPF ou CNPJ para continuar.');
       return;
     }
+    // Antes da chamada, não depois: daqui em diante a pessoa sai do NixVet
+    // para o checkout do Asaas, e uma falha de rede no meio deixaria a
+    // intenção de assinar sem nenhum registro. `begin_checkout` é intenção —
+    // quem paga de fato vira `purchase`, e esse sai do webhook do Asaas no
+    // backend (NixVet-BE `billing.service.ts`), nunca daqui: PIX e boleto
+    // levam o cliente ao checkout e ele pode nunca concluir.
+    trackEvent(GA_EVENTS.BEGIN_CHECKOUT, {
+      plan: selectedPlan,
+      value: PLAN_BY_ID[selectedPlan]?.price ?? 0,
+      currency: 'BRL',
+      forma: billingType,
+    });
+
     try {
       const data = await activateMutation.mutateAsync({
         plan: selectedPlan,
         billingType,
         cpfCnpj: cpfCnpj.replace(/\D/g, ''),
       });
-      // Conversão: a assinatura foi criada no provedor. É "iniciada", não
-      // "paga" — o pagamento só se confirma no webhook, depois do checkout.
-      trackEvent('subscription_started', { plano: selectedPlan, forma: billingType });
 
       const paymentUrl = data?.paymentUrl ?? null;
       if (paymentUrl) {

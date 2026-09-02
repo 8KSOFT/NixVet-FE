@@ -46,6 +46,32 @@ export function writeConsent(valor: Exclude<ConsentState, null>): void {
 }
 
 /**
+ * Nomes dos eventos GA4 do funil, num lugar só.
+ *
+ * Estão aqui porque metade deles não é disparada por este arquivo: os três
+ * últimos saem do backend, pelo Measurement Protocol
+ * (`NixVet-BE/src/common/analytics/ga4.service.ts`). Um nome divergente entre
+ * os dois lados não dá erro em lugar nenhum — só produz um evento órfão no
+ * relatório, que ninguém percebe até a análise não fechar.
+ *
+ * | Evento             | Onde dispara | Parâmetros                        |
+ * |--------------------|--------------|-----------------------------------|
+ * | `sign_up_start`    | front        | `origem` (qual CTA)               |
+ * | `sign_up_complete` | front        | `tenant_id`                       |
+ * | `onboarding_step`  | front        | `step_name`, `step_number`        |
+ * | `begin_checkout`   | front        | `plan`, `value`, `currency`, `forma` |
+ * | `feature_activated`| backend      | `feature`                         |
+ * | `purchase`         | backend      | `plan`, `value`, `currency`, `transaction_id` |
+ * | `week_active`      | backend      | `week_start`, `logins`, `actions` |
+ */
+export const GA_EVENTS = {
+  SIGN_UP_START: 'sign_up_start',
+  SIGN_UP_COMPLETE: 'sign_up_complete',
+  ONBOARDING_STEP: 'onboarding_step',
+  BEGIN_CHECKOUT: 'begin_checkout',
+} as const;
+
+/**
  * Dispara um evento de conversão, se e somente se houver consentimento.
  *
  * A checagem mora aqui, e não em cada ponto de chamada, porque um único
