@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { GA_EVENTS, trackEvent } from '@/lib/analytics';
+import { GA_EVENTS, readGaClientId, trackEvent } from '@/lib/analytics';
 import { useRouter } from 'next/navigation';
 import { CheckCircle2, Circle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -70,6 +70,7 @@ export default function BillingUpgradePage() {
         plan: selectedPlan,
         billingType,
         cpfCnpj: cpfCnpj.replace(/\D/g, ''),
+        gaClientId: readGaClientId() ?? undefined,
       });
 
       const paymentUrl = data?.paymentUrl ?? null;

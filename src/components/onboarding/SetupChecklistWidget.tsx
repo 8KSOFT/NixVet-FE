@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { CheckCircle2, Circle, ChevronUp, ClipboardCheck, Star, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { GA_EVENTS, trackEvent } from '@/lib/analytics';
 import { getStoredUserRole } from '@/lib/role-permissions';
 import { useStaffUsersListQuery } from '@/hooks/apiHooks/useUsers';
 import { useVetSchedulesQuery } from '@/hooks/apiHooks/useAvailabilityConfig';
@@ -40,6 +41,22 @@ function readStoredUserId(): string | null {
     return null;
   }
 }
+
+/**
+ * Nome de cada item no relatório — desacoplado do `key` interno e do `label`
+ * da tela pelo mesmo motivo do wizard de cadastro: rótulo é texto de
+ * interface e vai mudar; nome de evento é chave de série histórica.
+ */
+const CHECKLIST_STEP_NAMES: Record<string, string> = {
+  team: 'equipe',
+  'vet-schedules': 'agenda_veterinarios',
+  resources: 'salas_equipamentos',
+  'health-plans': 'convenios',
+  branding: 'identidade_visual',
+  whatsapp: 'whatsapp_ia',
+  'google-calendar': 'google_agenda',
+  'term-templates': 'modelos_termo',
+};
 
 const CELEBRATION_COLORS = ['#12b37f', '#0e8f66', '#d4af37', '#c2417a', '#2563eb', '#fb8a2e'];
 
@@ -168,6 +185,15 @@ export function SetupChecklistWidget() {
   const [celebrated, setCelebrated] = useState(true);
   const [celebrating, setCelebrating] = useState(false);
   const prevPercentRef = useRef<number | null>(null);
+
+  /**
+   * Itens já concluídos na última leitura. `null` enquanto as consultas não
+   * responderam — é o que separa "acabou de concluir" de "já estava concluído
+   * quando a tela abriu". Sem essa distinção, todo login de uma clínica com a
+   * configuração adiantada mandaria a lista inteira de novo, e a métrica
+   * viraria contagem de logins.
+   */
+  const itensConcluidosRef = useRef<Set<string> | null>(null);
 
   // Pill do desktop é "arrastável só de brincadeira": solta e ela volta
   // sozinha pro canto — dá pra afastar um instante pra ver o que tem
@@ -298,6 +324,56 @@ export function SetupChecklistWidget() {
 
   const doneCount = items.filter((i) => i.done).length;
   const percent = items.length ? Math.round((doneCount / items.length) * 100) : 0;
+
+  // Chave estável da lista de concluídos: o array `items` é recriado a cada
+  // render (é montado no corpo do componente), então usá-lo como dependência
+  // do efeito abaixo o dispararia sem parar.
+  const chaveConcluidos = items
+    .filter((i) => i.done)
+    .map((i) => i.key)
+    .sort()
+    .join(',');
+
+  /**
+   * Cada item que vira "concluído" com o widget na tela é uma etapa de
+   * onboarding cumprida.
+   *
+   * Aqui não há botão de "concluir" para medir: o item fica verde porque uma
+   * consulta passou a devolver dado — a pessoa cadastrou um veterinário em
+   * Configurações e o react-query invalidou a lista. Como este widget vive no
+   * layout de `(app)/`, ele continua montado durante essa navegação, e a
+   * virada acontece com ele observando.
+   *
+   * A consequência disso é o que a comparação abaixo protege: quem já tinha o
+   * item pronto antes de abrir a tela não gera evento nenhum, porque nunca
+   * houve virada para observar. O evento mede conclusão, não presença.
+   */
+  useEffect(() => {
+    if (!visible || loading) return;
+
+    const concluidosAgora = new Set(
+      items.filter((i) => i.done).map((i) => i.key),
+    );
+    const anteriores = itensConcluidosRef.current;
+    itensConcluidosRef.current = concluidosAgora;
+
+    // Primeira leitura da sessão: é fotografia do estado, não transição.
+    if (anteriores === null) return;
+
+    for (const key of concluidosAgora) {
+      if (anteriores.has(key)) continue;
+      trackEvent(GA_EVENTS.ONBOARDING_STEP, {
+        step_name: CHECKLIST_STEP_NAMES[key] ?? key,
+        // Separa estes do wizard de cadastro. Sem isso os dois grupos caem no
+        // mesmo relatório e a etapa obrigatória fica lado a lado com a
+        // opcional, como se fossem o mesmo funil.
+        step_group: 'checklist',
+      });
+    }
+    // `items` fora das dependências de propósito — é recriado a cada render.
+    // `chaveConcluidos` representa exatamente a parte dele que importa aqui.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chaveConcluidos, loading, visible]);
 
   // Dispara a celebração só quando OBSERVA a virada de <100% pra 100% durante
   // a sessão. Se já chegar 100% no primeiro carregamento (ex.: clínica que já

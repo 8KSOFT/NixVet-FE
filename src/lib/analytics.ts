@@ -58,8 +58,16 @@ export function writeConsent(valor: Exclude<ConsentState, null>): void {
  * |--------------------|--------------|-----------------------------------|
  * | `sign_up_start`    | front        | `origem` (qual CTA)               |
  * | `sign_up_complete` | front        | `tenant_id`                       |
- * | `onboarding_step`  | front        | `step_name`, `step_number`        |
+ * | `onboarding_step`  | front        | `step_name`, `step_group`, `step_number` |
  * | `begin_checkout`   | front        | `plan`, `value`, `currency`, `forma` |
+ *
+ * `step_group` separa dois funis que compartilham o evento: `cadastro` (as 6
+ * etapas obrigatórias de `/register`) e `checklist` (os 8 itens opcionais do
+ * `SetupChecklistWidget`, dentro do app).
+ *
+ * Todos os eventos de backend carregam `tenant_id` automaticamente, e o
+ * `client_id` deles sai de `tenants.ga_client_id` — o cookie `_ga` que
+ * `readGaClientId()` copia daqui no cadastro e no checkout.
  * | `feature_activated`| backend      | `feature`                         |
  * | `purchase`         | backend      | `plan`, `value`, `currency`, `transaction_id` |
  * | `week_active`      | backend      | `week_start`, `logins`, `actions` |
@@ -70,6 +78,50 @@ export const GA_EVENTS = {
   ONBOARDING_STEP: 'onboarding_step',
   BEGIN_CHECKOUT: 'begin_checkout',
 } as const;
+
+/**
+ * `client_id` do GA4 desta visita, lido do cookie `_ga`.
+ *
+ * Serve para mandar ao backend nos dois pontos em que a clínica se identifica
+ * (cadastro e início do checkout). Os eventos que o servidor dispara depois —
+ * `purchase` no webhook do Asaas, `week_active` no cron, `feature_activated`
+ * no primeiro prontuário — nascem onde não há navegador nenhum; sem este
+ * valor guardado eles abrem sessão própria de origem `(direct)` e a receita
+ * nunca volta para a campanha que trouxe o cadastro.
+ *
+ * O cookie tem a forma `GA1.1.<client_id>`, onde o `client_id` são os dois
+ * últimos trechos (`1234567890.1699999999`) — é isso, e não o cookie inteiro,
+ * que o Measurement Protocol espera.
+ *
+ * Devolve `null` quando não há consentimento: sem o "Aceitar" o script do
+ * Google nem carrega, então o cookie não existe. A checagem explícita está
+ * aqui de qualquer forma — este valor sai da máquina do usuário para o nosso
+ * servidor, e quem recusou medição não manda identificador de medição a
+ * lugar nenhum.
+ */
+export function readGaClientId(): string | null {
+  if (typeof document === 'undefined') return null;
+  if (readConsent() !== 'granted') return null;
+  try {
+    const bruto = document.cookie
+      .split('; ')
+      .find((c) => c.startsWith('_ga='))
+      ?.slice('_ga='.length);
+    if (!bruto) return null;
+
+    const partes = bruto.split('.');
+    if (partes.length < 4) return null;
+    const clientId = partes.slice(-2).join('.');
+
+    // O backend recusa qualquer coisa fora deste formato; conferir aqui evita
+    // mandar uma requisição que já se sabe que vai voltar 400 e derrubar um
+    // cadastro por causa de medição.
+    return /^\d{1,20}\.\d{1,20}$/.test(clientId) ? clientId : null;
+  } catch {
+    // Cookies bloqueados. Medição é acessório: segue sem.
+    return null;
+  }
+}
 
 /**
  * Dispara um evento de conversão, se e somente se houver consentimento.

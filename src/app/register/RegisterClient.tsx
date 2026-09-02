@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import TurnstileWidget from '@/components/security/TurnstileWidget';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { GA_EVENTS, trackEvent } from '@/lib/analytics';
+import { GA_EVENTS, readGaClientId, trackEvent } from '@/lib/analytics';
 import {
   Building2,
   User,
@@ -531,6 +531,10 @@ export default function RegisterClient() {
       trackEvent(GA_EVENTS.ONBOARDING_STEP, {
         step_name: ONBOARDING_STEP_NAMES[numero],
         step_number: numero,
+        // O checklist opcional de dentro do app manda o mesmo evento com
+        // `step_group: 'checklist'` — sem este rótulo os dois funis, um
+        // obrigatório e um opcional, viram um só no relatório.
+        step_group: 'cadastro',
       });
     }
     setStep(numero + 1);
@@ -576,6 +580,13 @@ export default function RegisterClient() {
             adminPassword,
             cpfCnpj: cpfCnpj.replace(/\D/g, ''),
             phone: phone.replace(/\D/g, ''),
+            // Aqui, e não depois: este é o único momento em que o navegador
+            // que trouxe a clínica está presente E a clínica passa a existir.
+            // O backend guarda em `tenants.ga_client_id` e usa nos eventos
+            // que dispara sozinho (purchase, week_active, feature_activated).
+            // `undefined` quando não houve aceite de cookies — o campo é
+            // opcional no backend justamente por isso.
+            gaClientId: readGaClientId() ?? undefined,
           }),
         });
 
@@ -678,6 +689,7 @@ export default function RegisterClient() {
         trackEvent(GA_EVENTS.ONBOARDING_STEP, {
           step_name: ONBOARDING_STEP_NAMES[6],
           step_number: 6,
+          step_group: 'cadastro',
         });
       }
 
