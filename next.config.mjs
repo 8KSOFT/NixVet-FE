@@ -11,6 +11,67 @@ const nextConfig = {
       { source: '/team/:path*', destination: '/settings/team/:path*', permanent: false },
     ];
   },
+  async headers() {
+    // O `helmet` do backend cobre as respostas da API. O documento HTML — que é
+    // onde script injetado executaria — saía sem defesa nenhuma.
+    //
+    // Os cinco primeiros são seguros de ligar direto: não dependem de conhecer
+    // toda a origem de conteúdo da página.
+    const base = [
+      {
+        // 2 anos, subdomínios inclusos. Cada clínica atende num subdomínio, e é
+        // deles que o cookie de sessão precisa que ninguém chegue por http.
+        key: 'Strict-Transport-Security',
+        value: 'max-age=63072000; includeSubDomains',
+      },
+      { key: 'X-Frame-Options', value: 'DENY' },
+      { key: 'X-Content-Type-Options', value: 'nosniff' },
+      { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+      {
+        // A aplicação não usa nenhum destes. Negar explicitamente evita que um
+        // script de terceiro peça permissão em nome da página.
+        key: 'Permissions-Policy',
+        value: 'camera=(), microphone=(), geolocation=(), payment=(), usb=()',
+      },
+    ];
+
+    // A CSP vai em modo relatório, não em modo bloqueio, e de propósito.
+    //
+    // A página carrega Turnstile e GA4, e exibe foto de paciente por URL
+    // pré-assinada do object storage — cujo host varia com o provedor
+    // configurado no ambiente. Publicar uma CSP restritiva sem essa lista
+    // fechada quebraria imagem de prontuário em produção, e o sintoma seria
+    // "a foto sumiu", não um erro de segurança que alguém investigasse.
+    //
+    // Em Report-Only o navegador reporta o que teria bloqueado sem bloquear.
+    // Depois de uma semana de relatório limpo, trocar a chave por
+    // `Content-Security-Policy` liga a proteção de verdade.
+    const csp = [
+      "default-src 'self'",
+      // 'unsafe-inline' e 'unsafe-eval': o Next injeta script inline de
+      // hidratação. Remover exige nonce por request, que é o passo seguinte.
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://www.googletagmanager.com",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: blob: https:",
+      "font-src 'self' data:",
+      "connect-src 'self' https://*.nixvetapp.com.br https://www.google-analytics.com https://challenges.cloudflare.com",
+      "frame-src https://challenges.cloudflare.com",
+      "frame-ancestors 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "object-src 'none'",
+    ].join('; ');
+
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          ...base,
+          { key: 'Content-Security-Policy-Report-Only', value: csp },
+        ],
+      },
+    ];
+  },
   async rewrites() {
     // Proxy same-origin para a API. O upload de imagem usa o caminho relativo
     // `/api/...` em vez do host da API: assim o navegador fala só com a origem

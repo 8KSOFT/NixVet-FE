@@ -39,11 +39,17 @@ ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
 # Arquivos gerados pelo output: standalone
-COPY --from=builder /app/.next/standalone ./
+COPY --from=builder --chown=node:node /app/.next/standalone ./
 # Assets estáticos (JS/CSS do cliente)
-COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder --chown=node:node /app/.next/static ./.next/static
 # Arquivos públicos (favicon, imagens etc.)
-COPY --from=builder /app/public ./public
+COPY --from=builder --chown=node:node /app/public ./public
+
+# Roda como o usuário `node` (uid 1000) em vez de root. O `--chown` acima existe
+# porque o servidor do Next grava em `.next/cache` em tempo de execução
+# (otimização de imagem e revalidação); sem a posse, o processo sobe e falha só
+# na primeira imagem otimizada.
+USER node
 
 EXPOSE 3000
 
