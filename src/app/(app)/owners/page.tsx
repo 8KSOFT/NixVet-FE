@@ -39,6 +39,7 @@ import {
   tutorKeys,
 } from '@/hooks/apiHooks/useTutors';
 import { usePatientsListQuery } from '@/hooks/apiHooks/usePatients';
+import { useHasPermission } from '@/hooks/useHasPermission';
 import { ProfilePhoto, ProfilePhotoUploader } from '@/components/shared/profile-photo';
 import { cn } from '@/lib/utils';
 
@@ -100,6 +101,10 @@ const formatCpfDisplay = (text: string) => {
 function OwnerPetsList({ tutorId }: { tutorId: string }) {
   const { t } = useTranslation('common');
   const { data: pets, isLoading } = usePatientsListQuery(tutorId);
+  // Responsáveis é uma das telas da recepção, e o prontuário do pet exige
+  // `medical_records.read`, que ela não tem: o atalho levava direto a uma tela
+  // que agora responde 403 em cada uma das buscas que ela faz.
+  const podeVerProntuario = useHasPermission('medical_records.read');
 
   if (isLoading) {
     return (
@@ -127,9 +132,11 @@ function OwnerPetsList({ tutorId }: { tutorId: string }) {
               </p>
             </div>
           </div>
-          <Button variant="outline" size="sm" className="shrink-0" asChild>
-            <Link href={`/medical-records/prontuario/${pet.id}`}>{t('owners.pets.viewRecord')}</Link>
-          </Button>
+          {podeVerProntuario && (
+            <Button variant="outline" size="sm" className="shrink-0" asChild>
+              <Link href={`/medical-records/prontuario/${pet.id}`}>{t('owners.pets.viewRecord')}</Link>
+            </Button>
+          )}
         </li>
       ))}
     </ul>

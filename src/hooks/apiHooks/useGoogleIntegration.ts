@@ -16,8 +16,9 @@ export const googleIntegrationKeys = {
   events: (from: string, to: string) => [...googleIntegrationKeys.all, 'events', { from, to }] as const,
 };
 
-export function useGoogleStatusQuery() {
+export function useGoogleStatusQuery(enabled = true) {
   return useQuery({
+    enabled,
     queryKey: googleIntegrationKeys.status(),
     queryFn: async () => {
       const { data } = await api.get<GoogleIntegrationStatus>('/integrations/google/status');

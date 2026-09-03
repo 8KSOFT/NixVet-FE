@@ -10,9 +10,16 @@ export const healthPlanKeys = {
   list: (includeInactive: boolean) => [...healthPlanKeys.lists(), { includeInactive }] as const,
 };
 
-/** Lista de convênios/planos de saúde — usada em filtros e selects. */
-export function useHealthPlansListQuery() {
+/**
+ * Lista de convênios/planos de saúde — usada em filtros e selects.
+ *
+ * `GET /health-plans` exige `health_plans.read`, que só admin e gestor têm:
+ * veterinário, recepção e estagiário levam 403. Quem chama de tela
+ * compartilhada precisa passar `enabled` (ver `useHasPermission`).
+ */
+export function useHealthPlansListQuery(enabled = true) {
   return useQuery({
+    enabled,
     queryKey: healthPlanKeys.lists(),
     queryFn: async () => {
       const { data } = await api.get('/health-plans', { params: { limit: 200 } });

@@ -70,11 +70,19 @@ export function useVeterinariansQuery() {
   });
 }
 
-/** Lista completa da equipe (staff) — usada como fallback quando a lista de veterinários vem vazia. */
-export function useStaffUsersListQuery() {
+/**
+ * Lista completa da equipe (staff) — usada como fallback quando a lista de
+ * veterinários vem vazia.
+ *
+ * `GET /users/staff` exige `users.read`, que só admin e gestor têm: veterinário,
+ * recepção e estagiário levam 403. Quem chama de tela compartilhada precisa
+ * passar `enabled` (ver `useHasPermission('users.read')`).
+ */
+export function useStaffUsersListQuery(enabled = true) {
   return useQuery({
     queryKey: userKeys.staffListAll(),
     queryFn: () => fetchAllListPages<TeamUserRow>('/users/staff'),
+    enabled,
   });
 }
 

@@ -253,13 +253,19 @@ export function SetupChecklistWidget() {
     setVisible(allowedRole);
   }, []);
 
-  const staffQuery = useStaffUsersListQuery();
-  const vetSchedulesQuery = useVetSchedulesQuery();
-  const resourcesQuery = useResourcesListQuery();
-  const healthPlansQuery = useHealthPlansListQuery();
-  const tenantQuery = useTenantMeQuery();
-  const googleStatusQuery = useGoogleStatusQuery();
-  const termTemplatesQuery = useClinicTermTemplatesQuery();
+  // O widget é montado pelo layout de `(app)`, ou seja em TODA rota
+  // autenticada — mas só admin e gestor o enxergam (`visible`). Sem amarrar as
+  // buscas à mesma condição, veterinário, recepção e estagiário disparavam as
+  // sete requisições a cada carregamento de página sem nada aparecer na tela;
+  // duas delas (`/users/staff` → `users.read`, `/health-plans` →
+  // `health_plans.read`) agora voltam 403 com o RBAC granular ligado.
+  const staffQuery = useStaffUsersListQuery(visible);
+  const vetSchedulesQuery = useVetSchedulesQuery(visible);
+  const resourcesQuery = useResourcesListQuery(visible);
+  const healthPlansQuery = useHealthPlansListQuery(visible);
+  const tenantQuery = useTenantMeQuery(visible);
+  const googleStatusQuery = useGoogleStatusQuery(visible);
+  const termTemplatesQuery = useClinicTermTemplatesQuery(visible);
 
   const loading =
     staffQuery.isLoading ||

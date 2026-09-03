@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2, ChevronLeft, BookOpen, FlaskConical, ClipboardList, FileText } from 'lucide-react';
 import Link from 'next/link';
 import { patientKeys, usePatientQuery, usePatientTimelineQuery } from '@/hooks/apiHooks/usePatients';
+import { useHasPermission } from '@/hooks/useHasPermission';
 import { ProfilePhotoUploader } from '@/components/shared/profile-photo';
 
 const RECORD_TYPE_LABEL_KEYS: Record<string, string> = {
@@ -77,6 +78,10 @@ export default function PatientDetailPage() {
   const id = typeof params?.id === 'string' ? params.id : '';
   const { data: patient, isLoading: loadingPatient } = usePatientQuery(id);
   const { data: events = [] } = usePatientTimelineQuery(id);
+  // A recepção chega nesta tela (Pacientes é dela), mas não tem
+  // `medical_records.read` — o atalho para os prontuários levava a uma tela de
+  // 403. A linha do tempo em si vem de `/patients/:id/timeline`, que ela pode ler.
+  const podeVerProntuario = useHasPermission('medical_records.read');
   const loading = loadingPatient;
 
   if (loading) {
@@ -131,11 +136,13 @@ export default function PatientDetailPage() {
             />
             <CardTitle className="text-foreground">{patient.name}</CardTitle>
           </div>
-          <Button asChild size="sm" className="w-full bg-primary hover:bg-blue-700 sm:w-auto">
-            <Link href={`/medical-records?patient=${id}`}>
-              <FileText className="w-4 h-4 mr-1" /> {t('patientDetail.recordsButton')}
-            </Link>
-          </Button>
+          {podeVerProntuario && (
+            <Button asChild size="sm" className="w-full bg-primary hover:bg-blue-700 sm:w-auto">
+              <Link href={`/medical-records?patient=${id}`}>
+                <FileText className="w-4 h-4 mr-1" /> {t('patientDetail.recordsButton')}
+              </Link>
+            </Button>
+          )}
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">

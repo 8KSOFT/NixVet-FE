@@ -67,8 +67,9 @@ export function useCreateEmergencyHourMutation() {
   });
 }
 
-export function useVetSchedulesQuery() {
+export function useVetSchedulesQuery(enabled = true) {
   return useQuery({
+    enabled,
     queryKey: availabilityKeys.vetSchedules(),
     queryFn: async () => {
       const { data } = await api.get<VetSchedule[]>('/availability/config/veterinarian-schedules');

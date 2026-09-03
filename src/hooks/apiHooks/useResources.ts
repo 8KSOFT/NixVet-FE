@@ -12,10 +12,11 @@ export const resourceKeys = {
 };
 
 /** Lista completa de recursos físicos (salas, equipamentos) — usada no agendamento. */
-export function useResourcesListQuery() {
+export function useResourcesListQuery(enabled = true) {
   return useQuery({
     queryKey: resourceKeys.lists(),
     queryFn: () => fetchAllListPages<Resource>('/resources'),
+    enabled,
   });
 }
 

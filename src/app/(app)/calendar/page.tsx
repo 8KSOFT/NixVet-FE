@@ -72,6 +72,7 @@ import { useResourcesListQuery } from '@/hooks/apiHooks/useResources';
 import { useAppointmentTypesQuery } from '@/hooks/apiHooks/useAppointmentTypes';
 import { useGoogleStatusQuery, useGoogleEventsQuery } from '@/hooks/apiHooks/useGoogleIntegration';
 import { useAwaitingFollowupsQuery } from '@/hooks/apiHooks/useExamFollowups';
+import { useHasPermission } from '@/hooks/useHasPermission';
 import { useSummarizeMutation, useStructureObservationsMutation } from '@/hooks/apiHooks/useAi';
 
 function getApiErrorMessage(error: unknown, fallbackMessage: string): string {
@@ -234,7 +235,14 @@ function CalendarContent() {
   const { data: veterinarians = [] } = useVeterinariansQuery();
   const { data: resources = [] } = useResourcesListQuery();
   const { data: appointmentTypes = [] } = useAppointmentTypesQuery();
-  const { data: awaitingFollowups } = useAwaitingFollowupsQuery(1);
+  // A agenda é uma das poucas telas que a recepção compartilha com a equipe
+  // clínica, e o aviso de exames aguardando retorno é dado clínico: a recepção
+  // não tem "Acompanhamentos" no menu nem `exam_requests.read` no backend, que
+  // agora responde 403. Sem este gate ela levava um 403 por abertura da agenda.
+  const podeVerAcompanhamentos = useHasPermission('exam_requests.read');
+  const podeVerProntuarios = useHasPermission('medical_records.read');
+  const podeIniciarAtendimento = useHasPermission('medical_records.write');
+  const { data: awaitingFollowups } = useAwaitingFollowupsQuery(1, podeVerAcompanhamentos);
   const awaitingFollowupsCount = awaitingFollowups?.total ?? 0;
 
   const { data: googleStatus } = useGoogleStatusQuery();
@@ -1751,7 +1759,7 @@ function CalendarContent() {
 
                 {/* Actions */}
                 <div className="pt-2 border-t flex flex-wrap gap-2">
-                  {selectedConsultation?.patient?.id && (
+                  {selectedConsultation?.patient?.id && podeIniciarAtendimento && (
                     <Button
                       size="sm"
                       className="gap-1.5 bg-primary"
@@ -1769,7 +1777,7 @@ function CalendarContent() {
                       {t('calendar.details.startAttendance')}
                     </Button>
                   )}
-                  {selectedConsultation?.patient?.id && (
+                  {selectedConsultation?.patient?.id && podeVerProntuarios && (
                     <Button
                       variant="outline"
                       size="sm"

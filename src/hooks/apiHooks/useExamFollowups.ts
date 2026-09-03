@@ -13,7 +13,12 @@ export const examFollowupKeys = {
   awaiting: (page: number) => [...examFollowupKeys.all, 'awaiting', { page }] as const,
 };
 
-export function useAwaitingFollowupsQuery(page: number) {
+/**
+ * `GET /exam-followups/awaiting-followup` exige `exam_requests.read` — a
+ * recepção não tem (e nem enxerga "Acompanhamentos" no menu). Telas que a
+ * recepção alcança, como a agenda, precisam passar `enabled`.
+ */
+export function useAwaitingFollowupsQuery(page: number, enabled = true) {
   return useQuery({
     queryKey: examFollowupKeys.awaiting(page),
     queryFn: async () => {
@@ -21,6 +26,7 @@ export function useAwaitingFollowupsQuery(page: number) {
       return parseListResponse<ExamFollowup>(data, page);
     },
     placeholderData: keepPreviousData,
+    enabled,
   });
 }
 

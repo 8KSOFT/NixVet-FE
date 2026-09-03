@@ -12,8 +12,9 @@ export const clinicTermTemplateKeys = {
   all: ['clinic-term-templates'] as const,
 };
 
-export function useClinicTermTemplatesQuery() {
+export function useClinicTermTemplatesQuery(enabled = true) {
   return useQuery({
+    enabled,
     queryKey: clinicTermTemplateKeys.all,
     queryFn: async () => {
       const { data } = await api.get<ClinicTermTemplate[]>('/clinic-term-templates');

@@ -51,6 +51,7 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { useHasPermission } from '@/hooks/useHasPermission';
 
 const NO_TUTOR_REASON_LABEL_KEYS: Record<string, string> = {
   EMERGENCIA: 'patients.noTutorReason.emergencia',
@@ -139,6 +140,12 @@ function PatientsContent() {
   const patients = patientsPage?.items ?? [];
   const listTotal = patientsPage?.total ?? 0;
   const listTotalPages = patientsPage?.totalPages ?? 1;
+
+  // Pacientes é tela compartilhada com a recepção, que não tem
+  // `medical_records.read`: o prontuário responde 403 para ela desde que o
+  // RBAC granular passou a valer. (O modo "iniciar atendimento" já não a
+  // alcança — o item do menu "+ Novo" é filtrado pela chave `medical-records`.)
+  const podeVerProntuario = useHasPermission('medical_records.read');
 
   const { data: tutors = [] } = useTutorsListQuery();
   const { data: speciesOptions = [] } = useSupportOptionsQuery('ANIMAL_ESPECIE');
@@ -269,8 +276,12 @@ function PatientsContent() {
         const created = await createPatient.mutateAsync(payload);
         setModalVisible(false);
         // Fluxo de criação rápida: paciente novo já nasce com um destino —
-        // vai direto para o prontuário em vez de ficar na lista.
-        router.push(`/medical-records/prontuario/${created.id}`);
+        // vai direto para o prontuário em vez de ficar na lista. Menos para
+        // quem não tem `medical_records.read` (recepção): cadastrar paciente é
+        // rotina dela, e o destino responderia 403 em cada busca da tela.
+        if (podeVerProntuario) {
+          router.push(`/medical-records/prontuario/${created.id}`);
+        }
       }
     } catch (error) {
       console.error('Error saving patient:', error);

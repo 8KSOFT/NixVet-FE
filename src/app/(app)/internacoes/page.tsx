@@ -29,6 +29,7 @@ import {
 import { usePatientsListQuery } from '@/hooks/apiHooks/usePatients';
 import { useStaffUsersListQuery, useVeterinariansQuery } from '@/hooks/apiHooks/useUsers';
 import { useHealthPlansListQuery } from '@/hooks/apiHooks/useHealthPlans';
+import { useHasPermission } from '@/hooks/useHasPermission';
 
 function daysInternado(admissionDate: string): number {
   const ms = Date.now() - new Date(admissionDate).getTime();
@@ -97,10 +98,20 @@ function InternacoesPageContent() {
   const loading = loadingActive || loadingAll;
 
   const { data: patients = [] } = usePatientsListQuery();
-  const { data: veterinarians = [] } = useVeterinariansQuery();
-  const { data: staffUsers = [] } = useStaffUsersListQuery();
+  const vetsQuery = useVeterinariansQuery();
+  const veterinarians = vetsQuery.data ?? [];
+
+  // Internações está no menu do veterinário, mas `/users/staff` exige
+  // `users.read` e `/health-plans` exige `health_plans.read` — chaves que só
+  // admin e gestor têm. A lista de equipe aqui é só o plano B de quando
+  // `/users/veterinarians` (rota sem `@Permissions`) volta vazia: agora ela só
+  // é buscada quando esse plano B é mesmo necessário e o papel a alcança.
+  const podeLerEquipe = useHasPermission('users.read');
+  const podeLerPlanos = useHasPermission('health_plans.read');
+  const precisaFallbackEquipe = vetsQuery.isSuccess && veterinarians.length === 0;
+  const { data: staffUsers = [] } = useStaffUsersListQuery(precisaFallbackEquipe && podeLerEquipe);
   const users = veterinarians.length > 0 ? veterinarians : staffUsers;
-  const { data: healthPlans = [] } = useHealthPlansListQuery();
+  const { data: healthPlans = [] } = useHealthPlansListQuery(podeLerPlanos);
 
   const createHospitalization = useCreateHospitalizationMutation();
 
