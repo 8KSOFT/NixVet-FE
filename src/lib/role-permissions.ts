@@ -109,7 +109,16 @@ const MENU_BY_ROLE: Record<string, readonly string[]> = {
     'balcao',
     'help',
   ],
-  intern: ['dashboard', 'patients', 'owners', 'calendar', 'vaccines', 'tasks', 'help'],
+  intern: [
+    'dashboard',
+    'patients',
+    'owners',
+    'calendar',
+    'vaccines',
+    'tasks',
+    'hospitalizations',
+    'help',
+  ],
   veterinarian: [
     'dashboard',
     'patients',
@@ -123,6 +132,7 @@ const MENU_BY_ROLE: Record<string, readonly string[]> = {
     'tasks',
     'whatsapp',
     'medical-records',
+    'hospitalizations',
     'help',
   ],
 };
