@@ -19,7 +19,6 @@ import {
 } from '@/components/ui/tooltip';
 import {
   useReminderSettingsQuery,
-  useSystemReminderDefaultsQuery,
   useSaveReminderSettingsMutation,
   useResetReminderSettingsMutation,
 } from '@/hooks/apiHooks/useReminderSettings';
@@ -59,7 +58,6 @@ export default function RemindersSettingsPage() {
   const [settings, setSettings] = useState<ReminderSettings | null>(null);
 
   const { data: effective, isLoading: loading } = useReminderSettingsQuery();
-  const { data: systemDefaults } = useSystemReminderDefaultsQuery();
   const saveMutation = useSaveReminderSettingsMutation();
   const resetMutation = useResetReminderSettingsMutation();
   const saving = saveMutation.isPending;
@@ -237,16 +235,6 @@ export default function RemindersSettingsPage() {
           </div>
         </CardContent>
       </Card>
-
-      {systemDefaults && (
-        <p className="text-xs text-muted-foreground">
-          {t('settingsReminders.systemDefault', {
-            confirmation: systemDefaults.confirmation_hours_before,
-            reminder: systemDefaults.reminder_hours_before,
-            followUp: systemDefaults.follow_up_hours_after,
-          })}
-        </p>
-      )}
 
       <Separator />
 

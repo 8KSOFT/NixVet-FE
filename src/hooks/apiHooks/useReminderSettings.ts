@@ -7,7 +7,6 @@ import type { ReminderSettings } from '@/app/types/reminder-settings';
 export const reminderSettingsKeys = {
   all: ['reminder-settings'] as const,
   effective: () => [...reminderSettingsKeys.all, 'effective'] as const,
-  system: () => [...reminderSettingsKeys.all, 'system'] as const,
 };
 
 export function useReminderSettingsQuery() {
@@ -15,16 +14,6 @@ export function useReminderSettingsQuery() {
     queryKey: reminderSettingsKeys.effective(),
     queryFn: async () => {
       const { data } = await api.get<ReminderSettings>('/settings/reminders');
-      return data;
-    },
-  });
-}
-
-export function useSystemReminderDefaultsQuery() {
-  return useQuery({
-    queryKey: reminderSettingsKeys.system(),
-    queryFn: async () => {
-      const { data } = await api.get<ReminderSettings>('/settings/reminders/system');
       return data;
     },
   });
