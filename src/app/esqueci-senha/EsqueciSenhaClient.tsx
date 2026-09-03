@@ -87,6 +87,11 @@ export default function EsqueciSenhaClient() {
         return;
       }
       toast.success('Se o e-mail estiver cadastrado, você receberá um código.');
+      // Token de Turnstile é de uso único: o que validou o pedido já foi
+      // gasto. Zerar aqui evita mandar um token queimado na confirmação e
+      // levar "não foi possível confirmar que você não é um robô" sem motivo
+      // aparente — o widget do passo 2 monta e entrega um novo.
+      setTurnstileToken(null);
       setStep('confirm');
     } catch {
       toast.error('Não foi possível conectar ao servidor.');
@@ -108,6 +113,7 @@ export default function EsqueciSenhaClient() {
         code: code.trim(),
         password,
         tenantCode: resolvedCode,
+        turnstileToken,
       });
       if (!ok) {
         toast.error(apiMessage(data, 'Não foi possível redefinir a senha.'));
@@ -211,6 +217,7 @@ export default function EsqueciSenhaClient() {
                 required
               />
             </div>
+            <TurnstileWidget onToken={setTurnstileToken} className="mb-3 flex justify-center" />
             <Button type="submit" className="w-full rounded-full" disabled={loading}>
               {loading && <Loader2 className="mr-1 size-4 animate-spin" />}
               Redefinir senha
