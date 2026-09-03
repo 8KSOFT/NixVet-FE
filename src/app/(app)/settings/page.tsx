@@ -49,7 +49,9 @@ interface ClinicFormValues {
   logoUrl: string;
   primaryColor: string;
   subdomain: string;
-  customDomain: string;
+  // `customDomain` não entra no formulário: o campo é somente-leitura na tela
+  // (configurado pelo suporte, porque depende de DNS e certificado). Deixá-lo
+  // aqui criaria campo órfão — registrado, enviado e ignorado pela API.
   cep: string;
   street: string;
   number: string;
@@ -198,7 +200,6 @@ export default function SettingsPage() {
     setValue('logoUrl', data.logo_url ?? '');
     setValue('primaryColor', data.primary_color ?? '');
     setValue('subdomain', data.subdomain ?? '');
-    setValue('customDomain', data.custom_domain ?? '');
     setValue('cep', formatCepMask(data.cep) ?? '');
     setValue('street', street);
     setValue('number', number);
@@ -258,7 +259,6 @@ export default function SettingsPage() {
         logo_url: values.logoUrl,
         primary_color: values.primaryColor,
         subdomain: values.subdomain,
-        custom_domain: values.customDomain,
         address: fullAddress,
         cep: values.cep,
       });
@@ -417,9 +417,23 @@ export default function SettingsPage() {
                     <Input {...register('subdomain')} placeholder="vixen" />
                   </div>
                 </div>
+                {/*
+                  Somente-leitura de propósito. O domínio próprio depende de
+                  apontamento de DNS e emissão de certificado, então quem
+                  configura é o suporte — e um campo editável aqui salvava,
+                  dizia "sucesso" e voltava ao valor antigo no recarregamento.
+                */}
                 <div className="flex flex-col gap-2">
                   <Label>{t('settingsHub.clinic.customDomain')}</Label>
-                  <Input {...register('customDomain')} placeholder="app.empresa.com.br" />
+                  <Input
+                    value={tenantMe?.custom_domain ?? ''}
+                    placeholder={t('settingsHub.clinic.customDomainEmpty')}
+                    readOnly
+                    disabled
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {t('settingsHub.clinic.customDomainHelp')}
+                  </p>
                 </div>
               </div>
 
