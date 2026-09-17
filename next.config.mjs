@@ -1,6 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
+  // Otimizador de imagem desligado de propósito (E01 do plano de prontidão,
+  // docs/prontidao-enterprise no backend). O next@14.2.x tem RCE não
+  // autenticado na API de otimização (`/_next/image`) com arquivos AVIF,
+  // corrigido só em 15.5.24 — a linha 14 não recebe o patch. Enquanto a
+  // migração de major (E14) não sai, o endpoint fica fora do ar e as quatro
+  // páginas com `next/image` servem o arquivo original. Reavaliar em E14.
+  images: { unoptimized: true },
   async redirects() {
     // Produtos e Equipe passaram a morar dentro de Configurações (Fase 2 da
     // reestruturação de navegação) — mantém links/bookmarks antigos vivos.
