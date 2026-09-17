@@ -1,0 +1,58 @@
+# Portão de integração (E04 do plano de prontidão — docs/prontidao-enterprise
+# no repositório do backend). Os três jobs são obrigatórios na branch
+# protection de `main`: em 17/09/2026 o front já estava limpo em `tsc` e em
+# `eslint` (0 erros), então não há razão para portão informativo aqui.
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  typecheck:
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx tsc --noEmit
+
+  lint:
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npx eslint . --max-warnings=20
+
+  build:
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      # `scripts/check-build-env.mjs` (prebuild) confere que toda NEXT_PUBLIC_*
+      # usada está declarada como ARG no Dockerfile — não exige valor. Os
+      # valores públicos têm default no next.config.mjs; o build de CI não
+      # publica nada, só prova que compila.
+      - run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: '1'
