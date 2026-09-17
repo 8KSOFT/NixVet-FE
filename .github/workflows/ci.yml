@@ -9,6 +9,9 @@ on:
     branches: [main]
   push:
     branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
 
 concurrency:
   group: ci-${{ github.ref }}
