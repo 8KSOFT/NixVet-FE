@@ -56,3 +56,31 @@ jobs:
       - run: npm run build
         env:
           NEXT_TELEMETRY_DISABLED: '1'
+
+  # Portão de deploy (E04, opção b) — ver o workflow do backend. A 8khost
+  # segue fazendo o build; este job só a chama depois dos três checks.
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && !contains(github.event.head_commit.message, '[skip ci]')
+    needs: [typecheck, lint, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Disparar deploy na 8khost
+        env:
+          URL: ${{ secrets.EIGHTK_WEBHOOK_URL }}
+          TOKEN: ${{ secrets.EIGHTK_WEBHOOK_TOKEN }}
+          SHA: ${{ github.sha }}
+          MSG: ${{ github.event.head_commit.message }}
+        run: |
+          set -euo pipefail
+          test -n "$URL" && test -n "$TOKEN"
+          body=$(jq -cn --arg ref "refs/heads/main" --arg sha "$SHA" --arg msg "$MSG" \
+            '{ref:$ref, after:$sha, head_commit:{id:$sha, message:$msg}}')
+          sig="sha256=$(printf '%s' "$body" | openssl dgst -sha256 -hmac "$TOKEN" | sed 's/^.* //')"
+          resp=$(curl -sS -w '\n%{http_code}' -X POST "$URL" \
+            -H 'Content-Type: application/json' \
+            -H 'x-github-event: push' \
+            -H "x-github-delivery: actions-${GITHUB_RUN_ID}" \
+            -H "x-hub-signature-256: $sig" \
+            --data "$body")
+          echo "$resp"
+          [ "$(echo "$resp" | tail -1)" = "201" ] || [ "$(echo "$resp" | tail -1)" = "200" ]
