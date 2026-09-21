@@ -59,6 +59,12 @@ export function clearTenantCookie() {
 
 api.interceptors.request.use((config) => {
   if (typeof window !== 'undefined') {
+    // Um id por chamada (E11). O backend aceita este valor como `request_id`
+    // de toda linha de log da requisição e o devolve no header e no corpo do
+    // erro — é o "Código" que o usuário lê na tela e que acha a linha no log.
+    if (!config.headers['x-request-id'] && typeof crypto?.randomUUID === 'function') {
+      config.headers['x-request-id'] = crypto.randomUUID();
+    }
     // Login não deve enviar tenant antigo: o middleware usaria outro tenant e o login falha.
     if (!isPublicAuthRequest(config)) {
       const tenantId = getCookie(TENANT_COOKIE) ?? localStorage.getItem('tenantId');
@@ -142,6 +148,30 @@ function avisarUmaVez(codigo: string, mensagem: string): void {
 }
 
 /**
+ * Em erro do servidor (5xx), a mensagem que as telas mostram passa a
+ * terminar com o código da requisição — os 8 primeiros caracteres do
+ * `request_id`, que bastam para achar a linha no log (E11).
+ *
+ * Feito aqui, uma vez, e não tela a tela: as telas já exibem
+ * `error.response.data.message` do jeito que vier. Só 5xx de propósito —
+ * num 400 o código não ajuda ninguém, e a mensagem de validação precisa
+ * ficar limpa.
+ */
+function anexarCodigoDoErro(error: AxiosError): void {
+  const status = error.response?.status ?? 0;
+  if (status < 500) return;
+  const corpo = error.response?.data as { message?: unknown; requestId?: unknown } | undefined;
+  const id =
+    (typeof corpo?.requestId === 'string' && corpo.requestId) ||
+    (typeof error.response?.headers?.['x-request-id'] === 'string' && error.response.headers['x-request-id']) ||
+    (typeof error.config?.headers?.['x-request-id'] === 'string' && String(error.config.headers['x-request-id']));
+  if (!id || !corpo) return;
+  const codigo = id.slice(0, 8);
+  const base = typeof corpo.message === 'string' && corpo.message ? corpo.message : 'Erro no servidor.';
+  if (!base.includes(codigo)) corpo.message = `${base} Código: ${codigo}`;
+}
+
+/**
  * 402 é o bloqueio por cobrança (`BillingActiveGuard`).
  *
  * Sem este tratamento o usuário via só o erro genérico da tela — "não foi
@@ -192,6 +222,8 @@ api.interceptors.response.use(
     return response;
   },
   async (error: AxiosError) => {
+    anexarCodigoDoErro(error);
+
     if (typeof window !== 'undefined' && error.response?.status === 402) {
       tratarBloqueioDeCobranca(error);
       return Promise.reject(error);
