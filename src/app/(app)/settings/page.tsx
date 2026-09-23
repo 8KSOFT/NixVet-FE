@@ -333,12 +333,12 @@ export default function SettingsPage() {
                 {t('settingsHub.chatbot.descriptionPart2')} <code className="text-xs">OPENAI_API_KEY</code>{' '}
                 {t('settingsHub.chatbot.descriptionPart3')}
               </p>
-              <a
+              <Link
                 href="/chatbot-workflows"
                 className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 mt-2"
               >
                 {t('settingsHub.chatbot.workflowLink')} →
-              </a>
+              </Link>
             </div>
           </CardContent>
         </Card>

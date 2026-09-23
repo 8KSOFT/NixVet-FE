@@ -79,9 +79,68 @@ O usuário viu o contador do React DevTools disparar (ex.: 3500→7100 em 3s) e,
 
 ### Pendente / próximos passos
 
-1. **Migração de major version do Next.js** (14→16, acompanhando Auroque/QB) — é a correção definitiva do bug do roteador. Projeto à parte, com teste cuidadoso (App Router mudou entre majors).
+1. ~~**Migração de major version do Next.js** (14→16)~~ — **feita em 23/09/2026** (E14). Ver a seção "Migração para Next 16" abaixo. Se a trava de ~5s ao trocar de rota reaparecer depois disso, a hipótese do bug do roteador 14.x cai e a investigação recomeça do zero.
 2. **Backend**: dedupe de notificação `conversation_alert` (mesmo padrão que `low_stock` já tem).
 3. **Auditoria de `useMemo`/`useCallback`/`React.memo` nas PÁGINAS DE CONTEÚDO** (pedido explícito do usuário, começado só pela navbar/`SidebarNav` nesta sessão — ver item 7 da lista de causas acima). Zero uso de `React.memo` em 149 componentes, só 49 `useMemo`/11 `useCallback` no projeto inteiro — esparso pro tamanho do app. Não é a causa das travas de 5s nem do contador do DevTools, mas contribui pra uma sensação geral de interação "pesada" (filtros, dropdowns). Próximo alvo natural: `dashboard/page.tsx` (mais citada nos prints do usuário), depois `prescriptions/page.tsx` (pior proporção vista: 9 `.filter/.sort/.reduce` pra 1 `useMemo`), `calendar/page.tsx`.
+
+## Migração para Next 16 (E14 — 23/09/2026)
+
+`14.2.35 → 16.3.6`, React `18.3.1 → 19.3.0`, ESLint `8 → 9`,
+`eslint-config-next 16`. Motivo: o 14.x não recebe mais patch, e a trava
+intermitente de ~5s ao trocar de rota bate com um bug conhecido do App Router
+13/14 (ver a seção de investigação de performance no topo deste arquivo).
+
+Quatro coisas quebraram, todas de causa não óbvia:
+
+1. **`Cannot find module for page: /_document`.** Sobrava um único
+   `src/pages/_document.tsx` do Pages Router, vestigial — o projeto é App
+   Router inteiro. O Next 14 ignorava; o 16 tenta montar a rota e o build para.
+   Apagado.
+2. **`FlatCompat` quebrou com "Converting circular structure to JSON".** O
+   adaptador `@eslint/eslintrc` só era necessário enquanto o
+   `eslint-config-next` existia apenas no formato antigo. O 16 exporta flat
+   config de verdade, e o adaptador tenta serializar um objeto que já é flat e
+   referencia a si mesmo. **Sintoma que engana**: o erro não fala de config
+   nenhuma, fala de JSON circular no `config-validator`. Agora o
+   `eslint.config.mjs` importa `eslint-config-next/core-web-vitals` e
+   `eslint-config-next/typescript` direto.
+3. **`plugin "react-hooks" is not defined in your configuration file`.** Em flat
+   config, **regra e plugin precisam viver no mesmo objeto** — declarar
+   `'react-hooks/x': 'warn'` num objeto sem `plugins` falha. E não basta
+   instalar e importar o plugin de novo: duas instâncias brigam pelo namespace.
+   O config pesca a instância que o próprio `eslint-config-next` já carregou
+   (`nextCoreWebVitals.find((b) => b.plugins?.['react-hooks'])`), com um
+   `throw` se um dia deixar de expor.
+4. **Convenção `middleware` depreciada.** `src/middleware.ts` virou
+   `src/proxy.ts` e `export function middleware` virou `export function proxy`.
+   Mesmo `config.matcher`, mesmo comportamento — só o nome. Sem isso o build
+   avisa em toda execução.
+
+### As regras novas do React Compiler são aviso, e o número só pode cair
+
+O ESLint 9 + config 16 trazem as regras do React Compiler, que acusam **73
+avisos** de padrão preexistente (44 deles `set-state-in-effect`). São aviso, não
+erro, pelos motivos documentados no `eslint.config.mjs` — e o CI tem
+`--max-warnings=73` como **teto**. Ao mexer num componente que aparece na lista,
+corrija o que ele acusa e baixe o teto; subir o número é decisão explícita.
+
+Vale insistir num ponto: `set-state-in-effect` é exatamente a família do bug de
+25/08/2026 (o `NaN` escapando do `useQuery`, ~280 commits/s). Silenciar essa
+regra apagaria o alarme que teria pegado aquilo em minutos.
+
+### Detalhes que não são erro mas confundem
+
+- `tsconfig.json` teve `jsx` reescrito de `preserve` para `react-jsx` pelo
+  próprio `next build`. Não mexer de volta.
+- Seis `eslint-disable-next-line` ficaram órfãos (`react-hooks/exhaustive-deps`
+  que não dispara mais, `react/no-danger` que a config nem habilita) e foram
+  removidos. Supressão que não suprime nada esconde o próximo aviso real.
+- O `override` escopado de `@eslint/eslintrc → minimatch@^3` continua no
+  `package.json`. Com o eslintrc 3.x ele é inócuo, mas foi mantido: é barato e
+  protege contra o ReDoS documentado mais acima se algo rebaixar a árvore.
+- **Teste visual fino não foi feito** — `tsc`, `eslint` e `next build` passam, e
+  as 69 rotas compilam, mas comportamento de tela em React 19 se prova no
+  navegador.
 
 ## Variáveis NEXT_PUBLIC_*: o vault é a única fonte (2026-08-28)
 

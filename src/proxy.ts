@@ -7,8 +7,13 @@ const ROOT_DOMAIN = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'nixvetapp.com.br';
  * Detecta subdomínio na request e persiste em cookie `nixvet_subdomain`.
  * O cookie é lido pela login page para pré-preencher o tenant code.
  * Não faz chamada ao backend — zero latência adicionada.
+ *
+ * Era `src/middleware.ts` até a migração para o Next 16 (E14): a convenção
+ * `middleware` foi depreciada em favor de `proxy`, e o build avisava em toda
+ * execução. Só o nome do arquivo e da função mudaram — mesmo `config.matcher`,
+ * mesmo comportamento.
  */
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const host = request.headers.get('host') || '';
   const subdomain = detectSubdomainFromHost(host, ROOT_DOMAIN);
   const isValidSubdomain = subdomain !== null;

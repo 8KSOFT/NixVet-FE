@@ -217,7 +217,6 @@ function CalendarContent() {
     if (window.matchMedia('(max-width: 639px)').matches) {
       setViewMode('day');
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const { data: consultations = [] } = useConsultationsQuery();

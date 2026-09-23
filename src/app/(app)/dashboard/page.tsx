@@ -190,7 +190,6 @@ export default function DashboardPage() {
       unansweredConversations: metrics?.unanswered_conversations ?? 0,
       awaitingTutorConversations: metrics?.awaiting_tutor_conversations ?? 0,
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [metrics, consultations, patients]);
 
   // Série real (não ilustrativa) dos últimos 7 dias de consultas — alimenta a
@@ -209,7 +208,6 @@ export default function DashboardPage() {
       if (bucket) bucket.count += 1;
     });
     return days.map((d) => d.count);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [consultations]);
 
   const heroDelta =
@@ -283,7 +281,6 @@ export default function DashboardPage() {
         status: statusLabel(c.status || "scheduled"),
         statusKey: c.status || "scheduled",
       }));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [consultations, locale, t]);
 
   const statCards = useMemo(

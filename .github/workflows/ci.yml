@@ -40,7 +40,15 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci
-      - run: npx eslint . --max-warnings=20
+      # Teto de avisos, não de erros: `0 errors` é obrigatório. O número é 73
+      # porque a migração para o Next 16 (E14, 23/09/2026) trouxe as regras do
+      # React Compiler, que acusam padrão preexistente em dezenas de
+      # componentes — a justificativa de por que são aviso e não erro está no
+      # `eslint.config.mjs`.
+      #
+      # **Só pode diminuir.** Subir este número é decisão explícita, não
+      # consequência de um PR que passou.
+      - run: npx eslint . --max-warnings=73
 
   build:
     if: "!contains(github.event.head_commit.message, '[skip ci]')"
