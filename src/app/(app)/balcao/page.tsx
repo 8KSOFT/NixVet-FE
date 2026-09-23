@@ -31,7 +31,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
-import type { AxiosError } from 'axios';
 import { useCreateProductSaleMutation, useProductsQuery } from '@/hooks/apiHooks/useProducts';
 import { useProductCategoriesQuery } from '@/hooks/apiHooks/useStock';
 import { usePaymentOptionsMutation } from '@/hooks/apiHooks/useFinancialReports';
