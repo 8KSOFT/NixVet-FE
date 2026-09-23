@@ -29,7 +29,7 @@ import {
   Users,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { getStoredMenuKeys, getStoredUserRole, menuKeysForRole } from '@/lib/role-permissions';
+import { useMinhasPermissoesQuery } from '@/hooks/apiHooks/useMinhasPermissoes';
 
 type NavSection = {
   label: string;
@@ -98,14 +98,16 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
   const [role, setRole] = useState('');
   const [menuAllow, setMenuAllow] = useState<Set<string>>(() => new Set());
   const [menuLoaded, setMenuLoaded] = useState(false);
+  const { data: minhasPermissoes } = useMinhasPermissoesQuery();
 
+  // Do servidor, não do localStorage (E20) — mesmo motivo do layout de `(app)`:
+  // a cópia local só atualizava ao relogar e ignorava perfil customizado.
   useEffect(() => {
-    const storedRole = (getStoredUserRole() || '').toLowerCase();
-    const keys = storedRole === 'superadmin' ? menuKeysForRole('superadmin') : getStoredMenuKeys();
-    setRole(storedRole);
-    setMenuAllow(new Set(keys));
+    if (!minhasPermissoes) return;
+    setRole((minhasPermissoes.role || '').toLowerCase());
+    setMenuAllow(new Set(minhasPermissoes.menu));
     setMenuLoaded(true);
-  }, [pathname]);
+  }, [minhasPermissoes]);
 
   const isSuperAdmin = role === 'superadmin';
   const canManageTerms = ['admin', 'manager', 'superadmin'].includes(role);

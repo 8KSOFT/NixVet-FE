@@ -45,11 +45,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { cn } from "@/lib/utils";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { fetchPublicBranding } from "@/lib/branding";
-import {
-  getStoredMenuKeys,
-  getStoredUserRole,
-  menuKeysForRole,
-} from "@/lib/role-permissions";
+import { useMinhasPermissoesQuery } from '@/hooks/apiHooks/useMinhasPermissoes';
 import { useBillingStatus } from "@/hooks/useBillingStatus";
 import { TrialBanner } from "@/components/billing/TrialBanner";
 import { EmailConfirmationBanner } from "@/components/onboarding/EmailConfirmationBanner";
@@ -686,6 +682,7 @@ export default function DashboardLayout({
   const queryClient = useQueryClient();
   const billing = useBillingStatus();
   const { data: onboardingStatus } = useOnboardingStatusQuery();
+  const { data: minhasPermissoes } = useMinhasPermissoesQuery();
 
   const activeKey = getActiveKey(currentPathname);
 
@@ -763,15 +760,18 @@ export default function DashboardLayout({
     });
   }, []);
 
+  // Menu vem do SERVIDOR (E20), não mais do localStorage escrito no login.
+  //
+  // O que isto corrige: item de menu novo aparecia só depois de deslogar e
+  // logar de novo (`renewSession` descarta o corpo do refresh), e perfil
+  // customizado de clínica não mudava menu nenhum porque a cópia do front
+  // conhece papéis, não perfis. O hook cai no localStorage só enquanto a
+  // chamada está em voo — senão toda navegação piscaria sidebar vazia.
   useEffect(() => {
-    const role = getStoredUserRole() || "";
-    const keys =
-      role === "superadmin"
-        ? menuKeysForRole("superadmin")
-        : getStoredMenuKeys();
-    setMenuAllow(new Set(keys));
-    setHeaderRole(role);
-  }, [pathname]);
+    if (!minhasPermissoes) return;
+    setMenuAllow(new Set(minhasPermissoes.menu));
+    setHeaderRole(minhasPermissoes.role ?? "");
+  }, [minhasPermissoes]);
 
   // Limpeza completa de propósito: cache do React Query fica em memória e
   // sobrevive a um router.push (é o mesmo processo JS) — sem isso, trocar de
