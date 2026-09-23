@@ -256,9 +256,14 @@ ambiente no ar: `BASE_URL=https://nixvetapp.com.br npm run smoke`.
 
 ### Pendências desta sessão
 
-1. **Dois lockfiles no repo** (`package-lock.json` e `yarn.lock`). O Dockerfile
-   usa `npm ci`, então quem vale é o do npm — mas rodar `npm install` mexeu no
-   `yarn.lock` (revertido). Escolher um e apagar o outro.
+1. ~~**Dois lockfiles no repo**~~ — **resolvido em 23/09/2026**: `yarn.lock`
+   apagado. O gerenciador é **npm**, e só ele: `Dockerfile` e os quatro jobs do
+   CI usam `npm ci`; nada no repo lia o `yarn.lock`. O campo `engines.yarn` saiu
+   do `package.json` junto, porque declarar suporte a um gerenciador cujo
+   lockfile não existe mais convida alguém a rodar `yarn install` e resolver
+   versões diferentes das que o build usa. **Não recriar**: `npm install`, nunca
+   `yarn`. As menções a `yarn build`/`yarn dev` na metodologia de bisecção acima
+   são registro histórico de agosto/2026 — traduza para `npm` ao reaproveitar.
 2. **`NEXT_PUBLIC_SITE_URL`** tem default `https://app.nixvetapp.com.br` no
    `next.config.mjs`, host que **não resolve**. Não quebra nada porque a
    variável não é usada em lugar nenhum do `src/` — é armadilha para quem for

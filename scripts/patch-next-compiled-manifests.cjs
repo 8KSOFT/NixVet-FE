@@ -1,7 +1,7 @@
 /**
  * Node 23+ rejeita alguns package.json mínimos do Next (sem "version"),
  * gerando ERR_INVALID_PACKAGE_CONFIG. Este script é idempotente e só altera
- * arquivos que precisam. Roda no postinstall após yarn/npm ci.
+ * arquivos que precisam. Roda no postinstall após `npm ci`.
  *
  * Em Node < 23 não faz nada (Docker/CI com Node 22 fica rápido).
  */
