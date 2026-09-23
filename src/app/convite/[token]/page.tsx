@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from 'sonner';
@@ -47,9 +48,9 @@ export default function AcceptInvitePage() {
       toast.success(`Bem-vindo(a) à equipe, ${res.user.name}!`);
       router.push('/dashboard');
     } catch (error: unknown) {
-      const message =
-        (error as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      toast.error(message || 'Não foi possível aceitar o convite. Tente novamente.');
+      toast.error(
+        getApiErrorMessage(error, 'Não foi possível aceitar o convite. Tente novamente.'),
+      );
     }
   };
 

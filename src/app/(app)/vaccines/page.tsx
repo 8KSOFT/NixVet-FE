@@ -1,9 +1,9 @@
 'use client';
 
 import React, { Suspense, useEffect, useState } from 'react';
+import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import { useTranslation } from 'react-i18next';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
-import type { ApiRequestError } from '@/app/types/api-error';
 import { Button } from '@/components/ui/button';
 import { DashboardCreateFormDialog } from '@/components/dashboard-create-form-dialog';
 import { Input } from '@/components/ui/input';
@@ -29,17 +29,6 @@ interface VaccineFormValues {
   patient_id: string;
   vaccine_name: string;
   next_due_date: string;
-}
-
-function getApiErrorMessage(error: unknown, fallbackMessage: string): string {
-  const typedError = error as ApiRequestError;
-  const responseMessage = typedError.response?.data?.message;
-
-  if (Array.isArray(responseMessage)) {
-    return responseMessage[0] ?? fallbackMessage;
-  }
-
-  return responseMessage ?? typedError.message ?? fallbackMessage;
 }
 
 function ReminderTable({ data, loading }: { data: VaccineReminder[]; loading: boolean }) {

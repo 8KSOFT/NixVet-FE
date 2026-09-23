@@ -1,6 +1,6 @@
 'use client';
 
-import type { ApiRequestError } from '@/app/types/api-error';
+import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import type { PatientFormValues, PatientRow } from '@/app/types/patient';
 import { useForm, Controller } from 'react-hook-form';
 import React, { Suspense, useEffect, useState } from 'react';
@@ -87,17 +87,6 @@ function guardianLabel(record: PatientRow, t: TFunction): string {
     return t('patients.noTutorLabel', { reason: reasonLabel });
   }
   return '—';
-}
-
-function getApiErrorMessage(error: unknown, fallbackMessage: string): string {
-  const typedError = error as ApiRequestError;
-  const responseMessage = typedError.response?.data?.message;
-
-  if (Array.isArray(responseMessage)) {
-    return responseMessage[0] ?? fallbackMessage;
-  }
-
-  return responseMessage ?? typedError.message ?? fallbackMessage;
 }
 
 function PatientsContent() {

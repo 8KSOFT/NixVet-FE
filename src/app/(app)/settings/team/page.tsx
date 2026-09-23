@@ -1,6 +1,7 @@
 'use client';
 
 import React, { Suspense, useEffect, useRef, useState } from 'react';
+import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import type { ApiRequestError } from '@/app/types/api-error';
 import type { TeamAssignableRole, TeamUserFormValues, TeamUserRow } from '@/app/types/team-user';
@@ -56,17 +57,6 @@ const ASSIGNABLE_ROLES = [
   { value: 'manager', labelKey: 'roles.manager' },
   { value: 'admin', labelKey: 'roles.admin' },
 ] as const satisfies readonly TeamAssignableRole[];
-
-function getApiErrorMessage(error: unknown, fallbackMessage: string): string {
-  const typedError = error as ApiRequestError;
-  const responseMessage = typedError.response?.data?.message;
-
-  if (Array.isArray(responseMessage)) {
-    return responseMessage[0] ?? fallbackMessage;
-  }
-
-  return responseMessage ?? typedError.message ?? fallbackMessage;
-}
 
 function TeamContent() {
   const { t } = useTranslation('common');

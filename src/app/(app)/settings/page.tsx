@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
+import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import { useTranslation } from 'react-i18next';
-import type { ApiRequestError } from '@/app/types/api-error';
 import { getApiMessage } from '@/app/types/api-response';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -67,17 +67,6 @@ interface TenantFormValues {
   initialUserName?: string;
   initialUserEmail?: string;
   initialUserPassword?: string;
-}
-
-function getApiErrorMessage(error: unknown, fallbackMessage: string): string {
-  const typedError = error as ApiRequestError;
-  const responseMessage = typedError.response?.data?.message;
-
-  if (Array.isArray(responseMessage)) {
-    return responseMessage[0] ?? fallbackMessage;
-  }
-
-  return responseMessage ?? typedError.message ?? fallbackMessage;
 }
 
 export default function SettingsPage() {

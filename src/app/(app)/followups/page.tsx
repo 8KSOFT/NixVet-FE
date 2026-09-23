@@ -1,9 +1,9 @@
 'use client';
 
 import React, { Suspense, useEffect, useState } from 'react';
+import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import { useTranslation } from 'react-i18next';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
-import type { ApiRequestError } from '@/app/types/api-error';
 import type { FollowupFormValues } from '@/app/types/exam-followup';
 import { Button } from '@/components/ui/button';
 import { DashboardCreateFormDialog } from '@/components/dashboard-create-form-dialog';
@@ -26,17 +26,6 @@ import {
 } from '@/hooks/apiHooks/useExamFollowups';
 import { useExamRequestsListQuery } from '@/hooks/apiHooks/useExamRequests';
 import { usePatientsListQuery } from '@/hooks/apiHooks/usePatients';
-
-function getApiErrorMessage(error: unknown, fallbackMessage: string): string {
-  const typedError = error as ApiRequestError;
-  const responseMessage = typedError.response?.data?.message;
-
-  if (Array.isArray(responseMessage)) {
-    return responseMessage[0] ?? fallbackMessage;
-  }
-
-  return responseMessage ?? fallbackMessage;
-}
 
 function FollowupsContent() {
   const { t } = useTranslation();

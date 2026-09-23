@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import { toast } from "sonner";
 import {
   Loader2,
@@ -194,14 +195,7 @@ export default function SuperadminClinicsPage() {
       });
       setResetTenantId(null);
     } catch (e: unknown) {
-      const err = e as {
-        response?: { data?: { message?: string | string[] } };
-      };
-      const msg = err.response?.data?.message;
-      const text = Array.isArray(msg)
-        ? msg.join(" | ")
-        : (msg as string) || "Erro";
-      toast.error(text);
+      toast.error(getApiErrorMessage(e, "Erro"));
     }
   };
 
@@ -222,14 +216,7 @@ export default function SuperadminClinicsPage() {
       setCreateOpen(false);
       setCreateForm(emptyCreate());
     } catch (e: unknown) {
-      const err = e as {
-        response?: { data?: { message?: string | string[] } };
-      };
-      const msg = err.response?.data?.message;
-      const text = Array.isArray(msg)
-        ? msg.join(" | ")
-        : (msg as string) || "Erro ao criar";
-      toast.error(text);
+      toast.error(getApiErrorMessage(e, "Erro ao criar"));
     }
   };
 
@@ -263,14 +250,7 @@ export default function SuperadminClinicsPage() {
       await patchMutation.mutateAsync({ id: editRow.id, payload: editForm });
       setEditRow(null);
     } catch (e: unknown) {
-      const err = e as {
-        response?: { data?: { message?: string | string[] } };
-      };
-      const msg = err.response?.data?.message;
-      const text = Array.isArray(msg)
-        ? msg.join(" | ")
-        : (msg as string) || "Erro";
-      toast.error(text);
+      toast.error(getApiErrorMessage(e, "Erro"));
     }
   };
 
@@ -283,14 +263,7 @@ export default function SuperadminClinicsPage() {
       });
       setWhatsappTenantId(null);
     } catch (e: unknown) {
-      const err = e as {
-        response?: { data?: { message?: string | string[] } };
-      };
-      const msg = err.response?.data?.message;
-      const text = Array.isArray(msg)
-        ? msg.join(" | ")
-        : (msg as string) || "Erro ao provisionar";
-      toast.error(text);
+      toast.error(getApiErrorMessage(e, "Erro ao provisionar"));
     }
   };
 

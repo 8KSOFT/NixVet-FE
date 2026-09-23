@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
+import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import { useTranslation } from 'react-i18next';
-import type { ApiRequestError } from '@/app/types/api-error';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { DashboardCreateFormDialog } from '@/components/dashboard-create-form-dialog';
@@ -40,17 +40,6 @@ import {
   useDeleteChatbotWorkflowMutation,
 } from '@/hooks/apiHooks/useChatbotWorkflows';
 import { useTenantMeQuery, useUpdateTenantMeMutation } from '@/hooks/apiHooks/useTenantSettings';
-
-function getApiErrorMessage(error: unknown, fallbackMessage: string): string {
-  const typedError = error as ApiRequestError;
-  const responseMessage = typedError.response?.data?.message;
-
-  if (Array.isArray(responseMessage)) {
-    return responseMessage[0] ?? fallbackMessage;
-  }
-
-  return responseMessage ?? typedError.message ?? fallbackMessage;
-}
 
 function ChatbotWorkflowsPageContent() {
   const { t } = useTranslation();

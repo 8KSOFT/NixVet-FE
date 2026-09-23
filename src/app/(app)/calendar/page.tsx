@@ -1,8 +1,8 @@
 'use client';
 
 import React, { Suspense, useEffect, useState, useMemo, useRef } from 'react';
+import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import Link from 'next/link';
-import type { ApiRequestError } from '@/app/types/api-error';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
 import { Button } from '@/components/ui/button';
@@ -74,17 +74,6 @@ import { useGoogleStatusQuery, useGoogleEventsQuery } from '@/hooks/apiHooks/use
 import { useAwaitingFollowupsQuery } from '@/hooks/apiHooks/useExamFollowups';
 import { useHasPermission } from '@/hooks/useHasPermission';
 import { useSummarizeMutation, useStructureObservationsMutation } from '@/hooks/apiHooks/useAi';
-
-function getApiErrorMessage(error: unknown, fallbackMessage: string): string {
-  const typedError = error as ApiRequestError;
-  const responseMessage = typedError.response?.data?.message;
-
-  if (Array.isArray(responseMessage)) {
-    return responseMessage[0] ?? fallbackMessage;
-  }
-
-  return responseMessage ?? typedError.message ?? fallbackMessage;
-}
 
 type ViewMode = 'day' | 'week' | 'month' | 'year';
 

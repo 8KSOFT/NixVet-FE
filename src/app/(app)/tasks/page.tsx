@@ -1,8 +1,8 @@
 'use client';
 
 import React, { Suspense, useEffect, useState } from 'react';
+import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
-import type { ApiRequestError } from '@/app/types/api-error';
 import { Button } from '@/components/ui/button';
 import { ProfilePhoto } from '@/components/shared/profile-photo';
 import { DashboardCreateFormDialog } from '@/components/dashboard-create-form-dialog';
@@ -28,17 +28,6 @@ interface TaskFormValues {
   patient_id: string;
   task_type: string;
   due_date?: string;
-}
-
-function getApiErrorMessage(error: unknown, fallbackMessage: string): string {
-  const typedError = error as ApiRequestError;
-  const responseMessage = typedError.response?.data?.message;
-
-  if (Array.isArray(responseMessage)) {
-    return responseMessage[0] ?? fallbackMessage;
-  }
-
-  return responseMessage ?? typedError.message ?? fallbackMessage;
 }
 
 function TasksContent() {

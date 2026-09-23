@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
+import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import Link from 'next/link';
-import type { ApiRequestError } from '@/app/types/api-error';
 import type { ThreadStatus } from '@/app/types/whatsapp-conversation';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -186,17 +186,6 @@ function CloseConversationDialog({
       </DialogContent>
     </Dialog>
   );
-}
-
-function getApiErrorMessage(error: unknown, fallbackMessage: string): string {
-  const typedError = error as ApiRequestError;
-  const responseMessage = typedError.response?.data?.message;
-
-  if (Array.isArray(responseMessage)) {
-    return responseMessage[0] ?? fallbackMessage;
-  }
-
-  return responseMessage ?? typedError.message ?? fallbackMessage;
 }
 
 function StatCard({

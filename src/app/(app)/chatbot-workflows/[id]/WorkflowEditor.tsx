@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
+import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
-import type { ApiRequestError } from '@/app/types/api-error';
 import type {
   BackendEdge,
   BackendNode,
@@ -98,17 +98,6 @@ function getActionTypes(t: TFunction) {
 
 type WorkflowFlowNode = Node<WorkflowNodeData>;
 type WorkflowNodeProps = NodeProps<WorkflowFlowNode>;
-
-function getApiErrorMessage(error: unknown, fallbackMessage: string): string {
-  const typedError = error as ApiRequestError;
-  const responseMessage = typedError.response?.data?.message;
-
-  if (Array.isArray(responseMessage)) {
-    return responseMessage[0] ?? fallbackMessage;
-  }
-
-  return responseMessage ?? typedError.message ?? fallbackMessage;
-}
 
 function getNodeData(nodeData: unknown): WorkflowNodeData {
   return (nodeData as WorkflowNodeData | undefined) ?? {};

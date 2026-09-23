@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import { useTranslation } from 'react-i18next';
 import Link from 'next/link';
 import {
@@ -164,9 +165,7 @@ export default function BalcaoPage() {
       setSelectedMethod(null);
       setCartOpen(false);
     } catch (err) {
-      const axiosError = err as AxiosError<{ message?: string }>;
-      const backendMessage = axiosError.response?.data?.message;
-      toast.error(backendMessage || t('balcao.saleError'));
+      toast.error(getApiErrorMessage(err, t('balcao.saleError')));
     }
   };
 
