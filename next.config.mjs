@@ -18,6 +18,10 @@ const nextConfig = {
       { source: '/team/:path*', destination: '/settings/team/:path*', permanent: false },
     ];
   },
+  // `x-powered-by: Next.js` diz a versão do framework para quem procura alvo
+  // conhecido, e não serve a ninguém (E15 / FE-05).
+  poweredByHeader: false,
+
   async headers() {
     // O `helmet` do backend cobre as respostas da API. O documento HTML — que é
     // onde script injetado executaria — saía sem defesa nenhuma.
@@ -67,6 +71,16 @@ const nextConfig = {
       "base-uri 'self'",
       "form-action 'self'",
       "object-src 'none'",
+      // Sem isto a política em Report-Only reportava para NINGUÉM: o
+      // navegador avaliava e descartava. A semana de observação que precede
+      // ligar o enforce (E15) nunca podia começar. `report-uri` está
+      // obsoleto mas é o que a maioria ainda implementa; `report-to` é o
+      // caminho novo e depende do header `Reporting-Endpoints` abaixo.
+      // Caminho RELATIVO, aproveitando o proxy same-origin de `/api/*` (ver
+      // `rewrites` abaixo): o relatório sai para a própria origem, sem
+      // cross-origin, e a CSP não precisa liberar destino nenhum para ele.
+      'report-uri /api/client-telemetry/csp',
+      'report-to nixvet-csp',
     ].join('; ');
 
     return [
@@ -75,6 +89,13 @@ const nextConfig = {
         headers: [
           ...base,
           { key: 'Content-Security-Policy-Report-Only', value: csp },
+          // Destino do `report-to` (Reporting API). O `report-uri` acima
+          // cobre os navegadores que ainda não o implementam; os dois
+          // apontam para a mesma rota.
+          {
+            key: 'Reporting-Endpoints',
+            value: 'nixvet-csp="/api/client-telemetry/csp"',
+          },
         ],
       },
     ];

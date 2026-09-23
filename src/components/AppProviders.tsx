@@ -11,6 +11,7 @@ import 'dayjs/locale/es';
 import i18n, { persistLanguage, trocarIdioma } from '@/lib/i18n/instance';
 import { STORAGE_KEY, SUPPORTED_LANGUAGES, type AppLanguage } from '@/lib/i18n/resources';
 import { getApiMessage } from '@/app/types/api-response';
+import { instalarCapturaDeErros } from '@/lib/client-telemetry';
 
 declare module '@tanstack/react-query' {
   interface Register {
@@ -60,6 +61,11 @@ export default function AppProviders({ children }: { children: React.ReactNode }
         }),
       }),
   );
+
+  // Erro fora da árvore de componentes e promise rejeitada sem handler (E15):
+  // nada disso passa pelos `error.tsx`, e sem esta captura não deixa rastro
+  // em lugar nenhum.
+  useEffect(() => instalarCapturaDeErros(), []);
 
   useEffect(() => {
     try {
