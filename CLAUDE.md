@@ -142,6 +142,81 @@ regra apagaria o alarme que teria pegado aquilo em minutos.
   as 69 rotas compilam, mas comportamento de tela em React 19 se prova no
   navegador.
 
+## Investigação: "o sistema está muito mais lento" (24/09/2026) — CAUSA NÃO ENCONTRADA
+
+Relato do usuário no dia seguinte ao deploy do Next 16. **Não achei a causa.**
+O que segue é o que foi **descartado com medição**, para a próxima sessão não
+repetir — e o que falta medir, que depende de acesso que eu não tinha.
+
+### Descartado com evidência
+
+| Hipótese | Como foi medida | Resultado |
+|---|---|---|
+| Latência do backend | log estruturado de produção (E11), 50 requisições reais | **7–195 ms**. Não é a API. |
+| Bundle ficou mais pesado | `next build` em worktree do último commit Next 14 (`0da98e7`) vs HEAD | Next 14: 5408 KB · Next 16: **5324 KB** (84 KB menor) |
+| Rota virou dinâmica | contagem `○`/`ƒ` nas duas builds | idêntico: 65 estáticas, 8 dinâmicas |
+| Host degradado | 5 apps do mesmo host, 3 requisições cada | todos 0,09–0,17 s após TLS. NixVet igual aos outros. |
+| `placeholderData` inline causando churn de identidade | exercitei `QueryObserver` do query-core direto | **hipótese errada** — ver abaixo |
+
+### A hipótese que eu errei, e por quê (vale como lição de método)
+
+Suspeitei que `placeholderData: () => ({...})` inline gerasse objeto novo a cada
+render — o `queryObserver.js` só reaproveita o placeholder anterior quando a
+**referência da função** é a mesma (linha 267). A leitura do código sustentava a
+teoria.
+
+Medindo, não acontece: três linhas abaixo, `replaceData` aplica **structural
+sharing** e devolve a referência anterior quando o conteúdo é deeply-equal.
+Prova, com `QueryObserver` em 20 renders: conteúdo igual → **1 notificação**;
+conteúdo que muda de fato (`n++`) → **21 notificações**.
+
+**Lição:** neste projeto a tentação é fechar o diagnóstico na leitura do código,
+porque o histórico (o `NaN` de 25/08) treinou o olho para "valor instável
+escapando de `useQuery`". A leitura acerta o mecanismo e erra o fato. Exercite a
+lib antes de afirmar.
+
+### O que NÃO consegui medir, e o que trava
+
+**O runtime do app logado.** É onde sobrou a suspeita, e não deu para chegar lá:
+o Turnstile bloqueia login em Chromium headless (`/api/auth/login` → 400, campo
+`cf-turnstile-response` no formulário). O `MOBILE_CLIENT_KEY` existe no vault mas
+o MCP só lista chaves, não valores — e forçar o bypass de um controle de
+segurança para medir não é caminho.
+
+Para a próxima sessão, três saídas, em ordem de custo:
+
+1. **Pedir ao usuário o Gerenciador de Tarefas do Chrome (Shift+Esc)**, coluna
+   CPU, parado numa tela por 10-15 s. É o teste que já resolveu esta mesma
+   dúvida em 25/08 e o único que separa "trabalho real acontecendo" de
+   "percepção/rede".
+2. **Subir o backend local** (o Postgres local já tem o schema das 138
+   migrations — ver `scripts/auditar-tenant-id.mjs`) com `TURNSTILE_SECRET_KEY`
+   vazia, e medir com Playwright contra os dois builds em worktree. É a bisecção
+   que funcionou em 25/08.
+3. Pedir a chave do cliente mobile ao usuário, se ele preferir medir contra
+   produção.
+
+### Achados laterais, reais mas pequenos
+
+- **Duas chamadas iguais a ~2 s de distância** no log de produção
+  (`/api/patients?page=1&limit=50` às 13:50:32 e 13:50:34; `/api/tutors` às
+  13:50:34 e 13:50:35). Pode ser telas distintas pedindo a mesma lista — não
+  chegou a ser explicado.
+- **`EAI_AGAIN api.nixvetapp.com.br`** duas vezes, no cold start logo após o
+  deploy, no proxy do `/api/client-telemetry/csp`. Transitório.
+- **Host com CPU em 51%** enquanto a soma dos containers dava ~4%. Não afetou
+  latência (teste dos 5 apps), mas é assimetria da plataforma que merece prompt
+  separado.
+
+### O que foi corrigido de verdade (e não é a causa)
+
+`menuAllow`/`headerRole` saíram de `useState` + `useEffect` para valor derivado
+(`useMemo`). Nada mais escrevia nos dois. `setMenuAllow(new Set(...))` num efeito
+é gerador de laço em potencial, e o `Set` novo a cada render derrotava o `useMemo`
+de `visibleSections` — que voltava a filtrar `NAV_SECTIONS` em todo render, **em
+dobro**, porque `SidebarNav` é instanciado duas vezes. É melhoria real de trabalho
+por render; **não** foi demonstrado que resolve o relato.
+
 ## Variáveis NEXT_PUBLIC_*: o vault é a única fonte (2026-08-28)
 
 `NEXT_PUBLIC_*` é **inlinada em tempo de build**, não lida em runtime. No deploy
