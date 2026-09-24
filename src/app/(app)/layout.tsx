@@ -670,11 +670,7 @@ export default function DashboardLayout({
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [brandName, setBrandName] = useState("NixVet");
   const [brandLogo, setBrandLogo] = useState<string | null>(null);
-  // inicia vazio (igual no server e no primeiro paint do client) e só lê
-  // localStorage no useEffect abaixo — ler localStorage no initializer do
-  // useState quebra a hidratação, pois o server nunca tem acesso a ele.
-  const [menuAllow, setMenuAllow] = useState<Set<string>>(() => new Set());
-  const [headerRole, setHeaderRole] = useState<string>("");
+
   const router = useRouter();
   const pathname = usePathname();
   const currentPathname = pathname ?? "";
@@ -683,6 +679,36 @@ export default function DashboardLayout({
   const billing = useBillingStatus();
   const { data: onboardingStatus } = useOnboardingStatusQuery();
   const { data: minhasPermissoes } = useMinhasPermissoesQuery();
+
+  /**
+   * Menu e papel **derivados** da resposta do servidor (E20), não guardados em
+   * estado.
+   *
+   * ─── Por que derivar e não `useState` + `useEffect` ────────────────────────
+   * A primeira versão guardava os dois em estado e os preenchia num efeito
+   * (`setMenuAllow(new Set(minhasPermissoes.menu))`). Isso montava um laço de
+   * render: um `Set` novo nunca é igual ao anterior para o React, então cada
+   * disparo do efeito re-renderizava; e cada render que produzisse um
+   * `minhasPermissoes` com identidade nova disparava o efeito outra vez. O
+   * `placeholderData` inline do hook garantia essa identidade nova a cada render
+   * enquanto a chamada estava em voo (ver o bloco de doc de
+   * `useMinhasPermissoes`) — os dois defeitos juntos fecharam o ciclo.
+   *
+   * Estado só existe para o que o usuário muda. Isto é uma **função** da resposta
+   * do servidor: derivar torna o laço impossível em vez de improvável, e ainda faz
+   * o `useMemo` de `visibleSections` (chaveado em `[menuAllow]`) voltar a acertar,
+   * o que antes recomputava o filtro de `NAV_SECTIONS` em todo render — em dobro,
+   * porque `SidebarNav` é instanciado duas vezes.
+   *
+   * O estado anterior nascia vazio para não ler `localStorage` no initializer e
+   * quebrar a hidratação. Isso continua respeitado: o `placeholderData` do hook é
+   * quem lê `localStorage`, e só no cliente.
+   */
+  const menuAllow = useMemo(
+    () => new Set(minhasPermissoes?.menu ?? []),
+    [minhasPermissoes?.menu],
+  );
+  const headerRole = minhasPermissoes?.role ?? "";
 
   const activeKey = getActiveKey(currentPathname);
 
@@ -759,19 +785,6 @@ export default function DashboardLayout({
       setBrandLogo(branding.logoUrl);
     });
   }, []);
-
-  // Menu vem do SERVIDOR (E20), não mais do localStorage escrito no login.
-  //
-  // O que isto corrige: item de menu novo aparecia só depois de deslogar e
-  // logar de novo (`renewSession` descarta o corpo do refresh), e perfil
-  // customizado de clínica não mudava menu nenhum porque a cópia do front
-  // conhece papéis, não perfis. O hook cai no localStorage só enquanto a
-  // chamada está em voo — senão toda navegação piscaria sidebar vazia.
-  useEffect(() => {
-    if (!minhasPermissoes) return;
-    setMenuAllow(new Set(minhasPermissoes.menu));
-    setHeaderRole(minhasPermissoes.role ?? "");
-  }, [minhasPermissoes]);
 
   // Limpeza completa de propósito: cache do React Query fica em memória e
   // sobrevive a um router.push (é o mesmo processo JS) — sem isso, trocar de

@@ -13,6 +13,32 @@ export interface MinhasPermissoes {
 }
 
 /**
+ * Placeholder do primeiro paint — **identidade estável**, definida no módulo.
+ *
+ * ─── Por que não pode ser inline ───────────────────────────────────────────
+ * O React Query só reaproveita o placeholder anterior quando a **referência da
+ * função** é a mesma entre renders (`queryObserver.js`: `options.placeholderData
+ * === prevResultOptions?.placeholderData`). Declarada inline nas opções do
+ * `useQuery`, ela é uma função nova a cada render, o reuso nunca acontece, e cada
+ * render produz um objeto novo com arrays novos.
+ *
+ * Isso ligava um laço de render enquanto a chamada estava em voo: objeto novo →
+ * o `useEffect([minhasPermissoes])` do layout dispara → `setMenuAllow(new Set(…))`
+ * → `Set` com identidade nova → re-render → objeto novo → … É a mesma família do
+ * bug de 25/08/2026 (`NaN` escapando de um `useQuery`, ~280 commits/s), e a
+ * lição de lá vale aqui: **valor instável escapando de um `useQuery` é a causa
+ * mais provável de lentidão geral inexplicada** neste projeto.
+ *
+ * Com a referência estável, o objeto é criado uma vez por janela de carregamento
+ * e reusado nos renders seguintes.
+ */
+const placeholderDoLocalStorage = (): MinhasPermissoes => ({
+  role: getStoredUserRole(),
+  permissions: [],
+  menu: getStoredMenuKeys(),
+});
+
+/**
  * O que **esta** sessão pode, perguntado ao servidor (E20 / IAM-03).
  *
  * ─── O que isto substitui ───────────────────────────────────────────────────
@@ -46,10 +72,7 @@ export function useMinhasPermissoesQuery() {
     // precisa ser instantâneo. Mais curto que isto vira uma chamada por
     // navegação sem ganho nenhum.
     staleTime: 5 * 60_000,
-    placeholderData: () => ({
-      role: getStoredUserRole(),
-      permissions: [],
-      menu: getStoredMenuKeys(),
-    }),
+    // Referência do módulo, não função inline — ver o bloco acima.
+    placeholderData: placeholderDoLocalStorage,
   });
 }
