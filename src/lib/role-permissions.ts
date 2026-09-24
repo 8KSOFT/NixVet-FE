@@ -1,180 +1,46 @@
 /**
- * Cópia local da matriz de menu por papel.
+ * Leitura da sessão guardada em `localStorage` — **sem cópia da matriz de RBAC**.
  *
- * **Não é mais a fonte de verdade** (E20, 23/09/2026). Quem decide o menu é
- * `GET /access-control/me`, consumido por `hooks/apiHooks/useMinhasPermissoes.ts`
- * — calculado pelo mesmo serviço que autoriza no servidor, e por isso capaz de
- * refletir perfil customizado de clínica, que esta cópia nunca soube ler.
+ * ─── O que saiu daqui, e por quê (E20, passo 5) ────────────────────────────
+ * Este arquivo carregava uma cópia de ~140 linhas do mapa papel → chaves de menu,
+ * espelhando `backend/src/core/rbac/permissions.ts`. Era a segunda de três cópias
+ * (a terceira é o app mobile), e cópia de matriz divergindo em silêncio já custou
+ * caro: adicionar uma tela ao menu exigia editar dois repositórios, e perfil
+ * customizado de clínica não mudava menu nenhum, porque a cópia conhecia
+ * **papéis**, não perfis.
  *
- * O que sobrou daqui é **só o fallback do primeiro paint**, enquanto a chamada
- * está em voo: sem ele, toda navegação piscaria sidebar vazia e um erro de rede
- * esconderia o menu de quem está trabalhando.
+ * Desde o E20 quem decide o menu é `GET /access-control/me`, calculado pelo mesmo
+ * `PermissionService` que autoriza no servidor. Com isso a cópia deixou de ser
+ * fonte de verdade — e o que restava dela era pior que inútil:
  *
- * Portanto: **não adicione chave nova aqui** esperando que apareça na tela. O
- * lugar é o backend (`core/rbac/permissions.ts` + o seeder de access-control).
- * Mexer só aqui produz um menu que aparece por um instante e desaparece — o
- * pior sintoma possível.
+ * - **Para superadmin ela vencia o servidor.** `getStoredMenuKeys` devolvia as
+ *   chaves da matriz local e **ignorava** `user.permissions`, por causa de um
+ *   remendo antigo (sessão velha sem `finance-admin`). Ou seja: exatamente para
+ *   o papel mais poderoso, o primeiro paint mostrava o que o front achava, não o
+ *   que o servidor sabia.
+ * - **Para os demais, era um menu adivinhado** que aparecia por um instante e
+ *   podia mudar quando a resposta chegava — o sintoma que o próprio comentário
+ *   deste arquivo já classificava como o pior possível.
+ *
+ * ─── O que ficou ───────────────────────────────────────────────────────────
+ * Só a leitura do que o **servidor** gravou no login. Sem sessão guardada, o
+ * primeiro paint sai com menu vazio, e isso é deliberado: a resposta de
+ * `/access-control/me` chega em ~100 ms, e sidebar vazia por um instante é
+ * honesta, enquanto sidebar adivinhada é errada.
+ *
+ * **Não recrie a matriz aqui.** Chave nova de menu vive no backend
+ * (`core/rbac/permissions.ts` + o seeder de access-control).
  */
-/**
- * Espelha backend/src/core/rbac/permissions.ts — usado como fallback se `user.permissions` não existir (sessões antigas).
- */
-const MENU_BY_ROLE: Record<string, readonly string[]> = {
-  superadmin: [
-    'dashboard',
-    'clinics-admin',
-    'finance-admin',
-    'support-admin',
-    'patients',
-    'owners',
-    'team',
-    'prescriptions',
-    'bulario',
-    'exams',
-    'followups',
-    'calendar',
-    'vaccines',
-    'tasks',
-    'whatsapp',
-    'chatbot',
-    'medical-records',
-    'hospitalizations',
-    'financeiro',
-    'financeiro-lancamentos',
-    'financeiro-contas-pagar',
-    'financeiro-receitas',
-    'financeiro-custos',
-    'financeiro-receita',
-    'financeiro-planos-saude',
-    'financeiro-fluxo',
-    'financeiro-produtos',
-    'budgets',
-    'products',
-    'balcao',
-    'help',
-    'settings',
-  ],
-  admin: [
-    'dashboard',
-    'patients',
-    'owners',
-    'team',
-    'prescriptions',
-    'bulario',
-    'exams',
-    'followups',
-    'calendar',
-    'vaccines',
-    'tasks',
-    'whatsapp',
-    'chatbot',
-    'medical-records',
-    'hospitalizations',
-    'financeiro',
-    'financeiro-lancamentos',
-    'financeiro-contas-pagar',
-    'financeiro-receitas',
-    'financeiro-custos',
-    'financeiro-receita',
-    'financeiro-planos-saude',
-    'financeiro-fluxo',
-    'financeiro-produtos',
-    'budgets',
-    'products',
-    'balcao',
-    'help',
-    'settings',
-  ],
-  manager: [
-    'dashboard',
-    'patients',
-    'owners',
-    'team',
-    'prescriptions',
-    'bulario',
-    'exams',
-    'followups',
-    'calendar',
-    'vaccines',
-    'tasks',
-    'whatsapp',
-    'chatbot',
-    'medical-records',
-    'hospitalizations',
-    'financeiro',
-    'financeiro-lancamentos',
-    'financeiro-contas-pagar',
-    'financeiro-receitas',
-    'financeiro-custos',
-    'financeiro-receita',
-    'financeiro-planos-saude',
-    'financeiro-fluxo',
-    'financeiro-produtos',
-    'budgets',
-    'products',
-    'balcao',
-    'help',
-    'settings',
-  ],
-  reception: [
-    'dashboard',
-    'patients',
-    'owners',
-    'calendar',
-    'vaccines',
-    'tasks',
-    'whatsapp',
-    'balcao',
-    'help',
-  ],
-  intern: [
-    'dashboard',
-    'patients',
-    'owners',
-    'calendar',
-    'vaccines',
-    'tasks',
-    'hospitalizations',
-    'help',
-  ],
-  veterinarian: [
-    'dashboard',
-    'patients',
-    'owners',
-    'prescriptions',
-    'bulario',
-    'exams',
-    'followups',
-    'calendar',
-    'vaccines',
-    'tasks',
-    'whatsapp',
-    'medical-records',
-    'hospitalizations',
-    'help',
-  ],
-};
-
-export function menuKeysForRole(role: string | null | undefined): string[] {
-  const r = (role || 'veterinarian').toLowerCase().trim();
-  return [...(MENU_BY_ROLE[r] ?? MENU_BY_ROLE.veterinarian)];
-}
-
 export function getStoredMenuKeys(): string[] {
-  if (typeof window === 'undefined') return [...MENU_BY_ROLE.veterinarian];
+  if (typeof window === 'undefined') return [];
   try {
     const raw = localStorage.getItem('user');
     const user = raw ? JSON.parse(raw) : null;
-    const roleKeys = menuKeysForRole(user?.role);
-    if (Array.isArray(user?.permissions) && user.permissions.length > 0) {
-      // Superadmin: menu completo do frontend (ignora sessão antiga sem finance-admin)
-      if ((user?.role ?? '').toLowerCase() === 'superadmin') {
-        return roleKeys;
-      }
-      return user.permissions as string[];
-    }
-    return roleKeys;
+    // `permissions` é escrito pelo backend a cada login e a cada refresh
+    // (`SessionService.buildStaffSession`). Se não houver, não se adivinha.
+    return Array.isArray(user?.permissions) ? (user.permissions as string[]) : [];
   } catch {
-    return menuKeysForRole('veterinarian');
+    return [];
   }
 }
 
