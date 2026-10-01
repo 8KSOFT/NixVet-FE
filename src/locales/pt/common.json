@@ -2337,7 +2337,6 @@
     "title": "WhatsApp da clínica",
     "subtitle": { "pre": "Conecte o WhatsApp da clínica via", "post": "(QR Code, sem aprovação Meta). Cada clínica tem sua própria instância isolada." },
     "chatbot": { "title": "Chatbot — respostas automáticas (IA)", "active": "Ativo", "inactive": "Desativado" },
-    "webhook": { "title": "URL do Webhook (cadastro manual)", "instructionsPre": "Se você criou a instância manualmente na Z-API, configure o campo", "onReceive": "Ao receber", "instructionsPost": "com:", "account": "Conta Z-API:" },
     "actions": { "provision": "Provisionar nova instância", "registerManually": "Cadastrar manualmente", "checkStatus": "Verificar status", "scanQrCode": "Escanear QR Code", "disconnect": "Desconectar", "cancel": "Cancelar", "register": "Cadastrar" },
     "empty": { "withProvision": "Clique em \"{{action}}\" para conectar o WhatsApp da clínica.", "noInstances": "Nenhuma instância cadastrada." },
     "table": { "connectedNumber": "Número conectado", "status": "Status", "actions": "Ações" },

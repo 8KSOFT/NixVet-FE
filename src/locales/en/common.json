@@ -2400,7 +2400,6 @@
     "title": "Clinic WhatsApp",
     "subtitle": { "pre": "Connect the clinic's WhatsApp via", "post": "(QR code, no Meta approval required). Each clinic has its own isolated instance." },
     "chatbot": { "title": "Chatbot — automated replies (AI)", "active": "Active", "inactive": "Disabled" },
-    "webhook": { "title": "Webhook URL (manual registration)", "instructionsPre": "If you created the instance manually in Z-API, set the", "onReceive": "On receive", "instructionsPost": "field to:", "account": "Z-API account:" },
     "actions": { "provision": "Provision new instance", "registerManually": "Register manually", "checkStatus": "Check status", "scanQrCode": "Scan QR code", "disconnect": "Disconnect", "cancel": "Cancel", "register": "Register" },
     "empty": { "withProvision": "Click \"{{action}}\" to connect the clinic's WhatsApp.", "noInstances": "No instances registered." },
     "table": { "connectedNumber": "Connected number", "status": "Status", "actions": "Actions" },

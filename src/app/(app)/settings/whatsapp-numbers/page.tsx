@@ -13,12 +13,10 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
-import { Plus, Loader2, ExternalLink, RefreshCw, Wifi, WifiOff, Trash2, QrCode } from 'lucide-react';
+import { Plus, Loader2, RefreshCw, Wifi, WifiOff, Trash2, QrCode } from 'lucide-react';
 import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import { API_PAGE_SIZE } from '@/lib/pagination';
 import { ListPagination } from '@/components/list-pagination';
-import { getApiBaseUrl } from '@/lib/api-base';
-import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import QRCode from 'react-qr-code';
 import {
@@ -48,15 +46,6 @@ function getCurrentUserRole(): string | null {
   } catch {
     return null;
   }
-}
-
-function InfoBox({ title, children, className }: { title: React.ReactNode; children: React.ReactNode; className?: string }) {
-  return (
-    <div className={cn('rounded-lg border p-4 bg-primary/10 border-primary/20 text-primary', className)}>
-      <p className="font-semibold mb-1">{title}</p>
-      <div className="text-sm">{children}</div>
-    </div>
-  );
 }
 
 function StatusBadge({ status, loading }: { status: NumberStatus | null; loading: boolean }) {
@@ -103,8 +92,6 @@ export default function SettingsWhatsappNumbersPage() {
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [qrLoading, setQrLoading] = useState(false);
   const qrPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const zapiWebhookUrl = `${getApiBaseUrl()}/whatsapp/webhook/zapi`;
 
   const fetchStatus = useCallback(async (numberId: string) => {
     setStatusLoading((s) => ({ ...s, [numberId]: true }));
@@ -229,19 +216,6 @@ export default function SettingsWhatsappNumbersPage() {
           </CardContent>
         </Card>
       )}
-
-      <InfoBox title={t('settingsWhatsappNumbers.webhook.title')} className="mb-6">
-        <div className="space-y-1">
-          <p>{t('settingsWhatsappNumbers.webhook.instructionsPre')} <strong>&quot;{t('settingsWhatsappNumbers.webhook.onReceive')}&quot;</strong> {t('settingsWhatsappNumbers.webhook.instructionsPost')}</p>
-          <code className="text-xs break-all bg-primary/10 px-1 py-0.5 rounded block mt-1">{zapiWebhookUrl}</code>
-          <p className="mt-1">
-            {t('settingsWhatsappNumbers.webhook.account')}{' '}
-            <a href="https://z-api.io" target="_blank" rel="noreferrer" className="underline inline-flex items-center gap-1">
-              z-api.io <ExternalLink className="w-3 h-3" />
-            </a>
-          </p>
-        </div>
-      </InfoBox>
 
       <Card className="rounded-none border-0 bg-transparent py-0 shadow-none sm:rounded-xl sm:border sm:border-border/80 sm:bg-card sm:py-6 sm:shadow-(--shadow-card)">
         <CardContent className="px-0 pt-0 sm:px-6 sm:pt-6">
