@@ -259,13 +259,17 @@ export function SetupChecklistWidget() {
   // sete requisições a cada carregamento de página sem nada aparecer na tela;
   // duas delas (`/users/staff` → `users.read`, `/health-plans` →
   // `health_plans.read`) agora voltam 403 com o RBAC granular ligado.
-  const staffQuery = useStaffUsersListQuery(visible);
-  const vetSchedulesQuery = useVetSchedulesQuery(visible);
-  const resourcesQuery = useResourcesListQuery(visible);
-  const healthPlansQuery = useHealthPlansListQuery(visible);
-  const tenantQuery = useTenantMeQuery(visible);
-  const googleStatusQuery = useGoogleStatusQuery(visible);
-  const termTemplatesQuery = useClinicTermTemplatesQuery(visible);
+  //
+  // Pelo mesmo motivo, depois de dispensado ou concluído (`celebrated`) o
+  // widget não aparece mais — e não deve continuar buscando.
+  const buscar = visible && !dismissed && !celebrated;
+  const staffQuery = useStaffUsersListQuery(buscar);
+  const vetSchedulesQuery = useVetSchedulesQuery(buscar);
+  const resourcesQuery = useResourcesListQuery(buscar);
+  const healthPlansQuery = useHealthPlansListQuery(buscar);
+  const tenantQuery = useTenantMeQuery(buscar);
+  const googleStatusQuery = useGoogleStatusQuery(buscar);
+  const termTemplatesQuery = useClinicTermTemplatesQuery(buscar);
 
   const loading =
     staffQuery.isLoading ||

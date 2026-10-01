@@ -4,13 +4,14 @@ import React, { useEffect, useState } from 'react';
 import { I18nextProvider } from 'react-i18next';
 import { Toaster, toast } from 'sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { MutationCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import dayjs from 'dayjs';
 import 'dayjs/locale/pt-br';
 import 'dayjs/locale/es';
 import i18n, { persistLanguage, trocarIdioma } from '@/lib/i18n/instance';
 import { STORAGE_KEY, SUPPORTED_LANGUAGES, type AppLanguage } from '@/lib/i18n/resources';
 import { getApiMessage } from '@/app/types/api-response';
+import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import { instalarCapturaDeErros } from '@/lib/client-telemetry';
 import { limparDadoPessoalLegado } from '@/lib/session';
 
@@ -48,6 +49,23 @@ export default function AppProviders({ children }: { children: React.ReactNode }
             },
           },
         },
+        // Falha ao CARREGAR (query) sem dado anterior na tela: até 01/10/2026
+        // isso virava estado vazio em silêncio — "Nenhum paciente cadastrado"
+        // depois de um 5xx. As telas principais mostram `EstadoErro`; este
+        // toast cobre todas as outras. Só servidor fora/lento (5xx, sem
+        // resposta, 429): 401 e 402 já têm tratamento no interceptor, e 403/404
+        // são resposta de negócio que a própria tela decide como mostrar. O
+        // `id` fixo junta várias queries falhando ao mesmo tempo num toast só.
+        queryCache: new QueryCache({
+          onError: (erro, query) => {
+            if (query.state.data !== undefined) return;
+            const status = (erro as { response?: { status?: number } })?.response?.status;
+            if (status && status < 500 && status !== 429) return;
+            toast.error(getApiErrorMessage(erro, 'Não foi possível carregar os dados.'), {
+              id: 'erro-ao-carregar',
+            });
+          },
+        }),
         // Endpoints ja migrados para o envelope { success, message, data } tem a mensagem
         // "grudada" no resultado da mutation pelo interceptor do axios (src/lib/axios.ts).
         // Quando presente, ela substitui o toast fixo que cada tela definiria manualmente.

@@ -121,7 +121,7 @@ Quatro coisas quebraram, todas de causa não óbvia:
 O ESLint 9 + config 16 trazem as regras do React Compiler, que acusam **73
 avisos** de padrão preexistente (44 deles `set-state-in-effect`). São aviso, não
 erro, pelos motivos documentados no `eslint.config.mjs` — e o CI tem
-`--max-warnings=73` como **teto**. Ao mexer num componente que aparece na lista,
+`--max-warnings=63` como **teto** (era 73; baixou em 01/10/2026). Ao mexer num componente que aparece na lista,
 corrija o que ele acusa e baixe o teto; subir o número é decisão explícita.
 
 Vale insistir num ponto: `set-state-in-effect` é exatamente a família do bug de

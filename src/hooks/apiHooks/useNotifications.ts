@@ -27,7 +27,9 @@ export function useUnreadNotificationsCountQuery() {
       return Number(data?.count ?? 0);
     },
     refetchInterval: 60000,
-    refetchIntervalInBackground: true,
+    // Aba escondida não pergunta: eram 60 requisições/hora por aba esquecida
+    // aberta. Ao voltar para a aba o React Query busca de novo (staleTime).
+    refetchIntervalInBackground: false,
   });
 }
 
