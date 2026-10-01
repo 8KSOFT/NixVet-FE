@@ -159,8 +159,7 @@
     "google": {
       "tokenExpired": "Token vencido. Desconecte y vuelva a conectar la integración con Google.",
       "noEventsThisMonth": "No hay eventos de Google Calendar este mes.",
-      "calendarLabel": "Calendario",
-      "debugHint": "Para depurar: acceda a"
+      "calendarLabel": "Calendario"
     },
     "dayView": { "appointmentTimeRange": "{{patient}} ({{vet}}) de {{start}} a {{end}}" },
     "monthView": { "viewDayTooltip": "Ver día", "moreCount": "+{{count}} más" },

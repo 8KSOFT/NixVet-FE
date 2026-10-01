@@ -1131,8 +1131,7 @@ function CalendarContent() {
           {googleEvents.length === 0 && googleDiag?.tokenStatus === 'valid' && (
             <div className="text-xs text-primary bg-primary/10 border border-primary/20 rounded px-3 py-2">
               {t('calendar.google.noEventsThisMonth')} {t('calendar.google.calendarLabel')}:{' '}
-              {String(googleDiag?.calendarId || 'primary')} | {t('calendar.google.debugHint')}{' '}
-              <code className="bg-blue-100 px-1 rounded">/api/integrations/google/debug-events</code>
+              {String(googleDiag?.calendarId || 'primary')}
             </div>
           )}
         </div>

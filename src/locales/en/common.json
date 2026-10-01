@@ -159,8 +159,7 @@
     "google": {
       "tokenExpired": "Token expired. Disconnect and reconnect the Google integration.",
       "noEventsThisMonth": "No Google Calendar events this month.",
-      "calendarLabel": "Calendar",
-      "debugHint": "To debug: go to"
+      "calendarLabel": "Calendar"
     },
     "dayView": { "appointmentTimeRange": "{{patient}} ({{vet}}) from {{start}} to {{end}}" },
     "monthView": { "viewDayTooltip": "View day", "moreCount": "+{{count}} more" },
