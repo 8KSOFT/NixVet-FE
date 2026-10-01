@@ -10,7 +10,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { useForm, Controller } from 'react-hook-form';
@@ -23,7 +22,7 @@ import {
   useDueVaccineRemindersQuery,
   useVaccineRemindersQuery,
 } from '@/hooks/apiHooks/useVaccineReminders';
-import { usePatientsListQuery } from '@/hooks/apiHooks/usePatients';
+import { PacienteBusca } from '@/components/paciente-busca';
 
 interface VaccineFormValues {
   patient_id: string;
@@ -123,9 +122,6 @@ function VaccinesContent() {
 
   const { data: allPageData, isLoading: loadingAll } = useVaccineRemindersQuery(allPage);
   const { data: duePageData, isLoading: loadingDue } = useDueVaccineRemindersQuery(duePage, 30);
-  // Só alimenta o select do dialog de criação (a tabela usa `r.patient`, incluído
-  // na própria linha) — busca ao abrir, não a cada visita à tela.
-  const { data: patients = [] } = usePatientsListQuery(undefined, modalOpen);
   const loading = loadingAll || loadingDue;
 
   const allReminders = allPageData?.items ?? [];
@@ -216,18 +212,11 @@ function VaccinesContent() {
                 control={control}
                 rules={{ required: true }}
                 render={({ field }) => (
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <SelectTrigger>
-                      <SelectValue placeholder={t('vaccines.selectPlaceholder')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {patients.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <PacienteBusca
+                    value={field.value}
+                    onChange={(v) => field.onChange(v)}
+                    placeholder={t('vaccines.selectPlaceholder')}
+                  />
                 )}
               />
             </div>

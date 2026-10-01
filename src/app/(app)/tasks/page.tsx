@@ -10,7 +10,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { useForm, Controller } from 'react-hook-form';
 import { Plus, CheckCircle2, Loader2 } from 'lucide-react';
@@ -22,7 +21,7 @@ import {
   useCreateClinicalTaskMutation,
   useMarkClinicalTaskDoneMutation,
 } from '@/hooks/apiHooks/useClinicalTasks';
-import { usePatientsListQuery } from '@/hooks/apiHooks/usePatients';
+import { PacienteBusca } from '@/components/paciente-busca';
 
 interface TaskFormValues {
   patient_id: string;
@@ -53,9 +52,6 @@ function TasksContent() {
   const listTotal = tasksPage?.total ?? 0;
   const listTotalPages = tasksPage?.totalPages ?? 1;
 
-  // Só alimenta o select do dialog de criação — busca ao abrir, não a cada visita
-  // à tela (são todas as páginas de pacientes).
-  const { data: patients = [] } = usePatientsListQuery(undefined, modalOpen);
 
   const createTask = useCreateClinicalTaskMutation();
   const markDoneMutation = useMarkClinicalTaskDoneMutation();
@@ -221,18 +217,11 @@ function TasksContent() {
                 control={control}
                 rules={{ required: true }}
                 render={({ field }) => (
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {patients.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <PacienteBusca
+                    value={field.value}
+                    onChange={(v) => field.onChange(v)}
+                    placeholder="Selecione"
+                  />
                 )}
               />
             </div>

@@ -25,7 +25,7 @@ import {
   useUpdateFollowupStatusMutation,
 } from '@/hooks/apiHooks/useExamFollowups';
 import { useExamRequestsListQuery } from '@/hooks/apiHooks/useExamRequests';
-import { usePatientsListQuery } from '@/hooks/apiHooks/usePatients';
+import { PacienteBusca } from '@/components/paciente-busca';
 
 function FollowupsContent() {
   const { t } = useTranslation();
@@ -50,9 +50,6 @@ function FollowupsContent() {
   const { data: awaitingPageData, isLoading: loadingAwaiting } = useAwaitingFollowupsQuery(awaitingPage);
   const { data: allPageData, isLoading: loadingAll } = useFollowupsQuery(allPage);
   const { data: examRequests = [] } = useExamRequestsListQuery();
-  // Só alimenta o select do dialog de criação — busca ao abrir, não a cada visita
-  // à tela (são todas as páginas de pacientes).
-  const { data: patients = [] } = usePatientsListQuery(undefined, modalOpen);
   const loading = loadingAwaiting || loadingAll;
 
   const awaiting = awaitingPageData?.items ?? [];
@@ -379,18 +376,11 @@ function FollowupsContent() {
                 control={control}
                 rules={{ required: true }}
                 render={({ field }) => (
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <SelectTrigger>
-                      <SelectValue placeholder={t('followups.select')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {patients.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <PacienteBusca
+                    value={field.value}
+                    onChange={(v) => field.onChange(v)}
+                    placeholder={t('followups.select')}
+                  />
                 )}
               />
             </div>

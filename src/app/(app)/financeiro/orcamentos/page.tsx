@@ -26,7 +26,7 @@ import { CurrencyInput } from '@/components/ui/currency-input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { useProductsQuery } from '@/hooks/apiHooks/useProducts';
-import { usePatientsListQuery } from '@/hooks/apiHooks/usePatients';
+import { PacienteBusca } from '@/components/paciente-busca';
 import { useVeterinariansQuery } from '@/hooks/apiHooks/useUsers';
 import {
   useApproveBudgetMutation,
@@ -115,9 +115,6 @@ export default function OrcamentosPage() {
   const [selected, setSelected] = useState<Budget | null>(null);
   const [toCancel, setToCancel] = useState<Budget | null>(null);
   const [cancelReason, setCancelReason] = useState('');
-  // Só alimenta o select do dialog "Novo orçamento" — busca ao abrir, não a cada
-  // visita à tela (são todas as páginas de pacientes).
-  const { data: patients = [] } = usePatientsListQuery(undefined, openNew);
   const { data: users = [] } = useVeterinariansQuery();
   const { data: products = [] } = useProductsQuery();
 
@@ -467,18 +464,11 @@ export default function OrcamentosPage() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="space-y-1">
                 <Label>{t('financeiroOrcamentos.patient')}</Label>
-                <Select value={form.patient_id} onValueChange={(v) => setForm((f) => ({ ...f, patient_id: v }))}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={t('financeiroOrcamentos.selectPlaceholder')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {patients.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <PacienteBusca
+                  value={form.patient_id}
+                  onChange={(v) => setForm((f) => ({ ...f, patient_id: v }))}
+                  placeholder={t('financeiroOrcamentos.selectPlaceholder')}
+                />
               </div>
               <div className="space-y-1">
                 <Label>{t('financeiroOrcamentos.veterinarian')}</Label>

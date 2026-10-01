@@ -16,6 +16,8 @@ export const patientKeys = {
   detail: (id: string) => [...patientKeys.details(), id] as const,
   timeline: (id: string) => [...patientKeys.all, 'timeline', id] as const,
   search: (term: string) => [...patientKeys.all, 'search', term] as const,
+  picker: (term: string, tutorId?: string) =>
+    [...patientKeys.all, 'picker', { term, tutorId: tutorId || undefined }] as const,
 };
 
 export interface PatientPayload {
@@ -81,6 +83,31 @@ export function useSearchPatientsQuery(term: string, limit = 8) {
     },
     enabled: trimmed.length > 0,
     placeholderData: keepPreviousData,
+  });
+}
+
+/**
+ * Busca do seletor de paciente (`PacienteBusca`): uma página só, filtrada no
+ * servidor por nome/chip. Com termo vazio traz os primeiros 20, para o
+ * seletor não abrir em branco. Substitui a lista completa da clínica que os
+ * formulários baixavam ao abrir (01/10/2026).
+ */
+export function usePatientPickerQuery(term: string, enabled: boolean, tutorId?: string, limit = 20) {
+  const trimmed = term.trim();
+  return useQuery({
+    queryKey: patientKeys.picker(trimmed, tutorId),
+    queryFn: async () => {
+      const { data } = await api.get('/patients', {
+        params: listQueryParams(1, limit, {
+          ...(trimmed ? { search: trimmed } : {}),
+          ...(tutorId ? { tutor_id: tutorId } : {}),
+        }),
+      });
+      return parseListResponse<PatientRow>(data, 1, limit).items;
+    },
+    enabled,
+    placeholderData: keepPreviousData,
+    staleTime: 60_000,
   });
 }
 

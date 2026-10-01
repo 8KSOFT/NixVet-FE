@@ -39,6 +39,7 @@ import {
   useClinicalTermPdfMutation,
 } from '@/hooks/apiHooks/useClinicalTerms';
 import { usePatientsListQuery } from '@/hooks/apiHooks/usePatients';
+import { PacienteBusca } from '@/components/paciente-busca';
 import type { ClinicalTerm, ClinicalTermType as TermType } from '@/app/types/clinical-term';
 import type { TFunction } from 'i18next';
 
@@ -66,12 +67,12 @@ export default function TermosPage() {
   const [form, setForm] = useState({ ...EMPTY });
 
   const { data: terms = [], isLoading: loading } = useClinicalTermsQuery();
-  // A lista completa de pacientes (todas as páginas) serve ao select do dialog e,
-  // hoje, também ao nome do paciente na tabela — `GET /clinical-terms` ainda não
-  // inclui o Patient. Quando o backend passar a mandar `term.patient`, a tabela usa
-  // o nome da própria linha e a varredura só acontece ao abrir o dialog.
+  // A lista completa de pacientes (todas as páginas) só resta como fallback do nome
+  // do paciente na tabela, para termos que chegam sem `term.patient`. O select do
+  // dialog busca no servidor (`PacienteBusca`) e não depende mais dela — abrir o
+  // dialog não dispara a varredura.
   const needsPatientLookup = terms.some((term) => term.patient_id && !(term as TermWithPatient).patient);
-  const { data: patients = [] } = usePatientsListQuery(undefined, dialog || needsPatientLookup);
+  const { data: patients = [] } = usePatientsListQuery(undefined, needsPatientLookup);
   const createMutation = useCreateClinicalTermMutation();
   const pdfMutation = useClinicalTermPdfMutation();
   const saving = createMutation.isPending;
@@ -203,18 +204,11 @@ export default function TermosPage() {
             </div>
             <div>
               <Label>{t('termos.fieldPatient')}</Label>
-              <Select value={form.patient_id} onValueChange={(v) => setForm({ ...form, patient_id: v })}>
-                <SelectTrigger>
-                  <SelectValue placeholder={t('termos.fieldPatientPlaceholder')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {patients.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <PacienteBusca
+                value={form.patient_id}
+                onChange={(v) => setForm({ ...form, patient_id: v })}
+                placeholder={t('termos.fieldPatientPlaceholder')}
+              />
             </div>
             <div>
               <Label htmlFor="resp">{t('termos.fieldResponsibleName')}</Label>

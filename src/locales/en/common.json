@@ -2950,5 +2950,12 @@
       "nameLabel": "Workflow name",
       "namePlaceholder": "E.g.: Main Workflow"
     }
+  },
+  "patientPicker": {
+    "placeholder": "Select the patient",
+    "searchPlaceholder": "Search by name or chip…",
+    "loading": "Loading…",
+    "empty": "No patients found.",
+    "error": "Could not search patients."
   }
 }

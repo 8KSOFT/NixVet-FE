@@ -58,7 +58,7 @@ import {
 import { useProfileQuery } from '@/hooks/apiHooks/useUsers';
 import { useBularioItemQuery, useBularioSearchMutation } from '@/hooks/apiHooks/useBulario';
 import { useSurgicalProceduresListQuery } from '@/hooks/apiHooks/useSurgicalProcedures';
-import { usePatientsListQuery } from '@/hooks/apiHooks/usePatients';
+import { PacienteBusca } from '@/components/paciente-busca';
 import { fetchPublicBranding } from '@/lib/branding';
 import type { PatientRow } from '@/app/types/patient';
 
@@ -427,9 +427,10 @@ function PrescriptionsContent() {
   const listTotal = prescriptionsPage?.total ?? 0;
   const listTotalPages = prescriptionsPage?.totalPages ?? 1;
 
-  // Pacientes só alimentam o select e a prévia do modal de criação — busca (todas as páginas)
-  // só quando o modal abre, não a cada visita à listagem.
-  const { data: patients = [] } = usePatientsListQuery(undefined, modalVisible);
+  // Linha do paciente escolhido no `PacienteBusca` — a prévia do documento lê
+  // espécie/raça/idade/peso dela. Antes vinha de um `.find` na lista completa de
+  // pacientes, que o formulário não baixa mais.
+  const [pacienteEscolhido, setPacienteEscolhido] = useState<PatientRow | null>(null);
   const [selectedProcedureIds, setSelectedProcedureIds] = useState<number[]>([]);
   const [procedureSearch, setProcedureSearch] = useState('');
 
@@ -826,7 +827,8 @@ function PrescriptionsContent() {
 
   // Dados pro preview de documento (aba "Prévia" do modal de criação) — tudo
   // derivado do que já está carregado/observado no form, sem chamada nova.
-  const previewPatient = patients.find((p) => p.id === watchPatientId);
+  // Confere o id: depois de um `reset` (novo modal) o form zera, mas o estado guarda o anterior.
+  const previewPatient = pacienteEscolhido?.id === watchPatientId ? pacienteEscolhido : undefined;
   const previewMedications = watch('medications') ?? [];
   const previewObservations = watch('observations');
   const previewPrescriptionDate = watch('prescription_date');
@@ -1105,24 +1107,15 @@ function PrescriptionsContent() {
               name="patient_id"
               rules={{ required: true }}
               render={({ field }) => (
-                <Select
+                <PacienteBusca
                   value={field.value}
-                  onValueChange={(v) => {
+                  placeholder={t('prescriptions.form.patientPlaceholder')}
+                  onChange={(v, paciente) => {
                     field.onChange(v);
+                    setPacienteEscolhido(paciente);
                     handlePatientChange(v);
                   }}
-                >
-                  <SelectTrigger className="h-10">
-                    <SelectValue placeholder={t('prescriptions.form.patientPlaceholder')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {patients.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.name} ({p.species}){p.tutor?.name ? ` — ${p.tutor.name}` : ''}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                />
               )}
             />
           </div>

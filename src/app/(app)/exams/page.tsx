@@ -30,7 +30,7 @@ import {
   useExamAreasQuery,
   useExamCatalogQuery,
 } from '@/hooks/apiHooks/useExamCatalog';
-import { usePatientsListQuery } from '@/hooks/apiHooks/usePatients';
+import { PacienteBusca } from '@/components/paciente-busca';
 import { usePatientConsultationsQuery } from '@/hooks/apiHooks/usePrescriptions';
 
 function ExamRequestsContent() {
@@ -52,9 +52,6 @@ function ExamRequestsContent() {
   const listTotal = examRequestsPage?.total ?? 0;
   const listTotalPages = examRequestsPage?.totalPages ?? 1;
 
-  // Pacientes só alimentam o select do dialog (a tabela usa `record.patient`, que
-  // vem na própria linha) — busca ao abrir, não a cada visita à tela.
-  const { data: patients = [] } = usePatientsListQuery(undefined, modalVisible);
   // Consultas do paciente escolhido, filtradas no backend (`?patient_id=`). Antes a
   // tela baixava a agenda inteira da clínica (todas as páginas de /consultations)
   // no carregamento, só pra filtrar um paciente no cliente.
@@ -411,24 +408,14 @@ function ExamRequestsContent() {
               name="patient_id"
               rules={{ required: true }}
               render={({ field }) => (
-                <Select
+                <PacienteBusca
                   value={field.value}
-                  onValueChange={(v) => {
+                  placeholder={t('exams.selectPatientPlaceholder')}
+                  onChange={(v) => {
                     field.onChange(v);
                     handlePatientChange(v);
                   }}
-                >
-                  <SelectTrigger className="h-10">
-                    <SelectValue placeholder={t('exams.selectPatientPlaceholder')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {patients.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.name} ({p.species}){p.tutor?.name ? ` — ${p.tutor.name}` : ''}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                />
               )}
             />
           </div>

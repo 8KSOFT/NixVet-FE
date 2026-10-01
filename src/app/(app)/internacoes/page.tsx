@@ -26,7 +26,7 @@ import {
   useCreateHospitalizationMutation,
   useHospitalizationsQuery,
 } from '@/hooks/apiHooks/useHospitalizations';
-import { usePatientsListQuery } from '@/hooks/apiHooks/usePatients';
+import { PacienteBusca } from '@/components/paciente-busca';
 import { useStaffUsersListQuery, useVeterinariansQuery } from '@/hooks/apiHooks/useUsers';
 import { useHealthPlansListQuery } from '@/hooks/apiHooks/useHealthPlans';
 import { useHasPermission } from '@/hooks/useHasPermission';
@@ -86,9 +86,6 @@ function InternacoesPageContent() {
   const { data: all = [], isLoading: loadingAll } = useHospitalizationsQuery();
   const loading = loadingActive || loadingAll;
 
-  // Só alimenta o select do dialog "Nova internação" (a tabela usa `h.patient`,
-  // que já vem incluído na própria linha) — busca ao abrir, não a cada visita.
-  const { data: patients = [] } = usePatientsListQuery(undefined, openNew);
   const vetsQuery = useVeterinariansQuery();
   const veterinarians = vetsQuery.data ?? [];
 
@@ -368,18 +365,11 @@ function InternacoesPageContent() {
           <div className="grid grid-cols-2 gap-4 md:gap-4 max-md:grid-cols-2">
             <div className="space-y-1">
               <Label>{t('internacoes.fieldPatient')}</Label>
-              <Select value={form.patient_id} onValueChange={(v) => setForm((f) => ({ ...f, patient_id: v }))}>
-                <SelectTrigger>
-                  <SelectValue placeholder={t('internacoes.selectPlaceholder')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {patients.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <PacienteBusca
+                value={form.patient_id}
+                onChange={(v) => setForm((f) => ({ ...f, patient_id: v }))}
+                placeholder={t('internacoes.selectPlaceholder')}
+              />
             </div>
             <div className="space-y-1">
               <Label>{t('internacoes.fieldVeterinarian')}</Label>

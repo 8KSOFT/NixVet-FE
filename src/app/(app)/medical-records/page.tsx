@@ -22,7 +22,8 @@ import { cn } from '@/lib/utils';
 import dayjs from 'dayjs';
 import type { MedicalRecord, MedicalRecordPatientRef } from '@/app/types/medical-record';
 import { useCreateMedicalRecordMutation, useMedicalRecordsQuery } from '@/hooks/apiHooks/useMedicalRecords';
-import { usePatientsListQuery, useCreatePatientMutation } from '@/hooks/apiHooks/usePatients';
+import { useCreatePatientMutation } from '@/hooks/apiHooks/usePatients';
+import { PacienteBusca } from '@/components/paciente-busca';
 import { useTutorsListQuery, useCreateTutorMutation } from '@/hooks/apiHooks/useTutors';
 import { EstadoErro } from '@/components/estado-erro';
 import { useVeterinariansQuery } from '@/hooks/apiHooks/useUsers';
@@ -116,12 +117,12 @@ export default function MedicalRecordsListPage() {
   const listTotal = recordsPage?.total ?? 0;
   const listTotalPages = recordsPage?.totalPages ?? 1;
 
-  // As duas listas completas (todas as páginas) só alimentam selects — a grade de
+  // A lista completa de tutores (todas as páginas) só alimenta selects — a grade de
   // pastas usa `record.patient`/`record.patient.tutor`, que já vêm em cada linha.
-  // Pacientes: só o dialog "Nova ficha". Tutores: o combobox de filtro (ao abrir),
-  // o dialog de novo paciente, e enquanto houver filtro ativo, pro nome do tutor
-  // escolhido no botão (o staleTime do hook evita refazer a varredura aqui).
-  const { data: patients = [], isFetching: loadingPatients } = usePatientsListQuery(undefined, modalVisible);
+  // Tutores: o combobox de filtro (ao abrir), o dialog de novo paciente, e enquanto
+  // houver filtro ativo, pro nome do tutor escolhido no botão (o staleTime do hook
+  // evita refazer a varredura aqui). Pacientes do dialog "Nova ficha" são buscados
+  // no servidor pelo `PacienteBusca`, sem baixar a lista inteira.
   const { data: tutors = [], isFetching: loadingTutors } = useTutorsListQuery(
     tutorFilterOpen || patientModal || !!filterTutor,
   );
@@ -566,25 +567,13 @@ export default function MedicalRecordsListPage() {
             <Label>{t('medicalRecords.dialog.patientLabel')}</Label>
             <div className="flex flex-col gap-2 sm:flex-row">
               <div className="flex-1 min-w-0">
-                <Select value={form.patient_id} onValueChange={(v) => setForm((p) => ({ ...p, patient_id: v }))}>
-                  <SelectTrigger>
-                    <SelectValue
-                      placeholder={
-                        // Enquanto a lista (agora sob demanda) chega, não afirmar "nenhum paciente".
-                        patients.length || loadingPatients
-                          ? t('medicalRecords.dialog.selectPlaceholder')
-                          : t('medicalRecords.dialog.noPatientsPlaceholder')
-                      }
-                    />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {patients.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.name} {p.species ? `(${p.species})` : ''}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {/* Paciente recém-criado pelo botão ao lado entra só pelo id (`handleCreatePatient`);
+                   o `PacienteBusca` busca o rótulo em `GET /patients/:id`. */}
+                <PacienteBusca
+                  value={form.patient_id}
+                  onChange={(v) => setForm((p) => ({ ...p, patient_id: v }))}
+                  placeholder={t('medicalRecords.dialog.selectPlaceholder')}
+                />
               </div>
               <Button
                 type="button"

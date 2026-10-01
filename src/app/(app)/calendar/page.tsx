@@ -65,7 +65,8 @@ import {
   useUpdateConsultationMutation,
 } from '@/hooks/apiHooks/useConsultations';
 import { useCreateMedicalRecordMutation } from '@/hooks/apiHooks/useMedicalRecords';
-import { usePatientsListQuery, useCreatePatientMutation } from '@/hooks/apiHooks/usePatients';
+import { useCreatePatientMutation } from '@/hooks/apiHooks/usePatients';
+import { PacienteBusca } from '@/components/paciente-busca';
 import { useTutorsListQuery, useCreateTutorMutation } from '@/hooks/apiHooks/useTutors';
 import { useVeterinariansQuery } from '@/hooks/apiHooks/useUsers';
 import { useResourcesListQuery } from '@/hooks/apiHooks/useResources';
@@ -370,13 +371,12 @@ function CalendarContent() {
   }, [viewMode, googleConnected]);
 
   /**
-   * Filtro opcional: `GET /patients?tutor_id=`. `usePatientsListQuery`/`useTutorsListQuery`
-   * buscam a lista COMPLETA (todas as páginas) — só usadas dentro do modal "Agendar"
-   * (selects de tutor/paciente), então ficam gated em `modalVisible` pra não disparar
-   * essas duas buscas pesadas em toda visita à Agenda com o modal fechado.
+   * Filtro opcional por tutor: vai como `tutorId` pro `PacienteBusca`, que busca no
+   * servidor (`GET /patients?tutor_id=&search=`) em vez de baixar a lista completa.
+   * `useTutorsListQuery` ainda busca todas as páginas — só usada dentro do modal
+   * "Agendar", então fica gated em `modalVisible`.
    */
   const [patientFilterTutorId, setPatientFilterTutorId] = useState('');
-  const { data: patients = [] } = usePatientsListQuery(patientFilterTutorId || undefined, modalVisible);
 
   // ── Quick-register new patient/tutor inline ──
   const { data: tutors = [] } = useTutorsListQuery(modalVisible);
@@ -1246,21 +1246,14 @@ function CalendarContent() {
                 </div>
                 <div className="space-y-2 min-w-0 w-full">
                   <Label>{t('calendar.appointmentDialog.patientLabel')}</Label>
-                  <Select
+                  {/* Paciente criado em "cadastrar novo pet" volta só com o id (pode ser de outro
+                     tutor que não o do filtro); o `PacienteBusca` busca o rótulo pelo id. */}
+                  <PacienteBusca
                     value={formData.patient_id}
-                    onValueChange={(v) => setFormData((p) => ({ ...p, patient_id: v }))}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder={t('calendar.selectPlaceholder')} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {patients.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    onChange={(v) => setFormData((p) => ({ ...p, patient_id: v }))}
+                    placeholder={t('calendar.selectPlaceholder')}
+                    tutorId={patientFilterTutorId || undefined}
+                  />
                   <button
                     type="button"
                     className="text-xs text-primary underline flex items-center gap-1 mt-1"
