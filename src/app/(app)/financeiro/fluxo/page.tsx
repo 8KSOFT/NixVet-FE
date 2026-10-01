@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useTranslation } from 'react-i18next';
 import { AlertTriangle, TrendingDown, TrendingUp, Wallet } from 'lucide-react';
@@ -16,33 +16,15 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
-import api from '@/lib/axios';
 import { toast } from 'sonner';
 import { useCurrencyFormatter, CURRENCY_BY_LANGUAGE, resolveAppLanguage } from '@/lib/i18n/currency';
+import { useCashFlowQuery } from '@/hooks/apiHooks/useFinancialReports';
+import { EstadoErro } from '@/components/estado-erro';
 
 const CashFlowChart = dynamic(() => import('./CashFlowChart'), {
   ssr: false,
   loading: () => <Skeleton className="h-64 w-full" />,
 });
-
-interface CashFlowDay {
-  date: string;
-  inflow: number;
-  outflow: number;
-  net: number;
-  cumulative_balance: number;
-}
-
-interface CashFlow {
-  days: CashFlowDay[];
-  summary: {
-    total_inflows: number;
-    total_outflows: number;
-    final_balance: number;
-    negative_days: number;
-    first_negative_day: string | null;
-  };
-}
 
 function fmtDate(iso: string) {
   return new Date(`${iso}T12:00:00`).toLocaleDateString('pt-BR');
@@ -55,24 +37,14 @@ export default function FluxoCaixaPage() {
   const fmt = useCurrencyFormatter();
   const currencySymbol = CURRENCY_BY_LANGUAGE[resolveAppLanguage(i18n.language)].symbol;
   const [days, setDays] = useState(60);
-  const [data, setData] = useState<CashFlow | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await api.get<CashFlow>(`/financial-reports/fluxo-caixa?days=${days}`);
-      setData(res.data);
-    } catch {
-      toast.error(t('financeiroFluxo.loadError'));
-    } finally {
-      setLoading(false);
-    }
-  }, [days, t]);
+  const { data, isLoading: loading, isError, error, refetch } = useCashFlowQuery(days);
+  // Sem dado nenhum para mostrar: erro explícito em vez de cards zerados, que
+  // seriam lidos como "não há movimentação" — o oposto do que aconteceu.
+  const loadFailed = isError && !data;
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (isError) toast.error(t('financeiroFluxo.loadError'));
+  }, [isError, t]);
 
   // Gráfico: apenas dias com movimentação (mantém o acumulado de todos).
   const chartData = (data?.days ?? [])
@@ -86,29 +58,42 @@ export default function FluxoCaixaPage() {
 
   const movementDays = (data?.days ?? []).filter((d) => d.inflow > 0 || d.outflow > 0);
 
+  const header = (
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+      <div>
+        <h1 className="text-2xl font-bold">{t('financeiroFluxo.title')}</h1>
+        <p className="text-sm text-muted-foreground">
+          {t('financeiroFluxo.subtitle')}
+        </p>
+      </div>
+      <div className="flex gap-1">
+        {RANGE_OPTIONS.map((r) => (
+          <Button
+            key={r}
+            size="sm"
+            variant={days === r ? 'default' : 'outline'}
+            onClick={() => setDays(r)}
+            className="flex-1 sm:flex-none"
+          >
+            {t('financeiroFluxo.rangeButton', { days: r })}
+          </Button>
+        ))}
+      </div>
+    </div>
+  );
+
+  if (loadFailed) {
+    return (
+      <div className="space-y-6">
+        {header}
+        <EstadoErro error={error} onRetry={() => refetch()} mensagem={t('financeiroFluxo.loadError')} />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-        <div>
-          <h1 className="text-2xl font-bold">{t('financeiroFluxo.title')}</h1>
-          <p className="text-sm text-muted-foreground">
-            {t('financeiroFluxo.subtitle')}
-          </p>
-        </div>
-        <div className="flex gap-1">
-          {RANGE_OPTIONS.map((r) => (
-            <Button
-              key={r}
-              size="sm"
-              variant={days === r ? 'default' : 'outline'}
-              onClick={() => setDays(r)}
-              className="flex-1 sm:flex-none"
-            >
-              {t('financeiroFluxo.rangeButton', { days: r })}
-            </Button>
-          ))}
-        </div>
-      </div>
+      {header}
 
       {data && data.summary.negative_days > 0 && data.summary.first_negative_day && (
         <div className="flex items-center gap-2 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-800">

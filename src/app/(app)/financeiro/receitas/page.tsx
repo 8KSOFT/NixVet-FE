@@ -13,22 +13,18 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import api from '@/lib/axios';
 import { toast } from 'sonner';
 import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import { PlanUpgradeGate } from '@/components/billing/PlanUpgradeGate';
 import { useCurrencyFormatter } from '@/lib/i18n/currency';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useRevenueBySourceQuery } from '@/hooks/apiHooks/useFinancialReports';
+import { EstadoErro } from '@/components/estado-erro';
 
 const RevenueDistributionChart = dynamic(() => import('./RevenueDistributionChart'), {
   ssr: false,
   loading: () => <Skeleton className="h-64 w-full" />,
 });
-
-interface RevenueBySource {
-  particular: number;
-  health_plan: number;
-}
 
 function ReceitasPageContent() {
   const { t } = useTranslation();
@@ -38,17 +34,13 @@ function ReceitasPageContent() {
   const [period, setPeriod] = useState(
     `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`,
   );
-  const [data, setData] = useState<RevenueBySource | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data, isLoading: loading, isError, error, refetch } = useRevenueBySourceQuery(period);
+  // Sem dado para o período: erro explícito em vez de R$ 0,00 nos três cards.
+  const loadFailed = isError && !data;
 
   useEffect(() => {
-    setLoading(true);
-    api
-      .get<RevenueBySource>(`/financial-reports/receitas?period=${period}`)
-      .then((r) => setData(r.data))
-      .catch((error: unknown) => toast.error(getApiErrorMessage(error, t('financeiroReceitas.loadError'))))
-      .finally(() => setLoading(false));
-  }, [period, t]);
+    if (isError) toast.error(getApiErrorMessage(error, t('financeiroReceitas.loadError')));
+  }, [isError, error, t]);
 
   const total = (data?.particular ?? 0) + (data?.health_plan ?? 0);
   const chartData = data
@@ -84,35 +76,41 @@ function ReceitasPageContent() {
         </DropdownMenu>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        {[
-          { label: t('financeiroReceitas.total'), value: total, color: 'text-foreground' },
-          { label: t('financeiroReceitas.particular'), value: data?.particular ?? 0, color: 'text-blue-600' },
-          { label: t('financeiroReceitas.healthPlan'), value: data?.health_plan ?? 0, color: 'text-green-600' },
-        ].map(({ label, value, color }) => (
-          <Card key={label}>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
+      {loadFailed ? (
+        <EstadoErro error={error} onRetry={() => refetch()} mensagem={t('financeiroReceitas.loadError')} />
+      ) : (
+        <>
+          <div className="grid gap-4 sm:grid-cols-3">
+            {[
+              { label: t('financeiroReceitas.total'), value: total, color: 'text-foreground' },
+              { label: t('financeiroReceitas.particular'), value: data?.particular ?? 0, color: 'text-blue-600' },
+              { label: t('financeiroReceitas.healthPlan'), value: data?.health_plan ?? 0, color: 'text-green-600' },
+            ].map(({ label, value, color }) => (
+              <Card key={label}>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {loading ? <Skeleton className="h-7 w-32" /> : <p className={`text-2xl font-bold ${color}`}>{fmt(value)}</p>}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm font-medium">{t('financeiroReceitas.distribution')}</CardTitle>
             </CardHeader>
             <CardContent>
-              {loading ? <Skeleton className="h-7 w-32" /> : <p className={`text-2xl font-bold ${color}`}>{fmt(value)}</p>}
+              {loading ? (
+                <Skeleton className="h-64 w-full" />
+              ) : (
+                <RevenueDistributionChart chartData={chartData} isMobile={isMobile} fmt={fmt} />
+              )}
             </CardContent>
           </Card>
-        ))}
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm font-medium">{t('financeiroReceitas.distribution')}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <Skeleton className="h-64 w-full" />
-          ) : (
-            <RevenueDistributionChart chartData={chartData} isMobile={isMobile} fmt={fmt} />
-          )}
-        </CardContent>
-      </Card>
+        </>
+      )}
     </div>
   );
 }

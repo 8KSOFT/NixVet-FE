@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AlertTriangle, CheckCircle, CircleDollarSign, FileWarning } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -34,59 +34,21 @@ import { CurrencyInput } from '@/components/ui/currency-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
-import api from '@/lib/axios';
 import { toast } from 'sonner';
 import { useCurrencyFormatter } from '@/lib/i18n/currency';
-
-type ReceivableStatus = 'pending' | 'received' | 'partial' | 'glossed' | 'contested';
-
-interface Receivable {
-  id: string;
-  health_plan_id: string;
-  health_plan?: { id: string; name: string } | null;
-  financial_entry_id: string | null;
-  reference_id: string | null;
-  reference_type: string | null;
-  expected_repasse_date: string;
-  expected_amount: number;
-  status: ReceivableStatus;
-  received_amount: number;
-  glosa_amount: number;
-  glosa_reason: string | null;
-  received_at: string | null;
-}
-
-interface AgingBucket {
-  count: number;
-  amount: number;
-}
-
-interface Aging {
-  on_time: AgingBucket;
-  late_1_30: AgingBucket;
-  late_31_60: AgingBucket;
-  late_61_90: AgingBucket;
-  late_over_90: AgingBucket;
-  total_pending: number;
-  total_glossed: number;
-  by_plan: Record<
-    string,
-    {
-      plan_name: string;
-      on_time: AgingBucket;
-      late_1_30: AgingBucket;
-      late_31_60: AgingBucket;
-      late_61_90: AgingBucket;
-      late_over_90: AgingBucket;
-      total: number;
-    }
-  >;
-}
-
-interface HealthPlan {
-  id: string;
-  name: string;
-}
+import { EstadoErro } from '@/components/estado-erro';
+import { useHealthPlansListQuery } from '@/hooks/apiHooks/useHealthPlans';
+import {
+  type Aging,
+  type AgingBucket,
+  type Receivable,
+  type ReceivableStatus,
+  useContestReceivableMutation,
+  useGlosaReceivableMutation,
+  useHealthPlanReceivablesAgingQuery,
+  useHealthPlanReceivablesQuery,
+  useMarkReceivableReceivedMutation,
+} from '@/hooks/apiHooks/useHealthPlanReceivables';
 
 const STATUS_META: Record<ReceivableStatus, { variant: 'secondary' | 'destructive' | 'default' | 'outline'; className?: string }> = {
   pending: { variant: 'secondary' },
@@ -108,10 +70,23 @@ export default function PlanosSaudeReceivablesPage() {
   const [planFilter, setPlanFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [monthFilter, setMonthFilter] = useState('all');
-  const [receivables, setReceivables] = useState<Receivable[]>([]);
-  const [aging, setAging] = useState<Aging | null>(null);
-  const [plans, setPlans] = useState<HealthPlan[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Três consultas independentes: o aging e a lista de convênios não dependem
+  // dos filtros, então trocar filtro só refaz a lista — e uma falha no select
+  // de convênios não derruba mais a tela inteira.
+  const receivablesQuery = useHealthPlanReceivablesQuery({
+    healthPlanId: planFilter,
+    status: statusFilter,
+    month: monthFilter,
+  });
+  const agingQuery = useHealthPlanReceivablesAgingQuery();
+  const { data: plans = [] } = useHealthPlansListQuery();
+  const receivables = receivablesQuery.data ?? [];
+  const aging = agingQuery.data;
+  const loading = receivablesQuery.isLoading;
+  const loadingAging = agingQuery.isLoading;
+  // Falha sem nada em cache: erro explícito em vez de "nenhum repasse".
+  const listFailed = receivablesQuery.isError && !receivablesQuery.data;
+  const agingFailed = agingQuery.isError && !aging;
 
   // Modal de recebimento
   const [receiving, setReceiving] = useState<Receivable | null>(null);
@@ -123,7 +98,10 @@ export default function PlanosSaudeReceivablesPage() {
   const [glosaAmount, setGlosaAmount] = useState('');
   const [glosaReason, setGlosaReason] = useState('');
 
-  const [submitting, setSubmitting] = useState(false);
+  const markReceived = useMarkReceivableReceivedMutation();
+  const glosaMutation = useGlosaReceivableMutation();
+  const contestMutation = useContestReceivableMutation();
+  const submitting = markReceived.isPending || glosaMutation.isPending;
 
   const STATUS_LABELS: Record<ReceivableStatus, string> = {
     pending: t('financeiroPlanosSaude.statusPending'),
@@ -145,31 +123,10 @@ export default function PlanosSaudeReceivablesPage() {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
   });
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams();
-      if (planFilter !== 'all') params.set('health_plan_id', planFilter);
-      if (statusFilter !== 'all') params.set('status', statusFilter);
-      if (monthFilter !== 'all') params.set('month', monthFilter);
-      const [listRes, agingRes, plansRes] = await Promise.all([
-        api.get<Receivable[]>(`/health-plans/receivables?${params.toString()}`),
-        api.get<Aging>('/health-plans/receivables/aging'),
-        api.get<HealthPlan[]>('/health-plans'),
-      ]);
-      setReceivables(Array.isArray(listRes.data) ? listRes.data : []);
-      setAging(agingRes.data);
-      setPlans(Array.isArray(plansRes.data) ? plansRes.data : []);
-    } catch {
-      toast.error(t('financeiroPlanosSaude.loadError'));
-    } finally {
-      setLoading(false);
-    }
-  }, [planFilter, statusFilter, monthFilter, t]);
-
+  const loadFailedAny = receivablesQuery.isError || agingQuery.isError;
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (loadFailedAny) toast.error(t('financeiroPlanosSaude.loadError'));
+  }, [loadFailedAny, t]);
 
   const lateTotal = aging
     ? aging.late_1_30.amount + aging.late_31_60.amount + aging.late_61_90.amount + aging.late_over_90.amount
@@ -188,19 +145,12 @@ export default function PlanosSaudeReceivablesPage() {
       toast.error(t('financeiroPlanosSaude.receivedAmountRequired'));
       return;
     }
-    setSubmitting(true);
     try {
-      await api.patch(`/health-plans/receivables/${receiving.id}/received`, {
-        received_amount: amount,
-        received_at: receivedAt,
-      });
+      await markReceived.mutateAsync({ id: receiving.id, receivedAmount: amount, receivedAt });
       toast.success(t('financeiroPlanosSaude.receivedSuccess'));
       setReceiving(null);
-      fetchData();
     } catch {
       toast.error(t('financeiroPlanosSaude.receivedError'));
-    } finally {
-      setSubmitting(false);
     }
   };
 
@@ -217,27 +167,19 @@ export default function PlanosSaudeReceivablesPage() {
       toast.error(t('financeiroPlanosSaude.glosaAmountRequired'));
       return;
     }
-    setSubmitting(true);
     try {
-      await api.patch(`/health-plans/receivables/${glossing.id}/glosa`, {
-        glosa_amount: amount,
-        glosa_reason: glosaReason || undefined,
-      });
+      await glosaMutation.mutateAsync({ id: glossing.id, glosaAmount: amount, glosaReason: glosaReason || undefined });
       toast.success(t('financeiroPlanosSaude.glosaSuccess'));
       setGlossing(null);
-      fetchData();
     } catch {
       toast.error(t('financeiroPlanosSaude.glosaError'));
-    } finally {
-      setSubmitting(false);
     }
   };
 
   const contest = async (r: Receivable) => {
     try {
-      await api.patch(`/health-plans/receivables/${r.id}/contest`, {});
+      await contestMutation.mutateAsync(r.id);
       toast.success(t('financeiroPlanosSaude.contestSuccess'));
-      fetchData();
     } catch {
       toast.error(t('financeiroPlanosSaude.contestError'));
     }
@@ -268,7 +210,7 @@ export default function PlanosSaudeReceivablesPage() {
             <CircleDollarSign className="size-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            {loading ? <Skeleton className="h-7 w-28" /> : <p className="text-2xl font-bold text-blue-600">{fmt(aging?.on_time.amount)}</p>}
+            {loadingAging ? <Skeleton className="h-7 w-28" /> : <p className="text-2xl font-bold text-blue-600">{agingFailed ? '—' : fmt(aging?.on_time.amount)}</p>}
           </CardContent>
         </Card>
         <Card>
@@ -277,7 +219,7 @@ export default function PlanosSaudeReceivablesPage() {
             <AlertTriangle className="size-4 text-red-600" />
           </CardHeader>
           <CardContent>
-            {loading ? <Skeleton className="h-7 w-28" /> : <p className="text-2xl font-bold text-red-600">{fmt(lateTotal)}</p>}
+            {loadingAging ? <Skeleton className="h-7 w-28" /> : <p className="text-2xl font-bold text-red-600">{agingFailed ? '—' : fmt(lateTotal)}</p>}
           </CardContent>
         </Card>
         <Card>
@@ -286,7 +228,7 @@ export default function PlanosSaudeReceivablesPage() {
             <FileWarning className="size-4 text-orange-500" />
           </CardHeader>
           <CardContent>
-            {loading ? <Skeleton className="h-7 w-28" /> : <p className="text-2xl font-bold text-orange-500">{fmt(aging?.total_glossed)}</p>}
+            {loadingAging ? <Skeleton className="h-7 w-28" /> : <p className="text-2xl font-bold text-orange-500">{agingFailed ? '—' : fmt(aging?.total_glossed)}</p>}
           </CardContent>
         </Card>
       </div>
@@ -297,8 +239,14 @@ export default function PlanosSaudeReceivablesPage() {
           <CardTitle className="text-sm font-medium">{t('financeiroPlanosSaude.agingByPlan')}</CardTitle>
         </CardHeader>
         <CardContent>
-          {loading ? (
+          {loadingAging ? (
             <Skeleton className="h-32 w-full" />
+          ) : agingFailed ? (
+            <EstadoErro
+              error={agingQuery.error}
+              onRetry={() => agingQuery.refetch()}
+              mensagem={t('financeiroPlanosSaude.loadError')}
+            />
           ) : !aging || Object.keys(aging.by_plan).length === 0 ? (
             <p className="py-6 text-center text-sm text-muted-foreground">{t('financeiroPlanosSaude.noPendingTransfers')}</p>
           ) : (
@@ -443,6 +391,12 @@ export default function PlanosSaudeReceivablesPage() {
                 <Skeleton key={i} className="h-10 w-full" />
               ))}
             </div>
+          ) : listFailed ? (
+            <EstadoErro
+              error={receivablesQuery.error}
+              onRetry={() => receivablesQuery.refetch()}
+              mensagem={t('financeiroPlanosSaude.loadError')}
+            />
           ) : receivables.length === 0 ? (
             <p className="py-8 text-center text-sm text-muted-foreground">{t('financeiroPlanosSaude.noTransfersFound')}</p>
           ) : (

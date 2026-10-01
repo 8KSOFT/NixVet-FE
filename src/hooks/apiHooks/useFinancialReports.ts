@@ -31,6 +31,7 @@ export const financialReportKeys = {
   dreMonthly: () => [...financialReportKeys.all, 'dre-monthly'] as const,
   kpis: (period: string) => [...financialReportKeys.all, 'kpis', period] as const,
   cashFlow: (days: number) => [...financialReportKeys.all, 'cash-flow', days] as const,
+  revenueBySource: (period: string) => [...financialReportKeys.all, 'receitas', period] as const,
   custosPagamento: (period: string) => [...financialReportKeys.all, 'custos-pagamento', period] as const,
   revenueAnalysis: (from: string, to: string, healthPlanId: string) =>
     [...financialReportKeys.all, 'revenue-analysis', { from, to, healthPlanId }] as const,
@@ -232,6 +233,23 @@ export function useCashFlowQuery(days: number) {
       const { data } = await api.get<CashFlow>(`/financial-reports/fluxo-caixa?days=${days}`);
       return data;
     },
+  });
+}
+
+/** Receita do período (YYYY-MM) separada entre particular e convênio. */
+export interface RevenueBySource {
+  particular: number;
+  health_plan: number;
+}
+
+export function useRevenueBySourceQuery(period: string) {
+  return useQuery({
+    queryKey: financialReportKeys.revenueBySource(period),
+    queryFn: async () => {
+      const { data } = await api.get<RevenueBySource>(`/financial-reports/receitas?period=${period}`);
+      return data;
+    },
+    enabled: !!period,
   });
 }
 

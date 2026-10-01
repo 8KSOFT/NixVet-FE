@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import { AlertTriangle, CalendarClock, CircleDollarSign, MoreHorizontal, Plus, Wallet } from 'lucide-react';
@@ -42,37 +42,19 @@ import { CurrencyInput } from '@/components/ui/currency-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
-import api from '@/lib/axios';
 import { toast } from 'sonner';
 import { useCurrencyFormatter } from '@/lib/i18n/currency';
-
-type PayableStatus = 'pending' | 'paid' | 'overdue' | 'cancelled';
-
-interface Payable {
-  id: string;
-  description: string;
-  supplier: string | null;
-  category: string;
-  due_date: string;
-  amount: number;
-  status: PayableStatus;
-  paid_at: string | null;
-  payment_method: string | null;
-  recurrence: string;
-  notes: string | null;
-  document_url: string | null;
-  financial_entry_id: string | null;
-}
-
-interface PayablesSummary {
-  total_month: number;
-  paid: number;
-  pending: number;
-  overdue: number;
-  overdue_amount: number;
-  due_7_days: number;
-  by_category: Record<string, number>;
-}
+import { EstadoErro } from '@/components/estado-erro';
+import {
+  type Payable,
+  type PayableStatus,
+  useCancelPayableMutation,
+  useCreatePayableMutation,
+  usePayPayableMutation,
+  usePayablesQuery,
+  usePayablesSummaryQuery,
+  useUpdatePayableMutation,
+} from '@/hooks/apiHooks/usePayables';
 
 function todayISO() {
   const d = new Date();
@@ -95,9 +77,6 @@ const EMPTY_FORM = {
   notes: '',
   document_url: '',
 };
-
-// Ordenação: vencidas primeiro → pendentes por vencimento → pagas → canceladas.
-const STATUS_ORDER: Record<PayableStatus, number> = { overdue: 0, pending: 1, paid: 2, cancelled: 3 };
 
 export default function ContasPagarPage() {
   const { t } = useTranslation();
@@ -146,52 +125,43 @@ export default function ContasPagarPage() {
   const [month, setMonth] = useState(currentMonth);
   const [statusFilter, setStatusFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
-  const [payables, setPayables] = useState<Payable[]>([]);
-  const [summary, setSummary] = useState<PayablesSummary | null>(null);
-  const [loading, setLoading] = useState(true);
+  const payablesQuery = usePayablesQuery({ month, status: statusFilter, category: categoryFilter });
+  const summaryQuery = usePayablesSummaryQuery(month);
+  const payables = payablesQuery.data ?? [];
+  const summary = summaryQuery.data;
+  const loading = payablesQuery.isLoading || summaryQuery.isLoading;
+  // Falha sem nada em cache: mostrar erro, não "nenhuma conta" / R$ 0,00 —
+  // a clínica leria que não deve nada.
+  const listFailed = payablesQuery.isError && !payablesQuery.data;
+  const summaryFailed = summaryQuery.isError && !summary;
+  const retryLoad = () => {
+    if (payablesQuery.isError) payablesQuery.refetch();
+    if (summaryQuery.isError) summaryQuery.refetch();
+  };
+
+  const createPayable = useCreatePayableMutation();
+  const updatePayable = useUpdatePayableMutation();
+  const payPayable = usePayPayableMutation();
+  const cancelPayableMutation = useCancelPayableMutation();
 
   // Drawer de criação/edição
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editing, setEditing] = useState<Payable | null>(null);
   const [form, setForm] = useState({ ...EMPTY_FORM });
-  const [saving, setSaving] = useState(false);
+  const saving = createPayable.isPending || updatePayable.isPending;
 
   // Dialog de pagamento
   const [paying, setPaying] = useState<Payable | null>(null);
   const [payMethod, setPayMethod] = useState('');
   const [payDate, setPayDate] = useState(todayISO());
-  const [submittingPay, setSubmittingPay] = useState(false);
+  const submittingPay = payPayable.isPending;
 
   const setField = (field: string, value: string) => setForm((f) => ({ ...f, [field]: value }));
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params = new URLSearchParams({ month });
-      if (statusFilter !== 'all') params.set('status', statusFilter);
-      if (categoryFilter !== 'all') params.set('category', categoryFilter);
-      const [listRes, summaryRes] = await Promise.all([
-        api.get<Payable[]>(`/payables?${params.toString()}`),
-        api.get<PayablesSummary>(`/payables/summary?month=${month}`),
-      ]);
-      const list = Array.isArray(listRes.data) ? listRes.data : [];
-      list.sort((a, b) => {
-        const so = STATUS_ORDER[a.status] - STATUS_ORDER[b.status];
-        if (so !== 0) return so;
-        return a.due_date.localeCompare(b.due_date);
-      });
-      setPayables(list);
-      setSummary(summaryRes.data);
-    } catch {
-      toast.error(t('financeiroContasPagar.loadError'));
-    } finally {
-      setLoading(false);
-    }
-  }, [month, statusFilter, categoryFilter, t]);
-
+  const loadFailedAny = payablesQuery.isError || summaryQuery.isError;
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    if (loadFailedAny) toast.error(t('financeiroContasPagar.loadError'));
+  }, [loadFailedAny, t]);
 
   const months = Array.from({ length: 12 }, (_, i) => {
     const d = new Date(now.getFullYear(), now.getMonth() - 6 + i, 1);
@@ -225,7 +195,6 @@ export default function ContasPagarPage() {
       toast.error(t('financeiroContasPagar.formValidationError'));
       return;
     }
-    setSaving(true);
     try {
       const payload = {
         description: form.description,
@@ -238,18 +207,15 @@ export default function ContasPagarPage() {
         document_url: form.document_url || undefined,
       };
       if (editing) {
-        await api.patch(`/payables/${editing.id}`, payload);
+        await updatePayable.mutateAsync({ id: editing.id, payload });
         toast.success(t('financeiroContasPagar.updateSuccess'));
       } else {
-        await api.post('/payables', payload);
+        await createPayable.mutateAsync(payload);
         toast.success(t('financeiroContasPagar.createSuccess'));
       }
       setDrawerOpen(false);
-      fetchData();
     } catch {
       toast.error(t('financeiroContasPagar.saveError'));
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -264,24 +230,19 @@ export default function ContasPagarPage() {
       toast.error(t('financeiroContasPagar.selectPaymentMethodError'));
       return;
     }
-    setSubmittingPay(true);
     try {
-      await api.patch(`/payables/${paying.id}/pay`, { payment_method: payMethod, paid_at: payDate });
+      await payPayable.mutateAsync({ id: paying.id, paymentMethod: payMethod, paidAt: payDate });
       toast.success(t('financeiroContasPagar.paySuccess'));
       setPaying(null);
-      fetchData();
     } catch {
       toast.error(t('financeiroContasPagar.payError'));
-    } finally {
-      setSubmittingPay(false);
     }
   };
 
   const cancelPayable = async (p: Payable) => {
     try {
-      await api.patch(`/payables/${p.id}/cancel`, {});
+      await cancelPayableMutation.mutateAsync(p.id);
       toast.success(t('financeiroContasPagar.cancelSuccess'));
-      fetchData();
     } catch {
       toast.error(t('financeiroContasPagar.cancelError'));
     }
@@ -319,7 +280,7 @@ export default function ContasPagarPage() {
             <AlertTriangle className="size-4 text-red-600" />
           </CardHeader>
           <CardContent>
-            {loading ? <Skeleton className="h-7 w-28" /> : <p className="text-2xl font-bold text-red-600">{fmt(summary?.overdue_amount)}</p>}
+            {loading ? <Skeleton className="h-7 w-28" /> : <p className="text-2xl font-bold text-red-600">{summaryFailed ? '—' : fmt(summary?.overdue_amount)}</p>}
           </CardContent>
         </Card>
         <Card>
@@ -328,7 +289,7 @@ export default function ContasPagarPage() {
             <CalendarClock className="size-4 text-orange-500" />
           </CardHeader>
           <CardContent>
-            {loading ? <Skeleton className="h-7 w-28" /> : <p className="text-2xl font-bold text-orange-500">{fmt(summary?.due_7_days)}</p>}
+            {loading ? <Skeleton className="h-7 w-28" /> : <p className="text-2xl font-bold text-orange-500">{summaryFailed ? '—' : fmt(summary?.due_7_days)}</p>}
           </CardContent>
         </Card>
         <Card>
@@ -337,7 +298,7 @@ export default function ContasPagarPage() {
             <CircleDollarSign className="size-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            {loading ? <Skeleton className="h-7 w-28" /> : <p className="text-2xl font-bold text-blue-600">{fmt(summary?.total_month)}</p>}
+            {loading ? <Skeleton className="h-7 w-28" /> : <p className="text-2xl font-bold text-blue-600">{summaryFailed ? '—' : fmt(summary?.total_month)}</p>}
           </CardContent>
         </Card>
       </div>
@@ -402,6 +363,12 @@ export default function ContasPagarPage() {
                 <Skeleton key={i} className="h-10 w-full" />
               ))}
             </div>
+          ) : listFailed ? (
+            <EstadoErro
+              error={payablesQuery.error}
+              onRetry={retryLoad}
+              mensagem={t('financeiroContasPagar.loadError')}
+            />
           ) : payables.length === 0 ? (
             <p className="py-8 text-center text-sm text-muted-foreground">{t('financeiroContasPagar.emptyState')}</p>
           ) : (
