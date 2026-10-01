@@ -842,6 +842,7 @@
     "title": "Prescrição",
     "newButton": "Nova Prescrição",
     "empty": "Nenhuma prescrição encontrada.",
+    "loadError": "Não foi possível carregar as prescrições.",
     "loading": "Carregando...",
     "toast": {
       "bularioSearchError": "Erro ao buscar no bulário",

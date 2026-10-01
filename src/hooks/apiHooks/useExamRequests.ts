@@ -3,6 +3,7 @@
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/axios';
 import { fetchAllListPages, listQueryParams, parseListResponse } from '@/lib/pagination';
+import { medicalRecordKeys } from '@/hooks/apiHooks/useMedicalRecords';
 import type { CreateExamRequestPayload, ExamRequest } from '@/app/types/exam-request';
 
 export const examRequestKeys = {
@@ -40,6 +41,9 @@ export function useCreateExamRequestMutation() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: examRequestKeys.all });
+      // Prontuário/ficha listam os exames do paciente sob medical-records (related-exam-requests);
+      // sem isso o exame recém-solicitado só aparecia lá depois de recarregar a página.
+      queryClient.invalidateQueries({ queryKey: medicalRecordKeys.all });
     },
   });
 }

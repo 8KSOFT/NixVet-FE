@@ -842,6 +842,7 @@
     "title": "Prescription",
     "newButton": "New Prescription",
     "empty": "No prescriptions found.",
+    "loadError": "Could not load prescriptions.",
     "loading": "Loading...",
     "toast": {
       "bularioSearchError": "Error searching the drug formulary",

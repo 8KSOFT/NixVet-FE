@@ -1,11 +1,13 @@
 'use client';
 
-import React, { Suspense, useEffect, useMemo, useState } from 'react';
+import React, { Suspense, useEffect, useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import nextDynamic from 'next/dynamic';
 import { useTranslation } from 'react-i18next';
 import type { StoredUser } from '@/app/types/exam-request';
 import { Button } from '@/components/ui/button';
 import { DashboardCreateFormDialog } from '@/components/dashboard-create-form-dialog';
+import { EstadoErro } from '@/components/estado-erro';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -42,10 +44,11 @@ import type { CreatePrescriptionPayload, PrescriptionLegalModel, Prescription } 
 import type { BularioItem } from '@/app/types/bulario';
 import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import {
+  fetchPrescriptionPdf,
   fetchPrescriptionSignatureStatus,
+  fetchSignedPrescriptionPdf,
   useCreatePrescriptionMutation,
-  useDownloadPrescriptionPdfMutation,
-  useDownloadSignedPrescriptionPdfMutation,
+  usePatientConsultationsQuery,
   usePrescriptionsQuery,
   useRevokeSignatureMutation,
   useSendPrescriptionEmailMutation,
@@ -56,7 +59,6 @@ import { useProfileQuery } from '@/hooks/apiHooks/useUsers';
 import { useBularioItemQuery, useBularioSearchMutation } from '@/hooks/apiHooks/useBulario';
 import { useSurgicalProceduresListQuery } from '@/hooks/apiHooks/useSurgicalProcedures';
 import { usePatientsListQuery } from '@/hooks/apiHooks/usePatients';
-import { useConsultationsQuery } from '@/hooks/apiHooks/useConsultations';
 import { fetchPublicBranding } from '@/lib/branding';
 import type { PatientRow } from '@/app/types/patient';
 
@@ -127,6 +129,8 @@ type MedicationField = {
 };
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
+
+type PdfAction = 'view' | 'download';
 
 /**
  * Monta a parte "a cada X horas, por Y dias" da posologia a partir dos campos
@@ -412,14 +416,20 @@ function PrescriptionsContent() {
     fetchPublicBranding().then((b) => setClinicBranding({ name: b.appName, logoUrl: b.logoUrl }));
   }, []);
 
-  const { data: prescriptionsPage, isLoading: loading } = usePrescriptionsQuery(listPage);
+  const {
+    data: prescriptionsPage,
+    isLoading: loading,
+    isError: listError,
+    error: listErrorObj,
+    refetch: refetchList,
+  } = usePrescriptionsQuery(listPage);
   const prescriptions = prescriptionsPage?.items ?? [];
   const listTotal = prescriptionsPage?.total ?? 0;
   const listTotalPages = prescriptionsPage?.totalPages ?? 1;
 
-  const { data: patients = [] } = usePatientsListQuery();
-  const { data: allConsultations = [] } = useConsultationsQuery();
-  const { data: surgicalProcedures = [] } = useSurgicalProceduresListQuery();
+  // Pacientes só alimentam o select e a prévia do modal de criação — busca (todas as páginas)
+  // só quando o modal abre, não a cada visita à listagem.
+  const { data: patients = [] } = usePatientsListQuery(undefined, modalVisible);
   const [selectedProcedureIds, setSelectedProcedureIds] = useState<number[]>([]);
   const [procedureSearch, setProcedureSearch] = useState('');
 
@@ -430,15 +440,44 @@ function PrescriptionsContent() {
   const [medInputValues, setMedInputValues] = useState<Record<number, string>>({});
 
   const [prescriptionType, setPrescriptionType] = useState<'receita' | 'solicitacao_cirurgia' | 'vacinas'>('receita');
+  // Catálogo cirúrgico só é lido pelo seletor de cirurgia e pela prévia (`procedureNames`, que
+  // só renderiza no tipo cirurgia) — e `selectedProcedureIds` só é preenchido por esse seletor.
+  // Fora disso não há consumidor, então não vale baixar as N páginas no load da tela.
+  const { data: surgicalProcedures = [] } = useSurgicalProceduresListQuery(
+    modalVisible && prescriptionType === 'solicitacao_cirurgia',
+  );
   const [vaccineInput, setVaccineInput] = useState('');
   const [selectedVaccines, setSelectedVaccines] = useState<string[]>([]);
   const [, setSelectedPatientId] = useState<string | null>(null);
 
+  const queryClient = useQueryClient();
   const createPrescription = useCreatePrescriptionMutation();
-  const downloadPdf = useDownloadPrescriptionPdfMutation();
-  const downloadSignedPdf = useDownloadSignedPrescriptionPdfMutation();
   const sendEmailMutation = useSendPrescriptionEmailMutation();
-  const pdfPreviewLoading = downloadPdf.isPending || downloadSignedPdf.isPending;
+
+  // Ação de PDF em andamento por prescrição. Sem feedback o usuário clicava de novo e o backend
+  // gerava o mesmo PDF duas vezes. O ref barra o segundo clique na hora (o state só chega no
+  // próximo render); o state pinta o spinner e desabilita os botões da linha.
+  const [pdfPending, setPdfPending] = useState<Record<string, PdfAction>>({});
+  const pdfPendingRef = useRef(new Set<string>());
+  // Qual prescrição o modal de preview está esperando — se o usuário fechar (ou abrir outra)
+  // antes do PDF chegar, a resposta atrasada não vira uma object URL órfã.
+  const previewRequestRef = useRef<string | null>(null);
+
+  const runPdfAction = async (id: string, action: PdfAction, fn: () => Promise<void>) => {
+    if (pdfPendingRef.current.has(id)) return;
+    pdfPendingRef.current.add(id);
+    setPdfPending((prev) => ({ ...prev, [id]: action }));
+    try {
+      await fn();
+    } finally {
+      pdfPendingRef.current.delete(id);
+      setPdfPending((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+    }
+  };
 
   const { control, register, handleSubmit, reset, setValue, watch } = useForm<FormValues>({
     defaultValues: {
@@ -453,10 +492,8 @@ function PrescriptionsContent() {
   });
 
   const watchPatientId = watch('patient_id');
-  const consultationsByPatient = useMemo(
-    () => (watchPatientId ? allConsultations.filter((c) => c.patient?.id === watchPatientId) : []),
-    [allConsultations, watchPatientId],
-  );
+  // Só as consultas do paciente escolhido (filtro no backend) — antes vinha a agenda inteira.
+  const { data: consultationsByPatient = [] } = usePatientConsultationsQuery(modalVisible ? watchPatientId : null);
 
   const searchBulario = async (value: string) => {
     if (!value || value.length < 2) {
@@ -508,59 +545,74 @@ function PrescriptionsContent() {
     document.body.appendChild(link);
     link.click();
     link.remove();
+    // O download já pegou a referência; liberar a URL evita segurar o Blob até o reload.
+    // O Blob em si continua no cache do React Query (fetchPrescriptionPdf) pelo tempo dele.
+    setTimeout(() => window.URL.revokeObjectURL(url), 1_000);
   };
 
   // Receita (não cirurgia/vacina) sem assinatura ainda não tem um PDF "de verdade" — numerado,
   // com QR e nas vias corretas (1/2/3 conforme o modelo legal). Em vez de baixar/mostrar o
   // rascunho antigo de 1 via, essas ações abrem o fluxo de assinatura, que já pede pra escolher
   // entre os 3 modelos. Cirurgia/vacina não passam pelo modelo legal, então seguem no PDF simples.
-  const handleDownloadPdf = async (record: Prescription) => {
-    if (canSign(record)) {
-      const signature = await fetchPrescriptionSignatureStatus(record.id);
-      if (signature?.status !== 'SIGNED') {
-        openSignatureModal(record.id);
+  const handleDownloadPdf = (record: Prescription) =>
+    runPdfAction(record.id, 'download', async () => {
+      if (canSign(record)) {
+        const signature = await fetchPrescriptionSignatureStatus(queryClient, record.id);
+        if (signature?.status !== 'SIGNED') {
+          openSignatureModal(record.id);
+          return;
+        }
+        try {
+          downloadBlob(await fetchSignedPrescriptionPdf(queryClient, record.id), `prescricao-${record.id}.pdf`);
+        } catch {
+          toast.error(t('prescriptions.toast.downloadSignedPdfError'));
+        }
         return;
       }
       try {
-        downloadBlob(await downloadSignedPdf.mutateAsync(record.id), `prescricao-${record.id}.pdf`);
+        downloadBlob(await fetchPrescriptionPdf(queryClient, record.id), `prescricao-${record.id}.pdf`);
       } catch {
-        toast.error(t('prescriptions.toast.downloadSignedPdfError'));
+        toast.error(t('prescriptions.toast.downloadPdfError'));
       }
-      return;
-    }
-    try {
-      downloadBlob(await downloadPdf.mutateAsync(record.id), `prescricao-${record.id}.pdf`);
-    } catch {
-      toast.error(t('prescriptions.toast.downloadPdfError'));
-    }
-  };
+    });
 
   // GRUPO 4 — preview do PDF sem download (mesma regra acima para decidir a fonte do PDF).
-  const handlePreviewPdf = async (record: Prescription) => {
-    if (canSign(record)) {
-      const signature = await fetchPrescriptionSignatureStatus(record.id);
-      if (signature?.status !== 'SIGNED') {
-        openSignatureModal(record.id);
-        return;
+  const handlePreviewPdf = (record: Prescription) =>
+    runPdfAction(record.id, 'view', async () => {
+      if (canSign(record)) {
+        const signature = await fetchPrescriptionSignatureStatus(queryClient, record.id);
+        if (signature?.status !== 'SIGNED') {
+          openSignatureModal(record.id);
+          return;
+        }
       }
-    }
-    setPdfPreviewOpen(true);
-    try {
-      const blob = canSign(record)
-        ? await downloadSignedPdf.mutateAsync(record.id)
-        : await downloadPdf.mutateAsync(record.id);
-      const url = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+      previewRequestRef.current = record.id;
+      // Limpa a URL anterior pra o modal mostrar o loader, não o PDF de outra prescrição.
       setPdfPreviewUrl((prev) => {
         if (prev) window.URL.revokeObjectURL(prev);
-        return url;
+        return null;
       });
-    } catch {
-      toast.error(t('prescriptions.toast.previewPdfError'));
-      setPdfPreviewOpen(false);
-    }
-  };
+      setPdfPreviewOpen(true);
+      try {
+        const blob = canSign(record)
+          ? await fetchSignedPrescriptionPdf(queryClient, record.id)
+          : await fetchPrescriptionPdf(queryClient, record.id);
+        if (previewRequestRef.current !== record.id) return;
+        const url = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+        setPdfPreviewUrl((prev) => {
+          if (prev && prev !== url) window.URL.revokeObjectURL(prev);
+          return url;
+        });
+      } catch {
+        if (previewRequestRef.current !== record.id) return;
+        previewRequestRef.current = null;
+        toast.error(t('prescriptions.toast.previewPdfError'));
+        setPdfPreviewOpen(false);
+      }
+    });
 
   const closePdfPreview = () => {
+    previewRequestRef.current = null;
     setPdfPreviewOpen(false);
     setPdfPreviewUrl((prev) => {
       if (prev) window.URL.revokeObjectURL(prev);
@@ -746,14 +798,19 @@ function PrescriptionsContent() {
   };
 
   const handleDownloadSignedPdf = async () => {
-    if (!signaturePrescriptionId) return;
-    try {
-      const blob = await downloadSignedPdf.mutateAsync(signaturePrescriptionId);
-      const url = window.URL.createObjectURL(blob);
-      window.open(url, '_blank', 'noopener,noreferrer');
-    } catch {
-      toast.error(t('prescriptions.toast.downloadSignedPdfError'));
-    }
+    const id = signaturePrescriptionId;
+    if (!id) return;
+    await runPdfAction(id, 'download', async () => {
+      try {
+        const blob = await fetchSignedPrescriptionPdf(queryClient, id);
+        const url = window.URL.createObjectURL(blob);
+        window.open(url, '_blank', 'noopener,noreferrer');
+        // A aba nova precisa carregar a URL antes de ela sumir — folga generosa, depois libera.
+        setTimeout(() => window.URL.revokeObjectURL(url), 60_000);
+      } catch {
+        toast.error(t('prescriptions.toast.downloadSignedPdfError'));
+      }
+    });
   };
 
   const handleCopy = async (value: string) => {
@@ -790,6 +847,10 @@ function PrescriptionsContent() {
         <div className="flex justify-center py-8">
           <Loader2 className="animate-spin w-6 h-6" />
         </div>
+      ) : listError ? (
+        // Falha na busca não é "lista vazia" — antes caía no estado vazio e parecia que não
+        // havia prescrições.
+        <EstadoErro error={listErrorObj} onRetry={() => refetchList()} mensagem={t('prescriptions.loadError')} />
       ) : prescriptions.length === 0 ? (
         <div className="rounded-lg border border-gray-300 bg-white py-8 text-center text-sm text-slate-500">
           {t('prescriptions.empty')}
@@ -830,9 +891,14 @@ function PrescriptionsContent() {
                           className="p-0"
                           title={t('prescriptions.actions.view')}
                           aria-label={t('prescriptions.actions.view')}
+                          disabled={!!pdfPending[record.id]}
                           onClick={() => handlePreviewPdf(record)}
                         >
-                          <Eye className="w-4 h-4" />
+                          {pdfPending[record.id] === 'view' ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Eye className="w-4 h-4" />
+                          )}
                         </Button>
                         <Button
                           type="button"
@@ -841,9 +907,14 @@ function PrescriptionsContent() {
                           className="p-0"
                           title={t('prescriptions.actions.downloadPdf')}
                           aria-label={t('prescriptions.actions.downloadPdf')}
+                          disabled={!!pdfPending[record.id]}
                           onClick={() => handleDownloadPdf(record)}
                         >
-                          <FileText className="w-4 h-4" />
+                          {pdfPending[record.id] === 'download' ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <FileText className="w-4 h-4" />
+                          )}
                         </Button>
                         <Button
                           type="button"
@@ -925,9 +996,14 @@ function PrescriptionsContent() {
                     className="p-0"
                     title={t('prescriptions.actions.view')}
                     aria-label={t('prescriptions.actions.view')}
+                    disabled={!!pdfPending[record.id]}
                     onClick={() => handlePreviewPdf(record)}
                   >
-                    <Eye className="w-4 h-4" />
+                    {pdfPending[record.id] === 'view' ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
                   </Button>
                   <Button
                     type="button"
@@ -936,9 +1012,14 @@ function PrescriptionsContent() {
                     className="p-0"
                     title={t('prescriptions.actions.downloadPdf')}
                     aria-label={t('prescriptions.actions.downloadPdf')}
+                    disabled={!!pdfPending[record.id]}
                     onClick={() => handleDownloadPdf(record)}
                   >
-                    <FileText className="w-4 h-4" />
+                    {pdfPending[record.id] === 'download' ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <FileText className="w-4 h-4" />
+                    )}
                   </Button>
                   <Button
                     type="button"
@@ -1623,7 +1704,7 @@ function PrescriptionsContent() {
           <DialogHeader>
             <DialogTitle>{t('prescriptions.dialog.pdfPreview.title')}</DialogTitle>
           </DialogHeader>
-          {pdfPreviewLoading || !pdfPreviewUrl ? (
+          {!pdfPreviewUrl ? (
             <div className="flex h-[75vh] items-center justify-center">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground/60" />
             </div>
@@ -1790,9 +1871,9 @@ function PrescriptionsContent() {
                   variant="outline"
                   className="flex-1"
                   onClick={handleDownloadSignedPdf}
-                  disabled={downloadSignedPdf.isPending}
+                  disabled={!!signaturePrescriptionId && !!pdfPending[signaturePrescriptionId]}
                 >
-                  {downloadSignedPdf.isPending ? (
+                  {signaturePrescriptionId && pdfPending[signaturePrescriptionId] ? (
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   ) : (
                     <Download className="w-4 h-4 mr-2" />

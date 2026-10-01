@@ -842,6 +842,7 @@
     "title": "Prescripción",
     "newButton": "Nueva Prescripción",
     "empty": "No se encontraron prescripciones.",
+    "loadError": "No se pudieron cargar las prescripciones.",
     "loading": "Cargando...",
     "toast": {
       "bularioSearchError": "Error al buscar en el vademécum",

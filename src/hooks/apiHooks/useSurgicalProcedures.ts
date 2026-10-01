@@ -19,11 +19,18 @@ export const surgicalProcedureKeys = {
   planPrices: (procedureId: number) => [...surgicalProcedureKeys.all, 'plan-prices', procedureId] as const,
 };
 
-/** Lista completa do catálogo de procedimentos cirúrgicos — usada em seletores. */
-export function useSurgicalProceduresListQuery() {
+/**
+ * Lista completa do catálogo de procedimentos cirúrgicos — usada em seletores.
+ * `enabled` (default true) deixa a tela adiar a busca até o seletor aparecer: são várias
+ * páginas, e a tela de Prescrições disparava todas no load mesmo sem ninguém escolher cirurgia.
+ * Catálogo quase não muda, então fica fresco por 10 min (mutations daqui invalidam a raiz).
+ */
+export function useSurgicalProceduresListQuery(enabled = true) {
   return useQuery({
     queryKey: surgicalProcedureKeys.lists(),
     queryFn: () => fetchAllListPages<SurgicalProcedure>('/catalog/surgical-procedures'),
+    enabled,
+    staleTime: 10 * 60_000,
   });
 }
 
