@@ -22,6 +22,26 @@ const api = axios.create({
   withCredentials: true,
 });
 
+/**
+ * Teto de espera por requisição (01/10/2026). Antes não havia nenhum: uma
+ * requisição pendurada deixava o spinner girando para sempre, e o retry do
+ * React Query nunca disparava — ele só repete depois de uma rejeição que não
+ * vinha. Quem já passa `timeout` na chamada manda.
+ *
+ * Os tetos maiores cobrem o que é lento por natureza: PDF gerado no backend
+ * (blob), IA (espera o provedor) e upload (rede do cliente).
+ */
+export const TIMEOUT_PADRAO_MS = 20_000;
+const TIMEOUT_LONGO_MS = 60_000;
+const TIMEOUT_UPLOAD_MS = 120_000;
+
+function timeoutPara(config: { responseType?: string; url?: string; data?: unknown }): number {
+  if (typeof FormData !== 'undefined' && config.data instanceof FormData) return TIMEOUT_UPLOAD_MS;
+  if (config.responseType === 'blob' || config.responseType === 'arraybuffer') return TIMEOUT_LONGO_MS;
+  if ((config.url || '').replace(/^\/+/, '').startsWith('ai/')) return TIMEOUT_LONGO_MS;
+  return TIMEOUT_PADRAO_MS;
+}
+
 const CSRF_COOKIE = 'nixvet_csrf';
 const TENANT_COOKIE = 'nixvet_tenant_id';
 const SAFE_METHODS = new Set(['get', 'head', 'options']);
@@ -31,6 +51,8 @@ function isPublicAuthRequest(config: { url?: string }) {
   return (
     path.includes('auth/login') ||
     path.includes('auth/register') ||
+    path.includes('auth/password-reset') ||
+    path.includes('billing/register') ||
     path.includes('users/invite/accept')
   );
 }
@@ -55,6 +77,7 @@ export function clearTenantCookie() {
 }
 
 api.interceptors.request.use((config) => {
+  if (!config.timeout) config.timeout = timeoutPara(config);
   if (typeof window !== 'undefined') {
     // Um id por chamada (E11). O backend aceita este valor como `request_id`
     // de toda linha de log da requisição e o devolve no header e no corpo do
@@ -85,8 +108,10 @@ api.interceptors.request.use((config) => {
       delete config.headers['x-tenant-id'];
     }
 
-    // Recalculate baseURL on client side to apply protocol auto-upgrade
-    if (!config.baseURL || config.baseURL !== getApiBaseUrl()) {
+    // Recalcula no cliente para aplicar o auto-upgrade http→https. Só quando a
+    // chamada usa a base padrão: quem passa `baseURL: '/api'` de propósito (o
+    // upload same-origin pelo rewrite do Next) mantém a sua.
+    if (!config.baseURL || config.baseURL === api.defaults.baseURL) {
       config.baseURL = getApiBaseUrl();
     }
   }
@@ -237,8 +262,11 @@ api.interceptors.response.use(
 
     const config = error.config as RetriableConfig | undefined;
     const url = config?.url || '';
+    // Fluxos sem sessão (login, cadastro, redefinição de senha): um 401 aqui
+    // é resposta do próprio fluxo, não sessão expirada — nem refresh, nem
+    // redirect para o /login.
     const isAuthCall =
-      url.includes('/auth/login') ||
+      isPublicAuthRequest({ url }) ||
       url.includes('/auth/refresh') ||
       url.includes('/auth/logout');
 
@@ -255,7 +283,7 @@ api.interceptors.response.use(
       }
     }
 
-    if (!url.includes('/auth/login')) {
+    if (!isPublicAuthRequest({ url })) {
       clearClientSession();
       window.location.href = '/login';
     }

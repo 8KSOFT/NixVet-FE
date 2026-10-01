@@ -32,7 +32,9 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
-import { getApiBaseUrl } from '@/lib/api-base';
+import api from '@/lib/axios';
+import { getApiErrorMessage } from '@/app/utils/api-error-message';
+import type { SessionUser } from '@/lib/session';
 import { establishSession, hasClientSession } from '@/lib/session';
 import { LogoColored } from '@/components/shared/componentizedImages/LogoColored';
 import {
@@ -297,6 +299,14 @@ function IconInput({
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
+/** `data` do envelope de `POST /billing/register` (já desembrulhado). */
+interface RegisterResponse {
+  user?: SessionUser;
+  tenantCode?: string;
+  tenantId?: string;
+  adminEmail?: string;
+}
+
 export default function RegisterClient() {
   const router = useRouter();
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
@@ -366,9 +376,9 @@ export default function RegisterClient() {
   // impediria qualquer cadastro novo. Falha na consulta = não exigir, pelo
   // mesmo motivo — quem decide barrar é o backend, no `register`.
   useEffect(() => {
-    fetch(`${getApiBaseUrl()}/billing/register/phone`, { credentials: 'omit' })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => setPhoneOtpRequired(Boolean(d?.data?.required)))
+    api
+      .get<{ required?: boolean }>('/billing/register/phone')
+      .then(({ data }) => setPhoneOtpRequired(Boolean(data?.required)))
       .catch(() => setPhoneOtpRequired(false));
   }, []);
 
@@ -417,24 +427,18 @@ export default function RegisterClient() {
     }
     setPhoneBusy(true);
     try {
-      const res = await fetch(`${getApiBaseUrl()}/billing/register/phone/code`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: phone.replace(/\D/g, '') }),
+      const { data } = await api.post<{ channel?: string }>('/billing/register/phone/code', {
+        phone: phone.replace(/\D/g, ''),
       });
-      const data = await res.json().catch(() => null);
-      if (!res.ok) {
-        const msg = Array.isArray(data?.message) ? data.message[0] : data?.message;
-        toast.error(msg ?? 'Não foi possível enviar o código. Tente novamente.');
-        return;
-      }
       setPhoneCodeSent(true);
       setPhoneCode('');
       toast.success(
-        data?.data?.channel === 'sms'
+        data?.channel === 'sms'
           ? 'Código enviado por SMS.'
           : 'Código enviado pelo WhatsApp.',
       );
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, 'Não foi possível enviar o código. Tente novamente.'));
     } finally {
       setPhoneBusy(false);
     }
@@ -443,19 +447,14 @@ export default function RegisterClient() {
   const confirmPhoneCode = async () => {
     setPhoneBusy(true);
     try {
-      const res = await fetch(`${getApiBaseUrl()}/billing/register/phone/verify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: phone.replace(/\D/g, ''), code: phoneCode.trim() }),
+      await api.post('/billing/register/phone/verify', {
+        phone: phone.replace(/\D/g, ''),
+        code: phoneCode.trim(),
       });
-      const data = await res.json().catch(() => null);
-      if (!res.ok) {
-        const msg = Array.isArray(data?.message) ? data.message[0] : data?.message;
-        toast.error(msg ?? 'Código incorreto.');
-        return;
-      }
       setVerifiedPhone(phone.replace(/\D/g, ''));
       toast.success('WhatsApp confirmado.');
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, 'Código incorreto.'));
     } finally {
       setPhoneBusy(false);
     }
@@ -565,13 +564,11 @@ export default function RegisterClient() {
         if (!validateStep2()) { setStep(2); return; }
         if (!validateStep3()) { setStep(3); return; }
 
-        const res = await fetch(`${getApiBaseUrl()}/billing/register`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          // O cadastro já entrega a sessão em cookie HttpOnly; sem `include` o
-          // browser descarta o Set-Cookie e o onboarding seguiria deslogado.
-          credentials: 'include',
-          body: JSON.stringify({
+        // Pelo client único: `withCredentials` faz o navegador aceitar a
+        // sessão que o cadastro entrega em cookie HttpOnly.
+        let data: RegisterResponse | undefined;
+        try {
+          ({ data } = await api.post<RegisterResponse>('/billing/register', {
             turnstileToken,
             clinicName: clinicName.trim(),
             clinicCode: clinicCode.trim(),
@@ -587,20 +584,16 @@ export default function RegisterClient() {
             // `undefined` quando não houve aceite de cookies — o campo é
             // opcional no backend justamente por isso.
             gaClientId: readGaClientId() ?? undefined,
-          }),
-        });
-
-        const data = await res.json();
-
-        if (!res.ok) {
-          const msg = Array.isArray(data.message) ? data.message[0] : data.message;
-          toast.error(msg ?? 'Erro ao criar conta. Tente novamente.');
+          }));
+        } catch (error: unknown) {
+          const msg = getApiErrorMessage(error, 'Erro ao criar conta. Tente novamente.');
+          toast.error(msg);
           setStep(guessRegisterErrorStep(msg));
           return;
         }
 
-        // Envelope: { success, message, data: { tenantId, tenantCode, adminEmail, user } }.
-        const { user, tenantCode, tenantId } = data.data ?? {};
+        // O interceptor já desembrulhou o envelope { success, message, data }.
+        const { user, tenantCode, tenantId } = data ?? {};
         if (!user) {
           toast.error('Conta criada, mas não foi possível entrar automaticamente. Faça login.');
           router.push(`/login?code=${clinicCode}`);

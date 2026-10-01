@@ -10,7 +10,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { LogoCompactoDynamic } from '@/components/shared/componentizedImages/LogoCompactoDynamic';
-import { getApiBaseUrl } from '@/lib/api-base';
+import api from '@/lib/axios';
+import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import { detectSubdomainClient } from '@/lib/subdomain';
 
 type Step = 'request' | 'confirm';
@@ -25,20 +26,18 @@ function apiMessage(data: ApiEnvelope, fallback: string): string {
   return data?.message || fallback;
 }
 
+/**
+ * POST pelo client único (lib/axios): pede `problem+json`, manda
+ * `x-request-id` e tem timeout. A mensagem de erro sai de
+ * `getApiErrorMessage`, que entende os dois formatos de erro da API.
+ */
 async function postJson(path: string, body: unknown): Promise<{ ok: boolean; data: ApiEnvelope }> {
-  const res = await fetch(`${getApiBaseUrl()}${path}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  const raw = await res.text();
-  let data: ApiEnvelope = {};
   try {
-    data = raw ? (JSON.parse(raw) as ApiEnvelope) : {};
-  } catch {
-    data = { message: raw || 'Resposta inválida do servidor.' };
+    const { data } = await api.post<ApiEnvelope>(path, body);
+    return { ok: true, data: data ?? {} };
+  } catch (error: unknown) {
+    return { ok: false, data: { message: getApiErrorMessage(error, '') } };
   }
-  return { ok: res.ok, data };
 }
 
 /**

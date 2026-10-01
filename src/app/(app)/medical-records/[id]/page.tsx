@@ -250,6 +250,8 @@ export default function MedicalRecordDetailPage() {
         method: 'PUT',
         body: file,
         headers: { 'Content-Type': file.type || 'application/octet-stream' },
+        // PUT direto no storage não passa pelo axios: teto próprio de upload.
+        signal: AbortSignal.timeout(120_000),
       });
       if (!put.ok) throw new Error('upload falhou');
       await createPatientFile.mutateAsync({

@@ -12,6 +12,9 @@ import { codigoDoProblema, problemaDe } from '@/lib/problem';
  * mensagem é sobre o que ele digitou, e um código só polui.
  */
 export function getApiErrorMessage(error: unknown, fallbackMessage: string): string {
+  const semResposta = mensagemSemResposta(error);
+  if (semResposta) return semResposta;
+
   const problema = problemaDe(error);
   const doErro = (error as { message?: string } | null | undefined)?.message;
 
@@ -20,4 +23,19 @@ export function getApiErrorMessage(error: unknown, fallbackMessage: string): str
   const base = problema.detail || doErro || fallbackMessage;
   const codigo = problema.status >= 500 ? codigoDoProblema(problema) : undefined;
   return codigo && !base.includes(codigo) ? `${base} Código: ${codigo}` : base;
+}
+
+/**
+ * Requisição que não teve resposta (rede caiu, timeout, CORS). O axios põe em
+ * `message` o texto técnico em inglês — "Network Error", "timeout of 20000ms
+ * exceeded" — e era isso que ia para o toast.
+ */
+function mensagemSemResposta(error: unknown): string | null {
+  const e = error as { isAxiosError?: boolean; response?: unknown; code?: string } | null;
+  if (!e?.isAxiosError || e.response) return null;
+  if (e.code === 'ERR_CANCELED') return null;
+  if (e.code === 'ECONNABORTED' || e.code === 'ETIMEDOUT') {
+    return 'O servidor demorou para responder. Tente de novo em instantes.';
+  }
+  return 'Sem conexão com o servidor. Verifique sua internet e tente de novo.';
 }

@@ -103,7 +103,10 @@ export default function VerificarPage() {
       const url = `${getApiBaseUrl()}/verificar/${signatureId}${
         qs.toString() ? `?${qs.toString()}` : ""
       }`;
-      const res = await fetch(url, { headers: { Accept: "application/json" } });
+      const res = await fetch(url, {
+        headers: { Accept: "application/json" },
+        signal: AbortSignal.timeout(20_000),
+      });
       if (res.status === 404) throw new Error("Documento não encontrado.");
       if (res.status === 403) throw new Error("Token ou código inválido.");
       if (res.status === 429)

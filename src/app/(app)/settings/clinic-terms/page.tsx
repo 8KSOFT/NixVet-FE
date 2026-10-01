@@ -94,6 +94,8 @@ export default function ClinicTermsPage() {
         method: "PUT",
         body: form.file,
         headers: { "Content-Type": form.file.type || "application/octet-stream" },
+        // PUT direto no storage não passa pelo axios: teto próprio de upload.
+        signal: AbortSignal.timeout(120_000),
       });
       if (!put.ok) throw new Error(t('settingsClinicTerms.toasts.uploadFailed'));
       // 3. Persiste metadados

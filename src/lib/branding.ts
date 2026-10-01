@@ -48,6 +48,8 @@ export async function fetchPublicBranding(): Promise<PublicBranding> {
     const query = host ? `?host=${encodeURIComponent(host)}` : '';
     const response = await fetch(`${apiUrl}/tenants/public-brand${query}`, {
       cache: 'no-store',
+      // Sem resposta em 10 s, segue com a marca padrão (o catch abaixo).
+      signal: AbortSignal.timeout(10_000),
     });
     if (!response.ok) return fallbackBranding;
     const data = await response.json();

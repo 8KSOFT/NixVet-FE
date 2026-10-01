@@ -2,6 +2,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/axios';
+import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import type { PreparedImage } from '@/lib/profile-image';
 
 export interface ProfilePhotoResult {
@@ -24,10 +25,8 @@ function lerCookie(nome: string): string | undefined {
 }
 
 /**
- * Headers que o interceptor do axios injetaria (este caminho não passa por ele).
- * A autenticação em si vai no cookie HttpOnly — daí `credentials: 'include'`
- * em todo fetch daqui; o que sobra para o JS montar é o tenant e o token CSRF
- * (mutação sem ele é barrada pelo backend).
+ * Headers de sessão para o `fetch` com `keepalive` do diagnóstico, que não
+ * passa pelo axios (o relatório precisa sobreviver à página indo embora).
  */
 function sessionHeaders(): Record<string, string> {
   const tenantId = lerCookie('nixvet_tenant_id') ?? localStorage.getItem('tenantId');
@@ -38,14 +37,25 @@ function sessionHeaders(): Record<string, string> {
   return h;
 }
 
-async function enviar(url: string, init: RequestInit): Promise<ProfilePhotoResult> {
-  const res = await fetch(url, init);
-  const body = await res.json().catch(() => null);
-  if (!res.ok) {
-    const msg = Array.isArray(body?.message) ? body.message.join(' | ') : body?.message;
-    throw new Error(msg || `HTTP ${res.status}`);
+/**
+ * Upload pelo client único, mas same-origin: `baseURL: '/api'` passa pelo
+ * rewrite do Next em vez de ir direto ao host da API (ver o comentário do
+ * `rewrites` no next.config — o multipart cross-origin morria no Chrome de um
+ * cliente). Pelo interceptor vêm o tenant, o CSRF, o `x-request-id`, o
+ * timeout e, principalmente, a renovação de sessão num 401: até 01/10/2026
+ * este caminho era `fetch` cru e falhava com "HTTP 401" depois de 60 min
+ * logado, em vez de renovar o token.
+ */
+async function enviar(path: string, body: FormData | object): Promise<ProfilePhotoResult> {
+  try {
+    const { data } = await api.post<ProfilePhotoResult>(path, body, {
+      baseURL: '/api',
+      timeout: 120_000,
+    });
+    return data;
+  } catch (error: unknown) {
+    throw new Error(getApiErrorMessage(error, 'falha no envio'));
   }
-  return (body?.data ?? body) as ProfilePhotoResult;
 }
 
 function lerComoBase64(blob: Blob): Promise<string> {
@@ -104,19 +114,12 @@ export function useUploadProfilePhotoMutation(
 
   return useMutation({
     mutationFn: async (image: PreparedImage): Promise<ProfilePhotoResult> => {
-      const headers = sessionHeaders();
-
       // Estratégia 1: multipart. É o formato natural para arquivo.
       const t0 = performance.now();
       try {
         const form = new FormData();
         form.append('file', image.blob, `foto.${image.mimeType.split('/')[1] ?? 'jpg'}`);
-        return await enviar(`/api${target}/photo/upload`, {
-          method: 'POST',
-          headers,
-          credentials: 'include',
-          body: form,
-        });
+        return await enviar(`${target}/photo/upload`, form);
       } catch (erroMultipart) {
         const msMultipart = Math.round(performance.now() - t0);
 
@@ -127,11 +130,9 @@ export function useUploadProfilePhotoMutation(
         const t1 = performance.now();
         try {
           const data = await lerComoBase64(image.blob);
-          const r = await enviar(`/api${target}/photo/upload-base64`, {
-            method: 'POST',
-            headers: { ...headers, 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ mime_type: image.mimeType, data }),
+          const r = await enviar(`${target}/photo/upload-base64`, {
+            mime_type: image.mimeType,
+            data,
           });
           reportar({
             target, bytes: image.blob.size, mime: image.mimeType,
