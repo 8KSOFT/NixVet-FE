@@ -217,6 +217,38 @@ de `visibleSections` — que voltava a filtrar `NAV_SECTIONS` em todo render, **
 dobro**, porque `SidebarNav` é instanciado duas vezes. É melhoria real de trabalho
 por render; **não** foi demonstrado que resolve o relato.
 
+## Revisão de arquitetura do front (01/10/2026) — flags e padrões novos
+
+Revisão em 8 dimensões (API, fronteira servidor/cliente, cache, waterfalls,
+resiliência, segurança, observabilidade, bundle). O que mudou de comportamento
+e precisa ser conhecido antes de mexer:
+
+- **CSP mora no `src/proxy.ts`** (`lib/csp.ts`), não mais no `headers()` do
+  next.config. Modo em runtime: `CSP_MODE=report|enforce|off` (padrão
+  `report`). Cada host da lista veio de relatório real de produção — ver o
+  comentário de cada linha. `'unsafe-inline'` continua (nonce = toda rota
+  dinâmica, decisão pendente); `'unsafe-eval'` só em dev.
+- **Portão de sessão** no `proxy.ts`: `AUTH_GATE=off|observe|on` (padrão
+  `off`). Rota nova em `(app)/` precisa entrar em `ROTAS_PROTEGIDAS`
+  (`lib/portao-sessao.ts`) — o `prebuild` falha se divergir.
+- **`NEXT_PUBLIC_API_URL` é obrigatória no build de produção** — o fallback
+  para a API de produção saiu. A plataforma repassa `NEXT_PUBLIC_*` do vault
+  ao build desde 14/09/2026.
+- **Timeout central** no interceptor (`lib/axios.ts`): 20 s; 60 s para
+  blob/IA; 120 s para upload. `fetch` fora do axios usa `AbortSignal.timeout`.
+- **Erro de carga nunca vira lista vazia**: telas principais usam
+  `components/estado-erro.tsx`; o `QueryCache.onError` do `AppProviders`
+  cobre o resto (só 5xx/sem resposta/429, e só sem dado na tela).
+- **Nada de `console.error('...', error)` com o AxiosError**: o
+  `error.config.data` é o formulário (CPF, endereço). Use `logarErroDeApi`
+  (`lib/problem.ts`).
+- **`localStorage.user` não tem e-mail.** Quem precisa do e-mail lê
+  `useProfileQuery()`.
+- **Dashboard e agenda não baixam lista completa**: agregados em
+  `/metrics/dashboard`, agenda por `useConsultationsRangeQuery(from, to)`.
+  Não reintroduzir `useConsultationsQuery()`/`usePatientsListQuery()` sem
+  `enabled` numa tela que carrega sempre.
+
 ## Variáveis NEXT_PUBLIC_*: o vault é a única fonte (2026-08-28)
 
 `NEXT_PUBLIC_*` é **inlinada em tempo de build**, não lida em runtime. No deploy
