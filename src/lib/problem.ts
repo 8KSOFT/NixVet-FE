@@ -99,3 +99,21 @@ export function problemaDe(error: unknown): Problema | null {
 export function codigoDoProblema(p: Problema | null): string | undefined {
   return p?.instance ? p.instance.slice(0, 8) : undefined;
 }
+
+/**
+ * `console.error` de erro de API sem levar o corpo junto.
+ *
+ * Até 01/10/2026 as telas faziam `console.error('...', error)` com o
+ * `AxiosError` inteiro — e `error.config.data` é o formulário enviado: nome,
+ * CPF e endereço do tutor ficavam no console da máquina da recepção, que é
+ * compartilhada. Aqui sai só o que serve para achar a linha no log.
+ */
+export function logarErroDeApi(contexto: string, error: unknown): void {
+  const p = problemaDe(error);
+  const status = (error as { response?: { status?: number } })?.response?.status;
+  console.error(contexto, {
+    status: p?.status ?? status ?? null,
+    code: p?.code ?? null,
+    request_id: p?.instance ?? null,
+  });
+}

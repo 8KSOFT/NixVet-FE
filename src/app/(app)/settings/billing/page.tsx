@@ -1,5 +1,6 @@
 'use client';
 
+import { urlDePagamentoSegura } from '@/lib/url-pagamento';
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
@@ -50,8 +51,11 @@ export default function BillingSettingsPage() {
   const handlePayPending = async () => {
     try {
       const data = await paymentLinkMutation.mutateAsync();
-      if (data?.paymentUrl) {
-        window.location.href = data.paymentUrl;
+      const destino = urlDePagamentoSegura(data?.paymentUrl);
+      if (destino) {
+        window.location.href = destino;
+      } else if (data?.paymentUrl) {
+        toast.error(t('settingsBilling.getChargeError'));
       } else {
         toast.info(t('settingsBilling.noPendingCharge'));
       }

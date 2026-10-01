@@ -74,7 +74,6 @@ export default function ProfilePage() {
         JSON.stringify({
           ...prev,
           name: updated.name,
-          email: updated.email,
         }),
       );
       setValue('password', '');

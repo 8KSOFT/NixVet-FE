@@ -1,5 +1,6 @@
 'use client';
 
+import { logarErroDeApi } from '@/lib/problem';
 import React, { Suspense, useEffect, useRef, useState } from 'react';
 import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
@@ -148,7 +149,7 @@ function TeamContent() {
 
   useEffect(() => {
     if (usersError && (usersError as ApiRequestError).response?.status !== 403) {
-      console.error('Error fetching users:', usersError);
+      logarErroDeApi('Error fetching users:', usersError);
       toast.error(t('team.loadError'));
     }
   }, [usersError, t]);
@@ -197,7 +198,7 @@ function TeamContent() {
     try {
       await deleteUser.mutateAsync(id);
     } catch (error) {
-      console.error('Error deleting user:', error);
+      logarErroDeApi('Error deleting user:', error);
       toast.error(t('team.removeError'));
     }
   };
@@ -225,7 +226,7 @@ function TeamContent() {
       }
       setModalVisible(false);
     } catch (error: unknown) {
-      console.error('Error saving user:', error);
+      logarErroDeApi('Error saving user:', error);
       toast.error(getApiErrorMessage(error, editingId ? t('team.saveError') : t('team.inviteError')));
     }
   };
@@ -235,7 +236,7 @@ function TeamContent() {
       await resendInvite.mutateAsync(id);
       toast.success(t('team.inviteResent'));
     } catch (error) {
-      console.error('Error resending invite:', error);
+      logarErroDeApi('Error resending invite:', error);
       toast.error(getApiErrorMessage(error, t('team.inviteError')));
     }
   };
@@ -245,7 +246,7 @@ function TeamContent() {
       await cancelInvite.mutateAsync(id);
       toast.success(t('team.inviteCancelled'));
     } catch (error) {
-      console.error('Error cancelling invite:', error);
+      logarErroDeApi('Error cancelling invite:', error);
       toast.error(getApiErrorMessage(error, t('team.inviteError')));
     }
   };

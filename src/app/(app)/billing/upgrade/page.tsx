@@ -1,5 +1,6 @@
 'use client';
 
+import { urlDePagamentoSegura } from '@/lib/url-pagamento';
 import React, { useState } from 'react';
 import { GA_EVENTS, readGaClientId, trackEvent } from '@/lib/analytics';
 import { useRouter } from 'next/navigation';
@@ -73,10 +74,15 @@ export default function BillingUpgradePage() {
         gaClientId: readGaClientId() ?? undefined,
       });
 
-      const paymentUrl = data?.paymentUrl ?? null;
+      const paymentUrl = urlDePagamentoSegura(data?.paymentUrl);
       if (paymentUrl) {
         // Redireciona para o checkout seguro da Asaas (PIX, boleto ou cartão).
         window.location.href = paymentUrl;
+        return;
+      }
+      if (data?.paymentUrl) {
+        // Veio um destino, mas fora do Asaas: não segue (lib/url-pagamento.ts).
+        toast.error('Não foi possível abrir o pagamento. Tente novamente.');
         return;
       }
       router.push(isChangingPlan ? '/settings/billing' : '/dashboard');

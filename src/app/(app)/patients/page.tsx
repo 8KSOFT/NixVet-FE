@@ -1,5 +1,6 @@
 'use client';
 
+import { logarErroDeApi } from '@/lib/problem';
 import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import type { PatientFormValues, PatientRow } from '@/app/types/patient';
 import { useForm, Controller } from 'react-hook-form';
@@ -203,7 +204,7 @@ function PatientsContent() {
       const created = await createRecord.mutateAsync({ patient_id: record.id });
       router.push(`/medical-records/${created.id}`);
     } catch (error) {
-      console.error('Error starting atendimento:', error);
+      logarErroDeApi('Error starting atendimento:', error);
       toast.error(t('patients.startAppointmentError'));
       setCreatingRecordFor(null);
     }
@@ -242,7 +243,7 @@ function PatientsContent() {
     try {
       await deletePatient.mutateAsync(id);
     } catch (error) {
-      console.error('Error deleting patient:', error);
+      logarErroDeApi('Error deleting patient:', error);
       toast.error(t('patients.deleteError'));
     }
   };
@@ -273,7 +274,7 @@ function PatientsContent() {
         }
       }
     } catch (error) {
-      console.error('Error saving patient:', error);
+      logarErroDeApi('Error saving patient:', error);
       toast.error(t('patients.saveError'));
     }
   };

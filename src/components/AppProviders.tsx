@@ -12,6 +12,7 @@ import i18n, { persistLanguage, trocarIdioma } from '@/lib/i18n/instance';
 import { STORAGE_KEY, SUPPORTED_LANGUAGES, type AppLanguage } from '@/lib/i18n/resources';
 import { getApiMessage } from '@/app/types/api-response';
 import { instalarCapturaDeErros } from '@/lib/client-telemetry';
+import { limparDadoPessoalLegado } from '@/lib/session';
 
 declare module '@tanstack/react-query' {
   interface Register {
@@ -66,6 +67,9 @@ export default function AppProviders({ children }: { children: React.ReactNode }
   // nada disso passa pelos `error.tsx`, e sem esta captura não deixa rastro
   // em lugar nenhum.
   useEffect(() => instalarCapturaDeErros(), []);
+
+  // E-mail gravado por sessões anteriores a 01/10/2026 (ver lib/session.ts).
+  useEffect(() => limparDadoPessoalLegado(), []);
 
   useEffect(() => {
     try {

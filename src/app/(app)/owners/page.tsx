@@ -1,5 +1,6 @@
 'use client';
 
+import { logarErroDeApi } from '@/lib/problem';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
@@ -262,7 +263,7 @@ export default function OwnersPage() {
     try {
       await deleteTutor.mutateAsync(id);
     } catch (error) {
-      console.error('Error deleting tutor:', error);
+      logarErroDeApi('Error deleting tutor:', error);
       toast.error(t('owners.deleteError'));
     }
   };
@@ -295,7 +296,7 @@ export default function OwnersPage() {
       setValue('city', localidade);
       setValue('state', uf);
     } catch (error) {
-      console.error('Error fetching CEP:', error);
+      logarErroDeApi('Error fetching CEP:', error);
       toast.error(t('owners.form.cepFetchError'));
     } finally {
       setLoadingCep(false);
@@ -323,7 +324,7 @@ export default function OwnersPage() {
       setEditingId(null);
       setEditingRecord(null);
     } catch (error) {
-      console.error('Error saving tutor:', error);
+      logarErroDeApi('Error saving tutor:', error);
       toast.error(t('owners.saveError'));
     }
   };

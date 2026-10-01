@@ -11,7 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
-import { getApiBaseUrl } from "@/lib/api-base";
+import api from "@/lib/axios";
+import { logarErroDeApi } from "@/lib/problem";
 import { fetchPublicBranding } from "@/lib/branding";
 import { establishSession } from "@/lib/session";
 import { detectSubdomainClient } from "@/lib/subdomain";
@@ -26,12 +27,6 @@ interface LoginResponsePayload {
     tenant_id: string;
     name: string;
   } & Record<string, unknown>;
-}
-
-interface LoginResponseData {
-  // Envelope novo: { success, message, data }. Ver DOCS/response-phase-1-front.md.
-  data?: LoginResponsePayload;
-  message?: string | string[];
 }
 
 export default function LoginClient() {
@@ -100,48 +95,22 @@ export default function LoginClient() {
       toast.error("Informe o código da clínica.");
       return;
     }
-    const apiBase = getApiBaseUrl();
-    const url = `${apiBase}/auth/login`;
-
     try {
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        // Sem isto o browser descarta o Set-Cookie da resposta (a API mora em
-        // outro subdomínio) e o login "dá certo" sem sessão nenhuma.
-        credentials: "include",
-        body: JSON.stringify({
-          email: trimmedEmail,
-          password: trimmedPassword,
-          tenantCode: code,
-          // Descartado pelo guard depois de verificado; quando o captcha está
-          // desligado dos dois lados, vai `null` e o backend ignora.
-          turnstileToken,
-        }),
+      // Pelo client único (lib/axios): pede `problem+json`, manda
+      // `x-request-id` e tem timeout. `withCredentials` já vem do client —
+      // sem ele o browser descartaria o Set-Cookie (a API mora em outro
+      // subdomínio). O interceptor não manda tenant antigo no login nem tenta
+      // refresh num 401 desta rota.
+      const { data } = await api.post<LoginResponsePayload>("/auth/login", {
+        email: trimmedEmail,
+        password: trimmedPassword,
+        tenantCode: code,
+        // Descartado pelo guard depois de verificado; quando o captcha está
+        // desligado dos dois lados, vai `null` e o backend ignora.
+        turnstileToken,
       });
-      const raw = await res.text();
-      let data: LoginResponseData = {};
-      try {
-        data = raw ? (JSON.parse(raw) as LoginResponseData) : {};
-      } catch {
-        data = { message: raw || "Resposta inválida do servidor." };
-      }
 
-      if (!res.ok) {
-        const apiMessage = Array.isArray(data?.message)
-          ? data.message.join(" | ")
-          : data?.message || "";
-        toast.error(apiMessage || `Falha no login (${res.status})`);
-        console.error("[LOGIN] HTTP error", {
-          status: res.status,
-          statusText: res.statusText,
-          body: data,
-          apiBase,
-        });
-        return;
-      }
-
-      const { user } = data.data ?? {};
+      const user = data?.user;
       if (!user) {
         toast.error("Resposta de login inválida.");
         return;
@@ -151,11 +120,11 @@ export default function LoginClient() {
       toast.success(translation("auth.welcome", { name: user.name }));
       router.push("/dashboard");
     } catch (error: unknown) {
-      console.error("[LOGIN] fetch error:", error);
+      logarErroDeApi("[LOGIN]", error);
       toast.error(
         getApiErrorMessage(
           error,
-          "Não foi possível conectar ao servidor. Verifique CORS/domínio da API.",
+          "Não foi possível entrar. Tente novamente.",
         ),
       );
     } finally {

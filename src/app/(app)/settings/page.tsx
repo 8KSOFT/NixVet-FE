@@ -1,5 +1,6 @@
 'use client';
 
+import { logarErroDeApi } from '@/lib/problem';
 import React from 'react';
 import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import { useTranslation } from 'react-i18next';
@@ -227,7 +228,7 @@ export default function SettingsPage() {
       setValue('city', localidade);
       setValue('state', uf);
     } catch (error) {
-      console.error('Error fetching CEP:', error);
+      logarErroDeApi('Error fetching CEP:', error);
       toast.error(t('settingsHub.clinic.cepFetchErrorToast'));
     } finally {
       setLoadingCep(false);
@@ -253,7 +254,7 @@ export default function SettingsPage() {
       });
       toast.success(getApiMessage(result) ?? t('settingsHub.clinic.saveSuccessToast'), { id: 'saving' });
     } catch (error) {
-      console.error('Error saving settings:', error);
+      logarErroDeApi('Error saving settings:', error);
       toast.error(t('settingsHub.clinic.saveErrorToast'), { id: 'saving' });
     }
   };

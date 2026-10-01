@@ -43,17 +43,13 @@ function getCookie(name: string): string | null {
 }
 
 /**
- * Persiste tenantId em cookie para que novas abas no mesmo subdomínio
- * herdem o contexto sem depender exclusivamente do localStorage.
- * O backend também grava este cookie no login; esta função cobre o caso de
- * quem troca de tenant sem passar por um novo login.
+ * Remove a cópia host-only do cookie de tenant (logout).
+ *
+ * Quem grava `nixvet_tenant_id` é o backend, com o domínio pai, no login, no
+ * aceite de convite e no cadastro. Até 01/10/2026 o front gravava uma segunda
+ * cópia host-only — e no logout o backend apagava a dele e esta sobrava. Esta
+ * função segue existindo para limpar as cópias que ficaram nos navegadores.
  */
-export function setTenantCookie(tenantId: string) {
-  const secure = location.protocol === 'https:' ? '; Secure' : '';
-  document.cookie = `${TENANT_COOKIE}=${encodeURIComponent(tenantId)}; max-age=86400; path=/${secure}; SameSite=Lax`;
-}
-
-/** Remove o cookie de tenant (logout). */
 export function clearTenantCookie() {
   document.cookie = `${TENANT_COOKIE}=; max-age=0; path=/`;
 }

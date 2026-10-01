@@ -9,9 +9,9 @@ import {
   useConfirmEmailMutation,
   useRequestEmailConfirmationMutation,
 } from '@/hooks/apiHooks/useOnboarding';
+import { useProfileQuery } from '@/hooks/apiHooks/useUsers';
 
 interface StoredUser {
-  email?: string;
   email_confirmed_at?: string | null;
   [key: string]: unknown;
 }
@@ -36,6 +36,10 @@ export function EmailConfirmationBanner() {
   const [code, setCode] = useState('');
   const requestMutation = useRequestEmailConfirmationMutation();
   const confirmMutation = useConfirmEmailMutation();
+  // O e-mail não mora mais no localStorage (lib/session.ts); o perfil já é
+  // buscado pelo layout, então isto sai do cache do React Query.
+  const { data: profile } = useProfileQuery();
+  const email = profile?.email ?? '';
 
   useEffect(() => {
     setUser(readStoredUser());
@@ -47,7 +51,7 @@ export function EmailConfirmationBanner() {
     requestMutation.mutate(undefined, {
       onSuccess: () => {
         setShowCodeInput(true);
-        toast.success(`Enviamos um código para ${user.email}.`);
+        toast.success(email ? `Enviamos um código para ${email}.` : 'Enviamos um código para o seu e-mail.');
       },
       onError: () => toast.error('Não foi possível enviar o código. Tente novamente.'),
     });
@@ -73,7 +77,7 @@ export function EmailConfirmationBanner() {
     <div className="flex flex-col gap-2 border-b border-emerald-200 bg-emerald-50 px-5 py-3 text-sm text-emerald-900 sm:flex-row sm:items-center sm:gap-3">
       <Mail className="size-4 shrink-0 text-emerald-600" />
       <span className="flex-1">
-        Confirme seu e-mail (<strong>{user.email}</strong>) para liberar convites de equipe e ativação de plano pago.
+        Confirme seu e-mail{email ? <> (<strong>{email}</strong>)</> : null} para liberar convites de equipe e ativação de plano pago.
       </span>
       {!showCodeInput ? (
         <Button

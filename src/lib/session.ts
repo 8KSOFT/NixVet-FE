@@ -1,4 +1,4 @@
-import api, { clearClientSession, setTenantCookie } from "@/lib/axios";
+import api, { clearClientSession } from "@/lib/axios";
 
 export interface SessionUser {
   tenant_id: string;
@@ -22,8 +22,36 @@ export interface SessionUser {
 export function establishSession(user: SessionUser, tenantCode: string): void {
   localStorage.setItem("tenantId", user.tenant_id);
   localStorage.setItem("tenantCode", tenantCode);
-  localStorage.setItem("user", JSON.stringify(user));
-  setTenantCookie(user.tenant_id);
+  localStorage.setItem("user", JSON.stringify(semDadoPessoal(user)));
+}
+
+/**
+ * O e-mail não fica no `localStorage` (01/10/2026): qualquer script que rode
+ * na página lê o armazenamento inteiro, e a única tela que o exibia (o banner
+ * de confirmação) passou a lê-lo de `/users/profile`. Ficam id, nome, papel,
+ * tenant e o carimbo de confirmação — o que o cliente usa para decidir tela.
+ */
+export function semDadoPessoal(user: SessionUser): SessionUser {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { email, ...resto } = user;
+  return resto as SessionUser;
+}
+
+/**
+ * Sessões abertas antes de 01/10/2026 ainda têm o e-mail gravado — e o
+ * refresh não reescreve o `user` (renewSession descarta o corpo). Roda uma
+ * vez ao carregar o app; sem `user` ou já limpo, não faz nada.
+ */
+export function limparDadoPessoalLegado(): void {
+  try {
+    const raw = localStorage.getItem("user");
+    if (!raw) return;
+    const user = JSON.parse(raw) as SessionUser;
+    if (!("email" in user)) return;
+    localStorage.setItem("user", JSON.stringify(semDadoPessoal(user)));
+  } catch {
+    /* armazenamento indisponível ou JSON inválido — nada a limpar */
+  }
 }
 
 /** Existe sessão neste navegador? O cookie HttpOnly é invisível ao JS, então
