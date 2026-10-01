@@ -28,8 +28,8 @@ export default function AcceptInvitePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password.length < 6) {
-      toast.error('Senha deve ter ao menos 6 caracteres.');
+    if (password.length < 8) {
+      toast.error('Senha deve ter ao menos 8 caracteres.');
       return;
     }
     if (password !== confirmPassword) {
@@ -95,7 +95,7 @@ export default function AcceptInvitePage() {
                     id="password"
                     type="password"
                     className="pl-9"
-                    placeholder="Mínimo 6 caracteres"
+                    placeholder="Mínimo 8 caracteres"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                   />

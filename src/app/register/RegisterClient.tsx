@@ -414,7 +414,7 @@ export default function RegisterClient() {
   const validateStep2 = () => {
     if (!adminName.trim()) { toast.error('Informe o nome do responsável.'); return false; }
     if (!adminEmail.trim() || !adminEmail.includes('@')) { toast.error('E-mail inválido.'); return false; }
-    if (adminPassword.length < 6) { toast.error('Senha deve ter ao menos 6 caracteres.'); return false; }
+    if (adminPassword.length < 8) { toast.error('Senha deve ter ao menos 8 caracteres.'); return false; }
     if (adminPassword !== confirmPassword) { toast.error('Senhas não conferem.'); return false; }
     return true;
   };
@@ -859,7 +859,7 @@ export default function RegisterClient() {
                           id="adminPassword"
                           type="password"
                           icon={<Lock />}
-                          placeholder="Mínimo 6 caracteres"
+                          placeholder="Mínimo 8 caracteres"
                           value={adminPassword}
                           onChange={(e) => setAdminPassword(e.target.value)}
                         />
