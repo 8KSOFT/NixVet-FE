@@ -42,6 +42,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import type { FinancialEntry, FinancialEntryStatus, PaymentOption } from '@/app/types/financial-report';
+import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import {
   useCancelEntryMutation,
   useConfirmEntryMutation,
@@ -442,8 +443,9 @@ export default function LancamentosPage() {
       a.download = 'lancamentos.xlsx';
       a.click();
       URL.revokeObjectURL(url);
-    } catch {
-      toast.error(t('financeiroLancamentos.exportError'));
+    } catch (error: unknown) {
+      // 422 acima de 50.000 linhas: o servidor explica o que filtrar.
+      toast.error(getApiErrorMessage(error, t('financeiroLancamentos.exportError')));
     }
   };
 

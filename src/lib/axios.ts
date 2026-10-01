@@ -176,6 +176,25 @@ function avisarUmaVez(codigo: string, mensagem: string): void {
 }
 
 /**
+ * Download (`responseType: 'blob'`) que falha chega com o corpo do erro
+ * dentro de um Blob — a mensagem do servidor (ex.: 422 da exportação acima
+ * de 50.000 linhas) ficava ilegível e a tela mostrava só o texto genérico.
+ * Quando o corpo é JSON, troca o Blob pelo objeto, para `getApiErrorMessage`
+ * ler igual a qualquer outra rota.
+ */
+async function corpoJsonDeBlob(error: AxiosError): Promise<void> {
+  const resp = error.response;
+  if (!resp || typeof Blob === 'undefined' || !(resp.data instanceof Blob)) return;
+  const tipo = String(resp.headers?.['content-type'] ?? resp.data.type ?? '');
+  if (!tipo.includes('json')) return;
+  try {
+    resp.data = JSON.parse(await resp.data.text());
+  } catch {
+    // Corpo malformado: mantém o Blob, a tela cai na mensagem padrão.
+  }
+}
+
+/**
  * Em erro do servidor (5xx), a mensagem que as telas mostram passa a
  * terminar com o código da requisição — os 8 primeiros caracteres do
  * `request_id`, que bastam para achar a linha no log (E11).
@@ -250,6 +269,7 @@ api.interceptors.response.use(
     return response;
   },
   async (error: AxiosError) => {
+    await corpoJsonDeBlob(error);
     anexarCodigoDoErro(error);
     // Para o relatório de erro de JS que vier em seguida (client-telemetry).
     registrarFalhaDeApi(
