@@ -1,3 +1,22 @@
+/**
+ * URL da API. Em build de produção é OBRIGATÓRIA: até 01/10/2026 havia um
+ * `|| 'https://api.nixvetapp.com.br'` aqui, e um build de homologação ou um
+ * `next dev` sem a variável falava com a API de PRODUÇÃO sem aviso nenhum.
+ * O vault da plataforma entrega o valor ao build (ARG no Dockerfile — o log
+ * do `prebuild` lista o que faltar). Em dev, sem a variável, vai para a API
+ * local.
+ */
+const API_URL = (() => {
+  const v = (process.env.NEXT_PUBLIC_API_URL || '').trim();
+  if (v) return v;
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error(
+      'NEXT_PUBLIC_API_URL ausente no build de produção. Defina no vault (8khost) ou em .env.production — não há mais fallback para a API de produção.',
+    );
+  }
+  return 'http://localhost:8537';
+})();
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
@@ -46,59 +65,10 @@ const nextConfig = {
       },
     ];
 
-    // A CSP vai em modo relatório, não em modo bloqueio, e de propósito.
-    //
-    // A página carrega Turnstile e GA4, e exibe foto de paciente por URL
-    // pré-assinada do object storage — cujo host varia com o provedor
-    // configurado no ambiente. Publicar uma CSP restritiva sem essa lista
-    // fechada quebraria imagem de prontuário em produção, e o sintoma seria
-    // "a foto sumiu", não um erro de segurança que alguém investigasse.
-    //
-    // Em Report-Only o navegador reporta o que teria bloqueado sem bloquear.
-    // Depois de uma semana de relatório limpo, trocar a chave por
-    // `Content-Security-Policy` liga a proteção de verdade.
-    const csp = [
-      "default-src 'self'",
-      // 'unsafe-inline' e 'unsafe-eval': o Next injeta script inline de
-      // hidratação. Remover exige nonce por request, que é o passo seguinte.
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://www.googletagmanager.com",
-      "style-src 'self' 'unsafe-inline'",
-      "img-src 'self' data: blob: https:",
-      "font-src 'self' data:",
-      "connect-src 'self' https://*.nixvetapp.com.br https://www.google-analytics.com https://challenges.cloudflare.com",
-      "frame-src https://challenges.cloudflare.com",
-      "frame-ancestors 'none'",
-      "base-uri 'self'",
-      "form-action 'self'",
-      "object-src 'none'",
-      // Sem isto a política em Report-Only reportava para NINGUÉM: o
-      // navegador avaliava e descartava. A semana de observação que precede
-      // ligar o enforce (E15) nunca podia começar. `report-uri` está
-      // obsoleto mas é o que a maioria ainda implementa; `report-to` é o
-      // caminho novo e depende do header `Reporting-Endpoints` abaixo.
-      // Caminho RELATIVO, aproveitando o proxy same-origin de `/api/*` (ver
-      // `rewrites` abaixo): o relatório sai para a própria origem, sem
-      // cross-origin, e a CSP não precisa liberar destino nenhum para ele.
-      'report-uri /api/client-telemetry/csp',
-      'report-to nixvet-csp',
-    ].join('; ');
-
-    return [
-      {
-        source: '/:path*',
-        headers: [
-          ...base,
-          { key: 'Content-Security-Policy-Report-Only', value: csp },
-          // Destino do `report-to` (Reporting API). O `report-uri` acima
-          // cobre os navegadores que ainda não o implementam; os dois
-          // apontam para a mesma rota.
-          {
-            key: 'Reporting-Endpoints',
-            value: 'nixvet-csp="/api/client-telemetry/csp"',
-          },
-        ],
-      },
-    ];
+    // A CSP saiu daqui para `src/proxy.ts` (lib/csp.ts) em 01/10/2026: o
+    // `headers()` é avaliado no build, e o modo (relatório ou bloqueio) precisa
+    // ser trocável por variável de ambiente em tempo de execução (`CSP_MODE`).
+    return [{ source: '/:path*', headers: base }];
   },
   async rewrites() {
     // Proxy same-origin para a API. O upload de imagem usa o caminho relativo
@@ -112,12 +82,11 @@ const nextConfig = {
     //
     // O resto do app segue chamando a API pelo host absoluto — este rewrite só
     // atende quem pedir caminho relativo.
-    const apiUrl = (process.env.NEXT_PUBLIC_API_URL || 'https://api.nixvetapp.com.br').replace(/\/+$/, '');
+    const apiUrl = API_URL.replace(/\/+$/, '');
     return [{ source: '/api/:path*', destination: `${apiUrl}/api/:path*` }];
   },
   env: {
-    NEXT_PUBLIC_API_URL:
-      process.env.NEXT_PUBLIC_API_URL || 'https://api.nixvetapp.com.br',
+    NEXT_PUBLIC_API_URL: API_URL,
     NEXT_PUBLIC_SITE_URL:
       process.env.NEXT_PUBLIC_SITE_URL || 'https://app.nixvetapp.com.br',
     NEXT_PUBLIC_ROOT_DOMAIN:
@@ -128,14 +97,15 @@ const nextConfig = {
     // do gtag e a site key do Turnstile vai no HTML do widget — qualquer
     // visitante lê as duas no fonte da página.
     //
-    // Ficam aqui, versionados, e não no vault, porque o vault NÃO alimenta
-    // este build: os `ARG` do Dockerfile são resquício da época do Jenkins, e
-    // a plataforma não repassa secret como build-arg. Guardá-las lá fez o GA e
-    // o captcha subirem como `undefined` — o captcha exigido pelo backend com
-    // o front incapaz de gerar token, e o login parou.
+    // O fallback versionado nasceu em 28/08/2026, quando a plataforma ainda
+    // não repassava secret como build-arg e o GA e o captcha subiram como
+    // `undefined` (o login parou). Desde 14/09/2026 ela repassa toda
+    // `NEXT_PUBLIC_*` do vault ao `docker build` (8khost-api,
+    // `buildArgsPublicos`), e as duas estão no vault — o fallback ficou só
+    // como rede, inofensiva por serem valores públicos.
     //
-    // O que continua no vault é a TURNSTILE_SECRET_KEY, no backend, que é
-    // segredo de verdade e é lida em runtime.
+    // A TURNSTILE_SECRET_KEY, segredo de verdade, mora no vault do backend e é
+    // lida em runtime.
     NEXT_PUBLIC_GA_ID: process.env.NEXT_PUBLIC_GA_ID || 'G-J7HXFRDB6S',
     NEXT_PUBLIC_TURNSTILE_SITE_KEY:
       process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '0x4AAAAAAEf66kfKURDt1Dit',
