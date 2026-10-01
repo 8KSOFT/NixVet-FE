@@ -17,6 +17,7 @@ interface ProfileFormValues {
   name: string;
   email: string;
   password: string;
+  current_password: string;
   crmv: string;
   specialty: string;
   sipeagro_number: string;
@@ -24,7 +25,14 @@ interface ProfileFormValues {
 
 export default function ProfilePage() {
   const { t } = useTranslation('common');
-  const { register, handleSubmit, reset, setValue } = useForm<ProfileFormValues>();
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<ProfileFormValues>();
 
   const { data: profile, isLoading: loading, isError } = useProfileQuery();
   const updateMutation = useUpdateProfileMutation();
@@ -43,9 +51,19 @@ export default function ProfilePage() {
       specialty: profile.specialty ?? '',
       sipeagro_number: profile.sipeagro_number ?? '',
       password: '',
+      current_password: '',
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile, isError]);
+
+  // Trocar e-mail ou senha exige a senha atual (backend, PERFIL_SENHA_ATUAL):
+  // uma sessão esquecida aberta não pode tomar a conta.
+  const emailDigitado = watch('email');
+  const senhaDigitada = watch('password');
+  const trocaEmail =
+    !!profile && !!emailDigitado?.trim() && emailDigitado.trim().toLowerCase() !== profile.email?.trim().toLowerCase();
+  const trocaSenha = !!senhaDigitada?.trim();
+  const exigeSenhaAtual = trocaEmail || trocaSenha;
 
   const onSubmit = async (values: ProfileFormValues) => {
     try {
@@ -56,6 +74,7 @@ export default function ProfilePage() {
         specialty: string;
         sipeagro_number: string;
         password?: string;
+        current_password?: string;
       } = {
         name: values.name,
         email: values.email,
@@ -65,6 +84,9 @@ export default function ProfilePage() {
       };
       if (values.password?.trim()) {
         payload.password = values.password;
+      }
+      if (exigeSenhaAtual && values.current_password) {
+        payload.current_password = values.current_password;
       }
       const updated = await updateMutation.mutateAsync(payload);
       const raw = localStorage.getItem('user');
@@ -77,6 +99,7 @@ export default function ProfilePage() {
         }),
       );
       setValue('password', '');
+      setValue('current_password', '');
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, t('profile.saveError')));
     }
@@ -115,10 +138,33 @@ export default function ProfilePage() {
                 <Label>{t('profile.newPassword')}</Label>
                 <Input
                   type="password"
-                  {...register('password')}
+                  autoComplete="new-password"
+                  {...register('password', {
+                    validate: (v) => !v?.trim() || v.length >= 8 || t('profile.passwordMin'),
+                  })}
                   placeholder={t('profile.passwordPlaceholder')}
                 />
+                {errors.password?.message && (
+                  <p className="text-xs text-destructive mt-1">{errors.password.message}</p>
+                )}
               </div>
+              {exigeSenhaAtual && (
+                <div>
+                  <Label>{t('profile.currentPassword')}</Label>
+                  <Input
+                    type="password"
+                    autoComplete="current-password"
+                    {...register('current_password', {
+                      validate: (v) => !exigeSenhaAtual || !!v?.trim() || t('profile.currentPasswordRequired'),
+                    })}
+                  />
+                  {errors.current_password?.message ? (
+                    <p className="text-xs text-destructive mt-1">{errors.current_password.message}</p>
+                  ) : (
+                    <p className="text-xs text-muted-foreground mt-1">{t('profile.currentPasswordHint')}</p>
+                  )}
+                </div>
+              )}
               <div>
                 <Label>{t('profile.crmv')}</Label>
                 <Input {...register('crmv')} />

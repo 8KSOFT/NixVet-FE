@@ -68,7 +68,15 @@ function TeamContent() {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  const { register, handleSubmit, reset, control, setValue, watch } = useForm<TeamUserFormValues>();
+  const {
+    register,
+    handleSubmit,
+    reset,
+    control,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<TeamUserFormValues>();
 
   const currentRole = getStoredUserRole();
   const canAssignAdmin = currentRole === 'admin' || currentRole === 'superadmin';
@@ -540,9 +548,16 @@ function TeamContent() {
                 <Label>{t('team.formPasswordOptional')}</Label>
                 <Input
                   type="password"
-                  {...register('password')}
+                  autoComplete="new-password"
+                  {...register('password', {
+                    // Senha nova: mínimo 8 (o backend recusa menos).
+                    validate: (v) => !v?.trim() || v.length >= 8 || t('team.passwordMin'),
+                  })}
                   placeholder={t('team.passwordPlaceholder')}
                 />
+                {errors.password?.message && (
+                  <p className="text-xs text-destructive">{errors.password.message}</p>
+                )}
               </div>
             ) : (
               <div className="flex items-start gap-2 rounded-md border border-blue-100 bg-blue-50 p-3 text-xs text-blue-800">
