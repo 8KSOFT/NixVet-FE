@@ -18,8 +18,8 @@ import { CURRENCY_BY_LANGUAGE, resolveAppLanguage } from "@/lib/i18n/currency";
 import { cn } from "@/lib/utils";
 import { MenuIconsColored } from "@/components/MenuIconsColored";
 import { useDashboardMetricsQuery } from "@/hooks/apiHooks/useDashboardMetrics";
-import { useConsultationsQuery } from "@/hooks/apiHooks/useConsultations";
-import { usePatientsListQuery } from "@/hooks/apiHooks/usePatients";
+import { useConsultationsRangeQuery } from "@/hooks/apiHooks/useConsultations";
+import { EstadoErro } from "@/components/estado-erro";
 import { useClinicalTasksQuery } from "@/hooks/apiHooks/useClinicalTasks";
 import { getStoredUserRole } from "@/lib/role-permissions";
 import { Badge } from "@/components/ui/badge";
@@ -135,11 +135,19 @@ export default function DashboardPage() {
     return "pt-BR";
   }, [i18n.language]);
 
-  const { data: metrics, isLoading: loadingMetrics } = useDashboardMetricsQuery();
-  const { data: consultations = [], isLoading: loadingConsultations } = useConsultationsQuery();
-  const { data: patients = [], isLoading: loadingPatients } = usePatientsListQuery();
+  // Compara em data LOCAL (BRT), não UTC: toISOString() desloca o dia
+  // perto da virada e fazia a tabela "Atendimentos de hoje" ficar vazia.
+  const localYMD = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+  // Os números do mês e as séries vêm agregados de `/metrics/dashboard`; das
+  // consultas, só as de hoje (a tabela "Atendimentos de hoje"). Até 01/10/2026
+  // a tela baixava todas as consultas e todos os pacientes da clínica.
+  const hoje = localYMD(new Date());
+  const { data: metrics, isLoading: loading, isError: metricsError, refetch: refetchMetrics } =
+    useDashboardMetricsQuery();
+  const { data: consultations = [] } = useConsultationsRangeQuery(hoje, hoje);
   const { data: tasksPage } = useClinicalTasksQuery(1);
-  const loading = loadingMetrics || loadingConsultations || loadingPatients;
 
   const pendingTasks = useMemo(() => {
     const items = tasksPage?.items ?? [];
@@ -153,100 +161,40 @@ export default function DashboardPage() {
       .slice(0, 5);
   }, [tasksPage]);
 
-  // Compara em data LOCAL (BRT), não UTC: toISOString() desloca o dia
-  // perto da virada e fazia a tabela "Atendimentos de hoje" ficar vazia.
-  const localYMD = (d: Date) =>
-    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
-  const stats = useMemo(() => {
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
-
-    const newPatientsMonth = patients.filter((p) => {
-      if (!p.createdAt) return false;
-      const d = new Date(p.createdAt);
-      return d.getFullYear() === currentYear && d.getMonth() === currentMonth;
-    }).length;
-
-    const cancelledThisMonth = consultations.filter((c) => {
-      if (!c.consultation_date) return false;
-      const d = new Date(c.consultation_date);
-      return (
-        d.getFullYear() === currentYear &&
-        d.getMonth() === currentMonth &&
-        d <= now &&
-        c.status === "cancelled"
-      );
-    }).length;
-
-    return {
+  const stats = useMemo(
+    () => ({
       appointmentsToday: metrics?.consultations_today ?? 0,
-      newPatientsMonth,
+      newPatientsMonth: metrics?.new_patients_month ?? 0,
       revenueMonth: metrics?.monthly_revenue ?? 0,
-      cancelledThisMonth,
+      cancelledThisMonth: metrics?.cancelled_month ?? 0,
       vaccinesDue: metrics?.vaccines_due ?? 0,
       examsAwaitingFollowup: metrics?.exams_awaiting_followup ?? 0,
       unansweredConversations: metrics?.unanswered_conversations ?? 0,
       awaitingTutorConversations: metrics?.awaiting_tutor_conversations ?? 0,
-    };
-  }, [metrics, consultations, patients]);
+    }),
+    [metrics],
+  );
 
   // Série real (não ilustrativa) dos últimos 7 dias de consultas — alimenta a
   // sparkline do card de destaque e o texto "vs. ontem" do dashboard mobile.
-  const last7DaysConsultationCounts = useMemo(() => {
-    const days: { ymd: string; count: number }[] = [];
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      days.push({ ymd: localYMD(d), count: 0 });
-    }
-    const byDay = new Map(days.map((d) => [d.ymd, d]));
-    consultations.forEach((c) => {
-      if (!c.consultation_date) return;
-      const bucket = byDay.get(localYMD(new Date(c.consultation_date)));
-      if (bucket) bucket.count += 1;
-    });
-    return days.map((d) => d.count);
-  }, [consultations]);
+  const last7DaysConsultationCounts = useMemo(
+    () => metrics?.consultations_last7 ?? [0, 0, 0, 0, 0, 0, 0],
+    [metrics],
+  );
 
   const heroDelta =
     last7DaysConsultationCounts[6] - last7DaysConsultationCounts[5];
 
   // Novos pacientes e receita do mês, quebrados em 5 períodos reais (do dia 1
   // até hoje) — alimenta as mini barras/linha dos cards do grid mobile.
-  const monthBuckets = useMemo(() => {
-    const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const bucketCount = 5;
-    const totalMs = Math.max(now.getTime() - monthStart.getTime(), 1);
-    const bucketMs = totalMs / bucketCount;
-    const bucketIndex = (d: Date) =>
-      Math.min(bucketCount - 1, Math.max(0, Math.floor((d.getTime() - monthStart.getTime()) / bucketMs)));
-
-    const patientBuckets = new Array(bucketCount).fill(0);
-    patients.forEach((p) => {
-      if (!p.createdAt) return;
-      const d = new Date(p.createdAt);
-      if (d < monthStart || d > now) return;
-      patientBuckets[bucketIndex(d)] += 1;
-    });
-
-    const revenueBuckets = new Array(bucketCount).fill(0);
-    consultations.forEach((c) => {
-      if (!c.consultation_date) return;
-      // price vem como string em algumas respostas (coluna DECIMAL do Postgres
-      // sem cast) — somar sem converter virava concatenação de string e, depois
-      // de acumulado, um NaN silencioso na sparkline.
-      const price = Number(c.price);
-      if (!Number.isFinite(price) || price <= 0) return;
-      const d = new Date(c.consultation_date);
-      if (d < monthStart || d > now) return;
-      revenueBuckets[bucketIndex(d)] += price;
-    });
-
-    return { patientBuckets, revenueBuckets };
-  }, [patients, consultations]);
+  const monthBuckets = useMemo(
+    () => ({
+      patientBuckets: metrics?.month_buckets?.new_patients ?? [0, 0, 0, 0, 0],
+      revenueBuckets: metrics?.month_buckets?.revenue ?? [0, 0, 0, 0, 0],
+    }),
+    [metrics],
+  );
 
   const recentAppointments = useMemo(() => {
     const todayStr = localYMD(new Date());
@@ -392,6 +340,15 @@ export default function DashboardPage() {
       <h2 className="text-[26px] sm:text-[30px] font-extrabold text-foreground mb-6">
         {t("dashboardHome.title")}
       </h2>
+
+      {/* Sem isto, falha em /metrics/dashboard mostrava os KPIs zerados como
+          se fossem o número real do dia. */}
+      {metricsError && (
+        <EstadoErro
+          mensagem="Não foi possível carregar os indicadores."
+          onRetry={() => void refetchMetrics()}
+        />
+      )}
 
       {/* Mobile: card de destaque (hero, com sparkline real dos últimos 7 dias)
           + grid 2 colunas com mini-gráficos reais (barras/linha) */}

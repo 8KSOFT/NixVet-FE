@@ -2,6 +2,7 @@
 
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/axios';
+import { dashboardMetricsKeys } from './useDashboardMetrics';
 import { API_PAGE_SIZE, fetchAllListPages, listQueryParams, parseListResponse } from '@/lib/pagination';
 import type { PatientDetail, PatientRow, PatientTimelineEvent } from '@/app/types/patient';
 
@@ -108,6 +109,8 @@ export function useCreatePatientMutation() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: patientKeys.all });
+      // KPIs do dashboard (novos pacientes, consultas de hoje, cancelamentos).
+      queryClient.invalidateQueries({ queryKey: dashboardMetricsKeys.all });
     },
   });
 }
@@ -121,6 +124,8 @@ export function useUpdatePatientMutation() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: patientKeys.all });
+      // KPIs do dashboard (novos pacientes, consultas de hoje, cancelamentos).
+      queryClient.invalidateQueries({ queryKey: dashboardMetricsKeys.all });
     },
   });
 }
@@ -134,6 +139,8 @@ export function useDeletePatientMutation() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: patientKeys.all });
+      // KPIs do dashboard (novos pacientes, consultas de hoje, cancelamentos).
+      queryClient.invalidateQueries({ queryKey: dashboardMetricsKeys.all });
     },
   });
 }

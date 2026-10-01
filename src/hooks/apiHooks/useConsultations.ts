@@ -1,7 +1,8 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/axios';
+import { dashboardMetricsKeys } from './useDashboardMetrics';
 import { fetchAllListPages } from '@/lib/pagination';
 import type { AvailabilitySlot, Consultation, ConsultationPayload } from '@/app/types/consultation';
 
@@ -18,6 +19,22 @@ export function useConsultationsQuery() {
   return useQuery({
     queryKey: consultationKeys.lists(),
     queryFn: () => fetchAllListPages<Consultation>('/consultations'),
+  });
+}
+
+/**
+ * Consultas de um intervalo de dias (YYYY-MM-DD, inclusivo). Para quem só
+ * precisa de uma janela — o dashboard (hoje) e a agenda (período visível) —
+ * em vez da lista completa da clínica, que cresce sem limite.
+ */
+export function useConsultationsRangeQuery(from: string, to: string, enabled = true) {
+  return useQuery({
+    queryKey: [...consultationKeys.lists(), { from, to }] as const,
+    queryFn: () => fetchAllListPages<Consultation>('/consultations', { from, to }),
+    enabled: enabled && !!from && !!to,
+    // Trocar de mês/semana mantém a grade anterior até a nova chegar, em vez
+    // de piscar vazia.
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -65,6 +82,8 @@ export function useCreateConsultationMutation() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: consultationKeys.all });
+      // KPIs do dashboard (novos pacientes, consultas de hoje, cancelamentos).
+      queryClient.invalidateQueries({ queryKey: dashboardMetricsKeys.all });
     },
   });
 }
@@ -78,6 +97,8 @@ export function useUpdateConsultationMutation() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: consultationKeys.all });
+      // KPIs do dashboard (novos pacientes, consultas de hoje, cancelamentos).
+      queryClient.invalidateQueries({ queryKey: dashboardMetricsKeys.all });
     },
   });
 }
@@ -94,6 +115,8 @@ export function useRescheduleConsultationMutation() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: consultationKeys.all });
+      // KPIs do dashboard (novos pacientes, consultas de hoje, cancelamentos).
+      queryClient.invalidateQueries({ queryKey: dashboardMetricsKeys.all });
     },
   });
 }
@@ -108,6 +131,8 @@ export function useCancelConsultationMutation() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: consultationKeys.all });
+      // KPIs do dashboard (novos pacientes, consultas de hoje, cancelamentos).
+      queryClient.invalidateQueries({ queryKey: dashboardMetricsKeys.all });
     },
   });
 }
@@ -126,6 +151,8 @@ export function useMarkNoShowConsultationMutation() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: consultationKeys.all });
+      // KPIs do dashboard (novos pacientes, consultas de hoje, cancelamentos).
+      queryClient.invalidateQueries({ queryKey: dashboardMetricsKeys.all });
     },
   });
 }

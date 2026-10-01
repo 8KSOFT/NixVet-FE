@@ -58,7 +58,7 @@ import {
   useAvailableSlotsQuery,
   useCancelConsultationMutation,
   useConsultationQuery,
-  useConsultationsQuery,
+  useConsultationsRangeQuery,
   useCreateConsultationMutation,
   useMarkNoShowConsultationMutation,
   useRescheduleConsultationMutation,
@@ -73,6 +73,7 @@ import { useAppointmentTypesQuery } from '@/hooks/apiHooks/useAppointmentTypes';
 import { useGoogleStatusQuery, useGoogleEventsQuery } from '@/hooks/apiHooks/useGoogleIntegration';
 import { useAwaitingFollowupsQuery } from '@/hooks/apiHooks/useExamFollowups';
 import { useHasPermission } from '@/hooks/useHasPermission';
+import { EstadoErro } from '@/components/estado-erro';
 import { useSummarizeMutation, useStructureObservationsMutation } from '@/hooks/apiHooks/useAi';
 
 type ViewMode = 'day' | 'week' | 'month' | 'year';
@@ -219,7 +220,37 @@ function CalendarContent() {
     }
   }, []);
 
-  const { data: consultations = [] } = useConsultationsQuery();
+  // Só o período que a grade mostra (até 01/10/2026 vinham todas as consultas
+  // da clínica, todas as páginas, a cada abertura da agenda). Os limites
+  // seguem as mesmas funções que montam a grade: 42 dias no mês, a semana, o
+  // dia ou o ano.
+  const intervaloVisivel = useMemo(() => {
+    let inicio: Dayjs;
+    let fim: Dayjs;
+    if (viewMode === 'day') {
+      inicio = currentMonth;
+      fim = currentMonth;
+    } else if (viewMode === 'week') {
+      const dias = buildWeekDays(currentMonth);
+      inicio = dias[0];
+      fim = dias[dias.length - 1];
+    } else if (viewMode === 'year') {
+      inicio = currentMonth.startOf('year');
+      fim = currentMonth.endOf('year');
+    } else {
+      const dias = buildCalendarDays(currentMonth);
+      inicio = dias[0];
+      fim = dias[dias.length - 1];
+    }
+    return { from: inicio.format('YYYY-MM-DD'), to: fim.format('YYYY-MM-DD') };
+  }, [viewMode, currentMonth]);
+  const {
+    data: consultations = [],
+    isLoading: consultationsLoading,
+    isError: consultationsError,
+    error: consultationsErrorObj,
+    refetch: refetchConsultations,
+  } = useConsultationsRangeQuery(intervaloVisivel.from, intervaloVisivel.to);
   const { data: veterinarians = [] } = useVeterinariansQuery();
   const { data: resources = [] } = useResourcesListQuery();
   const { data: appointmentTypes = [] } = useAppointmentTypesQuery();
@@ -1137,6 +1168,23 @@ function CalendarContent() {
           <ChevronRight className="h-4 w-4" />
         </Button>
       </div>
+
+      {/* A grade vazia por falha parecia "dia sem agendamento" — na recepção,
+          isso é marcar horário em cima de outro. */}
+      {consultationsError && (
+        <EstadoErro
+          className="mb-3 py-4"
+          error={consultationsErrorObj}
+          mensagem="Não foi possível carregar a agenda."
+          onRetry={() => void refetchConsultations()}
+        />
+      )}
+      {consultationsLoading && (
+        <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground" aria-live="polite">
+          <Loader2 className="size-3 animate-spin" aria-hidden />
+          {t('calendar.loading')}
+        </div>
+      )}
 
       {/* Calendar views */}
       <div
