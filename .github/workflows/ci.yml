@@ -71,7 +71,6 @@ jobs:
       - run: npm run build
         env:
           NEXT_PUBLIC_API_URL: https://api.ci.invalid
-        env:
           NEXT_TELEMETRY_DISABLED: '1'
 
   # Portão de deploy (E04, opção b) — ver o workflow do backend. A 8khost
