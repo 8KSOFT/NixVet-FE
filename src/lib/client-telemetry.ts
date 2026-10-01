@@ -19,6 +19,27 @@ type ErroDoCliente = {
   requestId?: string;
 };
 
+/**
+ * `request_id` da última chamada de API que falhou, com o momento.
+ *
+ * Tela branca costuma vir logo depois de uma resposta que a tela não esperava;
+ * mandar o id dessa chamada junto do erro de JS liga as duas pontas no log
+ * (o backend grava como `request_id_origem`). Até 01/10/2026 o campo existia
+ * no relatório e ninguém o preenchia. Só vale por 60 s — depois disso a
+ * falha de API provavelmente não tem relação com o erro.
+ */
+let ultimaFalha: { id: string; em: number } | null = null;
+const VALIDADE_FALHA_MS = 60_000;
+
+export function registrarFalhaDeApi(requestId: string | undefined | null): void {
+  if (requestId) ultimaFalha = { id: requestId, em: Date.now() };
+}
+
+function requestIdRecente(): string | undefined {
+  if (!ultimaFalha || Date.now() - ultimaFalha.em > VALIDADE_FALHA_MS) return undefined;
+  return ultimaFalha.id;
+}
+
 /** Um envio por mensagem a cada 30 s: página em laço de erro manda centenas. */
 const ENVIADOS = new Map<string, number>();
 const JANELA_MS = 30_000;
@@ -39,6 +60,7 @@ export function reportarErroDoCliente(erro: ErroDoCliente): void {
       body: JSON.stringify({
         ...erro,
         rota: erro.rota ?? window.location.pathname,
+        requestId: erro.requestId ?? requestIdRecente(),
       }),
     }).catch(() => undefined);
   } catch {

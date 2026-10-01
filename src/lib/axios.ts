@@ -4,6 +4,7 @@ import { codigoDoProblema, problemaDe } from '@/lib/problem';
 import { getApiBaseUrl } from './api-base';
 import { API_MESSAGE, isApiEnvelope } from '@/app/types/api-response';
 import { isBillingBlockCode, publishBillingBlock } from './billing-block';
+import { registrarFalhaDeApi } from './client-telemetry';
 
 /**
  * A sessão vive em cookie HttpOnly emitido pelo backend (`nixvet_access` /
@@ -250,6 +251,11 @@ api.interceptors.response.use(
   },
   async (error: AxiosError) => {
     anexarCodigoDoErro(error);
+    // Para o relatório de erro de JS que vier em seguida (client-telemetry).
+    registrarFalhaDeApi(
+      (error.response?.headers?.['x-request-id'] as string | undefined) ??
+        (error.config?.headers?.['x-request-id'] as string | undefined),
+    );
 
     if (typeof window !== 'undefined' && error.response?.status === 402) {
       tratarBloqueioDeCobranca(error);
