@@ -1,5 +1,6 @@
 'use client';
 
+import { useCallback } from 'react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/axios';
 import { fetchAllListPages, listQueryParams, parseListResponse } from '@/lib/pagination';
@@ -22,7 +23,6 @@ export const medicalRecordKeys = {
   detail: (id: string) => [...medicalRecordKeys.all, 'detail', id] as const,
   relatedPrescriptions: (patientId: string) => [...medicalRecordKeys.all, 'related-prescriptions', patientId] as const,
   relatedExamRequests: (patientId: string) => [...medicalRecordKeys.all, 'related-exam-requests', patientId] as const,
-  relatedVaccines: (patientId: string) => [...medicalRecordKeys.all, 'related-vaccines', patientId] as const,
 };
 
 export function useMedicalRecordsQuery(page: number, patientId?: string, tutorId?: string) {
@@ -116,11 +116,47 @@ export function useRecordExamRequestsQuery(patientId: string | null | undefined)
   });
 }
 
-/** Histórico de vacinas aplicadas ao paciente — usada na aba "Vacinas" da ficha. */
-export function useRecordVaccineHistoryQuery(patientId: string | null | undefined) {
+/**
+ * Histórico de vacinas aplicadas ao paciente — usada na aba "Vacinas" da ficha e
+ * no prontuário do animal.
+ *
+ * Não existe `GET /vaccines` no backend (só `/vaccine/reminders`, que é agenda de
+ * próxima dose, sem data de aplicação nem lote): o hook antigo pedia essa rota e
+ * tomava 404 em produção, e a seção "Histórico geral" nunca aparecia. A vacina
+ * aplicada mora no JSON `vaccines` de cada ficha (`POST /medical-records/:id/vaccines`),
+ * e `GET /medical-records?patient_id=` devolve esse campo — então o histórico é o
+ * achatamento das fichas do paciente.
+ *
+ * Usa a MESMA queryKey de `useMedicalRecordsByPatientQuery` com `select`: no
+ * prontuário as duas convivem na tela e dividem um único fetch, em vez de varrer
+ * as fichas do paciente duas vezes. `excludeRecordId` tira a ficha aberta, cujas
+ * vacinas a tela de detalhe já lista à parte.
+ */
+export function useRecordVaccineHistoryQuery(
+  patientId: string | null | undefined,
+  excludeRecordId?: string | null,
+) {
+  const select = useCallback(
+    (records: MedicalRecord[]): RecordVaccineHistoryItem[] =>
+      records
+        .filter((r) => r.id !== excludeRecordId)
+        .flatMap((r) =>
+          (r.vaccines ?? []).map((v, i) => ({
+            // Vacina dentro do JSON da ficha não tem id próprio.
+            id: `${r.id}:${i}`,
+            vaccine_name: v.name,
+            application_date: v.date,
+            next_due_date: v.next_dose ?? '',
+            batch_number: v.batch ?? '',
+          })),
+        )
+        .sort((a, b) => (b.application_date ?? '').localeCompare(a.application_date ?? '')),
+    [excludeRecordId],
+  );
   return useQuery({
-    queryKey: medicalRecordKeys.relatedVaccines(patientId ?? ''),
-    queryFn: () => fetchAllListPages<RecordVaccineHistoryItem>('/vaccines', { patient_id: patientId ?? '' }),
+    queryKey: medicalRecordKeys.byPatient(patientId ?? ''),
+    queryFn: () => fetchAllListPages<MedicalRecord>('/medical-records', { patient_id: patientId ?? '' }),
     enabled: !!patientId,
+    select,
   });
 }

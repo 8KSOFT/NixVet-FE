@@ -1015,7 +1015,7 @@ function RelatorioMedicoTab({
       <CardHeader className="flex flex-col items-start gap-2 pb-2 sm:flex-row sm:items-center sm:justify-between">
         <h3 className="text-sm font-semibold">{t('internacaoDetail.medicalRecord.linkedTitle')}</h3>
         <Button asChild size="sm" variant="outline">
-          <Link href={`/medical-records/${medicalRecordId}`}>{t('internacaoDetail.medicalRecord.openFull')}</Link>
+          <Link href={`/medical-records/${medicalRecordId}${patientId ? `?patient=${patientId}` : ''}`}>{t('internacaoDetail.medicalRecord.openFull')}</Link>
         </Button>
       </CardHeader>
       <CardContent className="space-y-3">

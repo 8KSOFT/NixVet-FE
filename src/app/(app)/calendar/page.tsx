@@ -616,7 +616,9 @@ function CalendarContent() {
         patient_id: selectedConsultation.patient.id,
         consultation_id: selectedConsultation.id,
       });
-      router.push(`/medical-records/${record.id}`);
+      // `?patient=`: a ficha dispara as consultas do paciente junto com a dela,
+      // sem esperar o `patient_id` voltar (medical-records/[id]).
+      router.push(`/medical-records/${record.id}?patient=${record.patient_id}`);
     } catch (e: unknown) {
       toast.error(getApiErrorMessage(e, t('calendar.details.startAttendanceError')));
     }

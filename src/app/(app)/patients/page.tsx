@@ -25,6 +25,7 @@ import {
 } from '@/hooks/apiHooks/usePatients';
 import { ProfilePhoto, ProfilePhotoUploader } from '@/components/shared/profile-photo';
 import { useTutorsListQuery } from '@/hooks/apiHooks/useTutors';
+import { EstadoErro } from '@/components/estado-erro';
 import { useCreateMedicalRecordMutation } from '@/hooks/apiHooks/useMedicalRecords';
 import {
   useCreateSupportOptionMutation,
@@ -122,7 +123,13 @@ function PatientsContent() {
   const watchedTutorChoice = watch('tutor_choice');
   const breedDiscriminator = watchedSpecies ? getBreedDiscriminator(watchedSpecies) : null;
 
-  const { data: patientsPage, isLoading: loading } = usePatientsQuery(
+  const {
+    data: patientsPage,
+    isLoading: loading,
+    isError: patientsError,
+    error: patientsErrorDetail,
+    refetch: refetchPatients,
+  } = usePatientsQuery(
     listPage,
     listTutorFilter || undefined,
     search || undefined,
@@ -137,7 +144,12 @@ function PatientsContent() {
   // alcança — o item do menu "+ Novo" é filtrado pela chave `medical-records`.)
   const podeVerProntuario = useHasPermission('medical_records.read');
 
-  const { data: tutors = [] } = useTutorsListQuery();
+  // Lista completa de tutores (todas as páginas) só alimenta selects — a tabela usa
+  // `record.tutor`, incluído em cada linha. Busca quando o filtro abre, quando há
+  // filtro ativo (o botão mostra o nome do tutor escolhido) ou com o dialog de
+  // criar/editar aberto; não a cada visita à tela.
+  const [tutorFilterOpen, setTutorFilterOpen] = useState(false);
+  const { data: tutors = [] } = useTutorsListQuery(tutorFilterOpen || !!listTutorFilter || modalVisible);
   const { data: speciesOptions = [] } = useSupportOptionsQuery('ANIMAL_ESPECIE');
   const { data: sexOptions = [] } = useSupportOptionsQuery('ANIMAL_GENERO');
   const { data: breedOptions = [] } = usePagedSupportOptionsQuery(breedDiscriminator);
@@ -202,7 +214,9 @@ function PatientsContent() {
     setCreatingRecordFor(record.id);
     try {
       const created = await createRecord.mutateAsync({ patient_id: record.id });
-      router.push(`/medical-records/${created.id}`);
+      // `?patient=` deixa a ficha disparar as abas do paciente junto com a própria
+      // ficha, sem esperar ela chegar pra descobrir o patient_id.
+      router.push(`/medical-records/${created.id}?patient=${record.id}`);
     } catch (error) {
       logarErroDeApi('Error starting atendimento:', error);
       toast.error(t('patients.startAppointmentError'));
@@ -308,7 +322,11 @@ function PatientsContent() {
             <Label className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
               {t('patients.dropdownLabel')}
             </Label>
-            <Select value={listTutorFilter || '_all'} onValueChange={(v) => setListTutorFilter(v === '_all' ? '' : v)}>
+            <Select
+              value={listTutorFilter || '_all'}
+              onValueChange={(v) => setListTutorFilter(v === '_all' ? '' : v)}
+              onOpenChange={setTutorFilterOpen}
+            >
               <SelectTrigger className="h-9 w-full sm:w-60">
                 <SelectValue placeholder={t('patients.dropdownStandardOption')} />
               </SelectTrigger>
@@ -347,6 +365,14 @@ function PatientsContent() {
 
       {loading ? (
         <div className="text-center py-8 text-muted-foreground">{t('patients.loading')}</div>
+      ) : patientsError ? (
+        // Falha de carga não pode cair em "nenhum paciente cadastrado" — numa
+        // clínica isso lê como dado sumido (e convida a recadastrar).
+        <EstadoErro
+          error={patientsErrorDetail}
+          onRetry={() => void refetchPatients()}
+          mensagem="Não foi possível carregar os pacientes."
+        />
       ) : (
         <div>
           {patients.length === 0 ? (

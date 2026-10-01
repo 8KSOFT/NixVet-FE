@@ -1,6 +1,6 @@
 'use client';
 
-import React, { Suspense, useEffect, useMemo, useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { CreateExamRequestPayload, ExamRequest, ExamRequestFormValues, StoredUser } from '@/app/types/exam-request';
 import { DashboardCreateFormDialog } from '@/components/dashboard-create-form-dialog';
@@ -31,7 +31,7 @@ import {
   useExamCatalogQuery,
 } from '@/hooks/apiHooks/useExamCatalog';
 import { usePatientsListQuery } from '@/hooks/apiHooks/usePatients';
-import { useConsultationsQuery } from '@/hooks/apiHooks/useConsultations';
+import { usePatientConsultationsQuery } from '@/hooks/apiHooks/usePrescriptions';
 
 function ExamRequestsContent() {
   const { t } = useTranslation();
@@ -52,14 +52,18 @@ function ExamRequestsContent() {
   const listTotal = examRequestsPage?.total ?? 0;
   const listTotalPages = examRequestsPage?.totalPages ?? 1;
 
-  const { data: patients = [] } = usePatientsListQuery();
-  const { data: allConsultations = [] } = useConsultationsQuery();
-  const { data: examsFromCatalog = [] } = useExamCatalogQuery();
-  const { data: examAreas = [] } = useExamAreasQuery();
-  const consultationsByPatient = useMemo(
-    () => (selectedPatientId ? allConsultations.filter((c) => c.patient?.id === selectedPatientId) : []),
-    [allConsultations, selectedPatientId],
+  // Pacientes só alimentam o select do dialog (a tabela usa `record.patient`, que
+  // vem na própria linha) — busca ao abrir, não a cada visita à tela.
+  const { data: patients = [] } = usePatientsListQuery(undefined, modalVisible);
+  // Consultas do paciente escolhido, filtradas no backend (`?patient_id=`). Antes a
+  // tela baixava a agenda inteira da clínica (todas as páginas de /consultations)
+  // no carregamento, só pra filtrar um paciente no cliente.
+  const { data: consultationsByPatient = [] } = usePatientConsultationsQuery(
+    modalVisible ? selectedPatientId : null,
   );
+  const { data: examsFromCatalog = [] } = useExamCatalogQuery();
+  // Áreas só alimentam o formulário (o catálogo fica: a tabela usa a área no rótulo).
+  const { data: examAreas = [] } = useExamAreasQuery(modalVisible);
 
   const createExamRequest = useCreateExamRequestMutation();
   const downloadPdf = useDownloadExamRequestPdfMutation();

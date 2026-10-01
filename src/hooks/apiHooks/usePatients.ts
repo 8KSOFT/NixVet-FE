@@ -53,12 +53,18 @@ export function usePatientsQuery(page: number, tutorId?: string, search?: string
  * select que a consome realmente aparecer (ex: só quando um modal abre) — sem isso,
  * telas como a Agenda disparavam essa busca "todas as páginas" a cada carregamento,
  * mesmo com o modal de agendamento fechado.
+ *
+ * `staleTime` de 5 min: são até 200 páginas por busca, e a base de pacientes não
+ * muda entre uma tela e outra — sem isso, cada navegação que monta um select
+ * refazia a varredura inteira. Cadastro/edição/exclusão invalidam `patientKeys.all`,
+ * então o que a própria clínica muda aparece na hora mesmo assim.
  */
 export function usePatientsListQuery(tutorId?: string, enabled = true) {
   return useQuery({
     queryKey: patientKeys.allFlat(tutorId),
     queryFn: () => fetchAllListPages<PatientRow>('/patients', tutorId ? { tutor_id: tutorId } : {}),
     enabled,
+    staleTime: 5 * 60_000,
   });
 }
 

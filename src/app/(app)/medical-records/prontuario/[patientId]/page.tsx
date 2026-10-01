@@ -326,7 +326,8 @@ function ProntuarioDetailContent() {
   const { data: records = [], isLoading: loadingRecords } = useMedicalRecordsByPatientQuery(patientId);
   const { data: events = [] } = usePatientTimelineQuery(patientId);
   const { data: vaccineHistory = [] } = useRecordVaccineHistoryQuery(patientId);
-  const { data: allFollowups = [] } = useFollowupsListQuery();
+  // Só os acompanhamentos deste animal (antes: os da clínica inteira, filtrados aqui).
+  const { data: allFollowups = [] } = useFollowupsListQuery(patientId);
   const loading = loadingPatient || loadingRecords;
   const [creating, setCreating] = useState(false);
   const createRecord = useCreateMedicalRecordMutation();
@@ -368,7 +369,7 @@ function ProntuarioDetailContent() {
     setCreating(true);
     try {
       const record = await createRecord.mutateAsync({ patient_id: patientId });
-      router.push(`/medical-records/${record.id}`);
+      router.push(`/medical-records/${record.id}?patient=${patientId}`);
     } catch {
       toast.error(t("prontuario.createError"));
       setCreating(false);
@@ -543,7 +544,7 @@ function ProntuarioDetailContent() {
                     <button
                       key={r.id}
                       type="button"
-                      onClick={() => router.push(`/medical-records/${r.id}`)}
+                      onClick={() => router.push(`/medical-records/${r.id}?patient=${patientId}`)}
                       className="group flex w-full flex-col gap-1.5 rounded-lg border border-slate-200 bg-white px-4 py-3 text-left transition hover:border-primary/50 hover:shadow-sm sm:flex-row sm:items-center sm:gap-3"
                     >
                       {/* Mobile: data + status no topo do card (ficha empilhada). */}

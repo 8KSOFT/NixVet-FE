@@ -115,7 +115,9 @@ export default function OrcamentosPage() {
   const [selected, setSelected] = useState<Budget | null>(null);
   const [toCancel, setToCancel] = useState<Budget | null>(null);
   const [cancelReason, setCancelReason] = useState('');
-  const { data: patients = [] } = usePatientsListQuery();
+  // Só alimenta o select do dialog "Novo orçamento" — busca ao abrir, não a cada
+  // visita à tela (são todas as páginas de pacientes).
+  const { data: patients = [] } = usePatientsListQuery(undefined, openNew);
   const { data: users = [] } = useVeterinariansQuery();
   const { data: products = [] } = useProductsQuery();
 

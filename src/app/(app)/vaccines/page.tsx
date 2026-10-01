@@ -123,7 +123,9 @@ function VaccinesContent() {
 
   const { data: allPageData, isLoading: loadingAll } = useVaccineRemindersQuery(allPage);
   const { data: duePageData, isLoading: loadingDue } = useDueVaccineRemindersQuery(duePage, 30);
-  const { data: patients = [] } = usePatientsListQuery();
+  // Só alimenta o select do dialog de criação (a tabela usa `r.patient`, incluído
+  // na própria linha) — busca ao abrir, não a cada visita à tela.
+  const { data: patients = [] } = usePatientsListQuery(undefined, modalOpen);
   const loading = loadingAll || loadingDue;
 
   const allReminders = allPageData?.items ?? [];

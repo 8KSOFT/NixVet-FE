@@ -86,7 +86,9 @@ function InternacoesPageContent() {
   const { data: all = [], isLoading: loadingAll } = useHospitalizationsQuery();
   const loading = loadingActive || loadingAll;
 
-  const { data: patients = [] } = usePatientsListQuery();
+  // Só alimenta o select do dialog "Nova internação" (a tabela usa `h.patient`,
+  // que já vem incluído na própria linha) — busca ao abrir, não a cada visita.
+  const { data: patients = [] } = usePatientsListQuery(undefined, openNew);
   const vetsQuery = useVeterinariansQuery();
   const veterinarians = vetsQuery.data ?? [];
 

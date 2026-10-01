@@ -39,7 +39,7 @@ import {
   useClinicalTermPdfMutation,
 } from '@/hooks/apiHooks/useClinicalTerms';
 import { usePatientsListQuery } from '@/hooks/apiHooks/usePatients';
-import type { ClinicalTermType as TermType } from '@/app/types/clinical-term';
+import type { ClinicalTerm, ClinicalTermType as TermType } from '@/app/types/clinical-term';
 import type { TFunction } from 'i18next';
 
 function getTypeLabels(t: TFunction): Record<TermType, string> {
@@ -48,6 +48,9 @@ function getTypeLabels(t: TFunction): Record<TermType, string> {
     hospitalization_refusal: t('termos.typeHospitalizationRefusal'),
   };
 }
+
+/** `patient` ainda não vem da API (ver comentário em `needsPatientLookup`). */
+type TermWithPatient = ClinicalTerm & { patient?: { id: string; name: string } | null };
 
 const EMPTY = {
   type: 'no_medical_discharge' as TermType,
@@ -63,7 +66,12 @@ export default function TermosPage() {
   const [form, setForm] = useState({ ...EMPTY });
 
   const { data: terms = [], isLoading: loading } = useClinicalTermsQuery();
-  const { data: patients = [] } = usePatientsListQuery();
+  // A lista completa de pacientes (todas as páginas) serve ao select do dialog e,
+  // hoje, também ao nome do paciente na tabela — `GET /clinical-terms` ainda não
+  // inclui o Patient. Quando o backend passar a mandar `term.patient`, a tabela usa
+  // o nome da própria linha e a varredura só acontece ao abrir o dialog.
+  const needsPatientLookup = terms.some((term) => term.patient_id && !(term as TermWithPatient).patient);
+  const { data: patients = [] } = usePatientsListQuery(undefined, dialog || needsPatientLookup);
   const createMutation = useCreateClinicalTermMutation();
   const pdfMutation = useClinicalTermPdfMutation();
   const saving = createMutation.isPending;
@@ -104,8 +112,8 @@ export default function TermosPage() {
     }
   };
 
-  const patientName = (id: string | null) =>
-    id ? patients.find((p) => p.id === id)?.name ?? '—' : '—';
+  const patientName = (term: TermWithPatient) =>
+    term.patient?.name ?? (term.patient_id ? patients.find((p) => p.id === term.patient_id)?.name ?? '—' : '—');
 
   return (
     <div className="space-y-6">
@@ -151,7 +159,7 @@ export default function TermosPage() {
                       <Badge variant="secondary">{typeLabels[term.type] ?? term.type}</Badge>
                     </TableCell>
                     <TableCell>{term.responsible_name}</TableCell>
-                    <TableCell>{patientName(term.patient_id)}</TableCell>
+                    <TableCell>{patientName(term)}</TableCell>
                     <TableCell className="text-right">
                       <Button
                         variant="ghost"

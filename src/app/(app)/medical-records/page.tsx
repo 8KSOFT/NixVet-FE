@@ -24,6 +24,7 @@ import type { MedicalRecord, MedicalRecordPatientRef } from '@/app/types/medical
 import { useCreateMedicalRecordMutation, useMedicalRecordsQuery } from '@/hooks/apiHooks/useMedicalRecords';
 import { usePatientsListQuery, useCreatePatientMutation } from '@/hooks/apiHooks/usePatients';
 import { useTutorsListQuery, useCreateTutorMutation } from '@/hooks/apiHooks/useTutors';
+import { EstadoErro } from '@/components/estado-erro';
 import { useVeterinariansQuery } from '@/hooks/apiHooks/useUsers';
 
 interface PatientRecordGroup {
@@ -100,7 +101,13 @@ export default function MedicalRecordsListPage() {
   const [patientModal, setPatientModal] = useState(false);
   const [patientForm, setPatientForm] = useState(emptyPatient());
 
-  const { data: recordsPage, isLoading: loading } = useMedicalRecordsQuery(
+  const {
+    data: recordsPage,
+    isLoading: loading,
+    isError: recordsError,
+    error: recordsErrorDetail,
+    refetch: refetchRecords,
+  } = useMedicalRecordsQuery(
     listPage,
     filterPatient || undefined,
     filterTutor || undefined,
@@ -109,8 +116,15 @@ export default function MedicalRecordsListPage() {
   const listTotal = recordsPage?.total ?? 0;
   const listTotalPages = recordsPage?.totalPages ?? 1;
 
-  const { data: patients = [] } = usePatientsListQuery();
-  const { data: tutors = [] } = useTutorsListQuery();
+  // As duas listas completas (todas as páginas) só alimentam selects — a grade de
+  // pastas usa `record.patient`/`record.patient.tutor`, que já vêm em cada linha.
+  // Pacientes: só o dialog "Nova ficha". Tutores: o combobox de filtro (ao abrir),
+  // o dialog de novo paciente, e enquanto houver filtro ativo, pro nome do tutor
+  // escolhido no botão (o staleTime do hook evita refazer a varredura aqui).
+  const { data: patients = [], isFetching: loadingPatients } = usePatientsListQuery(undefined, modalVisible);
+  const { data: tutors = [], isFetching: loadingTutors } = useTutorsListQuery(
+    tutorFilterOpen || patientModal || !!filterTutor,
+  );
   const { data: vets = [] } = useVeterinariansQuery();
 
   const createRecord = useCreateMedicalRecordMutation();
@@ -348,6 +362,13 @@ export default function MedicalRecordsListPage() {
           <div className="flex justify-center py-12">
             <Loader2 className="w-8 h-8 animate-spin text-muted-foreground/60" />
           </div>
+        ) : recordsError ? (
+          // Falha de carga não pode cair no "nenhuma ficha" — leria como dado sumido.
+          <EstadoErro
+            error={recordsErrorDetail}
+            onRetry={() => void refetchRecords()}
+            mensagem="Não foi possível carregar os prontuários."
+          />
         ) : patientGroups.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">{t('medicalRecords.emptyState')}</div>
         ) : (
@@ -549,7 +570,8 @@ export default function MedicalRecordsListPage() {
                   <SelectTrigger>
                     <SelectValue
                       placeholder={
-                        patients.length
+                        // Enquanto a lista (agora sob demanda) chega, não afirmar "nenhum paciente".
+                        patients.length || loadingPatients
                           ? t('medicalRecords.dialog.selectPlaceholder')
                           : t('medicalRecords.dialog.noPatientsPlaceholder')
                       }
@@ -681,7 +703,7 @@ export default function MedicalRecordsListPage() {
                   <SelectTrigger>
                     <SelectValue
                       placeholder={
-                        tutors.length
+                        tutors.length || loadingTutors
                           ? t('medicalRecords.dialog.selectPlaceholder')
                           : t('medicalRecords.dialog.noTutorsPlaceholder')
                       }

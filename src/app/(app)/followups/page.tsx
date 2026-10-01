@@ -50,7 +50,9 @@ function FollowupsContent() {
   const { data: awaitingPageData, isLoading: loadingAwaiting } = useAwaitingFollowupsQuery(awaitingPage);
   const { data: allPageData, isLoading: loadingAll } = useFollowupsQuery(allPage);
   const { data: examRequests = [] } = useExamRequestsListQuery();
-  const { data: patients = [] } = usePatientsListQuery();
+  // Só alimenta o select do dialog de criação — busca ao abrir, não a cada visita
+  // à tela (são todas as páginas de pacientes).
+  const { data: patients = [] } = usePatientsListQuery(undefined, modalOpen);
   const loading = loadingAwaiting || loadingAll;
 
   const awaiting = awaitingPageData?.items ?? [];

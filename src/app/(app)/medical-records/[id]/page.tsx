@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -126,11 +126,19 @@ export default function MedicalRecordDetailPage() {
 
   const queryClient = useQueryClient();
   const { data: record, isLoading: loading } = useMedicalRecordQuery(id);
-  const patientId = record?.patient_id ?? null;
+  // As cinco consultas do paciente abaixo dependem do patient_id; tirado só da
+  // ficha, elas esperavam a ficha chegar (cascata de uma ida e volta inteira).
+  // Quem linka pra cá pode mandar `?patient=` e elas saem em paralelo com a
+  // ficha. Assim que a ficha chega, o patient_id DELA vale — um parâmetro velho
+  // ou errado nunca decide o que a tela mostra, só adianta o caso comum.
+  const searchParams = useSearchParams();
+  const patientHint = searchParams?.get('patient') || null;
+  const patientId = record ? record.patient_id : patientHint;
 
   const { data: prescriptions = [] } = useRecordPrescriptionsQuery(patientId);
   const { data: examRequests = [] } = useRecordExamRequestsQuery(patientId);
-  const { data: vaccineRecords = [] } = useRecordVaccineHistoryQuery(patientId);
+  // Sem as vacinas desta ficha, que a aba já lista separado logo acima.
+  const { data: vaccineRecords = [] } = useRecordVaccineHistoryQuery(patientId, id);
   const { data: activeHosp } = useActiveHospitalizationQuery(patientId);
   const { data: patientFiles = [] } = usePatientFilesQuery(patientId);
 

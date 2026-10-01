@@ -9,7 +9,7 @@ export const examFollowupKeys = {
   all: ['exam-followups'] as const,
   lists: () => [...examFollowupKeys.all, 'list'] as const,
   list: (page: number) => [...examFollowupKeys.lists(), { page }] as const,
-  allFlat: () => [...examFollowupKeys.all, 'all'] as const,
+  allFlat: (patientId?: string) => [...examFollowupKeys.all, 'all', { patientId: patientId || undefined }] as const,
   awaiting: (page: number) => [...examFollowupKeys.all, 'awaiting', { page }] as const,
 };
 
@@ -41,11 +41,18 @@ export function useFollowupsQuery(page: number) {
   });
 }
 
-/** Lista completa de acompanhamentos (todas as páginas) — usada para filtrar por paciente no Prontuário. */
-export function useFollowupsListQuery() {
+/**
+ * Lista completa de acompanhamentos (todas as páginas) — usada no Prontuário.
+ *
+ * `patientId` filtra no backend (`GET /exam-followups?patient_id=`): sem ele a
+ * tela varria os acompanhamentos da clínica inteira (até 200 páginas) só pra
+ * filtrar um animal no cliente. Opcional para não quebrar quem ainda chama sem.
+ */
+export function useFollowupsListQuery(patientId?: string | null) {
   return useQuery({
-    queryKey: examFollowupKeys.allFlat(),
-    queryFn: () => fetchAllListPages<ExamFollowup>('/exam-followups'),
+    queryKey: examFollowupKeys.allFlat(patientId ?? undefined),
+    queryFn: () =>
+      fetchAllListPages<ExamFollowup>('/exam-followups', patientId ? { patient_id: patientId } : {}),
   });
 }
 

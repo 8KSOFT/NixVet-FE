@@ -14,17 +14,25 @@ export const examCatalogKeys = {
   planPrices: (examId: number) => [...examCatalogKeys.all, 'plan-prices', examId] as const,
 };
 
-export function useExamCatalogQuery() {
+/**
+ * Catálogo inteiro (todas as páginas). `enabled` deixa a tela de Exames pedir
+ * só quando o formulário abre; catálogo muda pouco, daí o cache longo.
+ */
+export function useExamCatalogQuery(enabled = true) {
   return useQuery({
     queryKey: examCatalogKeys.exams(),
     queryFn: () => fetchAllListPages<ExamOption>('/catalog/exams'),
+    enabled,
+    staleTime: 10 * 60_000,
   });
 }
 
-export function useExamAreasQuery() {
+export function useExamAreasQuery(enabled = true) {
   return useQuery({
     queryKey: examCatalogKeys.areas(),
     queryFn: () => fetchAllListPages<ExamAreaOption>('/catalog/exam-areas'),
+    enabled,
+    staleTime: 10 * 60_000,
   });
 }
 

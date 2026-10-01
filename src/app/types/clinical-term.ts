@@ -4,6 +4,8 @@ export interface ClinicalTerm {
   id: string;
   type: ClinicalTermType;
   patient_id: string | null;
+  /** Incluído pela listagem desde 01/10/2026 (só id e nome). */
+  patient?: { id: string; name: string } | null;
   responsible_name: string;
   responsible_document: string | null;
   reason: string | null;

@@ -53,7 +53,9 @@ function TasksContent() {
   const listTotal = tasksPage?.total ?? 0;
   const listTotalPages = tasksPage?.totalPages ?? 1;
 
-  const { data: patients = [] } = usePatientsListQuery();
+  // Só alimenta o select do dialog de criação — busca ao abrir, não a cada visita
+  // à tela (são todas as páginas de pacientes).
+  const { data: patients = [] } = usePatientsListQuery(undefined, modalOpen);
 
   const createTask = useCreateClinicalTaskMutation();
   const markDoneMutation = useMarkClinicalTaskDoneMutation();
