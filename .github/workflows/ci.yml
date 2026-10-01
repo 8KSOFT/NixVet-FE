@@ -61,10 +61,16 @@ jobs:
           cache: npm
       - run: npm ci
       # `scripts/check-build-env.mjs` (prebuild) confere que toda NEXT_PUBLIC_*
-      # usada está declarada como ARG no Dockerfile — não exige valor. Os
-      # valores públicos têm default no next.config.mjs; o build de CI não
-      # publica nada, só prova que compila.
+      # usada está declarada como ARG no Dockerfile — não exige valor. O build
+      # de CI não publica nada, só prova que compila.
+      #
+      # NEXT_PUBLIC_API_URL é obrigatória em build de produção desde 01/10/2026
+      # (o fallback para a API de produção saiu do next.config). Aqui vai um
+      # host que não resolve, de propósito: nada que saia deste build fala
+      # com ambiente real.
       - run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: https://api.ci.invalid
         env:
           NEXT_TELEMETRY_DISABLED: '1'
 
