@@ -45,12 +45,15 @@ import type { Product, ProductPayload } from '@/app/types/product';
 import {
   useCreateProductMutation,
   useDeleteProductMutation,
+  useProductSearchQuery,
   useProductsQuery,
   useProductSalesQuery,
   useUpdateProductMutation,
 } from '@/hooks/apiHooks/useProducts';
 import { useProductCategoriesQuery, useSuppliersQuery } from '@/hooks/apiHooks/useStock';
 import { useCurrencyFormatter } from '@/lib/i18n/currency';
+import { ListPagination } from '@/components/list-pagination';
+import { API_PAGE_SIZE } from '@/lib/pagination';
 import { CategoriesTab } from './_components/CategoriesTab';
 import { SuppliersTab } from './_components/SuppliersTab';
 import { MovementsTab } from './_components/MovementsTab';
@@ -117,8 +120,21 @@ function ProdutosContent() {
     router.replace(query ? `${pathname}?${query}` : (pathname ?? '/settings/produtos'), { scroll: false });
   };
 
-  const { data: products = [], isLoading: loadingProducts } = useProductsQuery(true);
-  const { data: sales = [], isLoading: loadingSales } = useProductSalesQuery();
+  const [productsPage, setProductsPage] = useState(1);
+  const [salesPage, setSalesPage] = useState(1);
+  const productsQuery = useProductSearchQuery(
+    { includeInactive: true, page: productsPage },
+    tab === 'products',
+  );
+  const productRows = productsQuery.data?.items ?? [];
+  const loadingProducts = productsQuery.isLoading;
+  const salesQuery = useProductSalesQuery(salesPage, tab === 'sales');
+  const sales = salesQuery.data?.items ?? [];
+  const loadingSales = salesQuery.isLoading;
+  // Catálogo inteiro (até 500, teto do backend) só para os selects das abas
+  // de estoque, que ainda não buscam no servidor.
+  const needsAllProducts = tab === 'movements' || tab === 'entries' || tab === 'cost-history';
+  const { data: products = [] } = useProductsQuery(true, needsAllProducts);
   const { data: categories = [] } = useProductCategoriesQuery();
   const { data: suppliers = [] } = useSuppliersQuery();
 
@@ -281,7 +297,7 @@ function ProdutosContent() {
             ))}
           </div>
         ) : tab === 'products' ? (
-          products.length === 0 ? (
+          productRows.length === 0 ? (
             <div className="rounded-lg border border-gray-300 bg-white py-8 text-center text-sm text-slate-500">
               {t('settingsProdutos.emptyProducts')}
             </div>
@@ -302,7 +318,7 @@ function ProdutosContent() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {products.map((p) => (
+                    {productRows.map((p) => (
                       <TableRow key={p.id} className={`border-b border-gray-300 h-15${!p.active ? ' opacity-50' : ''}`}>
                         <TableCell className="font-medium">
                           {p.name}
@@ -358,7 +374,7 @@ function ProdutosContent() {
 
               {/* Mobile: cards */}
               <div className="space-y-3 md:hidden">
-                {products.map((p) => (
+                {productRows.map((p) => (
                   <div
                     key={p.id}
                     className={`rounded-lg border border-gray-300 bg-white p-4${!p.active ? ' opacity-50' : ''}`}
@@ -430,6 +446,14 @@ function ProdutosContent() {
                   </div>
                 ))}
               </div>
+              <ListPagination
+                page={productsPage}
+                totalPages={productsQuery.data?.totalPages ?? 1}
+                total={productsQuery.data?.total ?? 0}
+                pageSize={API_PAGE_SIZE}
+                onPageChange={setProductsPage}
+                disabled={productsQuery.isFetching}
+              />
             </>
           )
         ) : sales.length === 0 ? (
@@ -484,6 +508,14 @@ function ProdutosContent() {
                 </div>
               ))}
             </div>
+            <ListPagination
+              page={salesPage}
+              totalPages={salesQuery.data?.totalPages ?? 1}
+              total={salesQuery.data?.total ?? 0}
+              pageSize={API_PAGE_SIZE}
+              onPageChange={setSalesPage}
+              disabled={salesQuery.isFetching}
+            />
           </>
         )}
       </div>
