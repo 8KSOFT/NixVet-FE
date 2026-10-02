@@ -1,7 +1,8 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/axios';
+import { listQueryParams, parseListResponse } from '@/lib/pagination';
 import { financialReportKeys } from '@/hooks/apiHooks/useFinancialReports';
 
 export type PayableStatus = 'pending' | 'paid' | 'overdue' | 'cancelled';
@@ -54,31 +55,39 @@ export interface PayablePayload {
 export const payableKeys = {
   all: ['payables'] as const,
   lists: () => [...payableKeys.all, 'list'] as const,
-  list: (filters: PayablesFilters) => [...payableKeys.lists(), filters] as const,
+  list: (filters: PayablesFilters, page = 1) => [...payableKeys.lists(), filters, { page }] as const,
   summary: (month: string) => [...payableKeys.all, 'summary', month] as const,
 };
 
 // Ordenação: vencidas primeiro → pendentes por vencimento → pagas → canceladas.
 const STATUS_ORDER: Record<PayableStatus, number> = { overdue: 0, pending: 1, paid: 2, cancelled: 3 };
 
-/** Contas a pagar do mês, já na ordem em que a tela mostra. */
-export function usePayablesQuery(filters: PayablesFilters) {
+/**
+ * Contas a pagar do mês, paginadas no servidor (ordem do servidor: vencimento
+ * crescente). A ordem por status (vencidas → pendentes → pagas → canceladas)
+ * é aplicada só dentro da página — o backend não ordena por status.
+ */
+export function usePayablesQuery(filters: PayablesFilters, page = 1) {
   return useQuery({
-    queryKey: payableKeys.list(filters),
+    queryKey: payableKeys.list(filters, page),
     queryFn: async () => {
-      const params = new URLSearchParams({ month: filters.month });
-      if (filters.status !== 'all') params.set('status', filters.status);
-      if (filters.category !== 'all') params.set('category', filters.category);
-      const { data } = await api.get<Payable[]>(`/payables?${params.toString()}`);
-      const list = Array.isArray(data) ? [...data] : [];
-      list.sort((a, b) => {
+      const { data } = await api.get('/payables', {
+        params: listQueryParams(page, undefined, {
+          month: filters.month,
+          status: filters.status !== 'all' ? filters.status : undefined,
+          category: filters.category !== 'all' ? filters.category : undefined,
+        }),
+      });
+      const result = parseListResponse<Payable>(data, page);
+      const items = [...result.items].sort((a, b) => {
         const so = STATUS_ORDER[a.status] - STATUS_ORDER[b.status];
         if (so !== 0) return so;
         return a.due_date.localeCompare(b.due_date);
       });
-      return list;
+      return { ...result, items };
     },
     enabled: !!filters.month,
+    placeholderData: keepPreviousData,
   });
 }
 

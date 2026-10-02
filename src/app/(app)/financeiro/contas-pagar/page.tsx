@@ -2,6 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { ListPagination } from '@/components/list-pagination';
+import { API_PAGE_SIZE } from '@/lib/pagination';
 import { useTranslation } from 'react-i18next';
 import { AlertTriangle, CalendarClock, CircleDollarSign, MoreHorizontal, Plus, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -122,12 +124,26 @@ export default function ContasPagarPage() {
   const now = new Date();
   const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
-  const [month, setMonth] = useState(currentMonth);
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [categoryFilter, setCategoryFilter] = useState('all');
-  const payablesQuery = usePayablesQuery({ month, status: statusFilter, category: categoryFilter });
+  const [month, setMonthState] = useState(currentMonth);
+  const [statusFilter, setStatusFilterState] = useState('all');
+  const [categoryFilter, setCategoryFilterState] = useState('all');
+  const [listPage, setListPage] = useState(1);
+  // Trocar filtro volta para a primeira página.
+  const setMonth = (v: string) => {
+    setMonthState(v);
+    setListPage(1);
+  };
+  const setStatusFilter = (v: string) => {
+    setStatusFilterState(v);
+    setListPage(1);
+  };
+  const setCategoryFilter = (v: string) => {
+    setCategoryFilterState(v);
+    setListPage(1);
+  };
+  const payablesQuery = usePayablesQuery({ month, status: statusFilter, category: categoryFilter }, listPage);
   const summaryQuery = usePayablesSummaryQuery(month);
-  const payables = payablesQuery.data ?? [];
+  const payables = payablesQuery.data?.items ?? [];
   const summary = summaryQuery.data;
   const loading = payablesQuery.isLoading || summaryQuery.isLoading;
   // Falha sem nada em cache: mostrar erro, não "nenhuma conta" / R$ 0,00 —
@@ -442,6 +458,14 @@ export default function ContasPagarPage() {
               </Table>
             </div>
           )}
+          <ListPagination
+            page={listPage}
+            totalPages={payablesQuery.data?.totalPages ?? 1}
+            total={payablesQuery.data?.total ?? 0}
+            pageSize={API_PAGE_SIZE}
+            onPageChange={setListPage}
+            disabled={payablesQuery.isFetching}
+          />
         </CardContent>
       </Card>
 
