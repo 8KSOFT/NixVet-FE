@@ -25,12 +25,14 @@ import { Input } from '@/components/ui/input';
 import { CurrencyInput } from '@/components/ui/currency-input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { useProductsQuery } from '@/hooks/apiHooks/useProducts';
+import { ProdutoBusca } from '@/components/produto-busca';
+import { ListPagination } from '@/components/list-pagination';
+import { API_PAGE_SIZE } from '@/lib/pagination';
 import { PacienteBusca } from '@/components/paciente-busca';
 import { useVeterinariansQuery } from '@/hooks/apiHooks/useUsers';
 import {
   useApproveBudgetMutation,
-  useBudgetsQuery,
+  useBudgetsPagedQuery,
   useCancelBudgetMutation,
   useCreateBudgetMutation,
   useDownloadBudgetPdfMutation,
@@ -38,6 +40,7 @@ import {
 import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import { useCurrencyFormatter } from '@/lib/i18n/currency';
 import type { Budget, BudgetItem, BudgetItemType, BudgetPayload, BudgetType } from '@/app/types/budget';
+import type { Product } from '@/app/types/product';
 
 type BudgetBadgeVariant = 'secondary' | 'default' | 'destructive';
 
@@ -116,9 +119,9 @@ export default function OrcamentosPage() {
   const [toCancel, setToCancel] = useState<Budget | null>(null);
   const [cancelReason, setCancelReason] = useState('');
   const { data: users = [] } = useVeterinariansQuery();
-  const { data: products = [] } = useProductsQuery();
-
-  const { data: budgets = [], isLoading: loading } = useBudgetsQuery();
+  const [listPage, setListPage] = useState(1);
+  const { data: budgetsPage, isLoading: loading, isFetching } = useBudgetsPagedQuery(listPage);
+  const budgets = budgetsPage?.items ?? [];
   const createBudget = useCreateBudgetMutation();
   const approveBudget = useApproveBudgetMutation();
   const cancelBudget = useCancelBudgetMutation();
@@ -257,15 +260,14 @@ export default function OrcamentosPage() {
     });
   };
 
-  const selectItemProduct = (index: number, productId: string) => {
-    const product = products.find((p) => p.id === productId);
+  const selectItemProduct = (index: number, product: Product) => {
     setForm((f) => {
       const items = [...f.items];
       items[index] = {
         ...items[index],
-        reference_id: productId,
-        description: product?.name ?? '',
-        unit_price: product?.sale_price ?? 0,
+        reference_id: product.id,
+        description: product.name,
+        unit_price: product.sale_price ?? 0,
       };
       return { ...f, items };
     });
@@ -440,6 +442,14 @@ export default function OrcamentosPage() {
               );
             })}
           </div>
+          <ListPagination
+            page={listPage}
+            totalPages={budgetsPage?.totalPages ?? 1}
+            total={budgetsPage?.total ?? 0}
+            pageSize={API_PAGE_SIZE}
+            onPageChange={setListPage}
+            disabled={isFetching}
+          />
         </>
       )}
 
@@ -542,18 +552,13 @@ export default function OrcamentosPage() {
                     </Select>
 
                     {item.item_type === 'product' ? (
-                      <Select value={item.reference_id} onValueChange={(v) => selectItemProduct(i, v)}>
-                        <SelectTrigger className="col-span-2 h-9 sm:col-span-4">
-                          <SelectValue placeholder={t('financeiroOrcamentos.selectProductPlaceholder')} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {products.map((p) => (
-                            <SelectItem key={p.id} value={p.id}>
-                              {p.name} — {p.sale_price_formatted ?? fmt(p.sale_price)}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <ProdutoBusca
+                        value={item.reference_id}
+                        label={item.description}
+                        onChange={(p) => selectItemProduct(i, p)}
+                        placeholder={t('financeiroOrcamentos.selectProductPlaceholder')}
+                        className="col-span-2 sm:col-span-4"
+                      />
                     ) : (
                       <Input
                         placeholder={t('financeiroOrcamentos.descriptionColumn')}

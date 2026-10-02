@@ -1,22 +1,26 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/axios';
+import { listQueryParams, parseListResponse } from '@/lib/pagination';
 import type { Budget, BudgetPayload, CancelBudgetResult } from '@/app/types/budget';
 import { financialReportKeys } from './useFinancialReports';
 
 export const budgetKeys = {
   all: ['budgets'] as const,
   lists: () => [...budgetKeys.all, 'list'] as const,
+  list: (page: number) => [...budgetKeys.lists(), { page }] as const,
 };
 
-export function useBudgetsQuery() {
+/** Orçamentos paginados no servidor (mais recentes primeiro). */
+export function useBudgetsPagedQuery(page: number) {
   return useQuery({
-    queryKey: budgetKeys.lists(),
+    queryKey: budgetKeys.list(page),
     queryFn: async () => {
-      const { data } = await api.get<Budget[]>('/budgets');
-      return Array.isArray(data) ? data : [];
+      const { data } = await api.get('/budgets', { params: listQueryParams(page) });
+      return parseListResponse<Budget>(data, page);
     },
+    placeholderData: keepPreviousData,
   });
 }
 
