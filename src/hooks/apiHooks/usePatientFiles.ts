@@ -1,7 +1,8 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/axios';
+import { listQueryParams, parseListResponse } from '@/lib/pagination';
 import type { CreatePatientFilePayload, PatientFile, PatientFileUploadUrlResponse } from '@/app/types/patient-file';
 
 export const patientFileKeys = {
@@ -9,14 +10,18 @@ export const patientFileKeys = {
   byPatient: (patientId: string) => [...patientFileKeys.all, 'by-patient', patientId] as const,
 };
 
-export function usePatientFilesQuery(patientId: string | null | undefined) {
+/** Anexos do paciente, paginados no servidor (mais recentes primeiro). */
+export function usePatientFilesQuery(patientId: string | null | undefined, page = 1) {
   return useQuery({
-    queryKey: patientFileKeys.byPatient(patientId ?? ''),
+    queryKey: [...patientFileKeys.byPatient(patientId ?? ''), { page }] as const,
     queryFn: async () => {
-      const { data } = await api.get<PatientFile[]>('/patient-files', { params: { patient_id: patientId } });
-      return Array.isArray(data) ? data : [];
+      const { data } = await api.get('/patient-files', {
+        params: listQueryParams(page, undefined, { patient_id: patientId ?? undefined }),
+      });
+      return parseListResponse<PatientFile>(data, page);
     },
     enabled: !!patientId,
+    placeholderData: keepPreviousData,
   });
 }
 

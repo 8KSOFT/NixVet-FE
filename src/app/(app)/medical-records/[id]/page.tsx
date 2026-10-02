@@ -27,6 +27,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
+import { ListPagination } from '@/components/list-pagination';
+import { API_PAGE_SIZE } from '@/lib/pagination';
 import { Loader2, ChevronLeft, Save, Lock, Syringe, Paperclip, FileText, Pill, FlaskConical, Activity, ImageIcon, AlertTriangle, AlertCircle, Sparkles, Info, Plus, ChevronDown, Undo2, Trash2, Stethoscope, Calendar, User, PawPrint, MessageCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -140,7 +142,9 @@ export default function MedicalRecordDetailPage() {
   // Sem as vacinas desta ficha, que a aba já lista separado logo acima.
   const { data: vaccineRecords = [] } = useRecordVaccineHistoryQuery(patientId, id);
   const { data: activeHosp } = useActiveHospitalizationQuery(patientId);
-  const { data: patientFiles = [] } = usePatientFilesQuery(patientId);
+  const [filesPage, setFilesPage] = useState(1);
+  const { data: patientFilesPage, isFetching: fetchingFiles } = usePatientFilesQuery(patientId, filesPage);
+  const patientFiles = patientFilesPage?.items ?? [];
 
   const updateRecord = useUpdateMedicalRecordMutation();
   const addVaccine = useAddVaccineToRecordMutation();
@@ -828,6 +832,14 @@ export default function MedicalRecordDetailPage() {
                   ))}
                 </div>
               )}
+              <ListPagination
+                page={filesPage}
+                totalPages={patientFilesPage?.totalPages ?? 1}
+                total={patientFilesPage?.total ?? 0}
+                pageSize={API_PAGE_SIZE}
+                onPageChange={setFilesPage}
+                disabled={fetchingFiles}
+              />
             </CardContent>
           </Card>
         </TabsContent>
