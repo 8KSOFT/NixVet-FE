@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import { useTranslation } from 'react-i18next';
 import Link from 'next/link';
@@ -31,12 +31,16 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { useCreateProductSaleMutation, useProductsQuery } from '@/hooks/apiHooks/useProducts';
+import { useCreateProductSaleMutation, useProductSearchQuery } from '@/hooks/apiHooks/useProducts';
+import { ListPagination } from '@/components/list-pagination';
+import type { Product } from '@/app/types/product';
 import { useProductCategoriesQuery } from '@/hooks/apiHooks/useStock';
 import { usePaymentOptionsMutation } from '@/hooks/apiHooks/useFinancialReports';
 import { useCurrencyFormatter } from '@/lib/i18n/currency';
 
 const ALL_CATEGORIES = '__all__';
+/** Produtos por página na grade do balcão (busca no servidor). */
+const GRID_PAGE_SIZE = 20;
 
 const METHOD_LABEL_KEYS: Record<string, string> = {
   cash: 'cash',
@@ -51,52 +55,63 @@ const METHOD_LABEL_KEYS: Record<string, string> = {
 interface CartLine {
   product_id: string;
   quantity: number;
+  /** Cópia do produto no momento em que entrou no carrinho: a grade só tem a página/busca atual. */
+  product: Product;
 }
 
 export default function BalcaoPage() {
   const { t } = useTranslation();
   const fmt = useCurrencyFormatter();
-  const { data: products = [], isLoading } = useProductsQuery();
   const { data: categories = [] } = useProductCategoriesQuery();
   const createSale = useCreateProductSaleMutation();
   const paymentOptions = usePaymentOptionsMutation();
 
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [categoryId, setCategoryId] = useState<string>(ALL_CATEGORIES);
+  const [gridPage, setGridPage] = useState(1);
   const [cart, setCart] = useState<CartLine[]>([]);
   const [notes, setNotes] = useState('');
   const [step, setStep] = useState<'cart' | 'payment'>('cart');
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
   const [cartOpen, setCartOpen] = useState(false);
 
-  const sellable = useMemo(() => products.filter((p) => p.item_type === 'product' && p.active), [products]);
-  const productById = useMemo(() => new Map(sellable.map((p) => [p.id, p])), [sellable]);
+  // 250 ms: uma busca no servidor por pausa na digitação, não por tecla.
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      setDebouncedSearch(search.trim());
+      setGridPage(1);
+    }, 250);
+    return () => window.clearTimeout(id);
+  }, [search]);
 
-  const filteredProducts = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    return sellable.filter((p) => {
-      if (categoryId !== ALL_CATEGORIES && p.category_id !== categoryId) return false;
-      if (!query) return true;
-      return (
-        p.name.toLowerCase().includes(query) ||
-        p.sku?.toLowerCase().includes(query) ||
-        p.internal_code?.toLowerCase().includes(query)
-      );
-    });
-  }, [sellable, search, categoryId]);
+  // Busca, categoria e tipo filtrados no servidor; inativos já não vêm.
+  const productsQuery = useProductSearchQuery({
+    search: debouncedSearch,
+    categoryId: categoryId !== ALL_CATEGORIES ? categoryId : undefined,
+    itemType: 'product',
+    page: gridPage,
+    limit: GRID_PAGE_SIZE,
+  });
+  const isLoading = productsQuery.isLoading;
+  const filteredProducts = useMemo(
+    () => (productsQuery.data?.items ?? []).filter((p) => p.item_type === 'product' && p.active),
+    [productsQuery.data],
+  );
+  const productById = useMemo(() => new Map(cart.map((i) => [i.product_id, i.product])), [cart]);
 
-  const addToCart = (productId: string) => {
+  const addToCart = (product: Product) => {
     if (step === 'payment') return;
-    const product = productById.get(productId);
-    if (!product || Number(product.stock_quantity) <= 0) return;
+    if (Number(product.stock_quantity) <= 0) return;
+    const productId = product.id;
     setCart((prev) => {
       const existing = prev.find((i) => i.product_id === productId);
       if (existing) {
         const nextQty = existing.quantity + 1;
         if (nextQty > Number(product.stock_quantity)) return prev;
-        return prev.map((i) => (i.product_id === productId ? { ...i, quantity: nextQty } : i));
+        return prev.map((i) => (i.product_id === productId ? { ...i, quantity: nextQty, product } : i));
       }
-      return [...prev, { product_id: productId, quantity: 1 }];
+      return [...prev, { product_id: productId, quantity: 1, product }];
     });
   };
 
@@ -153,7 +168,7 @@ export default function BalcaoPage() {
     }
     try {
       await createSale.mutateAsync({
-        items: cart,
+        items: cart.map(({ product_id, quantity }) => ({ product_id, quantity })),
         notes: notes.trim() || undefined,
         payment_method: selectedMethod,
       });
@@ -339,7 +354,13 @@ export default function BalcaoPage() {
             onChange={(e) => setSearch(e.target.value)}
             className="flex-1"
           />
-          <Select value={categoryId} onValueChange={setCategoryId}>
+          <Select
+            value={categoryId}
+            onValueChange={(v) => {
+              setCategoryId(v);
+              setGridPage(1);
+            }}
+          >
             <SelectTrigger className="w-full sm:w-56">
               <SelectValue />
             </SelectTrigger>
@@ -374,7 +395,7 @@ export default function BalcaoPage() {
                 <Card
                   key={p.id}
                   className={`cursor-pointer p-0 transition-colors ${outOfStock ? 'cursor-not-allowed opacity-50' : 'hover:border-primary'}${inCart ? ' border-primary' : ''}`}
-                  onClick={() => !outOfStock && addToCart(p.id)}
+                  onClick={() => !outOfStock && addToCart(p)}
                 >
                   <CardContent className="flex h-32 flex-col justify-between p-3">
                     <div className="min-w-0">
@@ -401,6 +422,14 @@ export default function BalcaoPage() {
             })}
           </div>
         )}
+        <ListPagination
+          page={gridPage}
+          totalPages={productsQuery.data?.totalPages ?? 1}
+          total={productsQuery.data?.total ?? 0}
+          pageSize={GRID_PAGE_SIZE}
+          onPageChange={setGridPage}
+          disabled={productsQuery.isFetching}
+        />
       </div>
 
       {/* Desktop: painel do carrinho fixo ao lado, sempre visível */}
