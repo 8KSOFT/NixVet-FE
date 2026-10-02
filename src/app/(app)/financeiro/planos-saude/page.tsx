@@ -2,6 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ListPagination } from '@/components/list-pagination';
+import { API_PAGE_SIZE } from '@/lib/pagination';
 import { AlertTriangle, CheckCircle, CircleDollarSign, FileWarning } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -67,9 +69,23 @@ export default function PlanosSaudeReceivablesPage() {
   const { t } = useTranslation();
   const fmt = useCurrencyFormatter();
   const now = new Date();
-  const [planFilter, setPlanFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [monthFilter, setMonthFilter] = useState('all');
+  const [planFilter, setPlanFilterState] = useState('all');
+  const [statusFilter, setStatusFilterState] = useState('all');
+  const [monthFilter, setMonthFilterState] = useState('all');
+  const [listPage, setListPage] = useState(1);
+  // Trocar filtro volta para a primeira página.
+  const setPlanFilter = (v: string) => {
+    setPlanFilterState(v);
+    setListPage(1);
+  };
+  const setStatusFilter = (v: string) => {
+    setStatusFilterState(v);
+    setListPage(1);
+  };
+  const setMonthFilter = (v: string) => {
+    setMonthFilterState(v);
+    setListPage(1);
+  };
   // Três consultas independentes: o aging e a lista de convênios não dependem
   // dos filtros, então trocar filtro só refaz a lista — e uma falha no select
   // de convênios não derruba mais a tela inteira.
@@ -77,10 +93,10 @@ export default function PlanosSaudeReceivablesPage() {
     healthPlanId: planFilter,
     status: statusFilter,
     month: monthFilter,
-  });
+  }, listPage);
   const agingQuery = useHealthPlanReceivablesAgingQuery();
   const { data: plans = [] } = useHealthPlansListQuery();
-  const receivables = receivablesQuery.data ?? [];
+  const receivables = receivablesQuery.data?.items ?? [];
   const aging = agingQuery.data;
   const loading = receivablesQuery.isLoading;
   const loadingAging = agingQuery.isLoading;
@@ -522,6 +538,14 @@ export default function PlanosSaudeReceivablesPage() {
               </div>
             </>
           )}
+          <ListPagination
+            page={listPage}
+            totalPages={receivablesQuery.data?.totalPages ?? 1}
+            total={receivablesQuery.data?.total ?? 0}
+            pageSize={API_PAGE_SIZE}
+            onPageChange={setListPage}
+            disabled={receivablesQuery.isFetching}
+          />
         </CardContent>
       </Card>
 

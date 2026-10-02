@@ -1,7 +1,8 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/axios';
+import { listQueryParams, parseListResponse } from '@/lib/pagination';
 import { financialReportKeys } from '@/hooks/apiHooks/useFinancialReports';
 
 export type ReceivableStatus = 'pending' | 'received' | 'partial' | 'glossed' | 'contested';
@@ -61,22 +62,26 @@ export interface ReceivablesFilters {
 export const healthPlanReceivableKeys = {
   all: ['health-plan-receivables'] as const,
   lists: () => [...healthPlanReceivableKeys.all, 'list'] as const,
-  list: (filters: ReceivablesFilters) => [...healthPlanReceivableKeys.lists(), filters] as const,
+  list: (filters: ReceivablesFilters, page = 1) =>
+    [...healthPlanReceivableKeys.lists(), filters, { page }] as const,
   aging: () => [...healthPlanReceivableKeys.all, 'aging'] as const,
 };
 
-/** Repasses a receber dos convênios, com os filtros da tela. */
-export function useHealthPlanReceivablesQuery(filters: ReceivablesFilters) {
+/** Repasses a receber dos convênios, com os filtros da tela, paginados no servidor. */
+export function useHealthPlanReceivablesQuery(filters: ReceivablesFilters, page = 1) {
   return useQuery({
-    queryKey: healthPlanReceivableKeys.list(filters),
+    queryKey: healthPlanReceivableKeys.list(filters, page),
     queryFn: async () => {
-      const params = new URLSearchParams();
-      if (filters.healthPlanId !== 'all') params.set('health_plan_id', filters.healthPlanId);
-      if (filters.status !== 'all') params.set('status', filters.status);
-      if (filters.month !== 'all') params.set('month', filters.month);
-      const { data } = await api.get<Receivable[]>(`/health-plans/receivables?${params.toString()}`);
-      return Array.isArray(data) ? data : [];
+      const { data } = await api.get('/health-plans/receivables', {
+        params: listQueryParams(page, undefined, {
+          health_plan_id: filters.healthPlanId !== 'all' ? filters.healthPlanId : undefined,
+          status: filters.status !== 'all' ? filters.status : undefined,
+          month: filters.month !== 'all' ? filters.month : undefined,
+        }),
+      });
+      return parseListResponse<Receivable>(data, page);
     },
+    placeholderData: keepPreviousData,
   });
 }
 
