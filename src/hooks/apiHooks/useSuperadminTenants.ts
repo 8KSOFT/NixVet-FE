@@ -6,7 +6,6 @@ import { listQueryParams, parseListResponse } from '@/lib/pagination';
 import type {
   CreateSuperadminTenantPayload,
   PatchSuperadminTenantPayload,
-  ProvisionSuperadminWhatsappPayload,
   ResetAdminPasswordPayload,
   SuperadminTenantDetail,
   SuperadminTenantRow,
@@ -72,15 +71,6 @@ export function useResetSuperadminTenantAdminPasswordMutation() {
   return useMutation({
     mutationFn: async ({ id, payload }: { id: string; payload: ResetAdminPasswordPayload }) => {
       const { data } = await api.post(`/superadmin/tenants/${id}/reset-admin-password`, payload);
-      return data;
-    },
-  });
-}
-
-export function useProvisionSuperadminWhatsappMutation() {
-  return useMutation({
-    mutationFn: async (payload: ProvisionSuperadminWhatsappPayload) => {
-      const { data } = await api.post('/whatsapp/provision', payload);
       return data;
     },
   });

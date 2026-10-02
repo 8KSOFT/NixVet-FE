@@ -4,8 +4,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import api from '@/lib/axios';
 import { listQueryParams, parseListResponse } from '@/lib/pagination';
 import type {
-  ProvisionWhatsappPayload,
-  RegisterWhatsappNumberPayload,
+  RegisterBaileysNumberPayload,
   WhatsappNumberRow,
   WhatsappNumberStatus,
 } from '@/app/types/whatsapp-number';
@@ -14,7 +13,6 @@ export const whatsappNumberKeys = {
   all: ['whatsapp-numbers'] as const,
   lists: () => [...whatsappNumberKeys.all, 'list'] as const,
   list: (page: number) => [...whatsappNumberKeys.lists(), { page }] as const,
-  provisionAvailable: () => [...whatsappNumberKeys.all, 'provision-available'] as const,
 };
 
 export function useWhatsappNumbersQuery(page: number) {
@@ -28,16 +26,6 @@ export function useWhatsappNumbersQuery(page: number) {
   });
 }
 
-export function useWhatsappProvisionAvailableQuery() {
-  return useQuery({
-    queryKey: whatsappNumberKeys.provisionAvailable(),
-    queryFn: async () => {
-      const { data } = await api.get<{ available: boolean }>('/whatsapp/provision/available');
-      return data.available;
-    },
-  });
-}
-
 /** Verificação de status sob demanda (chamada por número, inclusive em polling do modal de QR). */
 export function useWhatsappNumberStatusMutation() {
   return useMutation({
@@ -45,42 +33,35 @@ export function useWhatsappNumberStatusMutation() {
       const { data } = await api.get<WhatsappNumberStatus>(`/whatsapp/numbers/${numberId}/status`);
       return data;
     },
-    // silent: verificacao de status chamada em polling (20s) — nunca teve toast e um toast
-    // a cada tick seria ruido.
+    // silent: verificacao de status chamada em polling — um toast a cada tick seria ruido.
     meta: { silent: true },
   });
 }
 
-/** Busca do QR Code sob demanda — repetida via polling enquanto o modal estiver aberto. */
+/**
+ * Busca do QR Code sob demanda — repetida via polling enquanto o modal estiver aberto.
+ * `null` = o worker ainda não gerou o QR, ou o número já conectou (o status diferencia).
+ */
 export function useWhatsappQrCodeMutation() {
   return useMutation({
     mutationFn: async (numberId: string) => {
       const { data } = await api.get<{ qrCode: string | null }>(`/whatsapp/numbers/${numberId}/qr-code`);
       return data.qrCode;
     },
-    // silent: recarregado em polling (20s) — nunca teve toast e um toast a cada tick seria ruido.
+    // silent: recarregado em polling — um toast a cada tick seria ruido.
     meta: { silent: true },
   });
 }
 
-export function useProvisionWhatsappMutation() {
+/**
+ * Cadastra um número Baileys. Não leva credencial: o worker abre a sessão e a
+ * clínica pareia lendo o QR Code em seguida.
+ */
+export function useRegisterBaileysNumberMutation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (payload?: ProvisionWhatsappPayload) => {
-      const { data } = await api.post('/whatsapp/provision', payload ?? {});
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: whatsappNumberKeys.lists() });
-    },
-  });
-}
-
-export function useRegisterWhatsappNumberMutation() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (payload: RegisterWhatsappNumberPayload) => {
-      const { data } = await api.post('/whatsapp/numbers', payload);
+    mutationFn: async (payload: RegisterBaileysNumberPayload) => {
+      const { data } = await api.post<WhatsappNumberRow>('/whatsapp/numbers/baileys', payload);
       return data;
     },
     onSuccess: () => {

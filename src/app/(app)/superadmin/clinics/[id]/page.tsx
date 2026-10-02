@@ -4,13 +4,12 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
-  ArrowLeft, ShieldCheck, ShieldOff, Loader2, Save, KeyRound, MessageCircle,
+  ArrowLeft, ShieldCheck, ShieldOff, Loader2, Save, KeyRound,
 } from 'lucide-react';
 import {
   useSuperadminTenantQuery,
   usePatchSuperadminTenantMutation,
   useResetSuperadminTenantAdminPasswordMutation,
-  useProvisionSuperadminWhatsappMutation,
 } from '@/hooks/apiHooks/useSuperadminTenants';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -45,17 +44,13 @@ export default function ClinicDetailPage() {
   const { data: clinic, isLoading: loading, error } = useSuperadminTenantQuery(id);
   const patchMutation = usePatchSuperadminTenantMutation();
   const resetPasswordMutation = useResetSuperadminTenantAdminPasswordMutation();
-  const provisionMutation = useProvisionSuperadminWhatsappMutation();
   const savingPlan = patchMutation.isPending;
   const resetting = resetPasswordMutation.isPending;
-  const whatsappProvisioning = provisionMutation.isPending;
 
   const [plan, setPlan] = useState('');
 
   const [resetOpen, setResetOpen] = useState(false);
   const [newPassword, setNewPassword] = useState('');
-
-  const [whatsappOpen, setWhatsappOpen] = useState(false);
 
   useEffect(() => {
     if (!id) toast.error('Clínica inválida');
@@ -92,13 +87,6 @@ export default function ClinicDetailPage() {
       setResetOpen(false);
       setNewPassword('');
     } catch { toast.error('Erro ao redefinir senha'); }
-  };
-
-  const submitProvision = async () => {
-    try {
-      await provisionMutation.mutateAsync({ tenantId: id, instanceName: `NixVet - ${clinic?.name}` });
-      setWhatsappOpen(false);
-    } catch { toast.error('Erro ao provisionar WhatsApp'); }
   };
 
   if (loading) {
@@ -245,12 +233,13 @@ export default function ClinicDetailPage() {
 
         {/* Card 5 — WhatsApp */}
         <Card>
-          <CardHeader><CardTitle className="text-base">WhatsApp (Z-API)</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-base">WhatsApp</CardTitle></CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground mb-3">Provisiona uma instância Z-API para esta clínica. A clínica verá o QR Code em Configurações → WhatsApp.</p>
-            <Button size="sm" variant="outline" className="gap-1 text-green-700 border-green-200" onClick={() => setWhatsappOpen(true)}>
-              <MessageCircle className="size-3.5" /> Provisionar instância
-            </Button>
+            {/* Sem ação aqui desde que a Z-API saiu (02/10/2026): o número é
+                Baileys e só pareia lendo o QR Code no celular da clínica. */}
+            <p className="text-sm text-muted-foreground">
+              A própria clínica conecta o número em Configurações → WhatsApp, lendo o QR Code no celular.
+            </p>
           </CardContent>
         </Card>
 
@@ -283,23 +272,6 @@ export default function ClinicDetailPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Modal WhatsApp */}
-      <Dialog open={whatsappOpen} onOpenChange={(o) => !o && setWhatsappOpen(false)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <MessageCircle className="size-5 text-green-600" /> Provisionar WhatsApp
-            </DialogTitle>
-            <DialogDescription>Cria uma instância Z-API para <strong>{clinic.name}</strong>.</DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setWhatsappOpen(false)}>Cancelar</Button>
-            <Button className="bg-green-600 hover:bg-green-700 text-white" onClick={() => void submitProvision()} disabled={whatsappProvisioning}>
-              {whatsappProvisioning && <Loader2 className="size-4 animate-spin mr-1" />} Provisionar
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

@@ -2334,17 +2334,17 @@
   },
   "settingsWhatsappNumbers": {
     "title": "WhatsApp da clínica",
-    "subtitle": { "pre": "Conecte o WhatsApp da clínica via", "post": "(QR Code, sem aprovação Meta). Cada clínica tem sua própria instância isolada." },
+    "subtitle": "Conecte o WhatsApp da clínica lendo um QR Code com o celular — sem aprovação da Meta. O número continua no aparelho da clínica.",
     "chatbot": { "title": "Chatbot — respostas automáticas (IA)", "active": "Ativo", "inactive": "Desativado" },
-    "actions": { "provision": "Provisionar nova instância", "registerManually": "Cadastrar manualmente", "checkStatus": "Verificar status", "scanQrCode": "Escanear QR Code", "disconnect": "Desconectar", "cancel": "Cancelar", "register": "Cadastrar" },
-    "empty": { "withProvision": "Clique em \"{{action}}\" para conectar o WhatsApp da clínica.", "noInstances": "Nenhuma instância cadastrada." },
-    "table": { "connectedNumber": "Número conectado", "status": "Status", "actions": "Ações" },
+    "actions": { "connect": "Conectar número", "checkStatus": "Verificar status", "scanQrCode": "Escanear QR Code", "disconnect": "Remover" },
+    "empty": { "withAction": "Nenhum número conectado. Clique em \"{{action}}\" e leia o QR Code com o celular da clínica.", "none": "Nenhum número conectado." },
+    "table": { "number": "Número", "status": "Status", "actions": "Ações", "awaitingPairing": "Aguardando leitura do QR Code" },
     "status": { "checking": "Verificando", "connected": "Conectado", "disconnected": "Desconectado" },
-    "qrModal": { "title": "Escanear QR Code", "instructionsPre": "Abra o WhatsApp no celular →", "connectedDevices": "Dispositivos conectados", "connectDevice": "Conectar dispositivo", "instructionsPost": "→ escaneie o código abaixo.", "unavailable": "QR Code indisponível — a instância pode já estar conectada.", "autoRefresh": "O código é atualizado automaticamente a cada 20 segundos." },
-    "registerModal": { "title": "Cadastrar instância manualmente", "instanceIdHint": "Instance ID da dashboard Z-API.", "tokenHint": "Será criptografado no banco.", "displayPhoneLabel": "Número conectado (opcional)", "digitsOnlyHint": "Somente dígitos." },
-    "confirmDisconnect": "Desconectar este número? O WhatsApp será desvinculado da instância.",
+    "motivo": { "sessao_encerrada": "Sessão encerrada no celular — leia o QR Code de novo.", "sessao_assumida_por_outro_dispositivo": "Outro dispositivo assumiu a sessão — leia o QR Code de novo.", "numero_bloqueado": "O WhatsApp bloqueou este número." },
+    "qrModal": { "title": "Escanear QR Code", "instructionsPre": "Abra o WhatsApp no celular →", "connectedDevices": "Dispositivos conectados", "connectDevice": "Conectar dispositivo", "instructionsPost": "→ escaneie o código abaixo.", "waiting": "Gerando o QR Code…", "autoRefresh": "O código é atualizado automaticamente. A janela fecha sozinha quando o número conectar." },
+    "confirmDisconnect": "Remover este número? O WhatsApp será desconectado e a equipe deixa de receber as conversas por ele.",
     "toasts": { "connected": "WhatsApp conectado com sucesso!" },
-    "errors": { "save": "Erro ao salvar", "qrCode": "Erro ao obter QR Code", "provision": "Erro ao provisionar instância", "register": "Erro ao cadastrar", "disconnect": "Erro ao desconectar" }
+    "errors": { "save": "Erro ao salvar", "qrCode": "Erro ao obter QR Code", "register": "Erro ao conectar número", "disconnect": "Erro ao remover" }
   },
   "balcao": {
     "title": "Balcão",

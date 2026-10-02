@@ -79,8 +79,3 @@ export type PatchSuperadminTenantPayload = Partial<
 export interface ResetAdminPasswordPayload {
   newPassword: string;
 }
-
-export interface ProvisionSuperadminWhatsappPayload {
-  tenantId: string;
-  instanceName: string;
-}

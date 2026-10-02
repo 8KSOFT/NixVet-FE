@@ -9,7 +9,6 @@ import {
   Plus,
   Settings2,
   Save,
-  MessageCircle,
   ShieldCheck,
   ShieldOff,
   MoreHorizontal,
@@ -30,7 +29,6 @@ import {
   useCreateSuperadminTenantMutation,
   usePatchSuperadminTenantMutation,
   useResetSuperadminTenantAdminPasswordMutation,
-  useProvisionSuperadminWhatsappMutation,
 } from "@/hooks/apiHooks/useSuperadminTenants";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -137,10 +135,6 @@ export default function SuperadminClinicsPage() {
   const [editRow, setEditRow] = useState<ClinicRow | null>(null);
   const [editForm, setEditForm] = useState<Partial<ClinicRow>>({});
 
-  // WhatsApp provisioning
-  const [whatsappTenantId, setWhatsappTenantId] = useState<string | null>(null);
-  const [whatsappClinicName, setWhatsappClinicName] = useState("");
-
   const { data, isLoading: loading, error } = useSuperadminTenantsQuery(listPage);
   const rows = data?.items ?? [];
   const listTotal = data?.total ?? 0;
@@ -148,11 +142,9 @@ export default function SuperadminClinicsPage() {
   const createMutation = useCreateSuperadminTenantMutation();
   const patchMutation = usePatchSuperadminTenantMutation();
   const resetPasswordMutation = useResetSuperadminTenantAdminPasswordMutation();
-  const provisionWhatsappMutation = useProvisionSuperadminWhatsappMutation();
   const creating = createMutation.isPending;
   const editing = patchMutation.isPending;
   const resetting = resetPasswordMutation.isPending;
-  const whatsappProvisioning = provisionWhatsappMutation.isPending;
 
   useEffect(() => {
     const role = getStoredUserRole();
@@ -254,19 +246,6 @@ export default function SuperadminClinicsPage() {
     }
   };
 
-  const submitProvisionWhatsapp = async () => {
-    if (!whatsappTenantId) return;
-    try {
-      await provisionWhatsappMutation.mutateAsync({
-        tenantId: whatsappTenantId,
-        instanceName: `NixVet - ${whatsappClinicName}`,
-      });
-      setWhatsappTenantId(null);
-    } catch (e: unknown) {
-      toast.error(getApiErrorMessage(e, "Erro ao provisionar"));
-    }
-  };
-
   const quickToggle = async (
     row: ClinicRow,
     field: "whatsapp_ai_chatbot_enabled" | "ai_platform_enabled",
@@ -337,20 +316,6 @@ export default function SuperadminClinicsPage() {
         disabled={!row.admin_email}
       >
         <KeyRound className="size-4" />
-      </Button>
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        className="p-0"
-        title="WhatsApp"
-        aria-label="WhatsApp"
-        onClick={() => {
-          setWhatsappTenantId(row.id);
-          setWhatsappClinicName(row.name);
-        }}
-      >
-        <MessageCircle className="size-4 text-green-700" />
       </Button>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -979,46 +944,6 @@ export default function SuperadminClinicsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* WhatsApp provisioning */}
-      <Dialog
-        open={Boolean(whatsappTenantId)}
-        onOpenChange={(o) => !o && setWhatsappTenantId(null)}
-      >
-        <DialogContent className="md:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <MessageCircle className="size-5 text-green-600" /> Provisionar
-              WhatsApp
-            </DialogTitle>
-            <DialogDescription>
-              Cria uma instância Z-API para{" "}
-              <strong>{whatsappClinicName}</strong> e salva as credenciais no
-              tenant. A clínica verá o QR Code em{" "}
-              <strong>Configurações → WhatsApp</strong>.
-            </DialogDescription>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            Requer <code className="text-xs">ZAPI_PARTNER_TOKEN</code>{" "}
-            configurado no servidor. Se a clínica já tiver uma instância, uma
-            segunda será criada.
-          </p>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setWhatsappTenantId(null)}>
-              Cancelar
-            </Button>
-            <Button
-              className="bg-green-600 hover:bg-green-700 text-white"
-              onClick={() => void submitProvisionWhatsapp()}
-              disabled={whatsappProvisioning}
-            >
-              {whatsappProvisioning && (
-                <Loader2 className="size-4 animate-spin mr-1" />
-              )}
-              Provisionar instância
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

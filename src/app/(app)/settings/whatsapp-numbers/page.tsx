@@ -3,16 +3,12 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { DashboardCreateFormDialog } from '@/components/dashboard-create-form-dialog';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { useForm } from 'react-hook-form';
 import { Plus, Loader2, RefreshCw, Wifi, WifiOff, Trash2, QrCode } from 'lucide-react';
 import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import { API_PAGE_SIZE } from '@/lib/pagination';
@@ -21,21 +17,30 @@ import Image from 'next/image';
 import QRCode from 'react-qr-code';
 import {
   useWhatsappNumbersQuery,
-  useWhatsappProvisionAvailableQuery,
   useWhatsappNumberStatusMutation,
   useWhatsappQrCodeMutation,
-  useProvisionWhatsappMutation,
-  useRegisterWhatsappNumberMutation,
+  useRegisterBaileysNumberMutation,
   useDisconnectWhatsappNumberMutation,
 } from '@/hooks/apiHooks/useWhatsappNumbers';
 import { useTenantMeQuery, useUpdateTenantMeMutation } from '@/hooks/apiHooks/useTenantSettings';
 import type { WhatsappNumberRow, WhatsappNumberStatus as NumberStatus } from '@/app/types/whatsapp-number';
 
-interface RegisterFormValues {
-  phone_number_id: string;
-  access_token: string;
-  display_phone?: string;
-}
+/**
+ * WhatsApp da clínica — número conectado pelo Baileys (QR Code).
+ *
+ * Reescrita em 02/10/2026, quando a Z-API saiu do produto: não há mais
+ * provisionamento de instância nem cadastro manual de Instance ID/Token.
+ * "Conectar número" cria a linha (`POST /whatsapp/numbers/baileys`), o worker
+ * abre a sessão e o QR Code aparece aqui; o telefone é preenchido pelo próprio
+ * backend quando o pareamento conclui.
+ */
+
+/**
+ * Intervalo do polling do modal de QR. O primeiro QR depende do worker abrir a
+ * sessão (alguns segundos), e o WhatsApp troca o código a cada ~20 s — 5 s
+ * mostra o primeiro rápido e nunca deixa um código vencido na tela por muito tempo.
+ */
+const QR_POLL_MS = 5000;
 
 function getCurrentUserRole(): string | null {
   if (typeof window === 'undefined') return null;
@@ -53,32 +58,36 @@ function StatusBadge({ status, loading }: { status: NumberStatus | null; loading
   if (loading) return <Badge variant="outline" className="gap-1"><Loader2 className="w-3 h-3 animate-spin" />{t('settingsWhatsappNumbers.status.checking')}</Badge>;
   if (!status) return <Badge variant="outline" className="text-muted-foreground">—</Badge>;
   if (status.connected) return <Badge className="bg-green-100 text-green-800 border-green-200 gap-1"><Wifi className="w-3 h-3" />{t('settingsWhatsappNumbers.status.connected')}</Badge>;
-  return <Badge variant="outline" className="text-red-600 border-red-200 gap-1"><WifiOff className="w-3 h-3" />{t('settingsWhatsappNumbers.status.disconnected')}</Badge>;
+  return (
+    <div className="flex flex-col items-start gap-1">
+      <Badge variant="outline" className="text-red-600 border-red-200 gap-1"><WifiOff className="w-3 h-3" />{t('settingsWhatsappNumbers.status.disconnected')}</Badge>
+      {status.motivo && (
+        <span className="text-xs text-muted-foreground">{t(`settingsWhatsappNumbers.motivo.${status.motivo}`)}</span>
+      )}
+    </div>
+  );
 }
 
 export default function SettingsWhatsappNumbersPage() {
   const { t } = useTranslation();
   const [listPage, setListPage] = useState(1);
-  const [registerOpen, setRegisterOpen] = useState(false);
-  const form = useForm<RegisterFormValues>();
 
   const currentRole = getCurrentUserRole();
-  const canManageChatbot = currentRole === 'admin' || currentRole === 'manager' || currentRole === 'superadmin';
-  const canManageNumbers = currentRole === 'admin' || currentRole === 'superadmin' || currentRole === 'manager';
+  // Mesmo conjunto para as duas coisas: chatbot.* (toggle, QR, cadastro e remoção)
+  // é de admin e gestor no backend.
+  const canManage = currentRole === 'admin' || currentRole === 'manager' || currentRole === 'superadmin';
 
   const { data: listData, isLoading: loading } = useWhatsappNumbersQuery(listPage);
   const list = listData?.items ?? [];
   const listTotal = listData?.total ?? 0;
   const listTotalPages = listData?.totalPages ?? 1;
-  const { data: provisionAvailable = false } = useWhatsappProvisionAvailableQuery();
-  const provisionMutation = useProvisionWhatsappMutation();
-  const registerMutation = useRegisterWhatsappNumberMutation();
+  const registerMutation = useRegisterBaileysNumberMutation();
   const disconnectMutation = useDisconnectWhatsappNumberMutation();
   const statusMutation = useWhatsappNumberStatusMutation();
   const qrCodeMutation = useWhatsappQrCodeMutation();
-  const provisioning = provisionMutation.isPending;
+  const registering = registerMutation.isPending;
 
-  const { data: tenantMe } = useTenantMeQuery(canManageChatbot);
+  const { data: tenantMe } = useTenantMeQuery(canManage);
   const chatbotEnabled = Boolean(tenantMe?.whatsapp_ai_chatbot_enabled);
   const updateTenantMutation = useUpdateTenantMeMutation();
   const chatbotSaving = updateTenantMutation.isPending;
@@ -115,6 +124,13 @@ export default function SettingsWhatsappNumbersPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [list]);
 
+  const stopQrPoll = useCallback(() => {
+    if (qrPollRef.current) { clearInterval(qrPollRef.current); qrPollRef.current = null; }
+  }, []);
+
+  // O intervalo não pode sobreviver à tela.
+  useEffect(() => stopQrPoll, [stopQrPoll]);
+
   const saveChatbotToggle = async (enabled: boolean) => {
     try {
       await updateTenantMutation.mutateAsync({ whatsapp_ai_chatbot_enabled: enabled });
@@ -124,37 +140,34 @@ export default function SettingsWhatsappNumbersPage() {
   };
 
   // --- QR Code ---
-  const stopQrPoll = () => {
-    if (qrPollRef.current) { clearInterval(qrPollRef.current); qrPollRef.current = null; }
-  };
-
   const openQrModal = async (numberId: string) => {
+    stopQrPoll();
     setQrNumberId(numberId);
     setQrCode(null);
     setQrLoading(true);
     try {
       const qr = await qrCodeMutation.mutateAsync(numberId);
       setQrCode(qr);
-    } catch {
-      toast.error(t('settingsWhatsappNumbers.errors.qrCode'));
+    } catch (error: unknown) {
+      toast.error(getApiErrorMessage(error, t('settingsWhatsappNumbers.errors.qrCode')));
     } finally {
       setQrLoading(false);
     }
 
-    // Recarrega QR a cada 20s (WhatsApp invalida o QR após ~20s)
     qrPollRef.current = setInterval(async () => {
       try {
         const status = await fetchStatus(numberId);
         if (status?.connected) {
           stopQrPoll();
           setQrNumberId(null);
+          setQrCode(null);
           toast.success(t('settingsWhatsappNumbers.toasts.connected'));
           return;
         }
         const qr = await qrCodeMutation.mutateAsync(numberId);
         setQrCode(qr);
-      } catch { /* silencioso */ }
-    }, 20000);
+      } catch { /* silencioso: o próximo tick tenta de novo */ }
+    }, QR_POLL_MS);
   };
 
   const closeQrModal = () => {
@@ -163,27 +176,17 @@ export default function SettingsWhatsappNumbersPage() {
     setQrCode(null);
   };
 
-  // --- Provision ---
-  const handleProvision = async () => {
+  // --- Conectar número (Baileys) ---
+  const handleConnect = async () => {
     try {
-      await provisionMutation.mutateAsync(undefined);
-    } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, t('settingsWhatsappNumbers.errors.provision')));
-    }
-  };
-
-  // --- Register manual ---
-  const onRegister = async (values: RegisterFormValues) => {
-    try {
-      await registerMutation.mutateAsync(values);
-      setRegisterOpen(false);
-      form.reset();
+      const created = await registerMutation.mutateAsync({});
+      if (created?.id) void openQrModal(created.id);
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, t('settingsWhatsappNumbers.errors.register')));
     }
   };
 
-  // --- Disconnect ---
+  // --- Remover ---
   const handleDisconnect = async (numberId: string) => {
     if (!confirm(t('settingsWhatsappNumbers.confirmDisconnect'))) return;
     try {
@@ -193,14 +196,52 @@ export default function SettingsWhatsappNumbersPage() {
     }
   };
 
+  const phoneLabel = (row: WhatsappNumberRow) =>
+    row.display_phone || t('settingsWhatsappNumbers.table.awaitingPairing');
+
+  const rowActions = (row: WhatsappNumberRow) => (
+    <>
+      <Button
+        size="sm"
+        variant="outline"
+        title={t('settingsWhatsappNumbers.actions.checkStatus')}
+        aria-label={t('settingsWhatsappNumbers.actions.checkStatus')}
+        onClick={() => void fetchStatus(row.id)}
+      >
+        <RefreshCw className="w-3 h-3" />
+      </Button>
+      {canManage && !statuses[row.id]?.connected && (
+        <Button
+          size="sm"
+          variant="outline"
+          title={t('settingsWhatsappNumbers.actions.scanQrCode')}
+          aria-label={t('settingsWhatsappNumbers.actions.scanQrCode')}
+          onClick={() => void openQrModal(row.id)}
+        >
+          <QrCode className="w-3 h-3" />
+        </Button>
+      )}
+      {canManage && (
+        <Button
+          size="sm"
+          variant="ghost"
+          className="text-destructive hover:text-destructive"
+          title={t('settingsWhatsappNumbers.actions.disconnect')}
+          aria-label={t('settingsWhatsappNumbers.actions.disconnect')}
+          onClick={() => void handleDisconnect(row.id)}
+        >
+          <Trash2 className="w-3 h-3" />
+        </Button>
+      )}
+    </>
+  );
+
   return (
     <div>
       <h1 className="text-2xl font-heading font-bold text-primary mb-2">{t('settingsWhatsappNumbers.title')}</h1>
-      <p className="text-muted-foreground mb-6">
-        {t('settingsWhatsappNumbers.subtitle.pre')} <strong>Z-API</strong> {t('settingsWhatsappNumbers.subtitle.post')}
-      </p>
+      <p className="text-muted-foreground mb-6">{t('settingsWhatsappNumbers.subtitle')}</p>
 
-      {canManageChatbot && (
+      {canManage && (
         <Card className="mb-6 border-primary/20 bg-gradient-to-br from-blue-50/90 to-white shadow-sm">
           <CardHeader>
             <CardTitle className="text-primary font-semibold text-base">
@@ -219,21 +260,11 @@ export default function SettingsWhatsappNumbersPage() {
 
       <Card className="rounded-none border-0 bg-transparent py-0 shadow-none sm:rounded-xl sm:border sm:border-border/80 sm:bg-card sm:py-6 sm:shadow-(--shadow-card)">
         <CardContent className="px-0 pt-0 sm:px-6 sm:pt-6">
-          {canManageNumbers && (
+          {canManage && (
             <div className="flex flex-col gap-2 mb-4 sm:flex-row sm:flex-wrap">
-              {provisionAvailable && (
-                <Button onClick={handleProvision} disabled={provisioning} className="w-full bg-primary sm:w-auto">
-                  {provisioning ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Plus className="w-4 h-4 mr-2" />}
-                  {t('settingsWhatsappNumbers.actions.provision')}
-                </Button>
-              )}
-              <Button
-                variant="outline"
-                className="w-full sm:w-auto"
-                onClick={() => { form.reset(); setRegisterOpen(true); }}
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                {t('settingsWhatsappNumbers.actions.registerManually')}
+              <Button onClick={() => void handleConnect()} disabled={registering} className="w-full bg-primary sm:w-auto">
+                {registering ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Plus className="w-4 h-4 mr-2" />}
+                {t('settingsWhatsappNumbers.actions.connect')}
               </Button>
             </div>
           )}
@@ -244,70 +275,36 @@ export default function SettingsWhatsappNumbersPage() {
             </div>
           ) : list.length === 0 ? (
             <div className="rounded-lg border border-gray-300 bg-white py-8 text-center text-sm text-slate-500">
-              {provisionAvailable
-                ? t('settingsWhatsappNumbers.empty.withProvision', { action: t('settingsWhatsappNumbers.actions.provision') })
-                : t('settingsWhatsappNumbers.empty.noInstances')}
+              {canManage
+                ? t('settingsWhatsappNumbers.empty.withAction', { action: t('settingsWhatsappNumbers.actions.connect') })
+                : t('settingsWhatsappNumbers.empty.none')}
             </div>
           ) : (
             <div>
               {/* Desktop / tablet: tabela */}
               <div className="hidden overflow-x-auto md:block">
-              <Table className="min-w-full border-collapse bg-white text-sm">
-                <TableHeader>
-                  <TableRow className="border-b border-gray-300 h-15">
-                    <TableHead>Instance ID</TableHead>
-                    <TableHead>{t('settingsWhatsappNumbers.table.connectedNumber')}</TableHead>
-                    <TableHead>{t('settingsWhatsappNumbers.table.status')}</TableHead>
-                    <TableHead>{t('settingsWhatsappNumbers.table.actions')}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {list.map((row) => (
-                    <TableRow className="border-b border-gray-300 h-15" key={row.id}>
-                      <TableCell className="font-mono text-xs truncate" title={row.phone_number_id}>
-                        {row.phone_number_id}
-                      </TableCell>
-                      <TableCell>{row.display_phone ?? '—'}</TableCell>
-                      <TableCell>
-                        <StatusBadge status={statuses[row.id] ?? null} loading={statusLoading[row.id] ?? false} />
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-1">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            title={t('settingsWhatsappNumbers.actions.checkStatus')}
-                            onClick={() => void fetchStatus(row.id)}
-                          >
-                            <RefreshCw className="w-3 h-3" />
-                          </Button>
-                          {!statuses[row.id]?.connected && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              title={t('settingsWhatsappNumbers.actions.scanQrCode')}
-                              onClick={() => void openQrModal(row.id)}
-                            >
-                              <QrCode className="w-3 h-3" />
-                            </Button>
-                          )}
-                          {canManageNumbers && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="text-destructive hover:text-destructive"
-                              title={t('settingsWhatsappNumbers.actions.disconnect')}
-                              onClick={() => void handleDisconnect(row.id)}
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
-                          )}
-                        </div>
-                      </TableCell>
+                <Table className="min-w-full border-collapse bg-white text-sm">
+                  <TableHeader>
+                    <TableRow className="border-b border-gray-300 h-15">
+                      <TableHead>{t('settingsWhatsappNumbers.table.number')}</TableHead>
+                      <TableHead>{t('settingsWhatsappNumbers.table.status')}</TableHead>
+                      <TableHead>{t('settingsWhatsappNumbers.table.actions')}</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {list.map((row) => (
+                      <TableRow className="border-b border-gray-300 h-15" key={row.id}>
+                        <TableCell className={row.display_phone ? '' : 'text-muted-foreground'}>{phoneLabel(row)}</TableCell>
+                        <TableCell>
+                          <StatusBadge status={statuses[row.id] ?? null} loading={statusLoading[row.id] ?? false} />
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex gap-1">{rowActions(row)}</div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </div>
 
               {/* Mobile: cards */}
@@ -315,47 +312,14 @@ export default function SettingsWhatsappNumbersPage() {
                 {list.map((row) => (
                   <div key={row.id} className="rounded-lg border border-gray-300 p-3">
                     <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="truncate font-mono text-xs" title={row.phone_number_id}>
-                          {row.phone_number_id}
-                        </p>
-                        <p className="text-sm text-muted-foreground">{row.display_phone ?? '—'}</p>
-                      </div>
+                      <p className={`min-w-0 truncate text-sm ${row.display_phone ? '' : 'text-muted-foreground'}`}>
+                        {phoneLabel(row)}
+                      </p>
                       <div className="shrink-0">
                         <StatusBadge status={statuses[row.id] ?? null} loading={statusLoading[row.id] ?? false} />
                       </div>
                     </div>
-                    <div className="mt-2 flex justify-end gap-1 border-t border-gray-200 pt-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        title={t('settingsWhatsappNumbers.actions.checkStatus')}
-                        onClick={() => void fetchStatus(row.id)}
-                      >
-                        <RefreshCw className="w-3 h-3" />
-                      </Button>
-                      {!statuses[row.id]?.connected && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          title={t('settingsWhatsappNumbers.actions.scanQrCode')}
-                          onClick={() => void openQrModal(row.id)}
-                        >
-                          <QrCode className="w-3 h-3" />
-                        </Button>
-                      )}
-                      {canManageNumbers && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="text-destructive hover:text-destructive"
-                          title={t('settingsWhatsappNumbers.actions.disconnect')}
-                          onClick={() => void handleDisconnect(row.id)}
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
-                      )}
-                    </div>
+                    <div className="mt-2 flex justify-end gap-1 border-t border-gray-200 pt-2">{rowActions(row)}</div>
                   </div>
                 ))}
               </div>
@@ -396,52 +360,15 @@ export default function SettingsWhatsappNumbersPage() {
                 )}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">{t('settingsWhatsappNumbers.qrModal.unavailable')}</p>
+              <div className="flex flex-col items-center gap-2 py-6 text-center">
+                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">{t('settingsWhatsappNumbers.qrModal.waiting')}</p>
+              </div>
             )}
             <p className="text-xs text-muted-foreground text-center">{t('settingsWhatsappNumbers.qrModal.autoRefresh')}</p>
           </div>
         </DialogContent>
       </Dialog>
-
-      {/* Cadastro manual */}
-      <DashboardCreateFormDialog
-        open={registerOpen}
-        onOpenChange={setRegisterOpen}
-        title={t('settingsWhatsappNumbers.registerModal.title')}
-        footer={
-          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <Button
-              type="button"
-              variant="outline"
-              className="border border-gray-300"
-              onClick={() => setRegisterOpen(false)}
-            >
-              {t('settingsWhatsappNumbers.actions.cancel')}
-            </Button>
-            <Button type="submit" form="whatsapp-register-form" className="bg-primary">
-              {t('settingsWhatsappNumbers.actions.register')}
-            </Button>
-          </div>
-        }
-      >
-        <form id="whatsapp-register-form" onSubmit={form.handleSubmit(onRegister)} className="space-y-4 md:space-y-6">
-          <div className="space-y-2">
-            <Label>Instance ID</Label>
-            <Input {...form.register('phone_number_id', { required: true })} placeholder="ex.: 3C9B2FA3491..." />
-            <p className="text-xs text-muted-foreground">{t('settingsWhatsappNumbers.registerModal.instanceIdHint')}</p>
-          </div>
-          <div className="space-y-2">
-            <Label>Instance Token</Label>
-            <Input type="password" {...form.register('access_token', { required: true })} placeholder="ex.: F4B87A2C..." />
-            <p className="text-xs text-muted-foreground">{t('settingsWhatsappNumbers.registerModal.tokenHint')}</p>
-          </div>
-          <div className="space-y-2">
-            <Label>{t('settingsWhatsappNumbers.registerModal.displayPhoneLabel')}</Label>
-            <Input {...form.register('display_phone')} placeholder="5511999887766" />
-            <p className="text-xs text-muted-foreground">{t('settingsWhatsappNumbers.registerModal.digitsOnlyHint')}</p>
-          </div>
-        </form>
-      </DashboardCreateFormDialog>
     </div>
   );
 }

@@ -44,7 +44,7 @@ export type WhatsappMediaKind = 'image' | 'audio' | 'video' | 'document' | 'stic
  * pending      — mídia identificada, download ainda em andamento
  * stored       — disponível para ver/baixar (janela de 7 dias)
  * expired      — passou dos 7 dias; o arquivo saiu do servidor
- * unavailable  — não foi possível recuperar (a Z-API apaga em 30 dias)
+ * unavailable  — não foi possível recuperar (falha no download, storage fora ou mídia antiga da Z-API)
  */
 export type WhatsappMediaStatus = 'pending' | 'stored' | 'expired' | 'unavailable';
 
