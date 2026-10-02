@@ -1,7 +1,8 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/axios';
+import { listQueryParams, parseListResponse } from '@/lib/pagination';
 import type {
   DischargePayload,
   Hospitalization,
@@ -22,8 +23,11 @@ import type {
 export const hospitalizationKeys = {
   all: ['hospitalizations'] as const,
   lists: () => [...hospitalizationKeys.all, 'list'] as const,
+  list: (page: number, statuses: readonly string[]) =>
+    [...hospitalizationKeys.lists(), { page, statuses }] as const,
   active: (patientId: string) => [...hospitalizationKeys.all, 'active', patientId] as const,
   activeList: () => [...hospitalizationKeys.all, 'active-list'] as const,
+  activeListPage: (page: number) => [...hospitalizationKeys.activeList(), { page }] as const,
   detail: (id: string) => [...hospitalizationKeys.all, 'detail', id] as const,
   costs: (id: string) => [...hospitalizationKeys.all, 'costs', id] as const,
   costSummary: (id: string) => [...hospitalizationKeys.all, 'cost-summary', id] as const,
@@ -48,23 +52,35 @@ export function useActiveHospitalizationQuery(patientId: string | null | undefin
   });
 }
 
-export function useActiveHospitalizationsListQuery() {
+/** Internações ativas paginadas no servidor (há mais tempo internado primeiro). */
+export function useActiveHospitalizationsListQuery(page = 1) {
   return useQuery({
-    queryKey: hospitalizationKeys.activeList(),
+    queryKey: hospitalizationKeys.activeListPage(page),
     queryFn: async () => {
-      const { data } = await api.get<Hospitalization[]>('/hospitalizations/active');
-      return Array.isArray(data) ? data : [];
+      const { data } = await api.get('/hospitalizations/active', { params: listQueryParams(page) });
+      return parseListResponse<Hospitalization>(data, page);
     },
+    placeholderData: keepPreviousData,
   });
 }
 
-export function useHospitalizationsQuery() {
+/**
+ * Internações paginadas no servidor (admissão mais recente primeiro).
+ * `statuses` vira `status=a,b,c` — o backend precisa aceitar a lista
+ * separada por vírgula (o histórico pede tudo que não é `active`).
+ */
+export function useHospitalizationsQuery(page = 1, statuses: readonly string[] = []) {
   return useQuery({
-    queryKey: hospitalizationKeys.lists(),
+    queryKey: hospitalizationKeys.list(page, statuses),
     queryFn: async () => {
-      const { data } = await api.get<Hospitalization[]>('/hospitalizations');
-      return Array.isArray(data) ? data : [];
+      const { data } = await api.get('/hospitalizations', {
+        params: listQueryParams(page, undefined, {
+          status: statuses.length ? statuses.join(',') : undefined,
+        }),
+      });
+      return parseListResponse<Hospitalization>(data, page);
     },
+    placeholderData: keepPreviousData,
   });
 }
 

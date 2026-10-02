@@ -30,6 +30,11 @@ import { PacienteBusca } from '@/components/paciente-busca';
 import { useStaffUsersListQuery, useVeterinariansQuery } from '@/hooks/apiHooks/useUsers';
 import { useHealthPlansListQuery } from '@/hooks/apiHooks/useHealthPlans';
 import { useHasPermission } from '@/hooks/useHasPermission';
+import { ListPagination } from '@/components/list-pagination';
+import { API_PAGE_SIZE } from '@/lib/pagination';
+
+/** Histórico = tudo que não está mais internado. */
+const HISTORY_STATUSES = ['discharged', 'transferred', 'deceased'] as const;
 
 function daysInternado(admissionDate: string): number {
   const ms = Date.now() - new Date(admissionDate).getTime();
@@ -82,9 +87,13 @@ function InternacoesPageContent() {
     critical: t('internacoes.severityCritical'),
   };
 
-  const { data: active = [], isLoading: loadingActive } = useActiveHospitalizationsListQuery();
-  const { data: all = [], isLoading: loadingAll } = useHospitalizationsQuery();
-  const loading = loadingActive || loadingAll;
+  const [activePage, setActivePage] = useState(1);
+  const [historyPage, setHistoryPage] = useState(1);
+  const activeQuery = useActiveHospitalizationsListQuery(activePage);
+  const historyQuery = useHospitalizationsQuery(historyPage, HISTORY_STATUSES);
+  const active = activeQuery.data?.items ?? [];
+  const discharged = historyQuery.data?.items ?? [];
+  const loading = activeQuery.isLoading;
 
   const vetsQuery = useVeterinariansQuery();
   const veterinarians = vetsQuery.data ?? [];
@@ -143,8 +152,6 @@ function InternacoesPageContent() {
     }
   };
 
-  const discharged = all.filter((h) => h.status !== 'active');
-
   return (
     <div className="space-y-8">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -160,8 +167,8 @@ function InternacoesPageContent() {
 
       <Tabs defaultValue="active">
         <TabsList className="w-full sm:w-fit">
-          <TabsTrigger value="active">{t('internacoes.tabActive', { count: active.length })}</TabsTrigger>
-          <TabsTrigger value="history">{t('internacoes.tabHistory', { count: discharged.length })}</TabsTrigger>
+          <TabsTrigger value="active">{t('internacoes.tabActive', { count: activeQuery.data?.total ?? 0 })}</TabsTrigger>
+          <TabsTrigger value="history">{t('internacoes.tabHistory', { count: historyQuery.data?.total ?? 0 })}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="active" className="mt-8">
@@ -299,6 +306,15 @@ function InternacoesPageContent() {
               })}
             </div>
           )}
+          <ListPagination
+            className="mt-6"
+            page={activePage}
+            totalPages={activeQuery.data?.totalPages ?? 1}
+            total={activeQuery.data?.total ?? 0}
+            pageSize={API_PAGE_SIZE}
+            onPageChange={setActivePage}
+            disabled={activeQuery.isFetching}
+          />
         </TabsContent>
 
         <TabsContent value="history" className="mt-8">
@@ -344,6 +360,14 @@ function InternacoesPageContent() {
               </TableBody>
             </Table>
           </div>
+          <ListPagination
+            page={historyPage}
+            totalPages={historyQuery.data?.totalPages ?? 1}
+            total={historyQuery.data?.total ?? 0}
+            pageSize={API_PAGE_SIZE}
+            onPageChange={setHistoryPage}
+            disabled={historyQuery.isFetching}
+          />
         </TabsContent>
       </Tabs>
 
