@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { Loader2, User } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { getApiErrorMessage } from '@/app/utils/api-error-message';
@@ -30,7 +30,7 @@ export default function ProfilePage() {
     handleSubmit,
     reset,
     setValue,
-    watch,
+    control,
     formState: { errors },
   } = useForm<ProfileFormValues>();
 
@@ -58,8 +58,9 @@ export default function ProfilePage() {
 
   // Trocar e-mail ou senha exige a senha atual (backend, PERFIL_SENHA_ATUAL):
   // uma sessão esquecida aberta não pode tomar a conta.
-  const emailDigitado = watch('email');
-  const senhaDigitada = watch('password');
+  // useWatch, não watch(): o React Compiler não memoiza o watch() com segurança.
+  const emailDigitado = useWatch({ control, name: 'email' });
+  const senhaDigitada = useWatch({ control, name: 'password' });
   const trocaEmail =
     !!profile && !!emailDigitado?.trim() && emailDigitado.trim().toLowerCase() !== profile.email?.trim().toLowerCase();
   const trocaSenha = !!senhaDigitada?.trim();
