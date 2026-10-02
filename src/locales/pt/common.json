@@ -2895,5 +2895,12 @@
     "loading": "Carregando…",
     "empty": "Nenhum paciente encontrado.",
     "error": "Não foi possível buscar os pacientes."
+  },
+  "productPicker": {
+    "placeholder": "Selecione o produto",
+    "searchPlaceholder": "Buscar por nome, SKU ou código…",
+    "loading": "Carregando…",
+    "empty": "Nenhum produto encontrado.",
+    "error": "Não foi possível buscar os produtos."
   }
 }

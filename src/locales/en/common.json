@@ -2958,5 +2958,12 @@
     "loading": "Loading…",
     "empty": "No patients found.",
     "error": "Could not search patients."
+  },
+  "productPicker": {
+    "placeholder": "Select the product",
+    "searchPlaceholder": "Search by name, SKU or code…",
+    "loading": "Loading…",
+    "empty": "No products found.",
+    "error": "Could not search products."
   }
 }
