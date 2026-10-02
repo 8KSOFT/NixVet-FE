@@ -1,20 +1,24 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/axios';
+import { listQueryParams, parseListResponse } from '@/lib/pagination';
 import type { ClinicalTerm, ClinicalTermPayload } from '@/app/types/clinical-term';
 
 export const clinicalTermKeys = {
   all: ['clinical-terms'] as const,
+  list: (page: number) => [...clinicalTermKeys.all, 'list', { page }] as const,
 };
 
-export function useClinicalTermsQuery() {
+/** Termos paginados no servidor (mais recentes primeiro). */
+export function useClinicalTermsPagedQuery(page: number) {
   return useQuery({
-    queryKey: clinicalTermKeys.all,
+    queryKey: clinicalTermKeys.list(page),
     queryFn: async () => {
-      const { data } = await api.get<ClinicalTerm[]>('/clinical-terms');
-      return Array.isArray(data) ? data : [];
+      const { data } = await api.get('/clinical-terms', { params: listQueryParams(page) });
+      return parseListResponse<ClinicalTerm>(data, page);
     },
+    placeholderData: keepPreviousData,
   });
 }
 

@@ -34,12 +34,14 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import {
-  useClinicalTermsQuery,
+  useClinicalTermsPagedQuery,
   useCreateClinicalTermMutation,
   useClinicalTermPdfMutation,
 } from '@/hooks/apiHooks/useClinicalTerms';
 import { usePatientsListQuery } from '@/hooks/apiHooks/usePatients';
 import { PacienteBusca } from '@/components/paciente-busca';
+import { ListPagination } from '@/components/list-pagination';
+import { API_PAGE_SIZE } from '@/lib/pagination';
 import type { ClinicalTerm, ClinicalTermType as TermType } from '@/app/types/clinical-term';
 import type { TFunction } from 'i18next';
 
@@ -66,7 +68,9 @@ export default function TermosPage() {
   const [dialog, setDialog] = useState(false);
   const [form, setForm] = useState({ ...EMPTY });
 
-  const { data: terms = [], isLoading: loading } = useClinicalTermsQuery();
+  const [listPage, setListPage] = useState(1);
+  const { data: termsPage, isLoading: loading, isFetching } = useClinicalTermsPagedQuery(listPage);
+  const terms = termsPage?.items ?? [];
   // A lista completa de pacientes (todas as páginas) só resta como fallback do nome
   // do paciente na tabela, para termos que chegam sem `term.patient`. O select do
   // dialog busca no servidor (`PacienteBusca`) e não depende mais dela — abrir o
@@ -177,6 +181,14 @@ export default function TermosPage() {
                 ))}
               </TableBody>
             </Table>
+            <ListPagination
+              page={listPage}
+              totalPages={termsPage?.totalPages ?? 1}
+              total={termsPage?.total ?? 0}
+              pageSize={API_PAGE_SIZE}
+              onPageChange={setListPage}
+              disabled={isFetching}
+            />
             </div>
           )}
         </CardContent>
