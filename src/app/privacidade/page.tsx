@@ -151,7 +151,7 @@ export default function PrivacidadePage() {
       <section className="space-y-3">
         <h2 className="text-lg font-semibold text-slate-900">12. Contato e Encarregado (DPO)</h2>
         <p>
-          Dúvidas ou solicitações sobre privacidade: <strong>privacidade@8ksoft.com</strong>.<br />
+          Dúvidas ou solicitações sobre privacidade: <strong>privacidade@nixvetapp.com.br</strong>.<br />
           Encarregado pelo Tratamento de Dados (DPO): <strong>Marcelo Coppini</strong> — dpo@8ksoft.com.<br />
           Endereço: Av. Praia de Belas, 1212 — Praia de Belas, Porto Alegre/RS, CEP 90110-001.
         </p>
