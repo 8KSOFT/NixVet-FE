@@ -497,7 +497,18 @@ Nunca discutido com o usuário se entram no mesmo esforço: páginas públicas (
 
 `color-scheme: only light` (não só `light`) em `globals.css` e no `viewport` do `layout.tsx` — resolve o Chrome Android "force-dark" reescrevendo as cores do site em alguns aparelhos mesmo sem nenhuma regra `prefers-color-scheme` no nosso CSS.
 
-## Suíte de testes do front (2026-10-28) — EM ANDAMENTO
+## Suíte de testes do front (2026-10-28): mergeada na main, e2e ainda por fazer
+
+Entrou na `main` pelo PR #1 em 28/10/2026, com build, lint, test e typecheck verdes. O NixMed (BE, FE e
+Mobile) recebeu a mesma suíte no mesmo dia e foi implantado junto com o renome de domínio humano. O que
+falta aqui: specs de e2e (o `e2e/` do NixMed-FE serve de base), portar testes e piso de cobertura para o
+NixVet-BE, e corrigir o `Accept: application/problem+json` (ver achados abaixo).
+
+Correções de produto que a suíte forçou, já na `main`: o menu lê o `localStorage` por
+`useSyncExternalStore` com snapshot de servidor (`useMinhasPermissoes`), o que acabou com o erro de
+hidratação #418 em toda tela logada; o `DashboardCreateFormDialog` usa `md:max-h-[90dvh]!` e
+`md:overflow-hidden!` para vencer o `md:max-h-none` do `DialogContent` base (sem isso o modal passava da
+janela em notebook de 720 px, com o botão Criar fora da tela); e `RANK_ENTERPRISE` em `lib/plans.ts`.
 
 `npm test` roda o Vitest (jsdom + Testing Library, `vitest.config.mts`); `npm run test:coverage` mede e
 aplica o **piso de cobertura**, que só sobe (hoje: total 12%, `lib/` 94%). O CI tem o job `test`, que
