@@ -13,6 +13,7 @@ import {
   FileText,
 } from "lucide-react";
 import { getApiBaseUrl } from "@/lib/api-base";
+import { exibirTelefone } from "@/lib/telefone";
 
 interface Medication {
   name: string;
@@ -306,7 +307,7 @@ export default function VerificarPage() {
               {data.level === 2 && (
                 <>
                   <Row label="CPF" value={data.tutor_cpf ?? null} />
-                  <Row label="Telefone" value={data.tutor_phone ?? null} />
+                  <Row label="Telefone" value={exibirTelefone(data.tutor_phone) || null} />
                   <Row label="Endereço" value={data.tutor_address ?? null} />
                 </>
               )}

@@ -12,7 +12,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
+import { TelefoneInput } from '@/components/telefone-input';
+import { exibirTelefone, somenteDigitos, telefoneValido } from '@/lib/telefone';
 import { Settings, Save, Search, Plus, Loader2, Bell } from 'lucide-react';
 import axios from 'axios';
 import { formatCepMask } from '@/lib/format-cep';
@@ -72,7 +74,7 @@ interface TenantFormValues {
 
 export default function SettingsPage() {
   const { t } = useTranslation();
-  const { register, setValue, getValues, handleSubmit } = useForm<ClinicFormValues>();
+  const { register, control, setValue, getValues, handleSubmit } = useForm<ClinicFormValues>();
   const {
     register: registerTenant,
     handleSubmit: handleSubmitTenant,
@@ -185,7 +187,7 @@ export default function SettingsPage() {
 
     setValue('clinicName', data.name ?? '');
     setValue('email', data.email ?? '');
-    setValue('phone', data.phone ?? '');
+    setValue('phone', exibirTelefone(data.phone));
     setValue('brandName', data.brand_name ?? '');
     setValue('logoUrl', data.logo_url ?? '');
     setValue('primaryColor', data.primary_color ?? '');
@@ -236,6 +238,10 @@ export default function SettingsPage() {
   };
 
   const onFinish = async (values: ClinicFormValues) => {
+    if (values.phone && !telefoneValido(values.phone)) {
+      toast.error(t('telefone.invalido'));
+      return;
+    }
     try {
       toast.loading(t('settingsHub.clinic.savingToast'), { id: 'saving' });
       const fullAddress = values.street
@@ -244,7 +250,7 @@ export default function SettingsPage() {
       const result = await updateTenantMutation.mutateAsync({
         name: values.clinicName,
         email: values.email,
-        phone: values.phone,
+        phone: values.phone ? somenteDigitos(values.phone) : '',
         brand_name: values.brandName,
         logo_url: values.logoUrl,
         primary_color: values.primaryColor,
@@ -381,7 +387,19 @@ export default function SettingsPage() {
               </div>
               <div className="flex flex-col gap-2">
                 <Label>{t('settingsHub.clinic.phone')}</Label>
-                <Input {...register('phone')} />
+                <Controller
+                  name="phone"
+                  control={control}
+                  render={({ field }) => (
+                    <TelefoneInput
+                      name={field.name}
+                      ref={field.ref}
+                      onBlur={field.onBlur}
+                      value={field.value}
+                      onValueChange={field.onChange}
+                    />
+                  )}
+                />
               </div>
               <div id="identidade-visual" className="flex flex-col gap-4 scroll-mt-24">
                 <Separator />

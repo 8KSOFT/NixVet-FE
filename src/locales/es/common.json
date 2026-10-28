@@ -2965,5 +2965,8 @@
     "loading": "Cargando…",
     "empty": "No se encontraron productos.",
     "error": "No fue posible buscar los productos."
+  },
+  "telefone": {
+    "invalido": "Teléfono inválido. Use el código de área y el número, por ejemplo (11) 91234-5678."
   }
 }

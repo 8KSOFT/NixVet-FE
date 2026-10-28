@@ -2902,5 +2902,8 @@
     "loading": "Carregando…",
     "empty": "Nenhum produto encontrado.",
     "error": "Não foi possível buscar os produtos."
+  },
+  "telefone": {
+    "invalido": "Telefone inválido. Use o DDD e o número, por exemplo (11) 91234-5678."
   }
 }

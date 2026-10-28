@@ -22,6 +22,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import { PLAN_SELECT_OPTIONS as PLAN_OPTIONS } from '@/lib/plans';
+import { exibirTelefone } from '@/lib/telefone';
 
 const STATUS_MAP: Record<string, { label: string; color: string }> = {
   active:       { label: 'Ativo',           color: 'bg-green-100 text-green-800 border-green-200' },
@@ -123,7 +124,7 @@ export default function ClinicDetailPage() {
             <div className="flex justify-between"><span className="text-muted-foreground">Nome</span><span className="font-medium">{clinic.name}</span></div>
             <div className="flex justify-between"><span className="text-muted-foreground">Código</span><span className="font-mono">{clinic.code}</span></div>
             <div className="flex justify-between"><span className="text-muted-foreground">Email</span><span>{clinic.email ?? '—'}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Telefone</span><span>{clinic.phone ?? '—'}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">Telefone</span><span>{exibirTelefone(clinic.phone) || '—'}</span></div>
             <div className="flex justify-between"><span className="text-muted-foreground">CPF/CNPJ</span><span>{clinic.cpf_cnpj ?? '—'}</span></div>
             {clinic.createdAt && (
               <div className="flex justify-between"><span className="text-muted-foreground">Criado em</span><span>{new Date(clinic.createdAt).toLocaleDateString('pt-BR')}</span></div>

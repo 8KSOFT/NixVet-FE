@@ -25,6 +25,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
+import { TelefoneInput } from '@/components/telefone-input';
+import { telefoneValido } from '@/lib/telefone';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -508,6 +510,11 @@ function CalendarContent() {
       if (newTutorMode) {
         if (!newTutor.name || !newTutor.phone || !newTutor.email || !newTutor.cpf || !newTutor.cep) {
           toast.error(t('calendar.appointmentDialog.fillTutorFields'));
+          setCreatingPatient(false);
+          return;
+        }
+        if (!telefoneValido(newTutor.phone)) {
+          toast.error(t('telefone.invalido'));
           setCreatingPatient(false);
           return;
         }
@@ -1443,16 +1450,10 @@ function CalendarContent() {
                           <div className="grid grid-cols-1 gap-2 md:grid-cols-[1.7fr_1.7fr_1.3fr]">
                             <div className="space-y-1 min-w-0">
                               <Label className="text-xs">{t('calendar.appointmentDialog.phoneLabel')}</Label>
-                              <Input
+                              <TelefoneInput
                                 className="h-8 text-sm"
-                                placeholder="(11) 99999-9999"
                                 value={newTutor.phone}
-                                onChange={(e) =>
-                                  setNewTutor((p) => ({
-                                    ...p,
-                                    phone: e.target.value,
-                                  }))
-                                }
+                                onValueChange={(phone) => setNewTutor((p) => ({ ...p, phone }))}
                               />
                             </div>
                             <div className="space-y-1 min-w-0">

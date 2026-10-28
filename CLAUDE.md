@@ -497,6 +497,15 @@ Nunca discutido com o usuário se entram no mesmo esforço: páginas públicas (
 
 `color-scheme: only light` (não só `light`) em `globals.css` e no `viewport` do `layout.tsx` — resolve o Chrome Android "force-dark" reescrevendo as cores do site em alguns aparelhos mesmo sem nenhuma regra `prefers-color-scheme` no nosso CSS.
 
+## Pendência: suíte de testes completa (pedido do usuário, 2026-10-28)
+
+Vale para o NixVet e para o NixMed. Estado medido: o **front não tem runner nem nenhum teste** (só `tsc`,
+ESLint com teto de avisos e o `npm run smoke`); o NixVet-BE tem Jest (110 arquivos). A fazer: Vitest +
+Testing Library no front (libs puras, hooks, componentes críticos), Playwright para os fluxos de ponta a
+ponta (login, cadastro de tutor e paciente, agenda, prontuário, prescrição, balcão), cobertura medida no
+backend com piso que só sobe, e smoke pós-deploy. Plano detalhado em
+`NixMed-BE/docs/pendencias-nixmed.md`, seção "Suíte de testes completa".
+
 ## Gotchas técnicos (aprendidos em sessões recentes — não redescobrir)
 
 - **Traduções não atualizam em dev mesmo com o JSON certo**: `i18next.init()` (em [`src/lib/i18n/instance.ts`](src/lib/i18n/instance.ts)) só rodava uma vez por aba — o guard `if (!i18n.isInitialized)` bloqueava qualquer reload de recursos no Fast Refresh, então editar `locales/*.json` no meio de uma sessão de dev nunca aparecia sem reload manual completo (F5). **Corrigido**: agora, quando já inicializado, chama `i18n.addResourceBundle(lng, 'common', resources[lng].common, true, true)` pra cada idioma (só em dev, `NODE_ENV !== 'production'`). Se ainda aparecer chave crua tipo `prescriptions.form.x` na tela em vez do texto traduzido, é sinal de que essa correção quebrou ou de que o JSON tem erro de sintaxe — não é mais "precisa dar F5".

@@ -17,6 +17,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
+import { TelefoneInput } from '@/components/telefone-input';
+import { exibirTelefone, somenteDigitos, telefoneValido } from '@/lib/telefone';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
@@ -60,7 +62,7 @@ export default function PlanosSaudePage() {
     setForm({
       name: plan.name,
       document: plan.document ?? '',
-      contact_phone: plan.contact_phone ?? '',
+      contact_phone: exibirTelefone(plan.contact_phone),
       contact_email: plan.contact_email ?? '',
       reimbursement_days: plan.reimbursement_days ?? 30,
       active: plan.active ?? true,
@@ -69,11 +71,16 @@ export default function PlanosSaudePage() {
   };
 
   const handleSave = async () => {
+    if (form.contact_phone && !telefoneValido(form.contact_phone)) {
+      toast.error(t('telefone.invalido'));
+      return;
+    }
+    const payload = { ...form, contact_phone: somenteDigitos(form.contact_phone) };
     try {
       if (editing) {
-        await updateMutation.mutateAsync({ id: editing.id, payload: form });
+        await updateMutation.mutateAsync({ id: editing.id, payload });
       } else {
-        await createMutation.mutateAsync(form);
+        await createMutation.mutateAsync(payload);
       }
       setModalOpen(false);
     } catch {
@@ -238,7 +245,10 @@ export default function PlanosSaudePage() {
             </div>
             <div className="space-y-2">
               <Label>{t('settingsPlanosSaude.phoneLabel')}</Label>
-              <Input value={form.contact_phone} onChange={(e) => setForm((f) => ({ ...f, contact_phone: e.target.value }))} />
+              <TelefoneInput
+                value={form.contact_phone}
+                onValueChange={(contact_phone) => setForm((f) => ({ ...f, contact_phone }))}
+              />
             </div>
             <div className="space-y-2">
               <Label>{t('settingsPlanosSaude.emailLabel')}</Label>

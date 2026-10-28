@@ -14,6 +14,7 @@ import { Plus, Pencil, Trash2, Search, Loader2, ChevronDown, PawPrint } from 'lu
 import { DashboardCreateFormDialog } from '@/components/dashboard-create-form-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { exibirTelefone, formatarTelefone, telefoneValido } from '@/lib/telefone';
 import { Label } from '@/components/ui/label';
 import {
   AlertDialog,
@@ -47,7 +48,7 @@ import { cn } from '@/lib/utils';
 const tutorSchema = z.object({
   name: z.string().min(1, 'Obrigatório'),
   cpf: z.string().min(1, 'Obrigatório'),
-  phone: z.string().min(1, 'Obrigatório'),
+  phone: z.string().min(1, 'Obrigatório').refine(telefoneValido, 'Telefone inválido'),
   email: z.string().email('Email inválido'),
   cep: z.string().min(1, 'Obrigatório'),
   street: z.string().min(1, 'Obrigatório'),
@@ -68,27 +69,9 @@ const formatCpf = (value: string) => {
     .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
 };
 
-const formatPhone = (value: string) => {
-  const cleaned = value.replace(/\D/g, '').slice(0, 11);
-  if (cleaned.length <= 10) {
-    return cleaned.replace(/(\d{2})(\d)/, '($1) $2').replace(/(\d{4})(\d{1,4})$/, '$1-$2');
-  }
-  return cleaned.replace(/(\d{2})(\d)/, '($1) $2').replace(/(\d{5})(\d{1,4})$/, '$1-$2');
-};
-
 const formatCep = (value: string) => {
   const cleaned = value.replace(/\D/g, '').slice(0, 8);
   return cleaned.replace(/(\d{5})(\d{1,3})$/, '$1-$2');
-};
-
-const formatPhoneDisplay = (text: string) => {
-  if (!text) return '';
-  const cleaned = ('' + text).replace(/\D/g, '');
-  const match = cleaned.match(/^(\d{2})(\d{5})(\d{4})$/);
-  if (match) return `(${match[1]}) ${match[2]}-${match[3]}`;
-  const matchLand = cleaned.match(/^(\d{2})(\d{4})(\d{4})$/);
-  if (matchLand) return `(${matchLand[1]}) ${matchLand[2]}-${matchLand[3]}`;
-  return text;
 };
 
 const formatCpfDisplay = (text: string) => {
@@ -241,7 +224,7 @@ export default function OwnersPage() {
     reset({
       name: record.name,
       email: record.email,
-      phone: record.phone,
+      phone: exibirTelefone(record.phone),
       cpf: record.cpf,
       cep: formatCepMask(record.cep),
       street,
@@ -437,7 +420,7 @@ export default function OwnersPage() {
                       </div>
                     </TableCell>
                     <TableCell>{tutor.email}</TableCell>
-                    <TableCell>{formatPhoneDisplay(tutor.phone)}</TableCell>
+                    <TableCell>{exibirTelefone(tutor.phone)}</TableCell>
                     <TableCell>{formatCpfDisplay(tutor.cpf)}</TableCell>
                     <TableCell onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center gap-1">
@@ -531,7 +514,7 @@ export default function OwnersPage() {
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">{t('owners.table.phone')}</p>
-                    <p>{formatPhoneDisplay(tutor.phone)}</p>
+                    <p>{exibirTelefone(tutor.phone)}</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">{t('owners.table.cpf')}</p>
@@ -663,11 +646,15 @@ export default function OwnersPage() {
                 {...register('phone')}
                 placeholder={t('owners.form.phonePlaceholder')}
                 onChange={(e) => {
-                  const formatted = formatPhone(e.target.value);
+                  const formatted = formatarTelefone(e.target.value);
                   setValue('phone', formatted);
                 }}
               />
-              {errors.phone && <p className="text-sm text-destructive">{t('owners.form.requiredField')}</p>}
+              {errors.phone && (
+                <p className="text-sm text-destructive">
+                  {errors.phone.type === 'custom' ? t('telefone.invalido') : t('owners.form.requiredField')}
+                </p>
+              )}
             </div>
           </div>
 

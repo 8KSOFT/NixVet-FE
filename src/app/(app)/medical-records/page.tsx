@@ -7,6 +7,8 @@ import { useTranslation } from 'react-i18next';
 import { DashboardCreateFormDialog } from '@/components/dashboard-create-form-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { TelefoneInput } from '@/components/telefone-input';
+import { telefoneValido } from '@/lib/telefone';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -157,6 +159,10 @@ export default function MedicalRecordsListPage() {
   const handleCreateTutor = async () => {
     if (!tutorForm.name || !tutorForm.cpf || !tutorForm.phone || !tutorForm.email || !tutorForm.cep) {
       toast.error(t('medicalRecords.toasts.tutorRequiredFields'));
+      return;
+    }
+    if (!telefoneValido(tutorForm.phone)) {
+      toast.error(t('telefone.invalido'));
       return;
     }
     try {
@@ -810,7 +816,7 @@ export default function MedicalRecordsListPage() {
             </div>
             <div className="space-y-1 md:col-span-4">
               <Label>{t('medicalRecords.dialog.phoneLabel')}</Label>
-              <Input value={tutorForm.phone} onChange={(e) => setTutorForm((p) => ({ ...p, phone: e.target.value }))} />
+              <TelefoneInput value={tutorForm.phone} onValueChange={(phone) => setTutorForm((p) => ({ ...p, phone }))} />
             </div>
             <div className="space-y-1 md:col-span-8">
               <Label>{t('medicalRecords.dialog.emailLabel')}</Label>

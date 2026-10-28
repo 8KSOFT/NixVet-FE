@@ -32,6 +32,8 @@ import {
 } from "@/hooks/apiHooks/useSuperadminTenants";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { TelefoneInput } from "@/components/telefone-input";
+import { exibirTelefone, somenteDigitos, telefoneValido } from "@/lib/telefone";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -217,7 +219,7 @@ export default function SuperadminClinicsPage() {
     setEditForm({
       name: row.name,
       email: row.email,
-      phone: row.phone,
+      phone: exibirTelefone(row.phone),
       whatsapp_ai_chatbot_enabled: row.whatsapp_ai_chatbot_enabled,
       ai_platform_enabled: row.ai_platform_enabled,
       billing_plan: row.billing_plan ?? "essencial",
@@ -238,8 +240,16 @@ export default function SuperadminClinicsPage() {
 
   const submitEdit = async () => {
     if (!editRow) return;
+    const telefone = (editForm.phone as string | null | undefined) ?? "";
+    if (telefone && !telefoneValido(telefone)) {
+      toast.error("Telefone inválido. Use DDD e número, por exemplo (11) 91234-5678.");
+      return;
+    }
     try {
-      await patchMutation.mutateAsync({ id: editRow.id, payload: editForm });
+      await patchMutation.mutateAsync({
+        id: editRow.id,
+        payload: { ...editForm, phone: somenteDigitos(telefone) },
+      });
       setEditRow(null);
     } catch (e: unknown) {
       toast.error(getApiErrorMessage(e, "Erro"));
@@ -825,11 +835,9 @@ export default function SuperadminClinicsPage() {
             </div>
             <div className="space-y-1">
               <Label>Telefone</Label>
-              <Input
+              <TelefoneInput
                 value={(editForm.phone as string) ?? ""}
-                onChange={(e) =>
-                  setEditForm((p) => ({ ...p, phone: e.target.value }))
-                }
+                onValueChange={(phone) => setEditForm((p) => ({ ...p, phone }))}
               />
             </div>
             <div className="space-y-1">

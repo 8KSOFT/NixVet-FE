@@ -6,6 +6,8 @@ import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
+import { TelefoneInput } from '@/components/telefone-input';
+import { exibirTelefone, somenteDigitos, telefoneValido } from '@/lib/telefone';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { DashboardCreateFormDialog } from '@/components/dashboard-create-form-dialog';
@@ -53,7 +55,7 @@ export function SuppliersTab() {
     setForm({
       name: supplier.name,
       contact_name: supplier.contact_name ?? '',
-      phone: supplier.phone ?? '',
+      phone: exibirTelefone(supplier.phone),
       email: supplier.email ?? '',
       notes: supplier.notes ?? '',
     });
@@ -67,10 +69,14 @@ export function SuppliersTab() {
       toast.error(t('settingsProdutos.suppliers.missingNameError'));
       return;
     }
+    if (form.phone && !telefoneValido(form.phone)) {
+      toast.error(t('telefone.invalido'));
+      return;
+    }
     const payload = {
       name: form.name.trim(),
       contact_name: form.contact_name.trim() || undefined,
-      phone: form.phone.trim() || undefined,
+      phone: somenteDigitos(form.phone) || undefined,
       email: form.email.trim() || undefined,
       notes: form.notes.trim() || undefined,
     };
@@ -204,10 +210,10 @@ export function SuppliersTab() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="supplier-phone">{t('settingsProdutos.suppliers.phoneLabel')}</Label>
-              <Input
+              <TelefoneInput
                 id="supplier-phone"
                 value={form.phone}
-                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                onValueChange={(phone) => setForm({ ...form, phone })}
               />
             </div>
           </div>
