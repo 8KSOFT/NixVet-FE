@@ -90,6 +90,10 @@ const eslintConfig = [
     ignores: [
       '.next/**',
       'out/**',
+      // Relatório de cobertura gerado por `npm run test:coverage`.
+      'coverage/**',
+      'playwright-report/**',
+      'test-results/**',
       'build/**',
       'next-env.d.ts',
       // Artefato de build commitado, não código nosso: sozinho respondia por

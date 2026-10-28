@@ -497,14 +497,27 @@ Nunca discutido com o usuário se entram no mesmo esforço: páginas públicas (
 
 `color-scheme: only light` (não só `light`) em `globals.css` e no `viewport` do `layout.tsx` — resolve o Chrome Android "force-dark" reescrevendo as cores do site em alguns aparelhos mesmo sem nenhuma regra `prefers-color-scheme` no nosso CSS.
 
-## Pendência: suíte de testes completa (pedido do usuário, 2026-10-28)
+## Suíte de testes do front (2026-10-28) — EM ANDAMENTO
 
-Vale para o NixVet e para o NixMed. Estado medido: o **front não tem runner nem nenhum teste** (só `tsc`,
-ESLint com teto de avisos e o `npm run smoke`); o NixVet-BE tem Jest (110 arquivos). A fazer: Vitest +
-Testing Library no front (libs puras, hooks, componentes críticos), Playwright para os fluxos de ponta a
-ponta (login, cadastro de tutor e paciente, agenda, prontuário, prescrição, balcão), cobertura medida no
-backend com piso que só sobe, e smoke pós-deploy. Plano detalhado em
-`NixMed-BE/docs/pendencias-nixmed.md`, seção "Suíte de testes completa".
+`npm test` roda o Vitest (jsdom + Testing Library, `vitest.config.mts`); `npm run test:coverage` mede e
+aplica o **piso de cobertura**, que só sobe (hoje: total 12%, `lib/` 94%). O CI tem o job `test`, que
+também bloqueia o deploy. Os testes ficam ao lado do código (`*.test.ts(x)`).
+
+- Cobertos: quase toda `lib/` (telefone, paginação, `problem`, interceptor do axios com renovação de
+  sessão e 402, CSP, planos, portão de sessão, matriz de permissões, analytics/consentimento),
+  `useBillingStatus`, `useUnreadNotificationsCount` (regressão do `NaN` de 25/08), `TelefoneInput`,
+  `ListPagination`, `EstadoErro` e a paridade dos 3 idiomas.
+- Playwright (`playwright.config.ts`) está instalado, **sem specs ainda neste repositório**: o NixMed-FE
+  tem `e2e/` pronto (login, paciente, varredura de rotas) para adaptar (aqui há tutor e paciente, e a
+  sessão usa `nixvet_*`).
+- **Armadilhas que custaram tempo**: `mockReset()` num `beforeEach` junto com mock que lança erro faz o
+  erro vazar para o teste (a config já usa `restoreMocks`); o login da API tem limite de 10/min e 60/h por
+  IP, então e2e faz um login só e reaproveita a sessão (`storageState`).
+- **Achados** (ver `NixMed-BE/docs/pendencias-nixmed.md`): `planMeetsRequirement('enterprise')` tratava o
+  plano como essencial (corrigido); o interceptor do axios nunca consegue pedir `problem+json` porque o
+  axios já preenche `Accept` (documentado em `axios.test.ts`, correção pendente).
+
+Plano completo (backend, mobile, CI) em `NixMed-BE/docs/pendencias-nixmed.md`, seção "Suíte de testes".
 
 ## Gotchas técnicos (aprendidos em sessões recentes — não redescobrir)
 

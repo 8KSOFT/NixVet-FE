@@ -89,10 +89,17 @@ export function planFullLabel(planId: string | null | undefined): string {
 export const PLAN_RANK: Record<PlanId, number> = { essencial: 1, clinica: 2, hospital: 3 };
 
 /**
+ * Plano Enterprise é manual, fora do catálogo, e o backend o trata como acesso total (rank 99).
+ * Sem este valor o front o tomava por "essencial" e mostrava bloqueio de upgrade para quem a API libera.
+ */
+const RANK_ENTERPRISE = 99;
+
+/**
  * Mesma regra do PlanGuard: tenant sem `billing_plan` definido (trial sem plano escolhido)
  * conta como 'essencial' para fins de checagem de recurso.
  */
 export function planMeetsRequirement(currentPlanId: string | null | undefined, requiredPlan: PlanId): boolean {
-  const currentRank = PLAN_RANK[(currentPlanId as PlanId) ?? 'essencial'] ?? PLAN_RANK.essencial;
+  const currentRank =
+    currentPlanId === 'enterprise' ? RANK_ENTERPRISE : (PLAN_RANK[(currentPlanId as PlanId) ?? 'essencial'] ?? PLAN_RANK.essencial);
   return currentRank >= PLAN_RANK[requiredPlan];
 }
