@@ -17,8 +17,11 @@
 
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, extname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const RAIZ = new URL('..', import.meta.url).pathname;
+// `new URL(...).pathname` devolve `/D:/pasta/` no Windows, e o `join` vira
+// `D:\D:\pasta`. `fileURLToPath` entende o drive.
+const RAIZ = fileURLToPath(new URL('..', import.meta.url));
 const EXTENSOES = new Set(['.ts', '.tsx', '.js', '.mjs']);
 const PADRAO = /process\.env\.(NEXT_PUBLIC_[A-Z0-9_]+)/g;
 

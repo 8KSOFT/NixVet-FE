@@ -10,8 +10,11 @@
  */
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const RAIZ = new URL('..', import.meta.url).pathname;
+// `new URL(...).pathname` devolve `/D:/pasta/` no Windows, e o `join` vira
+// `D:\D:\pasta`. `fileURLToPath` entende o drive.
+const RAIZ = fileURLToPath(new URL('..', import.meta.url));
 const APP = join(RAIZ, 'src/app/(app)');
 
 const pastas = readdirSync(APP)
