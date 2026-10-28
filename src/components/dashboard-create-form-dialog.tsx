@@ -41,7 +41,10 @@ export function DashboardCreateFormDialog({
           // lado a lado, tabela de itens) pedem um `contentClassName` maior
           // explicitamente — não inventar `containerClassName` pra encolher
           // por fora, isso só duplica a régua de largura em dois lugares.
-          'md:h-fit md:max-h-[90dvh] md:max-w-2xl md:rounded-2xl md:pb-0',
+          // O `!` é necessário: o DialogContent base traz `md:max-h-none md:overflow-visible` e, sem
+          // ele, esses ganham no CSS gerado e o formulário passa da tela sem rolagem (modal de 1057px
+          // numa janela de 720px, achado pelo e2e).
+          'md:h-fit md:max-h-[90dvh]! md:max-w-2xl md:overflow-hidden! md:rounded-2xl md:pb-0',
           contentClassName,
         )}
         onInteractOutside={preventOutsideClose ? (event) => event.preventDefault() : undefined}
