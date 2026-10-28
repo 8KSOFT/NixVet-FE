@@ -50,6 +50,21 @@ jobs:
       # consequência de um PR que passou.
       - run: npx eslint . --max-warnings=63
 
+  # Testes unitários e de componente (Vitest + Testing Library) com piso de
+  # cobertura em `vitest.config.mts`. O piso só sobe: ao cobrir mais, o PR
+  # aumenta o número junto.
+  test:
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run test:coverage
+
   build:
     if: "!contains(github.event.head_commit.message, '[skip ci]')"
     runs-on: ubuntu-latest
@@ -77,7 +92,7 @@ jobs:
   # segue fazendo o build; este job só a chama depois dos três checks.
   deploy:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main' && !contains(github.event.head_commit.message, '[skip ci]')
-    needs: [typecheck, lint, build]
+    needs: [typecheck, lint, test, build]
     runs-on: ubuntu-latest
     steps:
       - name: Disparar deploy na 8khost

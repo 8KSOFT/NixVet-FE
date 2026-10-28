@@ -65,3 +65,8 @@ next-env.d.ts
 .design-sync/.cache/
 .design-sync/learnings/
 .design-sync/node_modules
+
+# Playwright
+/test-results
+/playwright-report
+/e2e/.auth
