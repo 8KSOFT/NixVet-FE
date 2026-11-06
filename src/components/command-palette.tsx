@@ -70,28 +70,28 @@ export function CommandPalette({ open, onOpenChange, menuAllow }: CommandPalette
     <CommandDialog
       open={open}
       onOpenChange={onOpenChange}
-      title="Busca rápida"
-      description="Navegue, crie registros ou busque pacientes e responsáveis"
+      title={t("commandPalette.title")}
+      description={t("commandPalette.description")}
       className="sm:max-w-xl"
     >
       <CommandInput
-        placeholder="Buscar telas, ações ou registros..."
+        placeholder={t("commandPalette.placeholder")}
         value={rawQuery}
         onValueChange={setRawQuery}
       />
       <CommandList>
-        <CommandEmpty>Nada encontrado.</CommandEmpty>
+        <CommandEmpty>{t("commandPalette.empty")}</CommandEmpty>
 
         {quickCreateActions.length > 0 && (
-          <CommandGroup heading="Ações rápidas">
+          <CommandGroup heading={t("commandPalette.quickActions")}>
             {quickCreateActions.map((action) => (
               <CommandItem
                 key={action.key}
-                value={action.label}
+                value={t(action.labelKey)}
                 onSelect={() => goTo(action.href)}
               >
                 <action.icon />
-                <span>{action.label}</span>
+                <span>{t(action.labelKey)}</span>
               </CommandItem>
             ))}
           </CommandGroup>
@@ -99,7 +99,7 @@ export function CommandPalette({ open, onOpenChange, menuAllow }: CommandPalette
 
         <CommandSeparator />
 
-        <CommandGroup heading="Telas">
+        <CommandGroup heading={t("commandPalette.screens")}>
           {navItems.map((item) => (
             <CommandItem
               key={item.key}
@@ -115,7 +115,7 @@ export function CommandPalette({ open, onOpenChange, menuAllow }: CommandPalette
         {query && matchedPatients.length > 0 && (
           <>
             <CommandSeparator />
-            <CommandGroup heading="Pacientes">
+            <CommandGroup heading={t("commandPalette.patients")}>
               {matchedPatients.map((patient) => (
                 <CommandItem
                   key={patient.id}
@@ -135,7 +135,7 @@ export function CommandPalette({ open, onOpenChange, menuAllow }: CommandPalette
         {query && matchedTutors.length > 0 && (
           <>
             <CommandSeparator />
-            <CommandGroup heading="Responsáveis">
+            <CommandGroup heading={t("commandPalette.owners")}>
               {matchedTutors.map((owner) => (
                 <CommandItem
                   key={owner.id}

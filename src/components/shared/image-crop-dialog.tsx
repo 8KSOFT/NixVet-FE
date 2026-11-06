@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Loader2, Minus, Plus } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -36,6 +37,7 @@ export interface ImageCropDialogProps {
  * mandar a foto inteira e cortar só na exibição.
  */
 export function ImageCropDialog({ file, onCancel, onConfirm }: ImageCropDialogProps) {
+  const { t } = useTranslation();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [bitmap, setBitmap] = useState<ImageBitmap | null>(null);
   const [erro, setErro] = useState<string | null>(null);
@@ -74,10 +76,11 @@ export function ImageCropDialog({ file, onCancel, onConfirm }: ImageCropDialogPr
         });
       })
       .catch(() => {
-        if (!cancelado) setErro('Este formato não pode ser recortado no navegador.');
+        if (!cancelado) setErro(t('photo.cropUnsupported'));
       });
 
     return () => { cancelado = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `t` muda de identidade a cada idioma; o arquivo é o que reinicia o recorte
   }, [file]);
 
   /** Impede que sobre borda vazia dentro do quadrado. */
@@ -158,7 +161,7 @@ export function ImageCropDialog({ file, onCancel, onConfirm }: ImageCropDialogPr
       if (!blob) throw new Error('toBlob falhou');
       onConfirm({ blob, mimeType: 'image/jpeg' });
     } catch {
-      setErro('Não foi possível gerar o recorte.');
+      setErro(t('photo.cropFailed'));
     } finally {
       setSalvando(false);
     }
@@ -168,9 +171,9 @@ export function ImageCropDialog({ file, onCancel, onConfirm }: ImageCropDialogPr
     <Dialog open={!!file} onOpenChange={(o) => { if (!o) onCancel(); }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Ajustar foto</DialogTitle>
+          <DialogTitle>{t('photo.adjust')}</DialogTitle>
           <DialogDescription>
-            Arraste para posicionar e use o zoom. O que estiver dentro do círculo será salvo.
+            {t('photo.adjustHint')}
           </DialogDescription>
         </DialogHeader>
 
@@ -215,7 +218,7 @@ export function ImageCropDialog({ file, onCancel, onConfirm }: ImageCropDialogPr
                 type="range" min={1} max={MAX_ZOOM} step={0.01} value={zoom}
                 onChange={(e) => aplicarZoom(Number(e.target.value))}
                 disabled={!bitmap}
-                aria-label="Zoom"
+                aria-label={t('photo.zoom')}
                 className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-muted accent-primary"
               />
               <Button type="button" variant="ghost" size="icon" className="size-8 shrink-0"
@@ -228,11 +231,11 @@ export function ImageCropDialog({ file, onCancel, onConfirm }: ImageCropDialogPr
 
         <DialogFooter>
           <Button type="button" variant="outline" onClick={onCancel} disabled={salvando}>
-            Cancelar
+            {t('photo.cancel')}
           </Button>
           <Button type="button" onClick={confirmar} disabled={!bitmap || salvando || !!erro}>
             {salvando && <Loader2 className="mr-1 size-4 animate-spin" />}
-            Salvar foto
+            {t('photo.save')}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -25,6 +25,7 @@ import {
   Bot,
   CreditCard,
 } from 'lucide-react';
+import { Trans, useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -83,37 +84,32 @@ function slugify(value: string) {
 // ─── Features list ────────────────────────────────────────────────────────────
 
 const FEATURES = [
-  { icon: Stethoscope, text: 'Prontuário eletrônico completo' },
-  { icon: Calendar, text: 'Agenda e lembretes automáticos' },
-  { icon: MessageSquare, text: 'WhatsApp integrado' },
-  { icon: Bot, text: 'IA clínica e chatbot inteligente' },
+  { icon: Stethoscope, key: 'records' },
+  { icon: Calendar, key: 'agenda' },
+  { icon: MessageSquare, key: 'whatsapp' },
+  { icon: Bot, key: 'ai' },
 ];
 
 // ─── Sugestões de tipo de atendimento (mesmo conjunto do antigo seed) ─────────
 
 interface AppointmentTypeDraft {
-  name: string;
+  /** Chave de tradução (`register.types.<key>`); o nome gravado sai do idioma ativo. */
+  key: string;
   duration_minutes: number;
   checked: boolean;
 }
 
 const DEFAULT_APPOINTMENT_TYPES: AppointmentTypeDraft[] = [
-  { name: 'Consulta Clínica', duration_minutes: 30, checked: true },
-  { name: 'Retorno', duration_minutes: 20, checked: true },
-  { name: 'Vacinação', duration_minutes: 15, checked: true },
-  { name: 'Curativo', duration_minutes: 20, checked: true },
-  { name: 'Avaliação Pré-cirúrgica', duration_minutes: 30, checked: true },
+  { key: 'consulta', duration_minutes: 30, checked: true },
+  { key: 'retorno', duration_minutes: 20, checked: true },
+  { key: 'vacinacao', duration_minutes: 15, checked: true },
+  { key: 'curativo', duration_minutes: 20, checked: true },
+  { key: 'preCirurgica', duration_minutes: 30, checked: true },
 ];
 
 // ─── Tela de transição final (build "inteligente" da plataforma) ─────────────
 
-const TRANSITION_MESSAGES = [
-  'Configurando sua clínica...',
-  'Organizando a agenda...',
-  'Cadastrando os tipos de atendimento...',
-  'Ativando WhatsApp e IA clínica...',
-  'Preparando seu painel...',
-];
+const TRANSITION_MESSAGES = ['m0', 'm1', 'm2', 'm3', 'm4'] as const;
 
 const TRANSITION_STEP_MS = 750;
 
@@ -124,6 +120,7 @@ const TRANSITION_STEP_MS = 750;
  * quando a sequência visual termina (o cadastro em si já rodou em paralelo).
  */
 function OnboardingTransition({ onDone }: { onDone: () => void }) {
+  const { t } = useTranslation();
   const [msgIndex, setMsgIndex] = useState(0);
   const [phase, setPhase] = useState<'building' | 'reveal'>('building');
 
@@ -152,7 +149,7 @@ function OnboardingTransition({ onDone }: { onDone: () => void }) {
             <Building2 className="size-8" strokeWidth={1.75} />
           </div>
           <p className="mt-6 text-lg font-bold" aria-live="polite">
-            {TRANSITION_MESSAGES[msgIndex]}
+            {t(`register.transition.${TRANSITION_MESSAGES[msgIndex]}`)}
           </p>
           <div className="mt-6 h-1.5 w-64 max-w-full overflow-hidden rounded-full bg-white/20">
             <div
@@ -169,8 +166,8 @@ function OnboardingTransition({ onDone }: { onDone: () => void }) {
           <div className="flex size-18 items-center justify-center rounded-full bg-white/12">
             <CheckCircle2 className="size-9" strokeWidth={1.75} />
           </div>
-          <p className="text-2xl font-extrabold">Pronto!</p>
-          <p className="text-sm text-white/80">Sua plataforma está pronta.</p>
+          <p className="text-2xl font-extrabold">{t('register.transition.ready')}</p>
+          <p className="text-sm text-white/80">{t('register.transition.platformReady')}</p>
         </div>
       )}
     </div>
@@ -180,7 +177,7 @@ function OnboardingTransition({ onDone }: { onDone: () => void }) {
 // ─── Primitivos de UI que faltavam (seguindo os tokens wa-* já usados no
 // resto do app — ver design_handoff_whatsapp_inbox) ───────────────────────────
 
-const STEP_LABELS = ['Clínica', 'Responsável', 'Fiscal', 'Horário', 'Atendimentos', 'Pronto'];
+const STEP_KEYS = ['clinic', 'admin', 'fiscal', 'hours', 'types', 'done'] as const;
 
 /**
  * Nome de cada etapa no relatório — separado de STEP_LABELS de propósito.
@@ -200,15 +197,16 @@ const ONBOARDING_STEP_NAMES: Record<number, string> = {
 /** Stepper de progresso: círculos numerados + linha de conexão que preenche
  * conforme as etapas são concluídas, com anel de destaque na etapa ativa. */
 function Stepper({ current }: { current: number }) {
+  const { t } = useTranslation();
   return (
     <div className="mb-9 flex items-start">
-      {STEP_LABELS.map((label, idx) => {
+      {STEP_KEYS.map((stepKey, idx) => {
         const s = idx + 1;
         const done = s < current;
         const active = s === current;
         return (
-          <div key={label} className="relative flex flex-1 flex-col items-center gap-[7px]">
-            {idx < STEP_LABELS.length - 1 && (
+          <div key={stepKey} className="relative flex flex-1 flex-col items-center gap-[7px]">
+            {idx < STEP_KEYS.length - 1 && (
               <div
                 className={cn(
                   'absolute top-[15px] left-[calc(50%+15px)] -z-10 h-0.5 w-[calc(100%-30px)] transition-colors',
@@ -233,7 +231,7 @@ function Stepper({ current }: { current: number }) {
                 done || active ? 'text-wa-brand-700' : 'text-wa-ink-3',
               )}
             >
-              {label}
+              {t(`register.steps.${stepKey}`)}
             </span>
           </div>
         );
@@ -301,6 +299,7 @@ interface RegisterResponse {
 }
 
 export default function RegisterClient() {
+  const { t } = useTranslation();
   const router = useRouter();
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [step, setStep] = useState(1);
@@ -399,23 +398,23 @@ export default function RegisterClient() {
   };
 
   const validateStep1 = () => {
-    if (!clinicName.trim()) { toast.error('Informe o nome da clínica.'); return false; }
-    if (!clinicCode.trim() || clinicCode.length < 3) { toast.error('Código deve ter ao menos 3 caracteres.'); return false; }
+    if (!clinicName.trim()) { toast.error(t('register.validation.clinicName')); return false; }
+    if (!clinicCode.trim() || clinicCode.length < 3) { toast.error(t('register.validation.codeMin')); return false; }
     return true;
   };
 
   const validateStep2 = () => {
-    if (!adminName.trim()) { toast.error('Informe o nome do responsável.'); return false; }
-    if (!adminEmail.trim() || !adminEmail.includes('@')) { toast.error('E-mail inválido.'); return false; }
-    if (adminPassword.length < 8) { toast.error('Senha deve ter ao menos 8 caracteres.'); return false; }
-    if (adminPassword !== confirmPassword) { toast.error('Senhas não conferem.'); return false; }
+    if (!adminName.trim()) { toast.error(t('register.validation.adminName')); return false; }
+    if (!adminEmail.trim() || !adminEmail.includes('@')) { toast.error(t('register.validation.emailInvalid')); return false; }
+    if (adminPassword.length < 8) { toast.error(t('register.validation.passwordMin')); return false; }
+    if (adminPassword !== confirmPassword) { toast.error(t('register.validation.mismatch')); return false; }
     return true;
   };
 
   /** Pede o código para o número digitado. */
   const sendPhoneCode = async () => {
     if (!isCelular(phone)) {
-      toast.error('Informe um celular com DDD. Telefone fixo não recebe o código.');
+      toast.error(t('register.validation.mobileForCode'));
       return;
     }
     setPhoneBusy(true);
@@ -425,13 +424,9 @@ export default function RegisterClient() {
       });
       setPhoneCodeSent(true);
       setPhoneCode('');
-      toast.success(
-        data?.channel === 'sms'
-          ? 'Código enviado por SMS.'
-          : 'Código enviado pelo WhatsApp.',
-      );
+      toast.success(data?.channel === 'sms' ? t('register.phone.sentSms') : t('register.phone.sentWhatsapp'));
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, 'Não foi possível enviar o código. Tente novamente.'));
+      toast.error(getApiErrorMessage(error, t('register.phone.sendFail')));
     } finally {
       setPhoneBusy(false);
     }
@@ -445,9 +440,9 @@ export default function RegisterClient() {
         code: phoneCode.trim(),
       });
       setVerifiedPhone(phone.replace(/\D/g, ''));
-      toast.success('WhatsApp confirmado.');
+      toast.success(t('register.phone.confirmed'));
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, 'Código incorreto.'));
+      toast.error(getApiErrorMessage(error, t('register.phone.wrongCode')));
     } finally {
       setPhoneBusy(false);
     }
@@ -456,15 +451,15 @@ export default function RegisterClient() {
   const validateStep3 = () => {
     const digits = cpfCnpj.replace(/\D/g, '');
     if (digits.length !== 11 && digits.length !== 14) {
-      toast.error('Informe um CPF ou CNPJ válido.');
+      toast.error(t('register.validation.cpfCnpj'));
       return false;
     }
     if (!isCelular(phone)) {
-      toast.error('Informe o WhatsApp do responsável com DDD. Telefone fixo não recebe os avisos.');
+      toast.error(t('register.validation.whatsappRequired'));
       return false;
     }
     if (phoneOtpRequired && !phoneVerified) {
-      toast.error('Confirme o código enviado para o seu WhatsApp.');
+      toast.error(t('register.validation.confirmCode'));
       return false;
     }
     return true;
@@ -472,7 +467,7 @@ export default function RegisterClient() {
 
   const validateStep4 = () => {
     if (!weekdayOpen || !weekdayClose) {
-      toast.error('Informe o horário de segunda a sexta.');
+      toast.error(t('register.validation.weekdayHours'));
       return false;
     }
     return true;
@@ -493,7 +488,7 @@ export default function RegisterClient() {
 
   const validateStep5 = () => {
     if (appointmentTypes.filter((t) => t.checked).length === 0) {
-      toast.error('Selecione ao menos um tipo de atendimento.');
+      toast.error(t('register.validation.selectType'));
       return false;
     }
     return true;
@@ -579,7 +574,7 @@ export default function RegisterClient() {
             gaClientId: readGaClientId() ?? undefined,
           }));
         } catch (error: unknown) {
-          const msg = getApiErrorMessage(error, 'Erro ao criar conta. Tente novamente.');
+          const msg = getApiErrorMessage(error, t('register.errors.createAccount'));
           toast.error(msg);
           setStep(guessRegisterErrorStep(msg));
           return;
@@ -588,7 +583,7 @@ export default function RegisterClient() {
         // O interceptor já desembrulhou o envelope { success, message, data }.
         const { user, tenantCode, tenantId } = data ?? {};
         if (!user) {
-          toast.error('Conta criada, mas não foi possível entrar automaticamente. Faça login.');
+          toast.error(t('register.errors.autoLogin'));
           router.push(`/login?code=${clinicCode}`);
           return;
         }
@@ -610,8 +605,10 @@ export default function RegisterClient() {
       if (!validateStep4()) { setStep(4); return; }
       if (!validateStep5()) { setStep(5); return; }
 
-      const selected = appointmentTypes.filter((t) => t.checked);
-      const typesToCreate = selected.filter((t) => !createdTypeNames.has(t.name));
+      const selected = appointmentTypes
+        .filter((ty) => ty.checked)
+        .map((ty) => ({ ...ty, name: t(`register.types.${ty.key}`) }));
+      const typesToCreate = selected.filter((ty) => !createdTypeNames.has(ty.name));
 
       // allSettled (não all) de propósito: se um tipo falhar no meio, os que
       // já foram criados não podem ser recriados numa nova tentativa — o
@@ -639,10 +636,10 @@ export default function RegisterClient() {
           is_closed: !worksSunday,
           is_24h: false,
         }),
-        ...typesToCreate.map((t) =>
+        ...typesToCreate.map((ty) =>
           createAppointmentType
-            .mutateAsync({ name: t.name, duration_minutes: t.duration_minutes })
-            .then(() => t.name),
+            .mutateAsync({ name: ty.name, duration_minutes: ty.duration_minutes })
+            .then(() => ty.name),
         ),
       ]);
 
@@ -655,12 +652,12 @@ export default function RegisterClient() {
       }
 
       if ([hoursWeekday, hoursSaturday, hoursSunday].some((r) => r.status === 'rejected')) {
-        toast.error('Não foi possível salvar o horário de funcionamento. Tente novamente.');
+        toast.error(t('register.errors.hoursSave'));
         setStep(4);
         return;
       }
       if (typeResults.some((r) => r.status === 'rejected')) {
-        toast.error('Não foi possível salvar um dos tipos de atendimento. Tente novamente.');
+        toast.error(t('register.errors.typeSave'));
         setStep(5);
         return;
       }
@@ -681,7 +678,7 @@ export default function RegisterClient() {
 
       setTransitioning(true);
     } catch {
-      toast.error('Não foi possível concluir o cadastro. Tente novamente.');
+      toast.error(t('register.errors.finish'));
     } finally {
       setLoading(false);
     }
@@ -724,37 +721,37 @@ export default function RegisterClient() {
               <div className="mb-3 w-fit brightness-0 invert">
                 <LogoColored width="170px" height="36px" />
               </div>
-              <div className="text-[13.5px] text-white/75">Software de Gestão Veterinária</div>
+              <div className="text-[13.5px] text-white/75">{t('register.left.tagline')}</div>
             </div>
 
             <div className="mt-auto">
               <div className="mb-4.5 inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-white/15 px-3 py-1.25 text-xs font-semibold">
                 <Check className="size-3.25" strokeWidth={3} />
-                14 dias grátis, sem cartão
+                {t('register.left.badge')}
               </div>
               <h1 className="text-[32px] font-extrabold leading-[1.15] tracking-[-0.02em]">
-                Configure sua clínica em minutos
+                {t('register.left.title')}
               </h1>
               <p className="mt-3 max-w-75 text-[14.5px] leading-relaxed text-white/80">
-                Tudo que sua clínica precisa em um só lugar. Comece a atender ainda hoje.
+                {t('register.left.text')}
               </p>
 
               <ul className="mt-7 flex flex-col gap-3.5">
-                {FEATURES.map(({ icon: Icon, text }) => (
-                  <li key={text} className="flex items-center gap-3 text-sm font-medium">
+                {FEATURES.map(({ icon: Icon, key }) => (
+                  <li key={key} className="flex items-center gap-3 text-sm font-medium">
                     <div className="flex size-8 shrink-0 items-center justify-center rounded-[9px] bg-white/16">
                       <Icon className="size-4" />
                     </div>
-                    {text}
+                    {t(`register.features.${key}`)}
                   </li>
                 ))}
               </ul>
             </div>
 
             <p className="mt-8 text-[13px] text-white/75">
-              Já tem conta?{' '}
+              {t('register.left.haveAccount')}{' '}
               <Link href="/login" className="font-bold text-white underline underline-offset-2">
-                Fazer login
+                {t('register.left.login')}
               </Link>
             </p>
           </div>
@@ -767,7 +764,7 @@ export default function RegisterClient() {
             {showLoadingGate ? (
               <div className="flex flex-1 flex-col items-center justify-center gap-3 text-wa-ink-3">
                 <Loader2 className="size-6 animate-spin" />
-                <p className="text-sm">Carregando...</p>
+                <p className="text-sm">{t('register.loading')}</p>
               </div>
             ) : (
               <>
@@ -776,32 +773,32 @@ export default function RegisterClient() {
                 {/* ── Step 1: Clínica ── */}
                 {step === 1 && (
                   <div className="flex flex-1 flex-col">
-                    <h2 className="text-[23px] font-extrabold tracking-[-0.01em] text-wa-ink">Dados da clínica</h2>
-                    <p className="mt-1.5 text-sm leading-normal text-wa-ink-2">Como sua clínica aparecerá no sistema.</p>
+                    <h2 className="text-[23px] font-extrabold tracking-[-0.01em] text-wa-ink">{t('register.step1.title')}</h2>
+                    <p className="mt-1.5 text-sm leading-normal text-wa-ink-2">{t('register.step1.subtitle')}</p>
 
                     <div className="mt-7 flex flex-col gap-5">
                       <div>
-                        <FieldLabel htmlFor="clinicName" required>Nome da clínica</FieldLabel>
+                        <FieldLabel htmlFor="clinicName" required>{t('register.step1.name')}</FieldLabel>
                         <IconInput
                           id="clinicName"
                           icon={<Building2 />}
-                          placeholder="Ex: Clínica Vet São Francisco"
+                          placeholder={t('register.step1.namePlaceholder')}
                           value={clinicName}
                           onChange={(e) => handleClinicNameChange(e.target.value)}
                         />
                       </div>
 
                       <div>
-                        <FieldLabel htmlFor="clinicCode" required optional="(usado no login)">Código de acesso</FieldLabel>
+                        <FieldLabel htmlFor="clinicCode" required optional={t('register.step1.codeHint')}>{t('register.step1.code')}</FieldLabel>
                         <IconInput
                           id="clinicCode"
                           icon={<span className="text-sm font-semibold">@</span>}
                           className="font-mono"
-                          placeholder="saofrancisco"
+                          placeholder={t('register.step1.codePlaceholder')}
                           value={clinicCode}
                           onChange={(e) => handleCodeChange(e.target.value)}
                         />
-                        <p className="mt-1.5 text-xs text-wa-ink-3">Apenas letras minúsculas e números, sem espaços.</p>
+                        <p className="mt-1.5 text-xs text-wa-ink-3">{t('register.step1.codeRule')}</p>
                       </div>
                     </div>
 
@@ -810,7 +807,7 @@ export default function RegisterClient() {
                         className="flex-1 gap-1.5 rounded-wa text-[14.5px] font-bold shadow-[0_8px_18px_-6px_rgba(18,179,127,0.45)]"
                         onClick={concluirEtapa(1, validateStep1)}
                       >
-                        Continuar <ChevronRight className="size-3.75" strokeWidth={2.5} />
+                        {t('register.continue')} <ChevronRight className="size-3.75" strokeWidth={2.5} />
                       </Button>
                     </div>
                   </div>
@@ -819,52 +816,52 @@ export default function RegisterClient() {
                 {/* ── Step 2: Responsável ── */}
                 {step === 2 && (
                   <div className="flex flex-1 flex-col">
-                    <h2 className="text-[23px] font-extrabold tracking-[-0.01em] text-wa-ink">Dados do responsável</h2>
-                    <p className="mt-1.5 text-sm leading-normal text-wa-ink-2">Será a conta administradora da clínica.</p>
+                    <h2 className="text-[23px] font-extrabold tracking-[-0.01em] text-wa-ink">{t('register.step2.title')}</h2>
+                    <p className="mt-1.5 text-sm leading-normal text-wa-ink-2">{t('register.step2.subtitle')}</p>
 
                     <div className="mt-7 flex flex-col gap-5">
                       <div>
-                        <FieldLabel htmlFor="adminName" required>Nome completo</FieldLabel>
+                        <FieldLabel htmlFor="adminName" required>{t('register.step2.fullName')}</FieldLabel>
                         <IconInput
                           id="adminName"
                           icon={<User />}
-                          placeholder="Dr. João Silva"
+                          placeholder={t('register.step2.namePlaceholder')}
                           value={adminName}
                           onChange={(e) => setAdminName(e.target.value)}
                         />
                       </div>
 
                       <div>
-                        <FieldLabel htmlFor="adminEmail" required>E-mail</FieldLabel>
+                        <FieldLabel htmlFor="adminEmail" required>{t('register.step2.email')}</FieldLabel>
                         <IconInput
                           id="adminEmail"
                           type="email"
                           icon={<Mail />}
-                          placeholder="joao@clinica.com.br"
+                          placeholder={t('register.step2.emailPlaceholder')}
                           value={adminEmail}
                           onChange={(e) => setAdminEmail(e.target.value)}
                         />
                       </div>
 
                       <div>
-                        <FieldLabel htmlFor="adminPassword" required>Senha</FieldLabel>
+                        <FieldLabel htmlFor="adminPassword" required>{t('register.step2.password')}</FieldLabel>
                         <IconInput
                           id="adminPassword"
                           type="password"
                           icon={<Lock />}
-                          placeholder="Mínimo 8 caracteres"
+                          placeholder={t('register.step2.passwordPlaceholder')}
                           value={adminPassword}
                           onChange={(e) => setAdminPassword(e.target.value)}
                         />
                       </div>
 
                       <div>
-                        <FieldLabel htmlFor="confirmPassword" required>Confirmar senha</FieldLabel>
+                        <FieldLabel htmlFor="confirmPassword" required>{t('register.step2.confirm')}</FieldLabel>
                         <IconInput
                           id="confirmPassword"
                           type="password"
                           icon={<Lock />}
-                          placeholder="Repita a senha"
+                          placeholder={t('register.step2.confirmPlaceholder')}
                           value={confirmPassword}
                           onChange={(e) => setConfirmPassword(e.target.value)}
                         />
@@ -877,13 +874,13 @@ export default function RegisterClient() {
                         className="flex-1 gap-1.5 rounded-wa border-[1.5px] border-wa-line text-[14.5px] font-bold text-wa-ink"
                         onClick={() => setStep(1)}
                       >
-                        <ChevronLeft className="size-3.75" strokeWidth={2.5} /> Voltar
+                        <ChevronLeft className="size-3.75" strokeWidth={2.5} /> {t('register.back')}
                       </Button>
                       <Button
                         className="flex-1 gap-1.5 rounded-wa text-[14.5px] font-bold shadow-[0_8px_18px_-6px_rgba(18,179,127,0.45)]"
                         onClick={concluirEtapa(2, validateStep2)}
                       >
-                        Continuar <ChevronRight className="size-3.75" strokeWidth={2.5} />
+                        {t('register.continue')} <ChevronRight className="size-3.75" strokeWidth={2.5} />
                       </Button>
                     </div>
                   </div>
@@ -892,26 +889,26 @@ export default function RegisterClient() {
                 {/* ── Step 3: Dados fiscais ── */}
                 {step === 3 && (
                   <div className="flex flex-1 flex-col">
-                    <h2 className="text-[23px] font-extrabold tracking-[-0.01em] text-wa-ink">Dados fiscais</h2>
+                    <h2 className="text-[23px] font-extrabold tracking-[-0.01em] text-wa-ink">{t('register.step3.title')}</h2>
                     <p className="mt-1.5 text-sm leading-normal text-wa-ink-2">
-                      Usado para emissão de NFS-e quando você contratar um plano, e para liberar seus 14 dias grátis.
+                      {t('register.step3.subtitle')}
                     </p>
 
                     <div className="mt-7 flex flex-col gap-5">
                       <div>
-                        <FieldLabel htmlFor="cpfCnpj" required>CPF ou CNPJ</FieldLabel>
+                        <FieldLabel htmlFor="cpfCnpj" required>{t('register.step3.cpfCnpj')}</FieldLabel>
                         <IconInput
                           id="cpfCnpj"
                           icon={<FileText />}
-                          placeholder="000.000.000-00 ou 00.000.000/0001-00"
+                          placeholder={t('register.step3.cpfPlaceholder')}
                           value={cpfCnpj}
                           onChange={(e) => setCpfCnpj(formatCpfCnpj(e.target.value))}
                         />
-                        <p className="mt-1.5 text-xs text-wa-ink-3">Cada CPF/CNPJ só pode ter um período de teste gratuito.</p>
+                        <p className="mt-1.5 text-xs text-wa-ink-3">{t('register.step3.cpfHint')}</p>
                       </div>
 
                       <div>
-                        <FieldLabel htmlFor="phone" required>WhatsApp do responsável</FieldLabel>
+                        <FieldLabel htmlFor="phone" required>{t('register.step3.whatsapp')}</FieldLabel>
                         <div className="flex gap-2">
                           <div className="flex-1">
                             <IconInput
@@ -935,22 +932,21 @@ export default function RegisterClient() {
                               {phoneBusy ? (
                                 <Loader2 className="size-4 animate-spin" />
                               ) : phoneCodeSent ? (
-                                'Reenviar'
+                                t('register.step3.resend')
                               ) : (
-                                'Enviar código'
+                                t('register.step3.sendCode')
                               )}
                             </Button>
                           )}
                         </div>
 
                         <p className="mt-1.5 text-xs text-wa-ink-3">
-                          É por aqui que avisamos sobre pagamento e vencimento da assinatura.
-                          Precisa ser um celular — fixo não recebe WhatsApp.
+                          {t('register.step3.whatsappHint')}
                         </p>
 
                         {phoneOtpRequired && phoneVerified && (
                           <p className="mt-2 flex items-center gap-1.5 text-xs font-semibold text-wa-brand-600">
-                            <CheckCircle2 className="size-3.75" /> WhatsApp confirmado.
+                            <CheckCircle2 className="size-3.75" /> {t('register.phone.confirmed')}
                           </p>
                         )}
 
@@ -960,7 +956,7 @@ export default function RegisterClient() {
                               <IconInput
                                 id="phoneCode"
                                 icon={<MessageSquare />}
-                                placeholder="Código de 6 dígitos"
+                                placeholder={t('register.step3.codePlaceholder')}
                                 inputMode="numeric"
                                 value={phoneCode}
                                 onChange={(e) =>
@@ -973,7 +969,7 @@ export default function RegisterClient() {
                               disabled={phoneBusy || phoneCode.length !== 6}
                               onClick={confirmPhoneCode}
                             >
-                              {phoneBusy ? <Loader2 className="size-4 animate-spin" /> : 'Confirmar'}
+                              {phoneBusy ? <Loader2 className="size-4 animate-spin" /> : t('register.step3.confirmBtn')}
                             </Button>
                           </div>
                         )}
@@ -986,21 +982,24 @@ export default function RegisterClient() {
                         className="flex-1 gap-1.5 rounded-wa border-[1.5px] border-wa-line text-[14.5px] font-bold text-wa-ink"
                         onClick={() => setStep(2)}
                       >
-                        <ChevronLeft className="size-3.75" strokeWidth={2.5} /> Voltar
+                        <ChevronLeft className="size-3.75" strokeWidth={2.5} /> {t('register.back')}
                       </Button>
                       <Button
                         className="flex-1 gap-1.5 rounded-wa text-[14.5px] font-bold shadow-[0_8px_18px_-6px_rgba(18,179,127,0.45)]"
                         onClick={concluirEtapa(3, validateStep3)}
                       >
-                        Continuar <ChevronRight className="size-3.75" strokeWidth={2.5} />
+                        {t('register.continue')} <ChevronRight className="size-3.75" strokeWidth={2.5} />
                       </Button>
                     </div>
 
                     <p className="mt-4 max-w-115 text-xs leading-relaxed text-wa-ink-3">
-                      Ao criar sua conta você concorda com os{' '}
-                      <span className="font-semibold text-wa-brand-600 underline cursor-pointer">Termos de Uso</span>
-                      {' '}e{' '}
-                      <span className="font-semibold text-wa-brand-600 underline cursor-pointer">Política de Privacidade</span>.
+                      <Trans
+                        i18nKey="register.step3.terms"
+                        components={{
+                          terms: <span className="font-semibold text-wa-brand-600 underline cursor-pointer" />,
+                          privacy: <span className="font-semibold text-wa-brand-600 underline cursor-pointer" />,
+                        }}
+                      />
                     </p>
                   </div>
                 )}
@@ -1008,16 +1007,16 @@ export default function RegisterClient() {
                 {/* ── Step 4: Horário de funcionamento ── */}
                 {step === 4 && (
                   <div className="flex flex-1 flex-col">
-                    <h2 className="text-[23px] font-extrabold tracking-[-0.01em] text-wa-ink">Horário de funcionamento</h2>
+                    <h2 className="text-[23px] font-extrabold tracking-[-0.01em] text-wa-ink">{t('register.step4.title')}</h2>
                     <p className="mt-1.5 text-sm leading-normal text-wa-ink-2">
-                      Sem isso, ninguém consegue marcar consulta: a agenda fica vazia. Dá pra ajustar depois em Configurações.
+                      {t('register.step4.subtitle')}
                     </p>
 
                     <div className="mt-7 flex flex-col gap-5">
                       <div className="rounded-wa border-[1.5px] border-wa-line bg-[#fbfcfb] px-4 py-3.5">
                         <div className="flex items-center gap-2 text-sm font-semibold text-wa-ink">
                           <Clock className="size-4 shrink-0 text-wa-brand-600" />
-                          Segunda a sexta
+                          {t('register.step4.weekdays')}
                         </div>
                         <div className="mt-3 flex items-center gap-2 text-[13.5px] text-wa-ink-2">
                           <Input
@@ -1026,7 +1025,7 @@ export default function RegisterClient() {
                             onChange={(e) => setWeekdayOpen(e.target.value)}
                             className="h-9 min-h-9 w-full min-w-0 flex-1 rounded-[7px] border-wa-line bg-white px-2.5 py-1.5 text-[13.5px] text-wa-ink shadow-none sm:h-9"
                           />
-                          <span className="shrink-0">até</span>
+                          <span className="shrink-0">{t('register.step4.until')}</span>
                           <Input
                             type="time"
                             value={weekdayClose}
@@ -1043,7 +1042,7 @@ export default function RegisterClient() {
                         )}
                       >
                         <div className="flex items-center justify-between">
-                          <span className="text-sm font-semibold text-wa-ink">Abre aos sábados</span>
+                          <span className="text-sm font-semibold text-wa-ink">{t('register.step4.saturday')}</span>
                           <Switch checked={worksSaturday} onCheckedChange={(v) => setWorksSaturday(v === true)} />
                         </div>
                         {worksSaturday && (
@@ -1054,7 +1053,7 @@ export default function RegisterClient() {
                               onChange={(e) => setSaturdayOpen(e.target.value)}
                               className="h-9 min-h-9 w-full min-w-0 flex-1 rounded-[7px] border-wa-line bg-white px-2.5 py-1.5 text-[13.5px] text-wa-ink shadow-none sm:h-9"
                             />
-                            <span className="shrink-0">até</span>
+                            <span className="shrink-0">{t('register.step4.until')}</span>
                             <Input
                               type="time"
                               value={saturdayClose}
@@ -1072,7 +1071,7 @@ export default function RegisterClient() {
                         )}
                       >
                         <div className="flex items-center justify-between">
-                          <span className="text-sm font-semibold text-wa-ink">Abre aos domingos</span>
+                          <span className="text-sm font-semibold text-wa-ink">{t('register.step4.sunday')}</span>
                           <Switch checked={worksSunday} onCheckedChange={(v) => setWorksSunday(v === true)} />
                         </div>
                         {worksSunday && (
@@ -1083,7 +1082,7 @@ export default function RegisterClient() {
                               onChange={(e) => setSundayOpen(e.target.value)}
                               className="h-9 min-h-9 w-full min-w-0 flex-1 rounded-[7px] border-wa-line bg-white px-2.5 py-1.5 text-[13.5px] text-wa-ink shadow-none sm:h-9"
                             />
-                            <span className="shrink-0">até</span>
+                            <span className="shrink-0">{t('register.step4.until')}</span>
                             <Input
                               type="time"
                               value={sundayClose}
@@ -1102,14 +1101,14 @@ export default function RegisterClient() {
                           className="flex-1 gap-1.5 rounded-wa border-[1.5px] border-wa-line text-[14.5px] font-bold text-wa-ink"
                           onClick={() => setStep(3)}
                         >
-                          <ChevronLeft className="size-3.75" strokeWidth={2.5} /> Voltar
+                          <ChevronLeft className="size-3.75" strokeWidth={2.5} /> {t('register.back')}
                         </Button>
                       )}
                       <Button
                         className="flex-1 gap-1.5 rounded-wa text-[14.5px] font-bold shadow-[0_8px_18px_-6px_rgba(18,179,127,0.45)]"
                         onClick={concluirEtapa(4, validateStep4)}
                       >
-                        Continuar <ChevronRight className="size-3.75" strokeWidth={2.5} />
+                        {t('register.continue')} <ChevronRight className="size-3.75" strokeWidth={2.5} />
                       </Button>
                     </div>
                   </div>
@@ -1118,29 +1117,29 @@ export default function RegisterClient() {
                 {/* ── Step 5: Tipos de atendimento ── */}
                 {step === 5 && (
                   <div className="flex flex-1 flex-col">
-                    <h2 className="text-[23px] font-extrabold tracking-[-0.01em] text-wa-ink">Tipos de atendimento</h2>
+                    <h2 className="text-[23px] font-extrabold tracking-[-0.01em] text-wa-ink">{t('register.step5.title')}</h2>
                     <p className="mt-1.5 text-sm leading-normal text-wa-ink-2">
-                      A &ldquo;lista&rdquo; de serviços que aparece na hora de marcar consulta. Já sugerimos os mais comuns. Pode ajustar depois.
+                      {t('register.step5.subtitle')}
                     </p>
 
                     <div className="mt-7 flex flex-col gap-2.5">
-                      {appointmentTypes.map((t, i) => (
+                      {appointmentTypes.map((ty, i) => (
                         <div
-                          key={t.name}
+                          key={ty.key}
                           className="flex items-center gap-3 rounded-wa border-[1.5px] border-wa-line bg-[#fbfcfb] px-4 py-3"
                         >
-                          <Checkbox checked={t.checked} onCheckedChange={() => toggleAppointmentType(i)} />
-                          <span className="flex-1 text-sm font-semibold text-wa-ink">{t.name}</span>
+                          <Checkbox checked={ty.checked} onCheckedChange={() => toggleAppointmentType(i)} />
+                          <span className="flex-1 text-sm font-semibold text-wa-ink">{t(`register.types.${ty.key}`)}</span>
                           <Input
                             type="number"
                             min={5}
                             step={5}
-                            value={t.duration_minutes}
-                            disabled={!t.checked}
+                            value={ty.duration_minutes}
+                            disabled={!ty.checked}
                             onChange={(e) => updateAppointmentTypeDuration(i, e.target.value)}
                             className="h-9 w-13.5 min-h-9 rounded-[7px] border-wa-line bg-white px-2.5 py-1.5 text-center text-[13.5px] text-wa-ink shadow-none sm:h-9"
                           />
-                          <span className="text-xs text-wa-ink-3">min</span>
+                          <span className="text-xs text-wa-ink-3">{t('register.step5.min')}</span>
                         </div>
                       ))}
                     </div>
@@ -1151,13 +1150,13 @@ export default function RegisterClient() {
                         className="flex-1 gap-1.5 rounded-wa border-[1.5px] border-wa-line text-[14.5px] font-bold text-wa-ink"
                         onClick={() => setStep(4)}
                       >
-                        <ChevronLeft className="size-3.75" strokeWidth={2.5} /> Voltar
+                        <ChevronLeft className="size-3.75" strokeWidth={2.5} /> {t('register.back')}
                       </Button>
                       <Button
                         className="flex-1 gap-1.5 rounded-wa text-[14.5px] font-bold shadow-[0_8px_18px_-6px_rgba(18,179,127,0.45)]"
                         onClick={concluirEtapa(5, validateStep5)}
                       >
-                        Continuar <ChevronRight className="size-3.75" strokeWidth={2.5} />
+                        {t('register.continue')} <ChevronRight className="size-3.75" strokeWidth={2.5} />
                       </Button>
                     </div>
                   </div>
@@ -1170,14 +1169,14 @@ export default function RegisterClient() {
                       <div className="mx-auto mb-4.5 flex size-16 items-center justify-center rounded-2xl bg-wa-brand-50">
                         <ClipboardCheck className="size-7.5 text-wa-brand-600" />
                       </div>
-                      <h2 className="text-[23px] font-extrabold tracking-[-0.01em] text-wa-ink">Tudo pronto!</h2>
+                      <h2 className="text-[23px] font-extrabold tracking-[-0.01em] text-wa-ink">{t('register.step6.title')}</h2>
                       <p className="mx-auto mt-2.5 text-sm leading-normal text-wa-ink-2">
-                        Revise as etapas anteriores se precisar. Ao confirmar, criamos sua clínica e enviamos um código por e-mail para validar sua conta.
+                        {t('register.step6.text')}
                       </p>
                     </div>
 
                     <div className="mx-auto mt-6 flex max-w-115 flex-col gap-2.5 rounded-xl border border-wa-brand-100 bg-wa-brand-50 px-4.5 py-4 text-left">
-                      <div className="text-[13.5px] font-bold text-wa-brand-700">Resumo</div>
+                      <div className="text-[13.5px] font-bold text-wa-brand-700">{t('register.step6.summary')}</div>
                       <div className="flex items-center gap-2.25 text-[13px] text-wa-ink">
                         <Building2 className="size-3.75 shrink-0 text-wa-brand-600" />
                         <span>{clinicName} (@{clinicCode})</span>
@@ -1188,11 +1187,11 @@ export default function RegisterClient() {
                       </div>
                       <div className="flex items-center gap-2.25 text-[13px] text-wa-ink">
                         <Calendar className="size-3.75 shrink-0 text-wa-brand-600" />
-                        <span>14 dias de acesso completo gratuito</span>
+                        <span>{t('register.step6.trial')}</span>
                       </div>
                       <div className="flex items-center gap-2.25 text-[13px] text-wa-ink">
                         <CreditCard className="size-3.75 shrink-0 text-wa-brand-600" />
-                        <span>Sem cobrança automática. Você escolhe o plano depois</span>
+                        <span>{t('register.step6.noCharge')}</span>
                       </div>
                     </div>
 
@@ -1208,7 +1207,7 @@ export default function RegisterClient() {
                         onClick={() => setStep(5)}
                         disabled={loading}
                       >
-                        <ChevronLeft className="size-3.75" strokeWidth={2.5} /> Voltar
+                        <ChevronLeft className="size-3.75" strokeWidth={2.5} /> {t('register.back')}
                       </Button>
                       <Button
                         className="gap-1.5 rounded-wa px-7 text-[14.5px] font-bold shadow-[0_8px_18px_-6px_rgba(18,179,127,0.45)]"
@@ -1216,9 +1215,9 @@ export default function RegisterClient() {
                         disabled={loading}
                       >
                         {loading ? (
-                          <><Loader2 className="size-4 animate-spin" /> Entrando...</>
+                          <><Loader2 className="size-4 animate-spin" /> {t('register.step6.entering')}</>
                         ) : (
-                          'Entrar no sistema'
+                          t('register.step6.enter')
                         )}
                       </Button>
                     </div>

@@ -80,7 +80,7 @@ export default function LoginClient() {
     const trimmedPassword = password;
 
     if (!trimmedEmail || !trimmedPassword) {
-      toast.error("Preencha email e senha.");
+      toast.error(translation("auth.fillEmailPassword"));
       return;
     }
 
@@ -92,7 +92,8 @@ export default function LoginClient() {
     ).toLowerCase();
 
     if (!code) {
-      toast.error("Informe o código da clínica.");
+      toast.error(translation("auth.tenantCodeRequired"));
+      setLoading(false);
       return;
     }
     try {
@@ -112,7 +113,7 @@ export default function LoginClient() {
 
       const user = data?.user;
       if (!user) {
-        toast.error("Resposta de login inválida.");
+        toast.error(translation("auth.invalidLoginResponse"));
         return;
       }
       establishSession(user, code);
@@ -124,7 +125,7 @@ export default function LoginClient() {
       toast.error(
         getApiErrorMessage(
           error,
-          "Não foi possível entrar. Tente novamente.",
+          translation("auth.loginError"),
         ),
       );
     } finally {
@@ -143,7 +144,7 @@ export default function LoginClient() {
         <div className="p-0 m-0">
           <Image
             src="/images/logo/logo-bg.svg"
-            alt="Logo"
+            alt={translation("auth.logoAlt")}
             fill={true}
             className="origin-top-right scale-[0.65] opacity-20 sm:scale-100 sm:origin-center sm:opacity-8 sm:invert"
           />
@@ -204,10 +205,10 @@ export default function LoginClient() {
             </div>
             <ul className="hidden mt-0 max-w-md space-y-0 text-sm leading-relaxed text-white/80 sm:mt-4 sm:block">
               <li className="flex gap-3">
-                <span>Multi-clínica com dados isolados por unidade.</span>
+                <span>{translation("auth.bulletIsolated")}</span>
               </li>
               <li className="flex gap-3">
-                <span>Interface pensada para fluxo rápido no consultório.</span>
+                <span>{translation("auth.bulletFast")}</span>
               </li>
             </ul>
           </div>
@@ -299,12 +300,12 @@ export default function LoginClient() {
                 </div>
 
                 <p className="text-center text-xs text-muted-foreground w-full sm:text-sm">
-                  Não tem conta?{" "}
+                  {translation("auth.noAccount")}{" "}
                   <a
                     href="/register"
                     className="font-semibold text-primary hover:underline"
                   >
-                    Comece grátis por 14 dias
+                    {translation("auth.startFree")}
                   </a>
                 </p>
 

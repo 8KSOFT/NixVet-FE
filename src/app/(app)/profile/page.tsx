@@ -123,7 +123,7 @@ export default function ProfilePage() {
               <ProfilePhotoUploader
                 target="/users/me"
                 invalidate={[userKeys.all]}
-                label="sua foto"
+                label={t('photo.labels.you')}
                 url={profile?.photo_url}
                 name={profile?.name}
               />

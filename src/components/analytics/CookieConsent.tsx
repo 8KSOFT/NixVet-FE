@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { Trans, useTranslation } from 'react-i18next';
+// Renderiza fora do AppProviders (ver app/layout.tsx): garante a instância global do i18n.
+import '@/lib/i18n/instance';
 import { Button } from '@/components/ui/button';
 import { CONSENT_EVENT, readConsent, writeConsent } from '@/lib/analytics';
 
@@ -17,6 +20,7 @@ import { CONSENT_EVENT, readConsent, writeConsent } from '@/lib/analytics';
  * banner voltando sempre, ou — pior — seria lido como aceite tácito.
  */
 export default function CookieConsent() {
+  const { t } = useTranslation();
   const gaId = process.env.NEXT_PUBLIC_GA_ID;
   const [visivel, setVisivel] = useState(false);
 
@@ -42,20 +46,22 @@ export default function CookieConsent() {
     <div
       role="dialog"
       aria-live="polite"
-      aria-label="Aviso de cookies"
+      aria-label={t('cookieConsent.ariaLabel')}
       className="fixed inset-x-0 bottom-0 z-[60] p-3 sm:p-4"
     >
       <div className="mx-auto flex max-w-3xl flex-col gap-3 rounded-2xl border border-border bg-white p-4 shadow-lg sm:flex-row sm:items-center sm:gap-4 sm:p-5">
         <p className="flex-1 text-[13.5px] leading-relaxed text-gray-600">
-          Usamos cookies de medição para entender como o site é usado e
-          melhorá-lo. Eles só são ativados se você aceitar. Veja a{' '}
-          <Link
-            href="/privacidade"
-            className="font-semibold text-brand-deep underline underline-offset-2 hover:text-brand-deep/80"
-          >
-            Política de Privacidade
-          </Link>
-          .
+          <Trans
+            i18nKey="cookieConsent.text"
+            components={{
+              a: (
+                <Link
+                  href="/privacidade"
+                  className="font-semibold text-brand-deep underline underline-offset-2 hover:text-brand-deep/80"
+                />
+              ),
+            }}
+          />
         </p>
         <div className="flex shrink-0 gap-2">
           <Button
@@ -63,13 +69,13 @@ export default function CookieConsent() {
             onClick={responder('denied')}
             className="flex-1 rounded-full sm:flex-none"
           >
-            Recusar
+            {t('cookieConsent.deny')}
           </Button>
           <Button
             onClick={responder('granted')}
             className="flex-1 rounded-full bg-brand-deep text-white hover:bg-brand-deep/90 sm:flex-none"
           >
-            Aceitar
+            {t('cookieConsent.accept')}
           </Button>
         </div>
       </div>

@@ -61,9 +61,10 @@ describe('chaves usadas no código existem no pt', () => {
 
   const ausentes = [...usadas.keys()].filter((k) => !(k in idiomas.pt) && !(`${k}_one` in idiomas.pt) && !(`${k}_other` in idiomas.pt));
 
-  // Teto que só pode cair (mesmo padrão do lint): são as telas do editor de fluxo do chatbot e das
-  // permissões do superadmin, cuja tradução nunca foi concluída. Texto novo sem chave falha aqui.
-  it('o número de chaves sem texto não sobe', () => {
-    expect(ausentes.length, `chaves ausentes:\n${ausentes.slice(0, 20).join('\n')}`).toBeLessThanOrEqual(80);
+  // Zerado em 06/11/2026, quando o editor de fluxo do chatbot, as permissões do superadmin, os termos
+  // clínicos e os avisos do suporte ganharam as chaves que faltavam (antes o teto era 80). Texto novo
+  // sem chave falha aqui.
+  it('toda chave usada no código tem texto no pt', () => {
+    expect(ausentes, `chaves ausentes:\n${ausentes.slice(0, 20).join('\n')}`).toEqual([]);
   });
 });

@@ -130,7 +130,7 @@ export default function PatientDetailPage() {
             <ProfilePhotoUploader
               target={`/patients/${id}`}
               invalidate={[patientKeys.all]}
-              label="foto"
+              label={t('photo.labels.default')}
               url={patient.photo_url}
               name={patient.name}
             />

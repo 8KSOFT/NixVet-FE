@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '@/lib/axios';
 import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import type { PreparedImage } from '@/lib/profile-image';
+import i18n from '@/lib/i18n/instance';
 
 export interface ProfilePhotoResult {
   photo_path: string | null;
@@ -146,8 +147,10 @@ export function useUploadProfilePhotoMutation(
             base64: 'falhou', msBase64: Math.round(performance.now() - t1), erroBase64,
           });
           throw new Error(
-            `Não foi possível enviar a imagem. multipart: ${(erroMultipart as Error).message}; ` +
-            `base64: ${(erroBase64 as Error).message}`,
+            i18n.t('photo.sendFailed', {
+              multipart: (erroMultipart as Error).message,
+              base64: (erroBase64 as Error).message,
+            }),
           );
         }
       }

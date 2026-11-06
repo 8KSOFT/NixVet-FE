@@ -61,7 +61,7 @@ export default function AppProviders({ children }: { children: React.ReactNode }
             if (query.state.data !== undefined) return;
             const status = (erro as { response?: { status?: number } })?.response?.status;
             if (status && status < 500 && status !== 429) return;
-            toast.error(getApiErrorMessage(erro, 'Não foi possível carregar os dados.'), {
+            toast.error(getApiErrorMessage(erro, i18n.t('shared.loadData')), {
               id: 'erro-ao-carregar',
             });
           },

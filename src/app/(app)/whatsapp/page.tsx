@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import Link from 'next/link';
+import { Trans, useTranslation } from 'react-i18next';
 import type { ThreadStatus } from '@/app/types/whatsapp-conversation';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -56,10 +57,9 @@ import {
 import { CLASSIFICATIONS, classificationInfo } from '@/lib/conversation-classifications';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
-import 'dayjs/locale/pt-br';
 
+// O idioma do dayjs é definido pelo AppProviders conforme o idioma ativo.
 dayjs.extend(relativeTime);
-dayjs.locale('pt-br');
 
 /** Badge pílula (ícone + rótulo, 12px semibold) — usada nos cabeçalhos e na lista. */
 function Pill({ icon: Icon, label, fg, bg }: { icon: React.ElementType; label: string; fg: string; bg: string }) {
@@ -75,40 +75,44 @@ function Pill({ icon: Icon, label, fg, bg }: { icon: React.ElementType; label: s
 }
 
 function ClassificationBadge({ classification }: { classification: string | null | undefined }) {
+  const { t } = useTranslation();
   const info = classificationInfo(classification);
   if (!info) return null;
   return (
     <span className={cn('inline-flex items-center gap-1.25 rounded-full px-2.25 py-0.75 text-xs font-semibold', info.badgeClass)}>
       <Tag className="size-2.75" />
-      {info.label}
+      {t(info.labelKey)}
     </span>
   );
 }
 
 /** Pílula "Atendimento humano" — para cabeçalhos (mesmo tratamento das demais badges). */
 function HumanBadge({ paused }: { paused: boolean | undefined }) {
+  const { t } = useTranslation();
   if (!paused) return null;
-  return <Pill icon={User} label="Atendimento humano" fg="var(--wa-warn)" bg="var(--wa-warn-bg)" />;
+  return <Pill icon={User} label={t('whatsapp.badges.humanAttention')} fg="var(--wa-warn)" bg="var(--wa-warn-bg)" />;
 }
 
 /** Indicador "Atendimento humano" só-texto — usado na linha da lista de conversas. */
 function HumanFlag({ paused }: { paused: boolean | undefined }) {
+  const { t } = useTranslation();
   if (!paused) return null;
   return (
     <span className="inline-flex items-center gap-1.25 text-xs font-semibold text-wa-warn">
       <User className="size-3" />
-      Atendimento humano
+      {t('whatsapp.badges.humanAttention')}
     </span>
   );
 }
 
 function ThreadStatusBadge({ status }: { status: ThreadStatus | undefined }) {
+  const { t } = useTranslation();
   if (!status || status === 'resolved') return null;
   if (status === 'waiting_clinic') {
-    return <Pill icon={AlertTriangle} label="Não respondido" fg="#c0522f" bg="#fdece5" />;
+    return <Pill icon={AlertTriangle} label={t('whatsapp.badges.notAnswered')} fg="#c0522f" bg="#fdece5" />;
   }
   if (status === 'waiting_tutor') {
-    return <Pill icon={Clock} label="Aguardando resposta do responsável" fg="var(--wa-warn)" bg="var(--wa-warn-bg)" />;
+    return <Pill icon={Clock} label={t('whatsapp.badges.waitingPatient')} fg="var(--wa-warn)" bg="var(--wa-warn-bg)" />;
   }
   return null;
 }
@@ -124,19 +128,20 @@ function CloseConversationDialog({
   conversationId: string;
   onSuccess: () => void;
 }) {
+  const { t } = useTranslation();
   const [classification, setClassification] = React.useState('');
   const [note, setNote] = React.useState('');
   const closeMutation = useCloseConversationMutation();
   const loading = closeMutation.isPending;
 
   const handleClose = async () => {
-    if (!classification) { toast.error('Selecione uma classificação'); return; }
+    if (!classification) { toast.error(t('whatsapp.errors.selectClassification')); return; }
     try {
       await closeMutation.mutateAsync({ conversationId, classification, note });
       onSuccess();
       onOpenChange(false);
     } catch {
-      toast.error('Erro ao encerrar conversa');
+      toast.error(t('whatsapp.errors.close'));
     }
   };
 
@@ -144,8 +149,8 @@ function CloseConversationDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Encerrar conversa</DialogTitle>
-          <DialogDescription>Como esse atendimento foi concluído?</DialogDescription>
+          <DialogTitle>{t('whatsapp.closeDialog.title')}</DialogTitle>
+          <DialogDescription>{t('whatsapp.closeDialog.description')}</DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-2">
           <div className="grid grid-cols-2 gap-2">
@@ -161,26 +166,26 @@ function CloseConversationDialog({
                     : 'border-wa-line hover:bg-wa-line-2',
                 )}
               >
-                {c.label}
+                {t(c.labelKey)}
               </button>
             ))}
           </div>
           <div className="space-y-1">
-            <Label>Observação (opcional)</Label>
+            <Label>{t('whatsapp.closeDialog.noteLabel')}</Label>
             <Textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              placeholder="Ex: Responsável agendou por telefone..."
+              placeholder={t('whatsapp.closeDialog.notePlaceholder')}
               maxLength={500}
               rows={3}
             />
           </div>
         </div>
         <DialogFooter>
-          <button type="button" onClick={() => onOpenChange(false)} className="px-4 py-2 text-sm rounded-wa border hover:bg-wa-line-2">Cancelar</button>
+          <button type="button" onClick={() => onOpenChange(false)} className="px-4 py-2 text-sm rounded-wa border hover:bg-wa-line-2">{t('whatsapp.closeDialog.cancel')}</button>
           <Button onClick={handleClose} disabled={!classification || loading}>
             {loading && <Loader2 className="size-4 animate-spin mr-1" />}
-            Encerrar conversa
+            {t('whatsapp.closeDialog.title')}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -249,6 +254,7 @@ const ActionButton = React.forwardRef<
 ActionButton.displayName = 'ActionButton';
 
 export default function WhatsAppPage() {
+  const { t } = useTranslation();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // No mobile (abaixo de lg) as colunas viram duas "telas": lista OU
   // conversa, nunca as duas espremidas — igual ao WhatsApp de verdade.
@@ -296,7 +302,7 @@ export default function WhatsAppPage() {
 
   const handleSuggestReply = async () => {
     if (!messages.length) {
-      toast.info('Não há mensagens para sugerir resposta');
+      toast.info(t('whatsapp.errors.noMessagesForSuggestion'));
       return;
     }
     const lastInbound = [...messages].reverse().find((m) => m.direction === 'inbound');
@@ -306,9 +312,9 @@ export default function WhatsAppPage() {
     try {
       const list = await suggestRepliesMutation.mutateAsync({ context, lastMessage });
       setSuggestions(list);
-      if (list.length === 0) toast.info('Nenhuma sugestão retornada');
+      if (list.length === 0) toast.info(t('whatsapp.errors.noSuggestions'));
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, 'Erro ao obter sugestões'));
+      toast.error(getApiErrorMessage(error, t('whatsapp.errors.suggest')));
     }
   };
 
@@ -318,7 +324,7 @@ export default function WhatsAppPage() {
       await sendMessageMutation.mutateAsync({ conversationId: selectedId, text: sendText.trim() });
       setSendText('');
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, 'Erro ao enviar'));
+      toast.error(getApiErrorMessage(error, t('whatsapp.errors.send')));
     }
   };
 
@@ -327,7 +333,7 @@ export default function WhatsAppPage() {
     try {
       await resumeAiMutation.mutateAsync(selectedId);
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, 'Erro ao retomar bot'));
+      toast.error(getApiErrorMessage(error, t('whatsapp.errors.resume')));
     }
   };
 
@@ -336,7 +342,7 @@ export default function WhatsAppPage() {
     try {
       await pauseAiMutation.mutateAsync(selectedId);
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, 'Erro ao pausar bot'));
+      toast.error(getApiErrorMessage(error, t('whatsapp.errors.pause')));
     }
   };
 
@@ -358,7 +364,7 @@ export default function WhatsAppPage() {
       await archiveMutation.mutateAsync(selectedId);
       deselectConversation();
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, 'Erro ao arquivar conversa'));
+      toast.error(getApiErrorMessage(error, t('whatsapp.errors.archive')));
     }
   };
 
@@ -368,7 +374,7 @@ export default function WhatsAppPage() {
       await unarchiveMutation.mutateAsync(selectedId);
       deselectConversation();
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, 'Erro ao desarquivar conversa'));
+      toast.error(getApiErrorMessage(error, t('whatsapp.errors.unarchive')));
     }
   };
 
@@ -378,7 +384,7 @@ export default function WhatsAppPage() {
     try {
       await classifyMutation.mutateAsync({ conversationId: selectedId, classification });
     } catch {
-      toast.error('Erro ao classificar');
+      toast.error(t('whatsapp.errors.classify'));
     }
   };
 
@@ -417,18 +423,18 @@ export default function WhatsAppPage() {
           mobile eles empurravam a lista/chat pra baixo do scroll — a tela
           vira só lista OU só chat, como no WhatsApp de verdade. */}
       <div className="hidden lg:grid grid-cols-2 sm:grid-cols-4 gap-3.5 shrink-0">
-        <StatCard icon={Clock} label="Aguardando resposta" value={metrics?.conversations_waiting_clinic ?? 0} />
-        <StatCard icon={User} label="Aguardando responsável" value={metrics?.conversations_waiting_tutor ?? 0} />
-        <StatCard icon={Check} label="Encerradas hoje" value={stats?.closed_today ?? 0} tone="brand" />
+        <StatCard icon={Clock} label={t('whatsapp.stats.waitingClinic')} value={metrics?.conversations_waiting_clinic ?? 0} />
+        <StatCard icon={User} label={t('whatsapp.stats.waitingPatient')} value={metrics?.conversations_waiting_tutor ?? 0} />
+        <StatCard icon={Check} label={t('whatsapp.stats.closedToday')} value={stats?.closed_today ?? 0} tone="brand" />
         {alerts.length > 0 ? (
           <div className="flex flex-1 flex-col justify-center gap-1 rounded-wa-lg border border-wa-line bg-card p-4.5 sm:px-5">
             <div className="flex items-center gap-2">
               <AlertTriangle className="size-4 shrink-0 text-wa-warn" />
-              <span className="text-[13.5px] font-medium text-wa-ink">{alerts.length} conversa(s) há +20 min sem resposta</span>
+              <span className="text-[13.5px] font-medium text-wa-ink">{t('whatsapp.stats.unanswered', { count: alerts.length })}</span>
             </div>
           </div>
         ) : (
-          <StatCard icon={Clock} label="Tempo médio resposta" value={metrics?.average_response_time ?? 0} suffix="s" />
+          <StatCard icon={Clock} label={t('whatsapp.stats.avgResponse')} value={metrics?.average_response_time ?? 0} suffix="s" />
         )}
       </div>
 
@@ -437,7 +443,7 @@ export default function WhatsAppPage() {
           <MessageSquare className="size-5.5 text-wa-brand-600" /> WhatsApp
         </h1>
         <span className="ml-auto text-[11px] text-wa-ink-3">
-          Atualiza a cada {WHATSAPP_REFRESH_MS / 1000}s
+          {t('whatsapp.refresh', { seconds: WHATSAPP_REFRESH_MS / 1000 })}
         </span>
       </div>
 
@@ -453,7 +459,7 @@ export default function WhatsAppPage() {
         >
           <div className="flex shrink-0 flex-col gap-3 px-4.5 pt-4.5 pb-3">
             <div className="flex items-center justify-between">
-              <span className="text-[15px] font-bold text-wa-ink">Conversas</span>
+              <span className="text-[15px] font-bold text-wa-ink">{t('whatsapp.conversations')}</span>
               <div className="inline-flex rounded-wa bg-wa-line-2 p-0.75 text-xs font-semibold">
                 <button
                   type="button"
@@ -463,7 +469,7 @@ export default function WhatsAppPage() {
                     archivedFilter === 'false' ? 'bg-wa-brand-600 text-white' : 'text-wa-ink-2 hover:text-wa-ink',
                   )}
                 >
-                  Ativas
+                  {t('whatsapp.active')}
                 </button>
                 <button
                   type="button"
@@ -473,19 +479,19 @@ export default function WhatsAppPage() {
                     archivedFilter === 'true' ? 'bg-wa-brand-600 text-white' : 'text-wa-ink-2 hover:text-wa-ink',
                   )}
                 >
-                  Arquivadas
+                  {t('whatsapp.archived')}
                 </button>
               </div>
             </div>
             <Select value={classificationFilter || 'all'} onValueChange={(v) => setClassificationFilter(v === 'all' ? '' : v)}>
               <SelectTrigger className="h-auto w-full justify-between rounded-wa border-wa-line bg-transparent px-3 py-2.25 text-[13.5px] font-normal text-wa-ink-2 shadow-none [&_svg]:hidden hover:bg-wa-line-2/60">
-                <SelectValue placeholder="Todas as classificações" />
+                <SelectValue placeholder={t('whatsapp.allClassifications')} />
                 <ChevronDown className="size-3.5 shrink-0 text-wa-ink-2" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todas as classificações</SelectItem>
+                <SelectItem value="all">{t('whatsapp.allClassifications')}</SelectItem>
                 {CLASSIFICATIONS.map((c) => (
-                  <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                  <SelectItem key={c.value} value={c.value}>{t(c.labelKey)}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -499,7 +505,7 @@ export default function WhatsAppPage() {
                 ))}
               </div>
             ) : sortedConversations.length === 0 ? (
-              <div className="py-8 text-center text-wa-ink-3 text-sm">Nenhuma conversa</div>
+              <div className="py-8 text-center text-wa-ink-3 text-sm">{t('whatsapp.none')}</div>
             ) : (
               sortedConversations.map((c) => {
                 const selected = selectedId === c.id;
@@ -513,21 +519,21 @@ export default function WhatsAppPage() {
                     onClick={() => selectConversation(c.id)}
                   >
                     <div className="flex items-baseline justify-between gap-2">
-                      <span className="truncate text-sm font-semibold text-wa-ink">{c.contact_name || c.wa_id || 'Sem nome'}</span>
+                      <span className="truncate text-sm font-semibold text-wa-ink">{c.contact_name || c.wa_id || t('whatsapp.noName')}</span>
                     </div>
                     <span className="text-[12.5px] text-wa-ink-3">
                       {c.wa_id}
                       {c.last_message_at && ` · ${dayjs(c.last_message_at).fromNow()}`}
                     </span>
                     {c.archived_at && (
-                      <Pill icon={Archive} label={c.archived_reason?.startsWith('inactive_') ? 'Arquivada (inativa 7d)' : 'Arquivada'} fg="var(--wa-ink-2)" bg="var(--wa-line-2)" />
+                      <Pill icon={Archive} label={c.archived_reason?.startsWith('inactive_') ? t('whatsapp.archivedInactive') : t('whatsapp.archivedLabel')} fg="var(--wa-ink-2)" bg="var(--wa-line-2)" />
                     )}
                     <HumanFlag paused={c.ai_paused} />
                     {!c.ai_paused && <ThreadStatusBadge status={c.thread_status ?? undefined} />}
                     {c.classification && (
                       <div className="flex flex-wrap items-center gap-2">
                         <ClassificationBadge classification={c.classification} />
-                        {c.closed_by && <span className="text-[11px] text-wa-ink-3">por {c.closed_by}</span>}
+                        {c.closed_by && <span className="text-[11px] text-wa-ink-3">{t('whatsapp.byUser', { name: c.closed_by })}</span>}
                       </div>
                     )}
                   </div>
@@ -551,7 +557,7 @@ export default function WhatsAppPage() {
               <button
                 type="button"
                 onClick={() => setMobileView('list')}
-                aria-label="Voltar para a lista de conversas"
+                aria-label={t('whatsapp.backToList')}
                 className="flex size-7 shrink-0 items-center justify-center rounded-full text-wa-ink-2 hover:bg-wa-line-2 lg:hidden"
               >
                 <ChevronLeft className="size-4" />
@@ -572,15 +578,21 @@ export default function WhatsAppPage() {
                       {selectedConv.status === 'closed' && selectedConv.closed_by && (
                         <span className="inline-flex items-center gap-1 text-xs text-wa-ink-3">
                           <Check className="size-3 text-wa-brand-600" />
-                          Encerrado por <strong className="font-semibold text-wa-ink-2">{selectedConv.closed_by}</strong>
-                          {selectedConv.closed_at && ` em ${dayjs(selectedConv.closed_at).format('DD/MM HH:mm')}`}
+                          <Trans
+                            i18nKey={selectedConv.closed_at ? 'whatsapp.closedByAt' : 'whatsapp.closedBy'}
+                            values={{
+                              name: selectedConv.closed_by,
+                              date: selectedConv.closed_at ? dayjs(selectedConv.closed_at).format('DD/MM HH:mm') : '',
+                            }}
+                            components={{ b: <strong className="font-semibold text-wa-ink-2" /> }}
+                          />
                         </span>
                       )}
                     </div>
                   </div>
                 </>
               ) : (
-                <span className="text-sm font-medium text-wa-ink-2">Selecione uma conversa</span>
+                <span className="text-sm font-medium text-wa-ink-2">{t('whatsapp.selectConversation')}</span>
               )}
             </div>
             {selectedConv && (
@@ -588,16 +600,16 @@ export default function WhatsAppPage() {
                 {selectedConv.ai_paused ? (
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <ActionButton icon={Bot} label="Retomar Bot" onClick={handleResumeAi} disabled={aiActionLoading} loading={aiActionLoading} />
+                      <ActionButton icon={Bot} label={t('whatsapp.actions.resumeBot')} onClick={handleResumeAi} disabled={aiActionLoading} loading={aiActionLoading} />
                     </TooltipTrigger>
-                    <TooltipContent>Retomar atendimento automático pelo bot</TooltipContent>
+                    <TooltipContent>{t('whatsapp.actions.resumeBotHint')}</TooltipContent>
                   </Tooltip>
                 ) : (
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <ActionButton icon={User} label="Assumir" onClick={handlePauseAi} disabled={aiActionLoading} loading={aiActionLoading} />
+                      <ActionButton icon={User} label={t('whatsapp.actions.takeOver')} onClick={handlePauseAi} disabled={aiActionLoading} loading={aiActionLoading} />
                     </TooltipTrigger>
-                    <TooltipContent>Pausar bot e assumir atendimento manualmente</TooltipContent>
+                    <TooltipContent>{t('whatsapp.actions.takeOverHint')}</TooltipContent>
                   </Tooltip>
                 )}
 
@@ -605,14 +617,14 @@ export default function WhatsAppPage() {
                   <div className="relative">
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <ActionButton icon={Tag} label="Classificar" onClick={() => setClassifyPopover((v) => !v)} disabled={classifyLoading} loading={classifyLoading} />
+                        <ActionButton icon={Tag} label={t('whatsapp.actions.classify')} onClick={() => setClassifyPopover((v) => !v)} disabled={classifyLoading} loading={classifyLoading} />
                       </TooltipTrigger>
-                      <TooltipContent>Classificar sem encerrar</TooltipContent>
+                      <TooltipContent>{t('whatsapp.actions.classifyHint')}</TooltipContent>
                     </Tooltip>
                     {classifyPopover && (
                       <div className="absolute left-1/2 top-full z-50 mt-1.5 w-52 -translate-x-1/2 rounded-wa border border-wa-line bg-popover p-2 shadow-md space-y-1 sm:left-auto sm:right-0 sm:translate-x-0">
                         <div className="flex items-center justify-between px-1 pb-1 border-b border-wa-line mb-1">
-                          <span className="text-xs font-medium text-wa-ink-2">Classificar conversa</span>
+                          <span className="text-xs font-medium text-wa-ink-2">{t('whatsapp.actions.classifyConversation')}</span>
                           <button type="button" onClick={() => setClassifyPopover(false)}><X className="size-3" /></button>
                         </div>
                         {CLASSIFICATIONS.map((c) => (
@@ -625,7 +637,7 @@ export default function WhatsAppPage() {
                               selectedConv.classification === c.value ? `${c.badgeClass} font-medium` : 'hover:bg-wa-line-2',
                             )}
                           >
-                            {c.label}
+                            {t(c.labelKey)}
                           </button>
                         ))}
                       </div>
@@ -638,25 +650,25 @@ export default function WhatsAppPage() {
                 {!selectedConv.archived_at && (
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <ActionButton icon={Check} label="Encerrar" onClick={() => setCloseDialogOpen(true)} />
+                      <ActionButton icon={Check} label={t('whatsapp.actions.close')} onClick={() => setCloseDialogOpen(true)} />
                     </TooltipTrigger>
-                    <TooltipContent>Encerrar conversa (escolher classificação e observação)</TooltipContent>
+                    <TooltipContent>{t('whatsapp.actions.closeHint')}</TooltipContent>
                   </Tooltip>
                 )}
 
                 {selectedConv.archived_at ? (
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <ActionButton icon={ArchiveRestore} label="Desarquivar" onClick={handleUnarchive} disabled={archiveLoading} loading={archiveLoading} />
+                      <ActionButton icon={ArchiveRestore} label={t('whatsapp.actions.unarchive')} onClick={handleUnarchive} disabled={archiveLoading} loading={archiveLoading} />
                     </TooltipTrigger>
-                    <TooltipContent>Trazer conversa de volta para a lista de ativas</TooltipContent>
+                    <TooltipContent>{t('whatsapp.actions.unarchiveHint')}</TooltipContent>
                   </Tooltip>
                 ) : (
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <ActionButton icon={Archive} label="Arquivar" onClick={handleArchive} disabled={archiveLoading} loading={archiveLoading} />
+                      <ActionButton icon={Archive} label={t('whatsapp.actions.archive')} onClick={handleArchive} disabled={archiveLoading} loading={archiveLoading} />
                     </TooltipTrigger>
-                    <TooltipContent>Arquivar temporariamente (reabre em nova mensagem)</TooltipContent>
+                    <TooltipContent>{t('whatsapp.actions.archiveHint')}</TooltipContent>
                   </Tooltip>
                 )}
               </div>
@@ -666,7 +678,7 @@ export default function WhatsAppPage() {
           <div className="flex flex-col flex-1 min-h-0 p-0">
             {!selectedId ? (
               <div className="flex-1 flex items-center justify-center text-wa-ink-3 p-4">
-                Clique em uma conversa para ver as mensagens
+                {t('whatsapp.clickToView')}
               </div>
             ) : (
               <>
@@ -677,7 +689,7 @@ export default function WhatsAppPage() {
                         <Loader2 className="size-6 animate-spin text-wa-ink-3" />
                       </div>
                     ) : messages.length === 0 ? (
-                      <div className="py-8 text-center text-wa-ink-3 text-sm">Nenhuma mensagem</div>
+                      <div className="py-8 text-center text-wa-ink-3 text-sm">{t('whatsapp.noMessages')}</div>
                     ) : (
                       messages.map((m) => {
                         const mine = m.direction === 'outbound';
@@ -700,7 +712,7 @@ export default function WhatsAppPage() {
                                     )}
                                   >
                                     <Ban className="size-3.5 shrink-0" />
-                                    Mensagem apagada
+                                    {t('whatsapp.deleted')}
                                   </div>
                                 ) : isMediaMessage(m) ? (
                                   <div className="space-y-1.5">
@@ -726,7 +738,7 @@ export default function WhatsAppPage() {
 
                 {suggestions.length > 0 && (
                   <div className="mb-2 flex flex-wrap gap-2 shrink-0 px-6">
-                    <span className="text-wa-ink-3 text-sm self-center">Sugestões:</span>
+                    <span className="text-wa-ink-3 text-sm self-center">{t('whatsapp.suggestionsLabel')}</span>
                     {suggestions.map((s, i) => (
                       <button
                         key={i}
@@ -747,7 +759,7 @@ export default function WhatsAppPage() {
                   <Textarea
                     value={sendText}
                     onChange={(e) => setSendText(e.target.value)}
-                    placeholder="Digite a mensagem..."
+                    placeholder={t('whatsapp.messagePlaceholder')}
                     className="min-h-9 max-h-30 flex-1 resize-none rounded-xl border-wa-line px-3 py-2 text-sm shadow-none placeholder:text-wa-ink-3 focus-visible:ring-wa-brand-500/25 lg:min-h-10.5 lg:rounded-full lg:px-4.5 lg:py-2.75"
                     rows={1}
                     onKeyDown={(e) => {
@@ -773,7 +785,7 @@ export default function WhatsAppPage() {
                         )}
                       </button>
                     </TooltipTrigger>
-                    <TooltipContent>Sugerir resposta (IA)</TooltipContent>
+                    <TooltipContent>{t('whatsapp.suggestReplyHint')}</TooltipContent>
                   </Tooltip>
                   <button
                     type="button"
@@ -808,13 +820,13 @@ export default function WhatsAppPage() {
               <Lock className="size-5" />
             </div>
             <p className="text-[15px] font-bold text-wa-ink">
-              Essa é a visão do WhatsApp para quem tem o plano Clínica
+              {t('whatsapp.teaser.title')}
             </p>
             <p className="text-sm text-wa-ink-3">
-              Assine o plano Clínica para liberar o atendimento e todas as funções desta tela.
+              {t('whatsapp.teaser.text')}
             </p>
             <Link href="/billing/upgrade">
-              <Button className="mt-1">Ver planos</Button>
+              <Button className="mt-1">{t('whatsapp.teaser.viewPlans')}</Button>
             </Link>
           </div>
         </div>

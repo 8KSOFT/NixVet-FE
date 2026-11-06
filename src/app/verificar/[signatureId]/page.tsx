@@ -2,6 +2,8 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import {
   ShieldCheck,
   ShieldX,
@@ -53,15 +55,6 @@ interface VerificationData {
 
 type Panel = "none" | "pharmacy" | "tutor";
 
-const FORM_LABELS: Record<string, string> = {
-  oral: "Oral",
-  topica: "Tópica",
-  colirio: "Colírio",
-  spray: "Spray",
-  injetavel: "Injetável",
-  outro: "Outro",
-};
-
 function fmtDate(iso: string | null): string {
   if (!iso) return "—";
   try {
@@ -73,17 +66,18 @@ function fmtDate(iso: string | null): string {
   }
 }
 
-function statusVisual(data: VerificationData) {
+function statusVisual(data: VerificationData, t: TFunction) {
   if (data.status === "REVOKED")
-    return { Icon: ShieldX, label: "Assinatura revogada", cls: "text-red-600 bg-red-50 border-red-200" };
+    return { Icon: ShieldX, label: t("verify.status.revoked"), cls: "text-red-600 bg-red-50 border-red-200" };
   if (data.status === "EXPIRED")
-    return { Icon: ShieldAlert, label: "Assinatura expirada", cls: "text-amber-600 bg-amber-50 border-amber-200" };
+    return { Icon: ShieldAlert, label: t("verify.status.expired"), cls: "text-amber-600 bg-amber-50 border-amber-200" };
   if (data.valid && data.status === "SIGNED")
-    return { Icon: ShieldCheck, label: "Assinatura válida", cls: "text-emerald-700 bg-emerald-50 border-emerald-200" };
-  return { Icon: ShieldX, label: "Assinatura inválida", cls: "text-red-600 bg-red-50 border-red-200" };
+    return { Icon: ShieldCheck, label: t("verify.status.valid"), cls: "text-emerald-700 bg-emerald-50 border-emerald-200" };
+  return { Icon: ShieldX, label: t("verify.status.invalid"), cls: "text-red-600 bg-red-50 border-red-200" };
 }
 
 export default function VerificarPage() {
+  const { t } = useTranslation();
   const params = useParams<{ signatureId: string }>();
   const signatureId = params?.signatureId as string;
 
@@ -108,11 +102,11 @@ export default function VerificarPage() {
         headers: { Accept: "application/json" },
         signal: AbortSignal.timeout(20_000),
       });
-      if (res.status === 404) throw new Error("Documento não encontrado.");
-      if (res.status === 403) throw new Error("Token ou código inválido.");
+      if (res.status === 404) throw new Error("notFound");
+      if (res.status === 403) throw new Error("invalidToken");
       if (res.status === 429)
-        throw new Error("Muitas tentativas. Aguarde alguns instantes.");
-      if (!res.ok) throw new Error("Não foi possível verificar o documento.");
+        throw new Error("rateLimit");
+      if (!res.ok) throw new Error("generic");
       return (await res.json()) as VerificationData;
     },
     [signatureId],
@@ -173,9 +167,9 @@ export default function VerificarPage() {
       <main className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
         <div className="max-w-sm w-full rounded-xl border border-red-200 bg-white p-6 text-center">
           <ShieldX className="mx-auto h-10 w-10 text-red-500" />
-          <p className="mt-3 font-medium text-slate-800">{error}</p>
+          <p className="mt-3 font-medium text-slate-800">{t(`verify.errors.${error}`, { defaultValue: error })}</p>
           <p className="mt-1 text-sm text-slate-500">
-            Verifique o link ou o QR Code da receita.
+            {t('verify.checkLink')}
           </p>
         </div>
       </main>
@@ -183,14 +177,14 @@ export default function VerificarPage() {
   }
 
   if (!data) return null;
-  const sv = statusVisual(data);
+  const sv = statusVisual(data, t);
 
   return (
     <main className="min-h-screen bg-slate-50 px-4 py-8">
       <div className="mx-auto w-full max-w-lg space-y-4">
         <div className="text-center">
           <p className="text-lg font-bold tracking-tight text-slate-800">NixVetApp</p>
-          <p className="text-xs text-slate-500">Verificação de receita digital</p>
+          <p className="text-xs text-slate-500">{t("verify.title")}</p>
         </div>
 
         {/* Status */}
@@ -207,19 +201,19 @@ export default function VerificarPage() {
         {/* Emitente */}
         <div className="rounded-xl border border-slate-200 bg-white p-5">
           <dl className="space-y-2 text-sm">
-            <Row label="Veterinário(a)" value={data.veterinarian.name} />
+            <Row label={t("verify.rows.doctor")} value={data.veterinarian.name} />
             <Row label="CRMV" value={data.veterinarian.crmv} />
-            <Row label="Clínica" value={data.clinic} />
-            <Row label="Assinado em" value={fmtDate(data.signed_at)} />
+            <Row label={t("verify.rows.clinic")} value={data.clinic} />
+            <Row label={t("verify.rows.signedAt")} value={fmtDate(data.signed_at)} />
             {data.status === "REVOKED" && (
-              <Row label="Revogada em" value={fmtDate(data.revoked_at)} />
+              <Row label={t("verify.rows.revokedAt")} value={fmtDate(data.revoked_at)} />
             )}
           </dl>
         </div>
 
         {error && (
           <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-600">
-            {error}
+            {t(`verify.errors.${error}`, { defaultValue: error })}
           </div>
         )}
 
@@ -232,13 +226,13 @@ export default function VerificarPage() {
                   onClick={() => { setPanel("pharmacy"); setError(null); }}
                   className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 hover:border-slate-300 hover:bg-slate-50"
                 >
-                  <Store className="h-4 w-4" /> Sou farmácia
+                  <Store className="h-4 w-4" /> {t('verify.iAmPharmacy')}
                 </button>
                 <button
                   onClick={() => { setPanel("tutor"); setError(null); }}
                   className="flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-700 hover:border-slate-300 hover:bg-slate-50"
                 >
-                  <UserIcon className="h-4 w-4" /> Sou o tutor
+                  <UserIcon className="h-4 w-4" /> {t("verify.iAmPatient")}
                 </button>
               </div>
             )}
@@ -247,13 +241,13 @@ export default function VerificarPage() {
               <div className="rounded-xl border border-slate-200 bg-white p-5 space-y-3">
                 <p className="text-sm font-medium text-slate-700">
                   {panel === "pharmacy"
-                    ? "Insira o token da farmácia (impresso na receita)."
-                    : "Insira o token e o código de desbloqueio do tutor."}
+                    ? t("verify.promptPharmacy")
+                    : t("verify.promptPatient")}
                 </p>
                 <input
                   value={tokenInput}
                   onChange={(e) => setTokenInput(e.target.value)}
-                  placeholder="Token (ex.: A1B2C3)"
+                  placeholder={t("verify.tokenPlaceholder")}
                   autoCapitalize="characters"
                   className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm uppercase tracking-widest focus:border-slate-400 focus:outline-none"
                 />
@@ -261,7 +255,7 @@ export default function VerificarPage() {
                   <input
                     value={codeInput}
                     onChange={(e) => setCodeInput(e.target.value)}
-                    placeholder="Código de desbloqueio (4 dígitos)"
+                    placeholder={t("verify.codePlaceholder")}
                     inputMode="numeric"
                     className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm tracking-widest focus:border-slate-400 focus:outline-none"
                   />
@@ -272,13 +266,13 @@ export default function VerificarPage() {
                     disabled={submitting || !tokenInput.trim() || (panel === "tutor" && !codeInput.trim())}
                     className="flex-1 flex items-center justify-center gap-2 rounded-lg bg-slate-800 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
                   >
-                    {submitting && <Loader2 className="h-4 w-4 animate-spin" />} Consultar
+                    {submitting && <Loader2 className="h-4 w-4 animate-spin" />} {t("verify.query")}
                   </button>
                   <button
                     onClick={() => { setPanel("none"); setError(null); }}
                     className="rounded-lg border border-slate-200 px-4 py-2 text-sm text-slate-600"
                   >
-                    Cancelar
+                    {t('verify.cancel')}
                   </button>
                 </div>
               </div>
@@ -291,24 +285,24 @@ export default function VerificarPage() {
           <div className="rounded-xl border border-slate-200 bg-white p-5 space-y-4">
             <div className="flex items-center gap-2 text-slate-700">
               <FileText className="h-4 w-4" />
-              <p className="text-sm font-semibold">Prescrição</p>
+              <p className="text-sm font-semibold">{t("verify.prescription")}</p>
             </div>
 
             <dl className="space-y-2 text-sm">
               {data.pet && (
                 <Row
-                  label="Paciente"
+                  label={t("verify.rows.patient")}
                   value={`${data.pet.name} (${data.pet.species}${
                     data.pet.weight != null ? `, ${data.pet.weight} kg` : ""
                   })`}
                 />
               )}
-              <Row label="Tutor" value={data.tutor_name ?? null} />
+              <Row label={t("verify.rows.owner")} value={data.tutor_name ?? null} />
               {data.level === 2 && (
                 <>
-                  <Row label="CPF" value={data.tutor_cpf ?? null} />
-                  <Row label="Telefone" value={exibirTelefone(data.tutor_phone) || null} />
-                  <Row label="Endereço" value={data.tutor_address ?? null} />
+                  <Row label={t("verify.rows.cpf")} value={data.tutor_cpf ?? null} />
+                  <Row label={t("verify.rows.phone")} value={exibirTelefone(data.tutor_phone) || null} />
+                  <Row label={t("verify.rows.address")} value={data.tutor_address ?? null} />
                 </>
               )}
             </dl>
@@ -320,7 +314,7 @@ export default function VerificarPage() {
                     <p className="font-medium text-slate-800">
                       {i + 1}. {med.name}
                       {med.form_of_administration
-                        ? ` — ${FORM_LABELS[med.form_of_administration] ?? med.form_of_administration}`
+                        ? ` — ${t(`verify.forms.${med.form_of_administration}`, { defaultValue: med.form_of_administration })}`
                         : ""}
                     </p>
                     {med.concentration && (
@@ -328,9 +322,9 @@ export default function VerificarPage() {
                     )}
                     <p className="text-xs text-slate-600">
                       {[
-                        med.dosage && `Dose: ${med.dosage}`,
-                        med.frequency_value != null && med.frequency_unit && `Freq.: ${med.frequency_value} ${med.frequency_unit}`,
-                        med.duration_value != null && med.duration_unit && `Duração: ${med.duration_value} ${med.duration_unit}`,
+                        med.dosage && t('verify.dose', { value: med.dosage }),
+                        med.frequency_value != null && med.frequency_unit && t('verify.frequency', { value: med.frequency_value, unit: med.frequency_unit }),
+                        med.duration_value != null && med.duration_unit && t('verify.duration', { value: med.duration_value, unit: med.duration_unit }),
                       ].filter(Boolean).join(" · ")}
                     </p>
                     {med.usage_description && (
@@ -338,7 +332,7 @@ export default function VerificarPage() {
                     )}
                     {med.continuous_use && (
                       <span className="mt-1 inline-block rounded bg-red-50 px-1.5 py-0.5 text-[10px] font-semibold text-red-600">
-                        USO CONTÍNUO
+                        {t('verify.continuous')}
                       </span>
                     )}
                   </div>
@@ -348,7 +342,7 @@ export default function VerificarPage() {
 
             {data.observations && (
               <div className="border-t border-slate-100 pt-3 text-sm">
-                <p className="font-medium text-slate-700">Recomendações</p>
+                <p className="font-medium text-slate-700">{t("verify.recommendations")}</p>
                 <p className="text-slate-600">{data.observations}</p>
               </div>
             )}
@@ -360,20 +354,20 @@ export default function VerificarPage() {
                 rel="noopener noreferrer"
                 className="flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-100"
               >
-                <Download className="h-4 w-4" /> Baixar receita em PDF
+                <Download className="h-4 w-4" /> {t("verify.downloadPdf")}
               </a>
             )}
 
             {data.level === 1 && (
               <p className="text-center text-xs text-slate-400">
-                É o tutor? Informe também o código de desbloqueio para ver seus dados.
+                {t('verify.isPatient')}
               </p>
             )}
           </div>
         )}
 
         <p className="pt-2 text-center text-[11px] text-slate-400">
-          Documento assinado digitalmente via NixVetApp. Consulta protegida e auditada.
+          {t('verify.footer')}
         </p>
       </div>
     </main>

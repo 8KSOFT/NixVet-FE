@@ -14,6 +14,7 @@ import {
   Ticket,
   User,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -34,12 +35,7 @@ import {
   useSupportFeedbackMutation,
   useSupportTicketsQuery,
 } from '@/hooks/apiHooks/useSupport';
-import {
-  SUPPORT_MODULE_LABELS,
-  SUPPORT_MODULES,
-  SUPPORT_TICKET_STATUS_LABELS,
-  type SupportTicketStatus,
-} from '@/app/types/support';
+import { SUPPORT_MODULES, type SupportTicketStatus } from '@/app/types/support';
 
 interface ChatBubble {
   id: string;
@@ -58,12 +54,7 @@ const TICKET_STATUS_VARIANT: Record<SupportTicketStatus, 'default' | 'secondary'
   closed: 'secondary',
 };
 
-const SUGGESTIONS = [
-  'Como cancelo um orçamento?',
-  'Como conecto o WhatsApp da clínica?',
-  'Como confirmo um lançamento sugerido?',
-  'A clínica consegue emitir nota fiscal pelo sistema?',
-];
+const SUGGESTION_KEYS = [0, 1, 2, 3] as const;
 
 /**
  * Markdown mínimo: negrito, itálico e quebras de linha. É o que os artigos
@@ -115,6 +106,8 @@ function ArticleBody({ content }: { content: string }) {
 }
 
 export default function AjudaPage() {
+  const { t } = useTranslation();
+  const moduleLabel = (m: string) => t(`help.modules.${m}`, { defaultValue: m });
   const [tab, setTab] = useState('assistente');
 
   // ── Assistente ───────────────────────────────────────────────────────
@@ -194,14 +187,14 @@ export default function AjudaPage() {
         },
       ]);
     } catch (error) {
-      const message = getApiErrorMessage(error, 'Não consegui responder agora.');
+      const message = getApiErrorMessage(error, t('help.answerFailed'));
       toast.error(message);
       setBubbles((prev) => [
         ...prev,
         {
           id: `e-${Date.now()}`,
           role: 'assistant',
-          content: `${message} Se persistir, abra um chamado com o nosso time.`,
+          content: t('help.answerFailedPersist', { message }),
           answered: false,
           suggestEscalation: true,
         },
@@ -235,7 +228,7 @@ export default function AjudaPage() {
 
   const submitTicket = async () => {
     if (!ticketForm.subject.trim() || !ticketForm.description.trim()) {
-      toast.error('Preencha o assunto e a descrição');
+      toast.error(t('help.fillRequired'));
       return;
     }
     try {
@@ -257,7 +250,7 @@ export default function AjudaPage() {
       });
       setTab('chamados');
     } catch (error) {
-      toast.error(getApiErrorMessage(error, 'Erro ao abrir chamado'));
+      toast.error(getApiErrorMessage(error, t('help.ticketError')));
     }
   };
 
@@ -265,14 +258,14 @@ export default function AjudaPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Central de Ajuda</h1>
+          <h1 className="text-2xl font-bold">{t('help.title')}</h1>
           <p className="text-sm text-muted-foreground">
-            Tire dúvidas sobre o uso do NixVet com a assistente ou fale com o nosso time.
+            {t('help.subtitle')}
           </p>
         </div>
         <Button variant="outline" onClick={openTicketDialog} className="w-full sm:w-auto">
           <Ticket className="mr-2 size-4" />
-          Abrir chamado
+          {t('help.openTicket')}
         </Button>
       </div>
 
@@ -288,15 +281,15 @@ export default function AjudaPage() {
             <SelectContent>
               <SelectItem value="assistente">
                 <Bot className="mr-2 size-4" />
-                Assistente
+                {t('help.tabs.assistant')}
               </SelectItem>
               <SelectItem value="artigos">
                 <BookOpen className="mr-2 size-4" />
-                Artigos
+                {t('help.tabs.articles')}
               </SelectItem>
               <SelectItem value="chamados">
                 <LifeBuoy className="mr-2 size-4" />
-                Meus chamados
+                {t('help.tabs.tickets')}
               </SelectItem>
             </SelectContent>
           </Select>
@@ -304,15 +297,15 @@ export default function AjudaPage() {
         <TabsList className="hidden sm:inline-flex">
           <TabsTrigger value="assistente">
             <Bot className="mr-2 size-4" />
-            Assistente
+            {t('help.tabs.assistant')}
           </TabsTrigger>
           <TabsTrigger value="artigos">
             <BookOpen className="mr-2 size-4" />
-            Artigos
+            {t('help.tabs.articles')}
           </TabsTrigger>
           <TabsTrigger value="chamados">
             <LifeBuoy className="mr-2 size-4" />
-            Meus chamados
+            {t('help.tabs.tickets')}
           </TabsTrigger>
         </TabsList>
 
@@ -325,15 +318,13 @@ export default function AjudaPage() {
                   <div className="space-y-4 py-6 text-center">
                     <Bot className="mx-auto size-10 text-muted-foreground" />
                     <div>
-                      <p className="font-medium">Como posso ajudar?</p>
+                      <p className="font-medium">{t('help.howCanIHelp')}</p>
                       <p className="mt-1 text-sm text-muted-foreground">
-                        Pergunte sobre como fazer algo no sistema. Eu respondo com base na base de
-                        conhecimento do NixVet — não acesso os dados da sua clínica nem dou
-                        orientação veterinária.
+                        {t('help.intro')}
                       </p>
                     </div>
                     <div className="flex flex-wrap justify-center gap-2">
-                      {SUGGESTIONS.map((s) => (
+                      {SUGGESTION_KEYS.map((i) => t(`help.suggestions.${i}`)).map((s) => (
                         <Button
                           key={s}
                           variant="outline"
@@ -375,7 +366,7 @@ export default function AjudaPage() {
 
                       {bubble.articles && bubble.articles.length > 0 && (
                         <div className="space-y-1">
-                          <p className="text-xs text-muted-foreground">Artigos relacionados:</p>
+                          <p className="text-xs text-muted-foreground">{t('help.relatedArticles')}</p>
                           {bubble.articles.map((a) => (
                             <button
                               key={a.id}
@@ -395,12 +386,12 @@ export default function AjudaPage() {
 
                       {bubble.role === 'assistant' && (
                         <div className="flex items-center gap-2">
-                          <span className="text-xs text-muted-foreground">Resolveu?</span>
+                          <span className="text-xs text-muted-foreground">{t('help.solved')}</span>
                           <Button
                             variant="ghost"
                             size="icon"
                             className="size-6"
-                            title="Ajudou"
+                            title={t('help.helpful')}
                             onClick={() => void handleFeedback(bubble.id, true)}
                           >
                             <ThumbsUp
@@ -411,7 +402,7 @@ export default function AjudaPage() {
                             variant="ghost"
                             size="icon"
                             className="size-6"
-                            title="Não ajudou"
+                            title={t('help.notHelpful')}
                             onClick={() => void handleFeedback(bubble.id, false)}
                           >
                             <ThumbsDown
@@ -432,7 +423,7 @@ export default function AjudaPage() {
                 {chat.isPending && (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Loader2 className="size-4 animate-spin" />
-                    Consultando a base de conhecimento…
+                    {t('help.consulting')}
                   </div>
                 )}
                 <div ref={chatEndRef} />
@@ -441,11 +432,11 @@ export default function AjudaPage() {
               {lastAssistant?.suggestEscalation && (
                 <div className="flex flex-col gap-2 border-t bg-muted/40 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                   <p className="text-sm text-muted-foreground">
-                    Não resolveu? O time de suporte do NixVet assume daqui.
+                    {t('help.escalate')}
                   </p>
                   <Button size="sm" onClick={openTicketDialog}>
                     <Ticket className="mr-2 size-4" />
-                    Falar com o suporte
+                    {t('help.talkToSupport')}
                   </Button>
                 </div>
               )}
@@ -460,7 +451,7 @@ export default function AjudaPage() {
                 <Input
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder="Escreva sua dúvida sobre o sistema…"
+                  placeholder={t('help.inputPlaceholder')}
                   maxLength={2000}
                   disabled={chat.isPending}
                 />
@@ -484,7 +475,7 @@ export default function AjudaPage() {
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Buscar na central de ajuda…"
+                placeholder={t('help.searchPlaceholder')}
                 className="pl-9"
               />
             </div>
@@ -493,13 +484,13 @@ export default function AjudaPage() {
               onValueChange={(v) => setModuleFilter(v === '_all' ? '' : v)}
             >
               <SelectTrigger className="w-full sm:w-56">
-                <SelectValue placeholder="Todos os módulos" />
+                <SelectValue placeholder={t('help.allModules')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="_all">Todos os módulos</SelectItem>
+                <SelectItem value="_all">{t('help.allModules')}</SelectItem>
                 {SUPPORT_MODULES.map((m) => (
                   <SelectItem key={m} value={m}>
-                    {SUPPORT_MODULE_LABELS[m]}
+                    {moduleLabel(m)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -516,11 +507,11 @@ export default function AjudaPage() {
             <Card>
               <CardContent className="space-y-3 py-8 text-center">
                 <p className="text-sm text-muted-foreground">
-                  Nenhum artigo encontrado para essa busca.
+                  {t('help.noArticles')}
                 </p>
                 <Button variant="outline" onClick={openTicketDialog}>
                   <Ticket className="mr-2 size-4" />
-                  Abrir chamado com o suporte
+                  {t('help.openTicketWithSupport')}
                 </Button>
               </CardContent>
             </Card>
@@ -529,7 +520,7 @@ export default function AjudaPage() {
               <Card key={module}>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-semibold text-muted-foreground">
-                    {SUPPORT_MODULE_LABELS[module] ?? module}
+                    {moduleLabel(module)}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-1">
@@ -562,7 +553,7 @@ export default function AjudaPage() {
           ) : tickets.length === 0 ? (
             <Card>
               <CardContent className="py-8 text-center text-sm text-muted-foreground">
-                Você ainda não abriu nenhum chamado.
+                {t('help.noTickets')}
               </CardContent>
             </Card>
           ) : (
@@ -575,14 +566,14 @@ export default function AjudaPage() {
                         #{ticket.number} · {ticket.subject}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {SUPPORT_MODULE_LABELS[ticket.module] ?? ticket.module}
+                        {moduleLabel(ticket.module)}
                         {ticket.createdAt
                           ? ` · ${new Date(ticket.createdAt).toLocaleDateString('pt-BR')}`
                           : ''}
                       </p>
                     </div>
                     <Badge variant={TICKET_STATUS_VARIANT[ticket.status]} className="shrink-0">
-                      {SUPPORT_TICKET_STATUS_LABELS[ticket.status]}
+                      {t(`help.ticketStatus.${ticket.status}`, { defaultValue: ticket.status })}
                     </Badge>
                   </div>
                   <p className="whitespace-pre-wrap text-sm text-muted-foreground">
@@ -590,7 +581,7 @@ export default function AjudaPage() {
                   </p>
                   {ticket.resolution && (
                     <div className="rounded-lg bg-muted/50 p-3 text-sm">
-                      <p className="mb-1 font-medium">Resposta do suporte</p>
+                      <p className="mb-1 font-medium">{t('help.supportReply')}</p>
                       <p className="whitespace-pre-wrap text-muted-foreground">
                         {ticket.resolution}
                       </p>
@@ -607,7 +598,7 @@ export default function AjudaPage() {
       <Dialog open={!!openSlug} onOpenChange={(open) => !open && setOpenSlug(null)}>
         <DialogContent className="max-h-[85vh] overflow-y-auto md:max-w-2xl">
           <DialogHeader>
-            <DialogTitle>{openArticle?.title ?? 'Carregando…'}</DialogTitle>
+            <DialogTitle>{openArticle?.title ?? t('help.loading')}</DialogTitle>
           </DialogHeader>
           {loadingArticle ? (
             <div className="space-y-2">
@@ -618,11 +609,11 @@ export default function AjudaPage() {
           ) : openArticle ? (
             <div className="space-y-4">
               <Badge variant="secondary">
-                {SUPPORT_MODULE_LABELS[openArticle.module] ?? openArticle.module}
+                {moduleLabel(openArticle.module)}
               </Badge>
               <ArticleBody content={openArticle.content} />
               <div className="flex items-center justify-between border-t pt-3">
-                <p className="text-sm text-muted-foreground">Ainda com dúvida?</p>
+                <p className="text-sm text-muted-foreground">{t('help.stillInDoubt')}</p>
                 <Button
                   variant="outline"
                   size="sm"
@@ -632,7 +623,7 @@ export default function AjudaPage() {
                   }}
                 >
                   <Ticket className="mr-2 size-4" />
-                  Abrir chamado
+                  {t('help.openTicket')}
                 </Button>
               </div>
             </div>
@@ -644,31 +635,31 @@ export default function AjudaPage() {
       <Dialog open={ticketOpen} onOpenChange={setTicketOpen}>
         <DialogContent className="max-h-[85vh] overflow-y-auto md:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Abrir chamado com o suporte NixVet</DialogTitle>
+            <DialogTitle>{t('help.ticketDialogTitle')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1">
-              <Label>Assunto</Label>
+              <Label>{t('help.subject')}</Label>
               <Input
                 value={ticketForm.subject}
                 maxLength={200}
                 onChange={(e) => setTicketForm((f) => ({ ...f, subject: e.target.value }))}
-                placeholder="Resuma o problema em uma linha"
+                placeholder={t('help.subjectPlaceholder')}
               />
             </div>
             <div className="space-y-1">
-              <Label>Descrição</Label>
+              <Label>{t('help.description')}</Label>
               <Textarea
                 value={ticketForm.description}
                 maxLength={5000}
                 rows={5}
                 onChange={(e) => setTicketForm((f) => ({ ...f, description: e.target.value }))}
-                placeholder="O que você tentou fazer, o que aconteceu e em qual tela"
+                placeholder={t('help.descriptionPlaceholder')}
               />
             </div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="space-y-1">
-                <Label>Módulo</Label>
+                <Label>{t('help.module')}</Label>
                 <Select
                   value={ticketForm.module}
                   onValueChange={(v) => setTicketForm((f) => ({ ...f, module: v }))}
@@ -679,14 +670,14 @@ export default function AjudaPage() {
                   <SelectContent>
                     {SUPPORT_MODULES.map((m) => (
                       <SelectItem key={m} value={m}>
-                        {SUPPORT_MODULE_LABELS[m]}
+                        {moduleLabel(m)}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1">
-                <Label>Prioridade</Label>
+                <Label>{t('help.priority')}</Label>
                 <Select
                   value={ticketForm.priority}
                   onValueChange={(v: 'low' | 'normal' | 'high') =>
@@ -697,9 +688,9 @@ export default function AjudaPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="low">Baixa</SelectItem>
-                    <SelectItem value="normal">Normal</SelectItem>
-                    <SelectItem value="high">Alta — está bloqueando o atendimento</SelectItem>
+                    <SelectItem value="low">{t('help.priorities.low')}</SelectItem>
+                    <SelectItem value="normal">{t('help.priorities.normal')}</SelectItem>
+                    <SelectItem value="high">{t('help.priorities.high')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -714,16 +705,16 @@ export default function AjudaPage() {
                     setTicketForm((f) => ({ ...f, attachConversation: e.target.checked }))
                   }
                 />
-                Anexar a conversa com a assistente — ajuda o time a entender o contexto.
+                {t('help.attachConversation')}
               </label>
             )}
           </div>
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button variant="outline" onClick={() => setTicketOpen(false)}>
-              Cancelar
+              {t('help.cancel')}
             </Button>
             <Button onClick={() => void submitTicket()} disabled={createTicket.isPending}>
-              {createTicket.isPending ? 'Enviando…' : 'Abrir chamado'}
+              {createTicket.isPending ? t('help.sending') : t('help.openTicket')}
             </Button>
           </div>
         </DialogContent>

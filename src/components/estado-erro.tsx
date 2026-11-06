@@ -1,6 +1,7 @@
 'use client';
 
 import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import { cn } from '@/lib/utils';
@@ -20,7 +21,7 @@ import { cn } from '@/lib/utils';
 export function EstadoErro({
   error,
   onRetry,
-  mensagem = 'Não foi possível carregar os dados.',
+  mensagem,
   className,
 }: {
   error?: unknown;
@@ -28,7 +29,9 @@ export function EstadoErro({
   mensagem?: string;
   className?: string;
 }) {
-  const detalhe = error ? getApiErrorMessage(error, mensagem) : mensagem;
+  const { t } = useTranslation();
+  const texto = mensagem ?? t('shared.loadData');
+  const detalhe = error ? getApiErrorMessage(error, texto) : texto;
   return (
     <div
       role="alert"
@@ -42,7 +45,7 @@ export function EstadoErro({
       {onRetry ? (
         <Button variant="outline" size="sm" onClick={() => onRetry()}>
           <RefreshCw className="mr-2 size-4" aria-hidden />
-          Tentar de novo
+          {t('shared.retry')}
         </Button>
       ) : null}
     </div>

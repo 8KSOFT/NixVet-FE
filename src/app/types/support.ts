@@ -20,26 +20,6 @@ export const SUPPORT_MODULES = [
 
 export type SupportModule = (typeof SUPPORT_MODULES)[number];
 
-export const SUPPORT_MODULE_LABELS: Record<string, string> = {
-  geral: 'Geral',
-  agenda: 'Agenda',
-  pacientes: 'Pacientes',
-  tutores: 'Tutores',
-  prontuario: 'Prontuário',
-  atendimento: 'Atendimento',
-  internacao: 'Internação',
-  exames: 'Exames',
-  prescricoes: 'Prescrições',
-  orcamentos: 'Orçamentos',
-  financeiro: 'Financeiro',
-  estoque: 'Estoque',
-  whatsapp: 'WhatsApp',
-  relatorios: 'Relatórios',
-  configuracoes: 'Configurações',
-  conta: 'Conta',
-  mobile: 'App mobile',
-};
-
 export interface SupportArticleSummary {
   id: string;
   slug: string;
@@ -125,10 +105,3 @@ export interface SupportStats {
   published_articles: number;
   draft_articles: number;
 }
-
-export const SUPPORT_TICKET_STATUS_LABELS: Record<SupportTicketStatus, string> = {
-  open: 'Aberto',
-  in_progress: 'Em andamento',
-  resolved: 'Resolvido',
-  closed: 'Fechado',
-};

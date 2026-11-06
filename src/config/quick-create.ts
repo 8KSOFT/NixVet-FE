@@ -16,7 +16,8 @@ export type QuickCreateAction = {
   key: string;
   /** Chave de RBAC (mesma usada em menuAllow/NAV_SECTIONS) que precisa estar liberada para o item aparecer. */
   menuKey: string;
-  label: string;
+  /** Chave de tradução (`common`) do rótulo. */
+  labelKey: string;
   icon: React.ElementType;
   /** Rota de destino, já com o parâmetro que a página-alvo lê para abrir seu próprio dialog de criação. */
   href: string;
@@ -32,70 +33,70 @@ export const QUICK_CREATE_ACTIONS: QuickCreateAction[] = [
   {
     key: "patient",
     menuKey: "patients",
-    label: "Novo Paciente",
+    labelKey: "quickCreate.patient",
     icon: PawPrint,
     href: "/patients?create=1",
   },
   {
     key: "owner",
     menuKey: "owners",
-    label: "Novo Responsável",
+    labelKey: "quickCreate.owner",
     icon: User,
     href: "/owners?create=1",
   },
   {
     key: "appointment",
     menuKey: "calendar",
-    label: "Novo Agendamento",
+    labelKey: "quickCreate.appointment",
     icon: CalendarPlus,
     href: "/calendar?create=1",
   },
   {
     key: "medical-record",
     menuKey: "medical-records",
-    label: "Nova Consulta / Atendimento",
+    labelKey: "quickCreate.medicalRecord",
     icon: Stethoscope,
     href: "/patients?intent=start-atendimento",
   },
   {
     key: "prescription",
     menuKey: "prescriptions",
-    label: "Nova Prescrição",
+    labelKey: "quickCreate.prescription",
     icon: Pill,
     href: "/prescriptions?create=1",
   },
   {
     key: "team-member",
     menuKey: "team",
-    label: "Novo Membro da Equipe",
+    labelKey: "quickCreate.teamMember",
     icon: UserPlus,
     href: "/settings/team?create=1",
   },
   {
     key: "product",
     menuKey: "products",
-    label: "Novo Produto / Item de Estoque",
+    labelKey: "quickCreate.product",
     icon: Package,
     href: "/settings/produtos?create=1",
   },
   {
     key: "vaccine",
     menuKey: "vaccines",
-    label: "Nova Vacina",
+    labelKey: "quickCreate.vaccine",
     icon: Syringe,
     href: "/vaccines?create=1",
   },
   {
     key: "followup",
     menuKey: "followups",
-    label: "Novo Acompanhamento",
+    labelKey: "quickCreate.followup",
     icon: CalendarClock,
     href: "/followups?create=1",
   },
   {
     key: "task",
     menuKey: "tasks",
-    label: "Nova Tarefa",
+    labelKey: "quickCreate.task",
     icon: ListChecks,
     href: "/tasks?create=1",
   },

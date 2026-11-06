@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -13,10 +14,10 @@ import {
   Stethoscope,
 } from "lucide-react";
 import { PLANS } from "@/lib/plans";
+import { usePlanText } from "@/lib/i18n/plans";
 import { HeaderComponent } from "@/components/shared/HeaderComponent";
 import { LogoCompactoDynamic } from "@/components/shared/componentizedImages/LogoCompactoDynamic";
 import { DogDynamic } from "@/components/shared/componentizedImages/DogDynamic";
-import type { LandingPageFeature } from "@/app/types/LandingPageFeature";
 import { RevealOnScroll } from "@/components/shared/RevealOnScroll";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { DogbackDynamic } from "@/components/shared/componentizedImages/DogbackDynamic";
@@ -26,49 +27,14 @@ import { Faq } from "@/components/shared/landing/Faq";
 import { GOOGLE_PLAY_URL } from "@/components/shared/landing/faq-items";
 import { GA_EVENTS, trackEvent } from "@/lib/analytics";
 
-const FEATURES: LandingPageFeature[] = [
-  {
-    icon: Stethoscope,
-    title: "Gestão Clínica",
-    description:
-      "Prontuário completo com anamnese, histórico e exame físico. Tudo organizado por paciente e responsável.",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Segurança LGPD",
-    description:
-      "Dados sensíveis criptografados (AES-256), consentimento de responsáveis e logs de auditoria completos.",
-  },
-  {
-    icon: FileSignature,
-    title: "Docs Inteligentes",
-    description:
-      "Receitas e solicitações de exames em PDF com assinatura digital e envio automático por e-mail.",
-  },
-];
+const FEATURES = [
+  { icon: Stethoscope, key: "clinical" },
+  { icon: ShieldCheck, key: "security" },
+  { icon: FileSignature, key: "docs" },
+] as const;
 
-const ROI_ROWS = [
-  {
-    task: "Responder WhatsApp",
-    before: "Recepcionista digitando, um cliente por vez",
-    after: "Respostas automáticas 24h, recepção só entra em casos complexos",
-  },
-  {
-    task: "Marcar consulta",
-    before: "Ida e volta de mensagens até fechar horário",
-    after: "Agendamento direto pelo próprio WhatsApp do cliente",
-  },
-  {
-    task: "Lembrete de vacina",
-    before: "Alguém precisa lembrar de avisar manualmente",
-    after: "Lembrete automático, sem depender de ninguém lembrar",
-  },
-  {
-    task: "Prontuário",
-    before: "Papel ou planilha, difícil de buscar depois",
-    after: "Busca instantânea, histórico completo por paciente",
-  },
-];
+const ROI_KEYS = ["whatsapp", "schedule", "reminder", "records"] as const;
+const DOC_TAG_KEYS = ["pdf", "signature", "auto"] as const;
 
 const FEATURE_ANIMATION_DELAY_CLASS_NAMES = [
   "motion-safe:[transition-delay:80ms]",
@@ -82,6 +48,8 @@ const aoClicarCta = (origem: string) => () =>
   trackEvent(GA_EVENTS.SIGN_UP_START, { origem });
 
 export default function HomeClient() {
+  const { t } = useTranslation();
+  const planText = usePlanText();
   const isMobile = useIsMobile();
   const isTablet = useIsMobile(958);
   const isTinyScreen = useIsMobile(500);
@@ -104,23 +72,20 @@ export default function HomeClient() {
             <RevealOnScroll className="flex justify-center sm:justify-start">
               <span className="mb-6 inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/12 px-3 py-1 text-[11px] font-semibold text-white sm:gap-2 sm:px-3.5 sm:py-1.5 sm:text-[13px]">
                 <span className="size-1.5 rounded-full bg-emerald-300 motion-safe:animate-pulse" />
-                Novo: atendimento automático no WhatsApp
+                {t('landing.heroBadge')}
               </span>
             </RevealOnScroll>
             <RevealOnScroll>
               <h1 className="flex flex-col font-black text-white mb-6 text-5xl md:text-7xl sm:text-6xl tracking-wide leading-thight">
-                Sua clínica <p>organizada.</p>
+                {t('landing.h1a')} <p>{t('landing.h1b')}</p>
                 <span className="text-white/65 bg-clip-text">
-                  Seu WhatsApp, <p>respondendo sozinho.</p>
+                  {t('landing.h1c')} <p>{t('landing.h1d')}</p>
                 </span>
               </h1>
             </RevealOnScroll>
             <RevealOnScroll delayClassName="motion-safe:[transition-delay:140ms] w-[90%]">
               <p className="text-[15px] text-white/95 tracking-normal mb-8 max-w-80 lg:text-[19px] md:text-[19px] sm:text-[16px] lg:w-115 md:w-115 sm:w-90 lg:max-w-115 md:max-w-115 sm:max-w-90">
-                O NixVetApp junta prontuário, agenda e financeiro num só
-                sistema, e ainda atende seus clientes no WhatsApp: agenda
-                consulta, tira dúvida. E avisos sobre agendamentos, vacinas
-                e retornos.
+                {t('landing.heroText')}
               </p>
             </RevealOnScroll>
           </div>
@@ -138,7 +103,7 @@ export default function HomeClient() {
                   onClick={aoClicarCta("hero")}
                   className="flex w-full items-center gap-4"
                 >
-                  <span className="whitespace-nowrap">Começar agora grátis</span>
+                  <span className="whitespace-nowrap">{t('landing.ctaStart')}</span>
                   <div className="flex shrink-0 items-center justify-center size-11 rounded-full bg-brand-deep text-white transition-[filter] duration-200 group-hover:brightness-90">
                     <ArrowRight className="size-8" />
                   </div>
@@ -147,13 +112,13 @@ export default function HomeClient() {
             </div>
             <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[13px] text-white/75 lg:justify-start">
               <span className="flex items-center gap-1.5">
-                <CheckCircle2 className="size-3.5 text-emerald-300" /> 14 dias grátis
+                <CheckCircle2 className="size-3.5 text-emerald-300" /> {t('landing.bullets.free')}
               </span>
               <span className="flex items-center gap-1.5">
-                <CheckCircle2 className="size-3.5 text-emerald-300" /> sem cartão de crédito
+                <CheckCircle2 className="size-3.5 text-emerald-300" /> {t('landing.bullets.noCard')}
               </span>
               <span className="flex items-center gap-1.5">
-                <CheckCircle2 className="size-3.5 text-emerald-300" /> cancele quando quiser
+                <CheckCircle2 className="size-3.5 text-emerald-300" /> {t('landing.bullets.cancel')}
               </span>
             </div>
           </RevealOnScroll>
@@ -177,22 +142,21 @@ export default function HomeClient() {
                   qual é o assunto da página. As classes são as mesmas — nada
                   muda visualmente. */}
               <h2 className="text-white text-[32px] font-bold leading-tight lg:text-[59.61px] md:text-[45px] sm:text-[38px]">
-                <span className="text-pretty">Por que escolher</span>
-                <p>o NixVetApp?</p>
+                <span className="text-pretty">{t('landing.why1')}</span>
+                <p>{t('landing.why2')}</p>
               </h2>
             </RevealOnScroll>
 
             <RevealOnScroll delayClassName="motion-safe:[transition-delay:140ms]">
               {isTinyScreen ? (
                 <h2 className="text-white font-extralight text-[22px]">
-                  <span>Tecnologia de ponta</span>
-                  <p> desenvolvida para otimizar</p>
-                  <p>cada aspecto da sua clínica</p>
+                  <span>{t('landing.sub1')}</span>
+                  <p>{t('landing.sub2')}</p>
                 </h2>
               ) : (
                 <h2 className="text-white font-extralight text-[25px] lg:text-[25px] md:text-[20px] sm:text-[18px]">
-                  <span>Tecnologia de ponta desenvolvida para</span>
-                  <p>otimizar cada aspecto da sua clínica</p>
+                  <span>{t('landing.sub1')}</span>
+                  <p>{t('landing.sub2')}</p>
                 </h2>
               )}
             </RevealOnScroll>
@@ -224,29 +188,26 @@ export default function HomeClient() {
               <Card className="group flex h-full min-h-70 flex-col justify-between overflow-hidden rounded-2xl border-none bg-linear-to-br from-brand-deep-dark to-brand-deep p-6 shadow-md">
                 <div>
                   <span className="mb-5 inline-flex items-center rounded-full bg-white/16 px-3 py-1 text-[11.5px] font-bold text-white">
-                    ★ Diferencial NixVet
+                    {t('landing.diffBadge')}
                   </span>
                   <div className="mb-4 flex items-center gap-4">
                     <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-white/16 text-white">
                       <MessageCircle className="size-6" />
                     </div>
                     <h4 className="text-[20px] leading-snug font-bold text-white">
-                      Atendimento no WhatsApp, mesmo sem ninguém na recepção
+                      {t('landing.diffTitle')}
                     </h4>
                   </div>
                   <p className="text-[15px] leading-relaxed text-white/85">
-                    Sua equipe para de perder cliente por mensagem não
-                    respondida. O sistema marca a consulta sozinho e chama um
-                    humano quando o caso foge do script.
+                    {t('landing.diffText')}
                   </p>
                 </div>
                 <div className="mt-5 space-y-2 rounded-xl border border-white/15 bg-white/8 p-3.5">
                   <div className="max-w-[85%] rounded-xl rounded-bl-sm bg-white/14 px-3 py-2 text-[12.5px] leading-snug text-white">
-                    Oi! Preciso marcar consulta pro meu gato, ele tá sem comer 😟
+                    {t('landing.chatClient')}
                   </div>
                   <div className="ml-auto max-w-[85%] rounded-xl rounded-br-sm bg-emerald-300 px-3 py-2 text-[12.5px] font-semibold leading-snug text-brand-deep-dark">
-                    Entendi! Consigo um horário hoje às 16h40 com a Dra. Ana.
-                    Confirma?
+                    {t('landing.chatBot')}
                   </div>
                 </div>
               </Card>
@@ -259,7 +220,7 @@ export default function HomeClient() {
               const isDocsCard = featureIndex === FEATURES.length - 1;
               return (
                 <RevealOnScroll
-                  key={feature.title}
+                  key={feature.key}
                   delayClassName={transitionDelayClassName}
                   className={isDocsCard ? "sm:col-span-2" : ""}
                 >
@@ -273,20 +234,20 @@ export default function HomeClient() {
                                 <Icon className="size-6" />
                               </div>
                               <h4 className="text-[20px] leading-snug font-bold text-brand-deep-dark">
-                                {feature.title}
+                                {t(`landing.features.${feature.key}.title`)}
                               </h4>
                             </div>
                             <p className="mb-4 text-[15px] leading-relaxed text-gray-500">
-                              {feature.description}
+                              {t(`landing.features.${feature.key}.description`)}
                             </p>
                             <ul className="flex flex-wrap gap-2">
-                              {["Receita em PDF", "Assinatura digital", "Envio automático"].map(
+                              {DOC_TAG_KEYS.map(
                                 (tag) => (
                                   <li
                                     key={tag}
                                     className="rounded-full bg-[#eef7f3] px-3 py-1 text-[12.5px] font-semibold text-brand-deep-dark"
                                   >
-                                    {tag}
+                                    {t(`landing.docTags.${tag}`)}
                                   </li>
                                 ),
                               )}
@@ -295,7 +256,7 @@ export default function HomeClient() {
                           <div className="w-full shrink-0 rounded-xl border border-border bg-white p-4 shadow-sm sm:w-55">
                             <div className="mb-3 flex items-center justify-between">
                               <span className="text-[11px] font-bold tracking-wide text-brand-deep-dark uppercase">
-                                Receita.pdf
+                                {t('landing.docFile')}
                               </span>
                               <FileSignature className="size-4 text-brand-deep" />
                             </div>
@@ -305,8 +266,7 @@ export default function HomeClient() {
                               <div className="h-2 w-2/3 rounded-full bg-border" />
                             </div>
                             <div className="flex w-fit items-center gap-1.5 rounded-full bg-[#eef7f3] px-2.5 py-1 text-[11px] font-semibold text-brand-deep-dark">
-                              <CheckCircle2 className="size-3.5 text-brand-deep" /> Assinado
-                              digitalmente
+                              <CheckCircle2 className="size-3.5 text-brand-deep" /> {t('landing.signed')}
                             </div>
                           </div>
                         </div>
@@ -317,11 +277,11 @@ export default function HomeClient() {
                               <Icon className="size-5" />
                             </div>
                             <h4 className="text-[20px] leading-snug font-semibold text-brand-deep-dark">
-                              {feature.title}
+                              {t(`landing.features.${feature.key}.title`)}
                             </h4>
                           </div>
                           <p className="text-[15px] leading-relaxed text-gray-500">
-                            {feature.description}
+                            {t(`landing.features.${feature.key}.description`)}
                           </p>
                         </>
                       )}
@@ -353,13 +313,13 @@ export default function HomeClient() {
         <div className="mx-auto max-w-6xl">
           <RevealOnScroll className="mx-auto mb-12 max-w-2xl text-center">
             <span className="mb-2.5 block text-[13px] font-bold tracking-wider text-brand-deep-dark uppercase">
-              Veja por dentro
+              {t('landing.tourKicker')}
             </span>
             <h2 className="text-brand-deep-dark text-[32px] font-black leading-tight lg:text-[42px] md:text-[36px]">
-              O sistema, na prática
+              {t('landing.tourTitle')}
             </h2>
             <p className="mt-4 text-[16px] text-[#565656] lg:text-[18px]">
-              Um vislumbre de como fica o dia a dia da sua equipe usando o NixVetApp.
+              {t('landing.tourText')}
             </p>
           </RevealOnScroll>
 
@@ -374,10 +334,10 @@ export default function HomeClient() {
         <div className="mx-auto max-w-4xl">
           <RevealOnScroll className="mx-auto mb-12 max-w-2xl text-center">
             <span className="mb-2.5 block text-[13px] font-bold tracking-wider text-brand-deep-dark uppercase">
-              Retorno sobre o investimento
+              {t('landing.roi.kicker')}
             </span>
             <h2 className="text-brand-deep-dark text-[32px] font-black leading-tight lg:text-[42px] md:text-[36px]">
-              Quanto tempo isso economiza da sua equipe?
+              {t('landing.roi.title')}
             </h2>
           </RevealOnScroll>
 
@@ -386,25 +346,25 @@ export default function HomeClient() {
             className="overflow-hidden rounded-2xl border border-brand-deep/15 shadow-[0_20px_45px_rgba(18,179,127,0.12)]"
           >
             <div className="hidden grid-cols-[1.1fr_1fr_1fr] bg-linear-to-r from-brand-deep-dark to-brand-deep text-[13.5px] font-bold text-white sm:grid">
-              <div className="p-4">Tarefa</div>
-              <div className="p-4">Do jeito antigo</div>
-              <div className="p-4">Com o NixVetApp</div>
+              <div className="p-4">{t('landing.roi.colTask')}</div>
+              <div className="p-4">{t('landing.roi.colBefore')}</div>
+              <div className="p-4">{t('landing.roi.colAfter')}</div>
             </div>
-            {ROI_ROWS.map((row, rowIndex) => (
+            {ROI_KEYS.map((row, rowIndex) => (
               <div
-                key={row.task}
+                key={row}
                 className={`grid grid-cols-1 sm:grid-cols-[1.1fr_1fr_1fr] ${
                   rowIndex % 2 === 1 ? "bg-[#eef7f3]" : "bg-white"
                 }`}
               >
                 <div className="border-t border-brand-deep/10 p-4 text-[14px] font-semibold text-brand-deep-dark sm:text-inherit">
-                  {row.task}
+                  {t(`landing.roi.rows.${row}.task`)}
                 </div>
                 <div className="border-t border-brand-deep/10 p-4 text-[14px] leading-relaxed text-gray-500">
-                  {row.before}
+                  {t(`landing.roi.rows.${row}.before`)}
                 </div>
                 <div className="border-t border-brand-deep/10 border-l-2 border-l-brand-deep/40 bg-brand-deep/5 p-4 text-[14px] leading-relaxed font-semibold text-brand-deep">
-                  {row.after}
+                  {t(`landing.roi.rows.${row}.after`)}
                 </div>
               </div>
             ))}
@@ -414,7 +374,7 @@ export default function HomeClient() {
             delayClassName="motion-safe:[transition-delay:200ms]"
             className="mx-auto mt-8 max-w-xl text-center text-[17px] font-semibold text-brand-deep-dark"
           >
-            Menos tempo apagando incêndio na recepção, mais tempo cuidando dos pacientes.
+            {t('landing.roi.closing')}
           </RevealOnScroll>
         </div>
       </section>
@@ -424,10 +384,10 @@ export default function HomeClient() {
         <div className="mx-auto max-w-6xl">
           <RevealOnScroll className="mx-auto mb-14 max-w-2xl text-center">
             <h2 className="text-brand-deep-dark text-[32px] font-black leading-tight lg:text-[48px] md:text-[38px]">
-              Planos para cada tamanho de clínica
+              {t('landing.plans.title')}
             </h2>
             <p className="mt-4 text-[16px] text-[#565656] lg:text-[20px]">
-              14 dias grátis para testar, sem cartão de crédito. Escolha o plano ideal quando estiver pronto.
+              {t('landing.plans.subtitle')}
             </p>
           </RevealOnScroll>
 
@@ -447,20 +407,20 @@ export default function HomeClient() {
                 >
                   {plan.highlight && (
                     <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-brand-deep px-3 py-0.5 text-xs font-bold text-white shadow">
-                      Mais popular
+                      {t('landing.plans.popular')}
                     </span>
                   )}
                   <CardContent className="flex h-full flex-col p-0">
-                    <h3 className="text-xl font-semibold text-brand-deep-dark">{plan.name}</h3>
-                    <p className="mt-1 text-sm text-gray-500">{plan.tagline}</p>
+                    <h3 className="text-xl font-semibold text-brand-deep-dark">{planText(plan).name}</h3>
+                    <p className="mt-1 text-sm text-gray-500">{planText(plan).tagline}</p>
                     <div className="mt-4 flex items-end gap-1">
                       <span className="text-4xl font-extrabold text-brand-deep-dark">
                         R${plan.price}
                       </span>
-                      <span className="mb-1 text-sm text-gray-500">/mês</span>
+                      <span className="mb-1 text-sm text-gray-500">{t('billingUpgrade.perMonth')}</span>
                     </div>
                     <ul className="mt-6 flex-1 space-y-2.5">
-                      {plan.features.map((feature) => (
+                      {planText(plan).features.map((feature) => (
                         <li key={feature} className="flex items-start gap-2 text-sm text-gray-600">
                           <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-brand-deep" />
                           {feature}
@@ -475,7 +435,7 @@ export default function HomeClient() {
                           : "bg-brand-deep/10 text-brand-deep-dark hover:bg-brand-deep/20"
                       }`}
                     >
-                      <Link href="/register" onClick={aoClicarCta("planos")}>Começar grátis</Link>
+                      <Link href="/register" onClick={aoClicarCta("planos")}>{t('landing.plans.cta')}</Link>
                     </Button>
                   </CardContent>
                 </Card>
@@ -490,10 +450,10 @@ export default function HomeClient() {
         <div className="mx-auto max-w-3xl">
           <RevealOnScroll className="mx-auto mb-12 max-w-2xl text-center">
             <span className="mb-2.5 block text-[13px] font-bold tracking-wider text-brand-deep-dark uppercase">
-              Dúvidas frequentes
+              {t('landing.faq.kicker')}
             </span>
             <h2 className="text-brand-deep-dark text-[32px] font-black leading-tight lg:text-[42px] md:text-[36px]">
-              Perguntas frequentes
+              {t('landing.faq.title')}
             </h2>
           </RevealOnScroll>
 
@@ -508,35 +468,27 @@ export default function HomeClient() {
         <div className="relative flex flex-col items-center mx-auto max-w-5xl overflow-hiddenc px-2 py-12 text-center lg:p-12">
           <RevealOnScroll>
             <h2 className="text-brand-deep mb-6 text-[32px] font-black relative word-spacing-wide leading-tight lg:text-[60px] md:text-[42px] sm:text-[32px] ">
-              {isMobile ? (
-                <div>
-                  <p className="text-[#565656]">Pronto para</p>
-                  <p className="text-[#565656]">nunca mais</p>
-                  <p className="text-brand-deep">perder um cliente</p>
-                  <p className="text-[#565656]">por mensagem</p>
-                  <p className="text-[#565656]">não respondida?</p>
-                </div>
-              ) : (
-                <div>
-                  <p className="text-[#565656]">Pronto para nunca mais</p>
-                  <p className="text-brand-deep">perder um cliente</p>
-                  <p className="text-[#565656]">por mensagem não</p>
-                  <p className="text-[#565656]">respondida?</p>
-                </div>
-              )}
+              <div>
+                {t(isMobile ? 'landing.ctaSection.titleMobile' : 'landing.ctaSection.titleDesktop')
+                  .split('\n')
+                  .map((line: string) => (
+                    <p key={line} className={line.startsWith('<hl>') ? 'text-brand-deep' : 'text-[#565656]'}>
+                      {line.replace(/<\/?hl>/g, '')}
+                    </p>
+                  ))}
+              </div>
             </h2>
           </RevealOnScroll>
           <RevealOnScroll delayClassName="motion-safe:[transition-delay:160ms]">
             {isMobile ? (
               <p className="mb-10 max-w-2xl mx-auto relative z-10 text-[18px] text-[#565656] lg:text-[28px] md:text-[28px] sm:text-[18px]">
-                <span>Junte-se às clínicas que já</span>
-                <p>modernizaram o atendimento</p>
-                <p>com o NixVetApp.</p>
+                {t('landing.ctaSection.textMobile').split('\n').map((line: string) => (
+                  <p key={line}>{line}</p>
+                ))}
               </p>
             ) : (
               <p className="mb-10 max-w-2xl mx-auto relative z-10 text-[18px] text-[#565656] lg:text-[28px] md:text-[28px] sm:text-[18px]">
-                Junte-se às clínicas que já modernizaram o atendimento com o
-                NixVetApp.
+                {t('landing.ctaSection.text')}
               </p>
             )}
           </RevealOnScroll>
@@ -548,7 +500,7 @@ export default function HomeClient() {
               className="group w-fit p-0 pl-6 pr-2 rounded-full flex items-center gap-4 text-[20px] text-brand-deep font-medium h-16 shadow-none bg-brand-deep/10 active:bg-brand-deep/30 hover:bg-brand-deep/25 border-none"
             >
               <Link href="/register" onClick={aoClicarCta("rodape")}>
-                Começar agora grátis
+                {t('landing.ctaStart')}
                 <div className="flex shrink-0 items-center justify-center size-12 rounded-full bg-brand-deep text-white transition-[filter] duration-200 group-hover:brightness-90">
                   <ArrowRight className="size-8" />
                 </div>
@@ -571,35 +523,35 @@ export default function HomeClient() {
             href="#diferenciais"
             className="text-[16px] text-brand-deep hover:text-brand-deep/80 transition-colors lg:text-[22px] md:text-[22px] sm:text-[16px]"
           >
-            Recursos
+            {t('landing.footer.resources')}
           </Link>
           <div className="w-0.5 h-5 bg-gray-600 lg:w-0.5 lg:h-7" />
           <Link
             href="#planos"
             className="text-[16px] text-brand-deep hover:text-brand-deep/80 transition-colors lg:text-[22px] md:text-[22px] sm:text-[16px]"
           >
-            Planos
+            {t('landing.footer.plans')}
           </Link>
           <div className="w-0.5 h-5 bg-gray-600 lg:w-0.5 lg:h-7" />
           <Link
             href="#faq"
             className="text-[16px] text-brand-deep hover:text-brand-deep/80 transition-colors lg:text-[22px] md:text-[22px] sm:text-[16px]"
           >
-            Dúvidas frequentes
+            {t('landing.footer.faq')}
           </Link>
           <div className="w-0.5 h-5 bg-gray-600 lg:w-0.5 lg:h-7" />
           <Link
             href="/politicas-uso"
             className="text-[16px] text-brand-deep hover:text-brand-deep/80 transition-colors lg:text-[22px] md:text-[22px] sm:text-[16px]"
           >
-            Políticas de uso
+            {t('landing.footer.policies')}
           </Link>
           <div className="w-0.5 h-5 bg-gray-600 lg:w-0.5 lg:h-7" />
           <Link
             href="/termos-servicos-aplicativo"
             className="text-[16px] text-brand-deep hover:text-brand-deep/80 transition-colors lg:text-[22px] md:text-[22px] sm:text-[16px]"
           >
-            Termos do aplicativo
+            {t('landing.footer.terms')}
           </Link>
         </div>
         <Link
@@ -610,14 +562,14 @@ export default function HomeClient() {
         >
           <Image
             src="/images/badges/google-play-badge.png"
-            alt="Disponível no Google Play"
+            alt={t('landing.footer.playAlt')}
             width={180}
             height={53}
             className="h-13.25 w-auto"
           />
         </Link>
         <p className="text-[16px] text-[#565656] lg:text-[22px] md:text-[22px] sm:text-[16px]">
-          NixVetApp ©{new Date().getFullYear()} - Todos os direitos reservados.
+          {t('landing.footer.rights', { year: new Date().getFullYear() })}
         </p>
       </footer>
     </main>

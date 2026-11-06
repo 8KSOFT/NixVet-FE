@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { getApiErrorMessage } from '@/app/utils/api-error-message';
+import { Trans, useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
   Loader2,
@@ -62,18 +63,18 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useRouter } from "next/navigation";
 import { getStoredUserRole } from "@/lib/role-permissions";
-import { PLAN_SELECT_OPTIONS as PLAN_OPTIONS } from "@/lib/plans";
+import { usePlanOptions, usePlanShortLabel } from "@/lib/i18n/plans";
 import type { SuperadminTenantRow as ClinicRow } from "@/app/types/tenant";
 
-const STATUS_OPTIONS = [
-  { value: "active", label: "Ativo" },
-  { value: "trial", label: "Trial" },
-  { value: "trial_expired", label: "Trial Expirado" },
-  { value: "overdue", label: "Em Atraso" },
-  { value: "suspended", label: "Suspenso" },
-  { value: "cancelled", label: "Cancelado" },
-  { value: "exempt", label: "Isento (cortesia)" },
-];
+const STATUS_VALUES = [
+  "active",
+  "trial",
+  "trial_expired",
+  "overdue",
+  "suspended",
+  "cancelled",
+  "exempt",
+] as const;
 
 const addDays = (d: number) =>
   new Date(Date.now() + d * 86400000).toISOString();
@@ -108,10 +109,6 @@ function statusBadgeClass(status: string | null): string {
   return "";
 }
 
-function statusLabel(status: string | null) {
-  return STATUS_OPTIONS.find((s) => s.value === status)?.label ?? status ?? "—";
-}
-
 const emptyCreate = () => ({
   name: "",
   code: "",
@@ -124,6 +121,11 @@ const emptyCreate = () => ({
 });
 
 export default function SuperadminClinicsPage() {
+  const { t } = useTranslation();
+  const PLAN_OPTIONS = usePlanOptions();
+  const planShortLabel = usePlanShortLabel();
+  const statusLabel = (status: string | null) =>
+    status ? t(`subscriptionStatus.${status}`, { defaultValue: status }) : "—";
   const router = useRouter();
   const [listPage, setListPage] = useState(1);
 
@@ -152,24 +154,22 @@ export default function SuperadminClinicsPage() {
     const role = getStoredUserRole();
     if (role !== "superadmin") {
       toast.error(
-        `Você está logado como "${role ?? "desconhecido"}". Faça logout e logue como superadmin.`,
+        t("superadminClinics.toasts.loggedAs", { role: role ?? t("superadminClinics.toasts.roleUnknown") }),
       );
       router.replace("/dashboard");
     }
-  }, [router]);
+  }, [router, t]);
 
   useEffect(() => {
     if (!error) return;
     const err = error as { response?: { status?: number } };
     if (err.response?.status === 403) {
-      toast.error(
-        "Apenas superadmin pode acessar. Faça logout e entre com uma conta superadmin.",
-      );
+      toast.error(t("superadminClinics.toasts.superadminOnly"));
       router.replace("/dashboard");
       return;
     }
-    toast.error("Falha ao carregar clínicas");
-  }, [error, router]);
+    toast.error(t("superadminClinics.toasts.loadFail"));
+  }, [error, router, t]);
 
   const openReset = (row: ClinicRow) => {
     setResetTenantId(row.id);
@@ -179,7 +179,7 @@ export default function SuperadminClinicsPage() {
 
   const submitReset = async () => {
     if (!resetTenantId || newPassword.trim().length < 8) {
-      toast.error("Senha precisa ter no mínimo 8 caracteres");
+      toast.error(t("superadminClinics.toasts.passwordMin8"));
       return;
     }
     try {
@@ -189,13 +189,13 @@ export default function SuperadminClinicsPage() {
       });
       setResetTenantId(null);
     } catch (e: unknown) {
-      toast.error(getApiErrorMessage(e, "Erro"));
+      toast.error(getApiErrorMessage(e, t("superadminClinics.toasts.error")));
     }
   };
 
   const submitCreate = async () => {
     if (!createForm.name.trim() || !createForm.code.trim()) {
-      toast.error("Informe nome e código");
+      toast.error(t("superadminClinics.toasts.nameCodeRequired"));
       return;
     }
     try {
@@ -210,7 +210,7 @@ export default function SuperadminClinicsPage() {
       setCreateOpen(false);
       setCreateForm(emptyCreate());
     } catch (e: unknown) {
-      toast.error(getApiErrorMessage(e, "Erro ao criar"));
+      toast.error(getApiErrorMessage(e, t("superadminClinics.toasts.createError")));
     }
   };
 
@@ -234,7 +234,7 @@ export default function SuperadminClinicsPage() {
     try {
       await patchMutation.mutateAsync({ id: tenantId, payload });
     } catch {
-      toast.error("Falha ao atualizar");
+      toast.error(t("superadminClinics.toasts.updateFail"));
     }
   };
 
@@ -242,7 +242,7 @@ export default function SuperadminClinicsPage() {
     if (!editRow) return;
     const telefone = (editForm.phone as string | null | undefined) ?? "";
     if (telefone && !telefoneValido(telefone)) {
-      toast.error("Telefone inválido. Use DDD e número, por exemplo (11) 91234-5678.");
+      toast.error(t("superadminClinics.toasts.phoneInvalid"));
       return;
     }
     try {
@@ -252,7 +252,7 @@ export default function SuperadminClinicsPage() {
       });
       setEditRow(null);
     } catch (e: unknown) {
-      toast.error(getApiErrorMessage(e, "Erro"));
+      toast.error(getApiErrorMessage(e, t("superadminClinics.toasts.error")));
     }
   };
 
@@ -264,7 +264,7 @@ export default function SuperadminClinicsPage() {
     try {
       await patchMutation.mutateAsync({ id: row.id, payload: { [field]: value } });
     } catch {
-      toast.error("Falha ao atualizar — recarregue");
+      toast.error(t("superadminClinics.toasts.updateFailReload"));
     }
   };
 
@@ -277,8 +277,8 @@ export default function SuperadminClinicsPage() {
             variant="ghost"
             size="icon"
             className="p-0"
-            title="Liberar"
-            aria-label="Liberar"
+            title={t("superadminClinics.actions.release")}
+            aria-label={t("superadminClinics.actions.release")}
             onClick={() =>
               void quickPatch(row.id, {
                 subscription_status: "active",
@@ -295,8 +295,8 @@ export default function SuperadminClinicsPage() {
           variant="ghost"
           size="icon"
           className="p-0"
-          title="Suspender"
-          aria-label="Suspender"
+          title={t("superadminClinics.actions.suspend")}
+          aria-label={t("superadminClinics.actions.suspend")}
           onClick={() =>
             void quickPatch(row.id, {
               subscription_status: "suspended",
@@ -310,8 +310,8 @@ export default function SuperadminClinicsPage() {
         variant="ghost"
         size="icon"
         className="p-0"
-        title="Editar"
-        aria-label="Editar"
+        title={t("superadminClinics.actions.edit")}
+        aria-label={t("superadminClinics.actions.edit")}
         onClick={() => openEdit(row)}
       >
         <Settings2 className="size-4" />
@@ -320,8 +320,8 @@ export default function SuperadminClinicsPage() {
         variant="ghost"
         size="icon"
         className="p-0"
-        title="Redefinir senha"
-        aria-label="Redefinir senha"
+        title={t("superadminClinics.actions.resetPassword")}
+        aria-label={t("superadminClinics.actions.resetPassword")}
         onClick={() => openReset(row)}
         disabled={!row.admin_email}
       >
@@ -334,8 +334,8 @@ export default function SuperadminClinicsPage() {
             variant="ghost"
             size="icon"
             className="p-0"
-            title="Mais ações"
-            aria-label="Mais ações"
+            title={t("superadminClinics.actions.more")}
+            aria-label={t("superadminClinics.actions.more")}
           >
             <MoreHorizontal className="size-4" />
           </Button>
@@ -349,7 +349,7 @@ export default function SuperadminClinicsPage() {
               })
             }
           >
-            Trial 14 dias
+            {t("superadminClinics.actions.trial14")}
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() =>
@@ -359,7 +359,7 @@ export default function SuperadminClinicsPage() {
               })
             }
           >
-            Trial 30 dias
+            {t("superadminClinics.actions.trial30")}
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() =>
@@ -369,7 +369,7 @@ export default function SuperadminClinicsPage() {
               })
             }
           >
-            Isentar 3 meses
+            {t("superadminClinics.actions.exempt3")}
           </DropdownMenuItem>
           <DropdownMenuItem
             onClick={() =>
@@ -379,7 +379,7 @@ export default function SuperadminClinicsPage() {
               })
             }
           >
-            Isentar 6 meses
+            {t("superadminClinics.actions.exempt6")}
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
@@ -387,7 +387,7 @@ export default function SuperadminClinicsPage() {
               router.push(`/superadmin/clinics/${row.id}`)
             }
           >
-            <ExternalLink className="size-3.5 mr-2" /> Ver detalhes
+            <ExternalLink className="size-3.5 mr-2" /> {t("superadminClinics.actions.viewDetails")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -399,10 +399,10 @@ export default function SuperadminClinicsPage() {
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-            Clínicas (global)
+            {t("nav.clinicsAdmin")}
           </h1>
           <p className="text-muted-foreground mt-1">
-            Painel exclusivo do superadmin: crie, edite e gerencie os tenants.
+            {t("superadminClinics.pageSubtitle")}
           </p>
         </div>
         <Button
@@ -412,14 +412,14 @@ export default function SuperadminClinicsPage() {
             setCreateOpen(true);
           }}
         >
-          <Plus className="size-4 mr-1" /> Nova clínica
+          <Plus className="size-4 mr-1" /> {t("superadminClinics.newClinic")}
         </Button>
       </div>
 
       <div className="rounded-xl bg-card overflow-x-auto">
         {loading ? (
           <div className="flex items-center justify-center py-20 text-muted-foreground gap-2">
-            <Loader2 className="size-5 animate-spin" /> Carregando...
+            <Loader2 className="size-5 animate-spin" /> {t("superadminClinics.loadingShort")}
           </div>
         ) : (
           <>
@@ -428,14 +428,14 @@ export default function SuperadminClinicsPage() {
               <Table className="min-w-full border-collapse bg-white text-sm">
                 <TableHeader>
                   <TableRow className="border-b border-gray-300 h-15">
-                    <TableHead>Clínica</TableHead>
-                    <TableHead>Código</TableHead>
-                    <TableHead>Admin</TableHead>
-                    <TableHead>Chatbot WhatsApp</TableHead>
-                    <TableHead>Plataforma IA</TableHead>
-                    <TableHead>Plano</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
+                    <TableHead>{t("superadminClinics.cols.clinic")}</TableHead>
+                    <TableHead>{t("superadminClinics.cols.code")}</TableHead>
+                    <TableHead>{t("superadminClinics.cols.admin")}</TableHead>
+                    <TableHead>{t("superadminClinics.cols.chatbot")}</TableHead>
+                    <TableHead>{t("superadminClinics.cols.ai")}</TableHead>
+                    <TableHead>{t("superadminClinics.cols.plan")}</TableHead>
+                    <TableHead>{t("superadminClinics.cols.status")}</TableHead>
+                    <TableHead className="text-right">{t("superadminClinics.cols.actions")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -445,7 +445,7 @@ export default function SuperadminClinicsPage() {
                         colSpan={8}
                         className="border-t border-slate-200 py-8 text-center text-sm text-slate-500"
                       >
-                        Nenhuma clínica cadastrada.
+                        {t("superadminClinics.emptyList")}
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -488,7 +488,7 @@ export default function SuperadminClinicsPage() {
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline" className="capitalize w-fit">
-                            {row.billing_plan?.trim() || "—"}
+                            {planShortLabel(row.billing_plan?.trim())}
                           </Badge>
                         </TableCell>
                         <TableCell>
@@ -505,18 +505,12 @@ export default function SuperadminClinicsPage() {
                               (row.subscription_status === "trial" ||
                                 row.subscription_status === "exempt") && (
                                 <span className="text-xs text-muted-foreground">
-                                  até{" "}
-                                  {new Date(
-                                    row.trial_ends_at,
-                                  ).toLocaleDateString("pt-BR")}
+                                  {t("superadminClinics.until", { date: new Date(row.trial_ends_at).toLocaleDateString("pt-BR") })}
                                 </span>
                               )}
                             {row.cancel_at && (
                               <span className="text-xs text-orange-600">
-                                ⚠️ cancel.{" "}
-                                {new Date(row.cancel_at).toLocaleDateString(
-                                  "pt-BR",
-                                )}
+                                ⚠️ {t("superadminClinics.cancelShort", { date: new Date(row.cancel_at).toLocaleDateString("pt-BR") })}
                               </span>
                             )}
                           </div>
@@ -535,7 +529,7 @@ export default function SuperadminClinicsPage() {
             <div className="space-y-3 md:hidden">
               {rows.length === 0 ? (
                 <div className="rounded-lg border border-gray-300 bg-white py-8 text-center text-sm text-slate-500">
-                  Nenhuma clínica cadastrada.
+                  {t("superadminClinics.emptyList")}
                 </div>
               ) : (
                 rows.map((row) => (
@@ -556,7 +550,7 @@ export default function SuperadminClinicsPage() {
                           {statusLabel(row.subscription_status)}
                         </Badge>
                         <Badge variant="outline" className="capitalize">
-                          {row.billing_plan?.trim() || "—"}
+                          {planShortLabel(row.billing_plan?.trim())}
                         </Badge>
                       </div>
                     </div>
@@ -568,12 +562,12 @@ export default function SuperadminClinicsPage() {
                         {row.trial_ends_at &&
                           (row.subscription_status === "trial" || row.subscription_status === "exempt") && (
                             <span className="text-muted-foreground">
-                              até {new Date(row.trial_ends_at).toLocaleDateString("pt-BR")}
+                              {t("superadminClinics.until", { date: new Date(row.trial_ends_at).toLocaleDateString("pt-BR") })}
                             </span>
                           )}
                         {row.cancel_at && (
                           <span className="ml-2 text-orange-600">
-                            ⚠️ cancel. {new Date(row.cancel_at).toLocaleDateString("pt-BR")}
+                            ⚠️ {t("superadminClinics.cancelShort", { date: new Date(row.cancel_at).toLocaleDateString("pt-BR") })}
                           </span>
                         )}
                       </div>
@@ -581,19 +575,19 @@ export default function SuperadminClinicsPage() {
 
                     <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
                       <div className="col-span-2">
-                        <p className="text-xs text-muted-foreground">Admin</p>
+                        <p className="text-xs text-muted-foreground">{t("superadminClinics.cols.admin")}</p>
                         <p className="truncate">{row.admin_name ?? "—"}</p>
                         <p className="truncate text-xs text-muted-foreground">{row.admin_email ?? ""}</p>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-xs text-muted-foreground">Chatbot WhatsApp</span>
+                        <span className="text-xs text-muted-foreground">{t("superadminClinics.cols.chatbot")}</span>
                         <Switch
                           checked={row.whatsapp_ai_chatbot_enabled}
                           onCheckedChange={(v) => quickToggle(row, "whatsapp_ai_chatbot_enabled", v)}
                         />
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-xs text-muted-foreground">Plataforma IA</span>
+                        <span className="text-xs text-muted-foreground">{t("superadminClinics.cols.ai")}</span>
                         <Switch
                           checked={row.ai_platform_enabled}
                           onCheckedChange={(v) => quickToggle(row, "ai_platform_enabled", v)}
@@ -628,13 +622,13 @@ export default function SuperadminClinicsPage() {
       >
         <DialogContent className="md:max-w-md">
           <DialogHeader>
-            <DialogTitle>Redefinir senha do admin</DialogTitle>
+            <DialogTitle>{t("superadminClinics.resetDialog.title")}</DialogTitle>
             <DialogDescription>
-              Clínica: <strong>{resetClinicName}</strong>
+              <Trans i18nKey="superadminClinics.resetDialog.clinic" values={{ name: resetClinicName }} components={{ b: <strong /> }} />
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-2 py-2">
-            <Label htmlFor="new-admin-pw">Nova senha</Label>
+            <Label htmlFor="new-admin-pw">{t("superadminClinics.resetDialog.newPassword")}</Label>
             <Input
               id="new-admin-pw"
               type="password"
@@ -650,7 +644,7 @@ export default function SuperadminClinicsPage() {
               variant="ghost"
               onClick={() => setResetTenantId(null)}
             >
-              Cancelar
+              {t("superadminClinics.resetDialog.cancel")}
             </Button>
             <Button
               type="button"
@@ -658,7 +652,7 @@ export default function SuperadminClinicsPage() {
               disabled={resetting}
             >
               {resetting && <Loader2 className="size-4 animate-spin mr-1" />}{" "}
-              Confirmar
+              {t("superadminClinics.resetDialog.confirm")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -668,8 +662,8 @@ export default function SuperadminClinicsPage() {
       <DashboardCreateFormDialog
         open={createOpen}
         onOpenChange={setCreateOpen}
-        title="Nova clínica"
-        description="Cria o tenant e, opcionalmente, o primeiro administrador."
+        title={t("superadminClinics.createDialog.title")}
+        description={t("superadminClinics.createDialog.description")}
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button
@@ -678,7 +672,7 @@ export default function SuperadminClinicsPage() {
               className="border border-gray-300"
               onClick={() => setCreateOpen(false)}
             >
-              Cancelar
+              {t("superadminClinics.createDialog.cancel")}
             </Button>
             <Button
               type="button"
@@ -686,14 +680,14 @@ export default function SuperadminClinicsPage() {
               disabled={creating}
             >
               {creating && <Loader2 className="size-4 animate-spin mr-1" />}{" "}
-              Criar
+              {t("superadminClinics.createDialog.create")}
             </Button>
           </div>
         }
       >
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="space-y-1">
-            <Label>Nome *</Label>
+            <Label>{t("superadminClinics.createDialog.name")}</Label>
             <Input
               value={createForm.name}
               onChange={(e) =>
@@ -702,7 +696,7 @@ export default function SuperadminClinicsPage() {
             />
           </div>
           <div className="space-y-1">
-            <Label>Código *</Label>
+            <Label>{t("superadminClinics.createDialog.code")}</Label>
             <Input
               value={createForm.code}
               onChange={(e) =>
@@ -716,11 +710,11 @@ export default function SuperadminClinicsPage() {
           </div>
           <div className="space-y-1 sm:col-span-2 border-t pt-3 mt-1">
             <p className="text-xs text-muted-foreground">
-              Admin inicial (opcional)
+              {t("superadminClinics.createDialog.adminOptional")}
             </p>
           </div>
           <div className="space-y-1">
-            <Label>Nome do admin</Label>
+            <Label>{t("superadminClinics.createDialog.adminName")}</Label>
             <Input
               value={createForm.adminName}
               onChange={(e) =>
@@ -729,7 +723,7 @@ export default function SuperadminClinicsPage() {
             />
           </div>
           <div className="space-y-1">
-            <Label>Email do admin</Label>
+            <Label>{t("superadminClinics.createDialog.adminEmail")}</Label>
             <Input
               type="email"
               value={createForm.adminEmail}
@@ -739,7 +733,7 @@ export default function SuperadminClinicsPage() {
             />
           </div>
           <div className="space-y-1 sm:col-span-2">
-            <Label>Senha (mín 8)</Label>
+            <Label>{t("superadminClinics.createDialog.password")}</Label>
             <Input
               type="password"
               value={createForm.adminPassword}
@@ -752,10 +746,10 @@ export default function SuperadminClinicsPage() {
             />
           </div>
           <div className="space-y-1 sm:col-span-2 border-t pt-3 mt-1">
-            <p className="text-xs text-muted-foreground">Plano & recursos</p>
+            <p className="text-xs text-muted-foreground">{t("superadminClinics.createDialog.planAndResources")}</p>
           </div>
           <div className="space-y-1">
-            <Label>Plano</Label>
+            <Label>{t("superadminClinics.createDialog.plan")}</Label>
             <Select
               value={createForm.billing_plan}
               onValueChange={(v) =>
@@ -785,7 +779,7 @@ export default function SuperadminClinicsPage() {
                   }))
                 }
               />
-              Chatbot WhatsApp
+              {t("superadminClinics.cols.chatbot")}
             </label>
             <label className="flex items-center gap-2 text-sm">
               <Switch
@@ -794,7 +788,7 @@ export default function SuperadminClinicsPage() {
                   setCreateForm((p) => ({ ...p, ai_platform_enabled: v }))
                 }
               />
-              Plataforma IA
+              {t("superadminClinics.cols.ai")}
             </label>
           </div>
         </div>
@@ -807,7 +801,7 @@ export default function SuperadminClinicsPage() {
       >
         <DialogContent className="md:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Editar clínica</DialogTitle>
+            <DialogTitle>{t("superadminClinics.editDialog.title")}</DialogTitle>
             <DialogDescription>
               {editRow?.name} —{" "}
               <span className="font-mono text-xs">{editRow?.code}</span>
@@ -815,7 +809,7 @@ export default function SuperadminClinicsPage() {
           </DialogHeader>
           <div className="grid grid-cols-1 gap-3 py-2 md:grid-cols-2">
             <div className="space-y-1 col-span-2">
-              <Label>Nome</Label>
+              <Label>{t("superadminClinics.fields.name")}</Label>
               <Input
                 value={(editForm.name as string) ?? ""}
                 onChange={(e) =>
@@ -824,7 +818,7 @@ export default function SuperadminClinicsPage() {
               />
             </div>
             <div className="space-y-1">
-              <Label>Email</Label>
+              <Label>{t("superadminClinics.fields.email")}</Label>
               <Input
                 type="email"
                 value={(editForm.email as string) ?? ""}
@@ -834,14 +828,14 @@ export default function SuperadminClinicsPage() {
               />
             </div>
             <div className="space-y-1">
-              <Label>Telefone</Label>
+              <Label>{t("superadminClinics.fields.phone")}</Label>
               <TelefoneInput
                 value={(editForm.phone as string) ?? ""}
                 onValueChange={(phone) => setEditForm((p) => ({ ...p, phone }))}
               />
             </div>
             <div className="space-y-1">
-              <Label>Plano</Label>
+              <Label>{t("superadminClinics.editDialog.plan")}</Label>
               <Select
                 value={(editForm.billing_plan as string) || "essencial"}
                 onValueChange={(v) =>
@@ -861,7 +855,7 @@ export default function SuperadminClinicsPage() {
               </Select>
             </div>
             <div className="space-y-1">
-              <Label>Status de Acesso</Label>
+              <Label>{t("superadminClinics.editDialog.accessStatus")}</Label>
               <Select
                 value={(editForm.subscription_status as string) || "trial"}
                 onValueChange={(v) =>
@@ -872,9 +866,9 @@ export default function SuperadminClinicsPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {STATUS_OPTIONS.map((o) => (
-                    <SelectItem key={o.value} value={o.value}>
-                      {o.label}
+                  {STATUS_VALUES.map((v) => (
+                    <SelectItem key={v} value={v}>
+                      {statusLabel(v)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -884,7 +878,7 @@ export default function SuperadminClinicsPage() {
               editForm.subscription_status as string,
             ) && (
               <div className="space-y-1 col-span-2">
-                <Label>Válido até</Label>
+                <Label>{t("superadminClinics.editDialog.validUntil")}</Label>
                 <Input
                   type="date"
                   value={((editForm.trial_ends_at as string) ?? "").slice(
@@ -904,8 +898,7 @@ export default function SuperadminClinicsPage() {
             )}
             {editRow?.cancel_at && (
               <div className="col-span-2 text-sm text-orange-600 bg-orange-50 border border-orange-200 rounded-md px-3 py-2">
-                ⚠️ Cancelamento agendado:{" "}
-                {new Date(editRow.cancel_at).toLocaleDateString("pt-BR")}
+                ⚠️ {t("superadminClinics.editDialog.cancelScheduled", { date: new Date(editRow.cancel_at).toLocaleDateString("pt-BR") })}
               </div>
             )}
             <div className="space-y-3 pt-2 col-span-2">
@@ -919,7 +912,7 @@ export default function SuperadminClinicsPage() {
                     }))
                   }
                 />
-                Chatbot WhatsApp
+                {t("superadminClinics.cols.chatbot")}
               </label>
               <label className="flex items-center gap-2 text-sm">
                 <Switch
@@ -928,13 +921,13 @@ export default function SuperadminClinicsPage() {
                     setEditForm((p) => ({ ...p, ai_platform_enabled: v }))
                   }
                 />
-                Plataforma IA
+                {t("superadminClinics.cols.ai")}
               </label>
             </div>
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setEditRow(null)}>
-              Cancelar
+              {t("superadminClinics.editDialog.cancel")}
             </Button>
             <Button
               className="bg-primary"
@@ -946,7 +939,7 @@ export default function SuperadminClinicsPage() {
               ) : (
                 <Save className="size-4 mr-1" />
               )}{" "}
-              Salvar
+              {t("superadminClinics.editDialog.save")}
             </Button>
           </DialogFooter>
         </DialogContent>

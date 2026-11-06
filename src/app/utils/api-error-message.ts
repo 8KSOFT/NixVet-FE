@@ -1,4 +1,5 @@
 import { codigoDoProblema, problemaDe } from '@/lib/problem';
+import i18n from '@/lib/i18n/instance';
 
 /**
  * Mensagem de erro da API para mostrar ao usuário.
@@ -22,7 +23,7 @@ export function getApiErrorMessage(error: unknown, fallbackMessage: string): str
 
   const base = problema.detail || doErro || fallbackMessage;
   const codigo = problema.status >= 500 ? codigoDoProblema(problema) : undefined;
-  return codigo && !base.includes(codigo) ? `${base} Código: ${codigo}` : base;
+  return codigo && !base.includes(codigo) ? i18n.t('errors.withCode', { base, code: codigo }) : base;
 }
 
 /**
@@ -35,7 +36,7 @@ function mensagemSemResposta(error: unknown): string | null {
   if (!e?.isAxiosError || e.response) return null;
   if (e.code === 'ERR_CANCELED') return null;
   if (e.code === 'ECONNABORTED' || e.code === 'ETIMEDOUT') {
-    return 'O servidor demorou para responder. Tente de novo em instantes.';
+    return i18n.t('errors.timeout');
   }
-  return 'Sem conexão com o servidor. Verifique sua internet e tente de novo.';
+  return i18n.t('errors.noConnection');
 }

@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
+import '@/lib/i18n/instance';
 import { ListPagination } from './list-pagination';
 
 const base = { page: 2, totalPages: 5, total: 230, pageSize: 50, onPageChange: () => {} };
@@ -8,13 +9,13 @@ const base = { page: 2, totalPages: 5, total: 230, pageSize: 50, onPageChange: (
 describe('ListPagination', () => {
   it('mostra o intervalo e o total', () => {
     render(<ListPagination {...base} />);
-    expect(screen.getByText(/51–100 de 230/)).toBeInTheDocument();
+    expect(screen.getByText(/51-100 de 230/)).toBeInTheDocument();
     expect(screen.getByText(/Pág\. 2 \/ 5/)).toBeInTheDocument();
   });
 
   it('a última página mostra só o que sobra', () => {
     render(<ListPagination {...base} page={5} />);
-    expect(screen.getByText(/201–230 de 230/)).toBeInTheDocument();
+    expect(screen.getByText(/201-230 de 230/)).toBeInTheDocument();
   });
 
   it('navega: primeira, anterior, próxima e última', async () => {
@@ -54,7 +55,7 @@ describe('ListPagination', () => {
 
   it('uma página só: mostra o total e nenhum botão', () => {
     render(<ListPagination {...base} page={1} totalPages={1} total={12} />);
-    expect(screen.getByText(/1–12 de 12/)).toBeInTheDocument();
+    expect(screen.getByText(/1-12 de 12/)).toBeInTheDocument();
     expect(screen.queryByLabelText('Próxima página')).not.toBeInTheDocument();
   });
 

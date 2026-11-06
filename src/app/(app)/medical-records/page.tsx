@@ -374,7 +374,7 @@ export default function MedicalRecordsListPage() {
           <EstadoErro
             error={recordsErrorDetail}
             onRetry={() => void refetchRecords()}
-            mensagem="Não foi possível carregar os prontuários."
+            mensagem={t('errors.loadRecords')}
           />
         ) : patientGroups.length === 0 ? (
           <div className="text-center py-12 text-muted-foreground">{t('medicalRecords.emptyState')}</div>

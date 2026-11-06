@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Mail } from 'lucide-react';
+import { Trans, useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,6 +32,7 @@ function readStoredUser(): StoredUser | null {
  * não precisa de um novo login pra "sumir".
  */
 export function EmailConfirmationBanner() {
+  const { t } = useTranslation();
   const [user, setUser] = useState<StoredUser | null>(null);
   const [showCodeInput, setShowCodeInput] = useState(false);
   const [code, setCode] = useState('');
@@ -51,15 +53,15 @@ export function EmailConfirmationBanner() {
     requestMutation.mutate(undefined, {
       onSuccess: () => {
         setShowCodeInput(true);
-        toast.success(email ? `Enviamos um código para ${email}.` : 'Enviamos um código para o seu e-mail.');
+        toast.success(email ? t('emailConfirmation.sentTo', { email }) : t('emailConfirmation.sentGeneric'));
       },
-      onError: () => toast.error('Não foi possível enviar o código. Tente novamente.'),
+      onError: () => toast.error(t('emailConfirmation.sendError')),
     });
   };
 
   const handleConfirm = () => {
     if (code.trim().length !== 6) {
-      toast.error('Digite os 6 dígitos do código.');
+      toast.error(t('emailConfirmation.digits'));
       return;
     }
     confirmMutation.mutate(code.trim(), {
@@ -67,9 +69,9 @@ export function EmailConfirmationBanner() {
         const updated = { ...user, email_confirmed_at: new Date().toISOString() };
         localStorage.setItem('user', JSON.stringify(updated));
         setUser(updated);
-        toast.success('E-mail confirmado com sucesso.');
+        toast.success(t('emailConfirmation.confirmed'));
       },
-      onError: () => toast.error('Código inválido ou expirado.'),
+      onError: () => toast.error(t('emailConfirmation.invalid')),
     });
   };
 
@@ -77,7 +79,11 @@ export function EmailConfirmationBanner() {
     <div className="flex flex-col gap-2 border-b border-emerald-200 bg-emerald-50 px-5 py-3 text-sm text-emerald-900 sm:flex-row sm:items-center sm:gap-3">
       <Mail className="size-4 shrink-0 text-emerald-600" />
       <span className="flex-1">
-        Confirme seu e-mail{email ? <> (<strong>{email}</strong>)</> : null} para liberar convites de equipe e ativação de plano pago.
+        {email ? (
+          <Trans i18nKey="emailConfirmation.promptWithEmail" values={{ email }} components={{ b: <strong /> }} />
+        ) : (
+          t('emailConfirmation.prompt')
+        )}
       </span>
       {!showCodeInput ? (
         <Button
@@ -87,7 +93,7 @@ export function EmailConfirmationBanner() {
           onClick={handleResend}
           disabled={requestMutation.isPending}
         >
-          {requestMutation.isPending ? 'Enviando...' : 'Enviar código'}
+          {requestMutation.isPending ? t('emailConfirmation.sending') : t('emailConfirmation.send')}
         </Button>
       ) : (
         <div className="flex shrink-0 items-center gap-2">
@@ -99,7 +105,7 @@ export function EmailConfirmationBanner() {
             onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
           />
           <Button size="sm" onClick={handleConfirm} disabled={confirmMutation.isPending}>
-            {confirmMutation.isPending ? 'Confirmando...' : 'Confirmar'}
+            {confirmMutation.isPending ? t('emailConfirmation.confirming') : t('emailConfirmation.confirm')}
           </Button>
           <button
             type="button"
@@ -107,7 +113,7 @@ export function EmailConfirmationBanner() {
             onClick={handleResend}
             disabled={requestMutation.isPending}
           >
-            Reenviar
+            {t('emailConfirmation.resend')}
           </button>
         </div>
       )}

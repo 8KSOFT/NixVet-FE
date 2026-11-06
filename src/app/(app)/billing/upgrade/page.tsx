@@ -5,6 +5,7 @@ import React, { useState } from 'react';
 import { GA_EVENTS, readGaClientId, trackEvent } from '@/lib/analytics';
 import { useRouter } from 'next/navigation';
 import { CheckCircle2, Circle, Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { getApiErrorMessage } from '@/app/utils/api-error-message';
 import { useActivateBillingMutation, useBillingStatusQuery } from '@/hooks/apiHooks/useBilling';
@@ -19,6 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { PLANS, PLAN_BY_ID, type PlanId } from '@/lib/plans';
+import { usePlanText } from '@/lib/i18n/plans';
 
 type PlanName = PlanId;
 type BillingType = 'CREDIT_CARD' | 'BOLETO' | 'PIX';
@@ -29,13 +31,11 @@ function formatCpfCnpj(value: string) {
   return d.replace(/(\d{2})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1/$2').replace(/(\d{4})(\d{1,2})$/, '$1-$2');
 }
 
-const BILLING_TYPE_LABELS: Record<BillingType, string> = {
-  CREDIT_CARD: 'Cartão de crédito',
-  BOLETO: 'Boleto bancário',
-  PIX: 'PIX',
-};
+const BILLING_TYPES: BillingType[] = ['CREDIT_CARD', 'BOLETO', 'PIX'];
 
 export default function BillingUpgradePage() {
+  const { t } = useTranslation();
+  const planText = usePlanText();
   const router = useRouter();
   const [selectedPlan, setSelectedPlan] = useState<PlanName | null>(null);
   const [billingType, setBillingType] = useState<BillingType>('PIX');
@@ -48,9 +48,9 @@ export default function BillingUpgradePage() {
   const currentPlanId = billing?.billingPlan ?? null;
 
   const handleActivate = async () => {
-    if (!selectedPlan) { toast.error('Selecione um plano para continuar.'); return; }
+    if (!selectedPlan) { toast.error(t('billingUpgrade.selectPlanError')); return; }
     if (!cpfCnpj || cpfCnpj.replace(/\D/g, '').length < 11) {
-      toast.error('Informe seu CPF ou CNPJ para continuar.');
+      toast.error(t('billingUpgrade.cpfRequiredError'));
       return;
     }
     // Antes da chamada, não depois: daqui em diante a pessoa sai do NixVet
@@ -82,12 +82,12 @@ export default function BillingUpgradePage() {
       }
       if (data?.paymentUrl) {
         // Veio um destino, mas fora do Asaas: não segue (lib/url-pagamento.ts).
-        toast.error('Não foi possível abrir o pagamento. Tente novamente.');
+        toast.error(t('billingUpgrade.paymentOpenError'));
         return;
       }
       router.push(isChangingPlan ? '/settings/billing' : '/dashboard');
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, 'Erro ao ativar plano. Tente novamente.'));
+      toast.error(getApiErrorMessage(error, t('billingUpgrade.activateError')));
     }
   };
 
@@ -95,17 +95,17 @@ export default function BillingUpgradePage() {
     <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 p-6">
       <div className="mb-8 text-center">
         <h1 className="text-3xl font-bold tracking-tight text-foreground">
-          {isChangingPlan ? 'Trocar de plano' : 'Escolha seu plano'}
+          {isChangingPlan ? t('billingUpgrade.changeTitle') : t('billingUpgrade.chooseTitle')}
         </h1>
         <p className="mt-2 text-muted-foreground">
           {isChangingPlan
-            ? 'Ao confirmar, sua assinatura atual é cancelada no Asaas e a nova começa imediatamente.'
-            : 'Selecione o plano ideal para a sua clínica e continue usando o NixVet.'}
+            ? t('billingUpgrade.changeSubtitle')
+            : t('billingUpgrade.chooseSubtitle')}
         </p>
       </div>
 
       <p className="mb-3 text-center text-sm text-muted-foreground">
-        Clique em um plano abaixo para selecioná-lo.
+        {t('billingUpgrade.clickHint')}
       </p>
       <div className="grid w-full max-w-5xl grid-cols-1 gap-6 md:grid-cols-3">
         {PLANS.map((plan) => (
@@ -123,21 +123,21 @@ export default function BillingUpgradePage() {
           >
             {plan.id === currentPlanId ? (
               <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-foreground px-3 py-0.5 text-xs font-bold text-white shadow">
-                Plano atual
+                {t('billingUpgrade.current')}
               </span>
             ) : plan.highlight ? (
               <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-0.5 text-xs font-bold text-white shadow">
-                Mais popular
+                {t('billingUpgrade.popular')}
               </span>
             ) : null}
             <div className="mb-4 flex items-start justify-between gap-2">
               <div>
-                <h2 className="text-xl font-semibold text-foreground">{plan.name}</h2>
+                <h2 className="text-xl font-semibold text-foreground">{planText(plan).name}</h2>
                 <div className="mt-1 flex items-end gap-1">
                   <span className="text-4xl font-extrabold text-foreground">
                     R${plan.price}
                   </span>
-                  <span className="mb-1 text-sm text-muted-foreground">/mês</span>
+                  <span className="mb-1 text-sm text-muted-foreground">{t('billingUpgrade.perMonth')}</span>
                 </div>
               </div>
               {selectedPlan === plan.id ? (
@@ -147,7 +147,7 @@ export default function BillingUpgradePage() {
               )}
             </div>
             <ul className="space-y-2">
-              {plan.features.map((f) => (
+              {planText(plan).features.map((f) => (
                 <li key={f} className="flex items-center gap-2 text-sm text-muted-foreground">
                   <CheckCircle2 className="size-4 shrink-0 text-green-500" />
                   {f}
@@ -161,32 +161,32 @@ export default function BillingUpgradePage() {
       <div className="mt-8 flex w-full max-w-md flex-col gap-4">
         <div>
           <label className="mb-1.5 block text-sm font-medium text-foreground">
-            CPF ou CNPJ <span className="text-red-500">*</span>
+            {t('billingUpgrade.cpfCnpj')} <span className="text-red-500">*</span>
           </label>
           <input
             className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-            placeholder="000.000.000-00 ou 00.000.000/0001-00"
+            placeholder={t('billingUpgrade.cpfPlaceholder')}
             value={cpfCnpj}
             onChange={(e) => setCpfCnpj(formatCpfCnpj(e.target.value))}
           />
-          <p className="mt-1 text-xs text-muted-foreground">Necessário para emissão de nota fiscal.</p>
+          <p className="mt-1 text-xs text-muted-foreground">{t('billingUpgrade.cpfHint')}</p>
         </div>
 
         <div>
           <label className="mb-1.5 block text-sm font-medium text-foreground">
-            Forma de pagamento
+            {t('billingUpgrade.paymentMethod')}
           </label>
           <Select
             value={billingType}
             onValueChange={(v: string) => setBillingType(v as BillingType)}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Selecione" />
+              <SelectValue placeholder={t('billingUpgrade.select')} />
             </SelectTrigger>
             <SelectContent>
-              {Object.entries(BILLING_TYPE_LABELS).map(([key, label]) => (
+              {BILLING_TYPES.map((key) => (
                 <SelectItem key={key} value={key}>
-                  {label}
+                  {t(`billingUpgrade.methods.${key}`)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -202,10 +202,12 @@ export default function BillingUpgradePage() {
           {loading ? (
             <>
               <Loader2 className="mr-2 size-4 animate-spin" />
-              {isChangingPlan ? 'Trocando...' : 'Ativando...'}
+              {isChangingPlan ? t('billingUpgrade.changing') : t('billingUpgrade.activating')}
             </>
           ) : (
-            `${isChangingPlan ? 'Confirmar troca para' : 'Ativar plano'}${selectedPlan ? ' ' + PLANS.find((p) => p.id === selectedPlan)?.name : ''}`
+            selectedPlan
+              ? t(isChangingPlan ? 'billingUpgrade.confirmChangeTo' : 'billingUpgrade.activatePlan', { plan: planText(selectedPlan).name })
+              : t(isChangingPlan ? 'billingUpgrade.confirmChange' : 'billingUpgrade.activate')
           )}
         </Button>
       </div>

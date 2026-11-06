@@ -3,6 +3,7 @@
 import React, { useLayoutEffect, useState, useEffect, useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import {
@@ -79,28 +80,28 @@ const FINANCE_CHILD_KEYS = [
   "financeiro-receita",
 ];
 
-function notificationTypeMeta(type: string): {
+function notificationTypeMeta(type: string, t: TFunction): {
   label: string;
   icon: React.ElementType;
   badgeClass: string;
 } {
   if (type === "emergency") {
-    return { label: "Emergência", icon: AlertOctagon, badgeClass: "bg-red-100 text-red-600" };
+    return { label: t("notifications.types.emergency"), icon: AlertOctagon, badgeClass: "bg-red-100 text-red-600" };
   }
   if (type === "human_attention") {
-    return { label: "Atendimento humano", icon: UserRound, badgeClass: "bg-amber-100 text-amber-600" };
+    return { label: t("notifications.types.humanAttention"), icon: UserRound, badgeClass: "bg-amber-100 text-amber-600" };
   }
   if (type === "conversation_alert") {
     return {
-      label: "Conversa aguardando resposta",
+      label: t("notifications.types.conversationAlert"),
       icon: MessageSquare,
       badgeClass: "bg-amber-100 text-amber-600",
     };
   }
   if (type === "low_stock") {
-    return { label: "Estoque baixo", icon: PackageX, badgeClass: "bg-amber-100 text-amber-600" };
+    return { label: t("notifications.types.lowStock"), icon: PackageX, badgeClass: "bg-amber-100 text-amber-600" };
   }
-  return { label: "Notificação", icon: Bell, badgeClass: "bg-primary/10 text-primary" };
+  return { label: t("notifications.types.default"), icon: Bell, badgeClass: "bg-primary/10 text-primary" };
 }
 
 function NotificationsBell() {
@@ -156,7 +157,7 @@ function NotificationsBell() {
                 {t("notifications.title")}
               </SheetTitle>
               <SheetDescription className="sr-only">
-                Painel de notificações
+                {t("shared.notificationsPanel")}
               </SheetDescription>
             </div>
             {list.some((n) => !n.is_read) && (
@@ -182,7 +183,7 @@ function NotificationsBell() {
             ) : (
               <div className="flex flex-col gap-2 p-3">
                 {visibleList.map((n) => {
-                  const meta = notificationTypeMeta(n.type);
+                  const meta = notificationTypeMeta(n.type, t);
                   const Icon = meta.icon;
                   return (
                     <button
@@ -651,7 +652,7 @@ function SidebarNav({
               medical ? "text-white/60" : "text-muted-foreground",
             )}
           >
-            Idioma
+            {t("shared.language")}
           </span>
           <LanguageSwitcher variant={medical ? "subtle" : "default"} />
         </div>
@@ -851,8 +852,8 @@ export default function DashboardLayout({
           className="w-[min(100%,280px)] h-dvh border-0 bg-wa-brand-600 p-0 text-sidebar-foreground shadow-none [&>button]:text-white [&>button]:ring-offset-sidebar"
         >
           <SheetHeader className="sr-only">
-            <SheetTitle>Menu</SheetTitle>
-            <SheetDescription>Navegação principal</SheetDescription>
+            <SheetTitle>{t("appShell.menu")}</SheetTitle>
+            <SheetDescription>{t("appShell.mainNavigation")}</SheetDescription>
           </SheetHeader>
           <SidebarNav
             collapsed={false}
@@ -888,7 +889,7 @@ export default function DashboardLayout({
               size="icon"
               className="shrink-0 text-muted-foreground lg:hidden md:hidden"
               onClick={() => setMobileNavOpen(true)}
-              aria-label="Abrir menu"
+              aria-label={t("shared.openMenu")}
             >
               <Menu className="size-5" />
             </Button>
@@ -898,7 +899,7 @@ export default function DashboardLayout({
               className="hidden max-w-85 flex-1 items-center gap-2.5 rounded-wa border border-wa-line bg-wa-line-2 px-3 py-2 text-wa-ink-3 transition-colors duration-150 hover:border-wa-brand-500/40 sm:flex"
             >
               <Search className="size-4 shrink-0" />
-              <span className="flex-1 text-left text-[13.5px]">Buscar</span>
+              <span className="flex-1 text-left text-[13.5px]">{t("shared.search")}</span>
               <kbd className="rounded-[5px] border border-wa-line bg-white px-1.5 py-0.5 text-[11px] font-semibold text-wa-ink-2">
                 Ctrl+K
               </kbd>
@@ -992,7 +993,7 @@ export default function DashboardLayout({
             // aparece por um instante bem curto.
             <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3 text-center text-muted-foreground">
               <Lock className="size-8 opacity-60" />
-              <p className="text-sm">Redirecionando para a escolha de plano…</p>
+              <p className="text-sm">{t("appShell.redirectingToPlans")}</p>
             </div>
           ) : (
             children

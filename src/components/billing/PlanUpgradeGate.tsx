@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useBillingStatusQuery } from '@/hooks/apiHooks/useBilling';
 import { getStoredUserRole } from '@/lib/role-permissions';
-import { PLAN_BY_ID, planMeetsRequirement, type PlanId } from '@/lib/plans';
+import { planMeetsRequirement, type PlanId } from '@/lib/plans';
+import { usePlanText } from '@/lib/i18n/plans';
 
 interface PlanUpgradeGateProps {
   /** Plano mínimo exigido — precisa bater com o @RequirePlan() do endpoint no backend. */
@@ -25,6 +26,7 @@ interface PlanUpgradeGateProps {
  */
 export function PlanUpgradeGate({ requiredPlan, feature, children }: PlanUpgradeGateProps) {
   const { t } = useTranslation();
+  const planText = usePlanText();
   const { data: billing, isLoading } = useBillingStatusQuery();
 
   if (getStoredUserRole() === 'superadmin') return <>{children}</>;
@@ -41,7 +43,7 @@ export function PlanUpgradeGate({ requiredPlan, feature, children }: PlanUpgrade
     return <>{children}</>;
   }
 
-  const requiredPlanName = PLAN_BY_ID[requiredPlan].name;
+  const requiredPlanName = planText(requiredPlan).name;
 
   return (
     <div className="flex min-h-[60vh] items-center justify-center p-6">

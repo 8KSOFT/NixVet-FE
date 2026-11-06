@@ -121,6 +121,7 @@ function NodeChip({ type, label }: { type: string; label: string }) {
 }
 
 function TriggerNode({ data }: WorkflowNodeProps) {
+  const { t } = useTranslation();
   return (
     <div
       className="rounded-xl border-2 shadow-md px-4 py-2.5 min-w-[160px] bg-white"
@@ -130,7 +131,7 @@ function TriggerNode({ data }: WorkflowNodeProps) {
       <div className="flex items-center gap-2">
         <Play className="w-3.5 h-3.5 shrink-0" style={{ color: NODE_COLORS.trigger }} />
         <span className="text-xs font-semibold" style={{ color: NODE_COLORS.trigger }}>
-          {getNodeData(data).label || 'Trigger'}
+          {getNodeData(data).label || t('chatbotWorkflowEditor.nodeTypes.trigger')}
         </span>
       </div>
     </div>
@@ -138,6 +139,7 @@ function TriggerNode({ data }: WorkflowNodeProps) {
 }
 
 function ConditionNode({ data }: WorkflowNodeProps) {
+  const { t } = useTranslation();
   const branches = getNodeConfig(data).branches ?? [];
   return (
     <div
@@ -148,7 +150,7 @@ function ConditionNode({ data }: WorkflowNodeProps) {
       <div className="flex items-center gap-2 mb-1">
         <GitBranch className="w-3.5 h-3.5 shrink-0" style={{ color: NODE_COLORS.condition }} />
         <span className="text-xs font-semibold" style={{ color: '#8a6d00' }}>
-          {getNodeData(data).label || 'Condição'}
+          {getNodeData(data).label || t('chatbotWorkflowEditor.nodeTypes.condition')}
         </span>
       </div>
       {branches.length > 0 && (
@@ -181,7 +183,7 @@ function ActionNode({ data }: WorkflowNodeProps) {
       <div className="flex items-center gap-2">
         <Zap className="w-3.5 h-3.5 shrink-0" style={{ color: NODE_COLORS.action }} />
         <span className="text-xs font-semibold" style={{ color: NODE_COLORS.action }}>
-          {getNodeData(data).label || 'Ação'}
+          {getNodeData(data).label || t('chatbotWorkflowEditor.nodeTypes.action')}
         </span>
       </div>
       {actionDef && <div className="text-[10px] text-muted-foreground mt-0.5">{actionDef.label}</div>}
@@ -191,6 +193,7 @@ function ActionNode({ data }: WorkflowNodeProps) {
 }
 
 function EndNode({ data }: WorkflowNodeProps) {
+  const { t } = useTranslation();
   return (
     <div
       className="rounded-xl border-2 shadow-md px-4 py-2.5 min-w-[110px] bg-white"
@@ -200,7 +203,7 @@ function EndNode({ data }: WorkflowNodeProps) {
       <div className="flex items-center gap-2">
         <Square className="w-3.5 h-3.5 shrink-0" style={{ color: NODE_COLORS.end }} />
         <span className="text-xs font-semibold" style={{ color: NODE_COLORS.end }}>
-          {getNodeData(data).label || 'Fim'}
+          {getNodeData(data).label || t('chatbotWorkflowEditor.nodeTypes.end')}
         </span>
       </div>
     </div>
@@ -254,9 +257,9 @@ function toBackendEdges(rfEdges: Edge[]): BackendEdge[] {
 }
 
 const NODE_PALETTE = [
-  { type: 'condition', label: 'Condição', icon: GitBranch, description: 'Ramifica por intent ou variável' },
-  { type: 'action', label: 'Ação', icon: Zap, description: 'Executa operação (IA, agenda, mensagem...)' },
-  { type: 'end', label: 'Fim', icon: Square, description: 'Encerra o fluxo desta mensagem' },
+  { type: 'condition', icon: GitBranch },
+  { type: 'action', icon: Zap },
+  { type: 'end', icon: Square },
 ] as const;
 
 export default function WorkflowEditor() {
@@ -279,13 +282,13 @@ export default function WorkflowEditor() {
 
   useEffect(() => {
     if (!workflowId) {
-      toast.error('Workflow inválido');
+      toast.error(t('chatbotWorkflowEditor.toasts.invalidWorkflow'));
     }
-  }, [workflowId]);
+  }, [workflowId, t]);
 
   useEffect(() => {
-    if (isError) toast.error('Erro ao carregar workflow');
-  }, [isError]);
+    if (isError) toast.error(t('chatbotWorkflowEditor.toasts.loadError'));
+  }, [isError, t]);
 
   useEffect(() => {
     if (!workflowData) return;
@@ -326,7 +329,7 @@ export default function WorkflowEditor() {
         edges: toBackendEdges(edges),
       });
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, 'Erro ao salvar'));
+      toast.error(getApiErrorMessage(error, t('chatbotWorkflowEditor.toasts.saveError')));
     }
   };
 
@@ -337,7 +340,7 @@ export default function WorkflowEditor() {
       type,
       position: { x: 250, y: 200 + nodes.length * 90 },
       data: {
-        label: type === 'condition' ? 'Condição' : type === 'end' ? 'Fim' : 'Nova Ação',
+        label: t(`chatbotWorkflowEditor.newNodeLabel.${type === 'condition' || type === 'end' ? type : 'action'}`),
         config:
           type === 'action'
             ? { action_type: 'GENERATE_AI_REPLY' }
@@ -394,27 +397,27 @@ export default function WorkflowEditor() {
           onClick={() => router.push('/chatbot-workflows')}
           className="gap-1"
         >
-          <ArrowLeft className="w-4 h-4" /> Voltar
+          <ArrowLeft className="w-4 h-4" /> {t('chatbotWorkflowEditor.toolbar.back')}
         </Button>
         <Input
           value={workflowName}
           onChange={(e) => setWorkflowName(e.target.value)}
           className="w-64 h-9"
-          placeholder="Nome do workflow"
+          placeholder={t('chatbotWorkflowEditor.toolbar.namePlaceholder')}
         />
         {isActive ? (
           <Badge className="bg-primary/10 text-primary border-primary/20 gap-1">
-            <CheckCircle2 className="w-3 h-3" /> Ativo
+            <CheckCircle2 className="w-3 h-3" /> {t('chatbotWorkflowEditor.toolbar.active')}
           </Badge>
         ) : (
           <Badge variant="secondary" className="text-muted-foreground">
-            Inativo
+            {t('chatbotWorkflowEditor.toolbar.inactive')}
           </Badge>
         )}
         <div className="flex-1" />
         <Button onClick={handleSave} disabled={saving} className="bg-primary gap-1.5">
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          Salvar
+          {t('chatbotWorkflowEditor.toolbar.save')}
         </Button>
       </div>
 
@@ -422,7 +425,7 @@ export default function WorkflowEditor() {
       <div className="flex flex-1 gap-3 overflow-hidden">
         {/* Node palette */}
         <div className="w-44 shrink-0 flex flex-col gap-2">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground px-1">Adicionar nó</p>
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground px-1">{t('chatbotWorkflowEditor.addNode')}</p>
           <TooltipProvider>
             {NODE_PALETTE.map((item) => {
               const Icon = item.icon;
@@ -443,11 +446,11 @@ export default function WorkflowEditor() {
                       >
                         <Icon className="w-3.5 h-3.5" style={{ color: NODE_COLORS[item.type] }} />
                       </span>
-                      <span className="text-foreground text-xs">{item.label}</span>
+                      <span className="text-foreground text-xs">{t(`chatbotWorkflowEditor.nodeTypes.${item.type}`)}</span>
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="right" className="text-xs">
-                    {item.description}
+                    {t(`chatbotWorkflowEditor.palette.${item.type}`)}
                   </TooltipContent>
                 </Tooltip>
               );
@@ -456,16 +459,16 @@ export default function WorkflowEditor() {
 
           <Separator className="my-1" />
           <p className="text-[10px] text-muted-foreground/70 px-1 leading-relaxed">
-            Clique em um nó para configurar. Arraste para mover. Conecte as saídas às entradas.
+            {t('chatbotWorkflowEditor.hint')}
           </p>
 
           {/* Legend */}
           <div className="space-y-1.5 mt-1">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground px-1">Legenda</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground px-1">{t('chatbotWorkflowEditor.legend')}</p>
             {Object.entries(NODE_COLORS).map(([type, color]) => (
               <div key={type} className="flex items-center gap-2 px-1">
                 <div className="size-2.5 rounded-sm shrink-0" style={{ background: color }} />
-                <span className="text-[11px] text-muted-foreground capitalize">{type}</span>
+                <span className="text-[11px] text-muted-foreground">{t(`chatbotWorkflowEditor.nodeTypes.${type}`)}</span>
               </div>
             ))}
           </div>
@@ -499,16 +502,21 @@ export default function WorkflowEditor() {
         <SheetContent side="right" className="w-[380px] overflow-y-auto">
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
-              {selectedNode && <NodeChip type={selectedNode.type || ''} label={selectedNode.type || ''} />}
-              Configurar Nó
+              {selectedNode && (
+                <NodeChip
+                  type={selectedNode.type || ''}
+                  label={t(`chatbotWorkflowEditor.nodeTypes.${selectedNode.type || 'action'}`)}
+                />
+              )}
+              {t('chatbotWorkflowEditor.sheet.title')}
             </SheetTitle>
-            <SheetDescription className="sr-only">Configuração do nó selecionado</SheetDescription>
+            <SheetDescription className="sr-only">{t('chatbotWorkflowEditor.sheet.description')}</SheetDescription>
           </SheetHeader>
 
           {selectedNode && (
             <div className="space-y-4 mt-4">
               <div>
-                <Label>Label</Label>
+                <Label>{t('chatbotWorkflowEditor.sheet.label')}</Label>
                 <Input
                   className="mt-1.5"
                   value={getNodeData(selectedNode.data).label || ''}
@@ -518,11 +526,13 @@ export default function WorkflowEditor() {
 
               <div className="flex gap-4">
                 <div>
-                  <Label className="text-xs text-muted-foreground">Tipo</Label>
-                  <p className="text-sm text-foreground capitalize mt-0.5">{selectedNode.type}</p>
+                  <Label className="text-xs text-muted-foreground">{t('chatbotWorkflowEditor.sheet.type')}</Label>
+                  <p className="text-sm text-foreground mt-0.5">
+                    {t(`chatbotWorkflowEditor.nodeTypes.${selectedNode.type || 'action'}`)}
+                  </p>
                 </div>
                 <div>
-                  <Label className="text-xs text-muted-foreground">Key</Label>
+                  <Label className="text-xs text-muted-foreground">{t('chatbotWorkflowEditor.sheet.key')}</Label>
                   <p className="text-xs text-muted-foreground font-mono mt-0.5 break-all">{selectedNode.id}</p>
                 </div>
               </div>
@@ -531,13 +541,13 @@ export default function WorkflowEditor() {
                 <>
                   <Separator />
                   <div>
-                    <Label>Tipo de Ação</Label>
+                    <Label>{t('chatbotWorkflowEditor.sheet.actionType')}</Label>
                     <Select
                       value={(nodeConfig.action_type as string) || ''}
                       onValueChange={(v) => updateNodeConfig('action_type', v)}
                     >
                       <SelectTrigger className="mt-1.5">
-                        <SelectValue placeholder="Selecione" />
+                        <SelectValue placeholder={t('chatbotWorkflowEditor.sheet.select')} />
                       </SelectTrigger>
                       <SelectContent>
                         {getActionTypes(t).map((a) => (
@@ -554,7 +564,7 @@ export default function WorkflowEditor() {
 
                   {nodeConfig.action_type === 'SEND_MESSAGE' && (
                     <div>
-                      <Label>Texto da mensagem</Label>
+                      <Label>{t('chatbotWorkflowEditor.sheet.messageText')}</Label>
                       <textarea
                         className="w-full border border-border rounded-md p-2 text-sm min-h-[80px] mt-1.5 bg-background"
                         value={nodeConfig.params?.text || ''}
@@ -567,7 +577,7 @@ export default function WorkflowEditor() {
 
                   {nodeConfig.action_type === 'GET_AVAILABILITY' && (
                     <div>
-                      <Label>Dias à frente</Label>
+                      <Label>{t('chatbotWorkflowEditor.sheet.daysAhead')}</Label>
                       <Input
                         type="number"
                         className="mt-1.5"
@@ -584,7 +594,7 @@ export default function WorkflowEditor() {
 
                   {nodeConfig.action_type === 'NOTIFY_TEAM' && (
                     <div>
-                      <Label>Mensagem de notificação</Label>
+                      <Label>{t('chatbotWorkflowEditor.sheet.notifyMessage')}</Label>
                       <Input
                         className="mt-1.5"
                         value={nodeConfig.params?.message || ''}
@@ -597,7 +607,7 @@ export default function WorkflowEditor() {
 
                   <div>
                     <Label>
-                      Variável de saída <span className="text-muted-foreground text-xs font-normal">(output_var)</span>
+                      {t('chatbotWorkflowEditor.sheet.outputVar')} <span className="text-muted-foreground text-xs font-normal">(output_var)</span>
                     </Label>
                     <Input
                       className="mt-1.5"
@@ -613,17 +623,17 @@ export default function WorkflowEditor() {
                 <>
                   <Separator />
                   <div>
-                    <Label>Variável de condição</Label>
+                    <Label>{t('chatbotWorkflowEditor.sheet.conditionVar')}</Label>
                     <Input
                       className="mt-1.5"
                       value={(nodeConfig.variable as string) || 'intent'}
                       onChange={(e) => updateNodeConfig('variable', e.target.value)}
                     />
-                    <p className="text-xs text-muted-foreground mt-1">Valores comuns: intent, message</p>
+                    <p className="text-xs text-muted-foreground mt-1">{t('chatbotWorkflowEditor.sheet.commonValues')}</p>
                   </div>
                   <div>
                     <Label>
-                      Branches <span className="text-muted-foreground text-xs font-normal">(JSON)</span>
+                      {t('chatbotWorkflowEditor.sheet.branches')} <span className="text-muted-foreground text-xs font-normal">(JSON)</span>
                     </Label>
                     <textarea
                       className="w-full border border-border rounded-md p-2 text-xs font-mono min-h-[120px] mt-1.5 bg-background"
@@ -649,7 +659,7 @@ export default function WorkflowEditor() {
                 onClick={deleteSelectedNode}
                 disabled={selectedNode.type === 'trigger'}
               >
-                <Trash2 className="w-3 h-3 mr-1.5" /> Excluir Nó
+                <Trash2 className="w-3 h-3 mr-1.5" /> {t('chatbotWorkflowEditor.sheet.deleteNode')}
               </Button>
             </div>
           )}

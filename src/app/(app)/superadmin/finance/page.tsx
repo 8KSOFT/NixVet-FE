@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getStoredUserRole } from '@/lib/role-permissions';
-import { planShortLabel } from '@/lib/plans';
+import { usePlanShortLabel } from '@/lib/i18n/plans';
 import { API_PAGE_SIZE } from '@/lib/pagination';
 import { ListPagination } from '@/components/list-pagination';
 import {
@@ -59,6 +59,7 @@ function formatMonth(ym: string): string {
 
 export default function SuperadminFinancePage() {
   const { t } = useTranslation();
+  const planShortLabel = usePlanShortLabel();
   const fmt = useCurrencyFormatter();
   const router = useRouter();
 

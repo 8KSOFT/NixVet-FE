@@ -104,7 +104,10 @@
     "inviteCancelAction": "Cancelar convite",
     "inviteStatusPending": "Pendente",
     "inviteStatusExpired": "Expirado",
-    "confirmCancelInvite": "Cancelar este convite?"
+    "confirmCancelInvite": "Cancelar este convite?",
+    "empty": "Nenhum membro cadastrado.",
+    "cancel": "Cancelar",
+    "save": "Salvar"
   },
   "userMenu": {
     "profile": "Meu Perfil",
@@ -115,7 +118,14 @@
     "title": "Notificações",
     "markAllRead": "Marcar todas como lidas",
     "loading": "Carregando...",
-    "empty": "Nenhuma notificação não lida."
+    "empty": "Nenhuma notificação não lida.",
+    "types": {
+      "emergency": "Emergência",
+      "humanAttention": "Atendimento humano",
+      "conversationAlert": "Conversa aguardando resposta",
+      "lowStock": "Estoque baixo",
+      "default": "Notificação"
+    }
   },
   "auth": {
     "cardTitle": "Acesse sua conta",
@@ -135,7 +145,16 @@
     "forgotPassword": "Esqueceu sua senha?",
     "welcome": "Bem-vindo, {{name}}!",
     "loginFailed": "Falha no login. Verifique suas credenciais.",
-    "footer": "Todos os direitos reservados."
+    "footer": "Todos os direitos reservados.",
+    "fillEmailPassword": "Preencha email e senha.",
+    "tenantCodeRequired": "Informe o código da clínica.",
+    "invalidLoginResponse": "Resposta de login inválida.",
+    "loginError": "Não foi possível entrar. Tente novamente.",
+    "bulletIsolated": "Multi-clínica com dados isolados por unidade.",
+    "bulletFast": "Interface pensada para fluxo rápido no consultório.",
+    "noAccount": "Não tem conta?",
+    "startFree": "Comece grátis por 14 dias",
+    "logoAlt": "Logo"
   },
   "calendar": {
     "title": "Agenda",
@@ -147,13 +166,52 @@
     "back": "Voltar",
     "today": "Hoje",
     "genericError": "Erro",
-    "weekdaysShort": { "sun": "Dom", "mon": "Seg", "tue": "Ter", "wed": "Qua", "thu": "Qui", "fri": "Sex", "sat": "Sáb" },
-    "months": { "jan": "Janeiro", "feb": "Fevereiro", "mar": "Março", "apr": "Abril", "may": "Maio", "jun": "Junho", "jul": "Julho", "aug": "Agosto", "sep": "Setembro", "oct": "Outubro", "nov": "Novembro", "dec": "Dezembro" },
-    "monthsShort": { "jan": "Jan", "feb": "Fev", "mar": "Mar", "apr": "Abr", "may": "Mai", "jun": "Jun", "jul": "Jul", "aug": "Ago", "sep": "Set", "oct": "Out", "nov": "Nov", "dec": "Dez" },
+    "weekdaysShort": {
+      "sun": "Dom",
+      "mon": "Seg",
+      "tue": "Ter",
+      "wed": "Qua",
+      "thu": "Qui",
+      "fri": "Sex",
+      "sat": "Sáb"
+    },
+    "months": {
+      "jan": "Janeiro",
+      "feb": "Fevereiro",
+      "mar": "Março",
+      "apr": "Abril",
+      "may": "Maio",
+      "jun": "Junho",
+      "jul": "Julho",
+      "aug": "Agosto",
+      "sep": "Setembro",
+      "oct": "Outubro",
+      "nov": "Novembro",
+      "dec": "Dezembro"
+    },
+    "monthsShort": {
+      "jan": "Jan",
+      "feb": "Fev",
+      "mar": "Mar",
+      "apr": "Abr",
+      "may": "Mai",
+      "jun": "Jun",
+      "jul": "Jul",
+      "aug": "Ago",
+      "sep": "Set",
+      "oct": "Out",
+      "nov": "Nov",
+      "dec": "Dez"
+    },
     "durationMin": "{{value}} min",
     "durationHoursMin": "{{hours}}h {{minutes}}min",
     "durationHours": "{{hours}}h",
-    "viewModes": { "day": "Dia", "week": "Semana", "month": "Mês", "year": "Ano" },
+    "viewModes": {
+      "day": "Dia",
+      "week": "Semana",
+      "month": "Mês",
+      "year": "Ano"
+    },
     "followupsAwaiting_one": "{{count}} acompanhamento aguardando retorno",
     "followupsAwaiting_other": "{{count}} acompanhamentos aguardando retorno",
     "google": {
@@ -161,10 +219,25 @@
       "noEventsThisMonth": "Nenhum evento Google Calendar neste mês.",
       "calendarLabel": "Calendário"
     },
-    "dayView": { "appointmentTimeRange": "{{patient}} ({{vet}}) das {{start}} às {{end}}" },
-    "monthView": { "viewDayTooltip": "Ver dia", "moreCount": "+{{count}} mais" },
-    "yearView": { "consultationsCount_one": "{{count}} consulta", "consultationsCount_other": "{{count}} consultas" },
-    "status": { "scheduled": "Agendada", "completed": "Realizada", "cancelled": "Cancelada", "noShow": "Não Compareceu", "paid": "Pago", "pending": "Pendente" },
+    "dayView": {
+      "appointmentTimeRange": "{{patient}} ({{vet}}) das {{start}} às {{end}}"
+    },
+    "monthView": {
+      "viewDayTooltip": "Ver dia",
+      "moreCount": "+{{count}} mais"
+    },
+    "yearView": {
+      "consultationsCount_one": "{{count}} consulta",
+      "consultationsCount_other": "{{count}} consultas"
+    },
+    "status": {
+      "scheduled": "Agendada",
+      "completed": "Realizada",
+      "cancelled": "Cancelada",
+      "noShow": "Não Compareceu",
+      "paid": "Pago",
+      "pending": "Pendente"
+    },
     "appointmentDialog": {
       "availableSlotLabel": "Horário disponível *",
       "submitButton": "Agendar",
@@ -176,9 +249,19 @@
       "newPetSection": "Novo Pet",
       "nameLabel": "Nome *",
       "speciesLabel": "Espécie *",
-      "species": { "canine": "Canino", "feline": "Felino", "bird": "Ave", "rabbit": "Coelho", "reptile": "Réptil", "other": "Outro" },
+      "species": {
+        "canine": "Canino",
+        "feline": "Felino",
+        "bird": "Ave",
+        "rabbit": "Coelho",
+        "reptile": "Réptil",
+        "other": "Outro"
+      },
       "sexLabel": "Sexo *",
-      "sex": { "male": "Macho", "female": "Fêmea" },
+      "sex": {
+        "male": "Macho",
+        "female": "Fêmea"
+      },
       "breedLabel": "Raça *",
       "weightLabel": "Peso (kg) *",
       "ageLabel": "Idade (anos) *",
@@ -234,7 +317,10 @@
       "cancelSuccess": "Consulta cancelada.",
       "cancelError": "Erro ao cancelar consulta"
     },
-    "reschedule": { "newDateTimeLabel": "Nova data/hora *", "error": "Erro ao reagendar" }
+    "reschedule": {
+      "newDateTimeLabel": "Nova data/hora *",
+      "error": "Erro ao reagendar"
+    }
   },
   "exams": {
     "pageTitle": "Solicitações de Exames",
@@ -553,72 +639,168 @@
   "medicalRecordDetail": {
     "back": "Voltar",
     "notFound": "Ficha não encontrada.",
-    "banner": { "message": "Este animal está internado na clínica.", "link": "Ver internação →" },
-    "header": {
-      "defaultTitle": "Ficha #{{id}}", "statusOpen": "Aberto", "statusClosed": "Fechado",
-      "subtitle": "Ficha de atendimento", "save": "Salvar", "closeButton": "Fechar ficha", "noVet": "Sem veterinário"
+    "banner": {
+      "message": "Este animal está internado na clínica.",
+      "link": "Ver internação →"
     },
-    "tabs": { "clinical": "Clínico", "prescriptions": "Prescrições", "exams": "Exames", "vaccines": "Vacinas", "attachments": "Anexos" },
+    "header": {
+      "defaultTitle": "Ficha #{{id}}",
+      "statusOpen": "Aberto",
+      "statusClosed": "Fechado",
+      "subtitle": "Ficha de atendimento",
+      "save": "Salvar",
+      "closeButton": "Fechar ficha",
+      "noVet": "Sem veterinário"
+    },
+    "tabs": {
+      "clinical": "Clínico",
+      "prescriptions": "Prescrições",
+      "exams": "Exames",
+      "vaccines": "Vacinas",
+      "attachments": "Anexos"
+    },
     "sections": {
-      "chiefComplaint": { "title": "Motivo da consulta", "label": "Queixa principal" },
-      "anamnesis": { "label": "Anamnese", "placeholder": "Histórico do paciente, evolução dos sintomas...", "formatWithAi": "Formatar com IA", "undo": "Desfazer" },
-      "physicalExam": {
-        "title": "Exame físico", "header": "Sinais vitais e avaliação",
-        "weightLabel": "Peso", "weightUnit": "kg",
-        "temperatureLabel": "Temperatura", "temperatureUnit": "°C",
-        "heartRateLabel": "Freq. cardíaca", "heartRateUnit": "bpm",
-        "respiratoryRateLabel": "Freq. respiratória", "respiratoryRateUnit": "mpm",
-        "crtLabel": "TPC", "crtUnit": "s",
-        "hydrationLabel": "Hidratação", "hydrationPlaceholder": "Selecione",
-        "hydrationNormal": "Normal", "hydrationMild": "Leve", "hydrationModerate": "Moderada", "hydrationSevere": "Grave",
-        "lymphNodesLabel": "Linfonodos",
-        "mucousMembranesLabel": "Mucosas", "mucousMembranesPlaceholder": "ex.: róseas, pálidas"
+      "chiefComplaint": {
+        "title": "Motivo da consulta",
+        "label": "Queixa principal"
       },
-      "assessment": { "title": "Avaliação", "diagnosisLabel": "Diagnóstico presuntivo" },
+      "anamnesis": {
+        "label": "Anamnese",
+        "placeholder": "Histórico do paciente, evolução dos sintomas...",
+        "formatWithAi": "Formatar com IA",
+        "undo": "Desfazer"
+      },
+      "physicalExam": {
+        "title": "Exame físico",
+        "header": "Sinais vitais e avaliação",
+        "weightLabel": "Peso",
+        "weightUnit": "kg",
+        "temperatureLabel": "Temperatura",
+        "temperatureUnit": "°C",
+        "heartRateLabel": "Freq. cardíaca",
+        "heartRateUnit": "bpm",
+        "respiratoryRateLabel": "Freq. respiratória",
+        "respiratoryRateUnit": "mpm",
+        "crtLabel": "TPC",
+        "crtUnit": "s",
+        "hydrationLabel": "Hidratação",
+        "hydrationPlaceholder": "Selecione",
+        "hydrationNormal": "Normal",
+        "hydrationMild": "Leve",
+        "hydrationModerate": "Moderada",
+        "hydrationSevere": "Grave",
+        "lymphNodesLabel": "Linfonodos",
+        "mucousMembranesLabel": "Mucosas",
+        "mucousMembranesPlaceholder": "ex.: róseas, pálidas"
+      },
+      "assessment": {
+        "title": "Avaliação",
+        "diagnosisLabel": "Diagnóstico presuntivo"
+      },
       "additional": {
-        "title": "Complementar", "teamNotesLabel": "Notas da equipe (interno)",
+        "title": "Complementar",
+        "teamNotesLabel": "Notas da equipe (interno)",
         "teamNotesTooltip": "Espaço para registrar observações internas importantes, recomendações operacionais ou informações úteis para a equipe clínica.",
-        "teamNotesPlaceholder": "Visível apenas para a equipe", "ownerObservationsLabel": "Observações para o tutor"
+        "teamNotesPlaceholder": "Visível apenas para a equipe",
+        "ownerObservationsLabel": "Observações para o tutor"
       }
     },
     "prescriptions": {
-      "title": "Prescrições do paciente", "newButton": "Nova prescrição", "viewAll": "Ver todas",
-      "empty": "Nenhuma prescrição registrada.", "tableDate": "Data", "tableType": "Tipo", "tableMedications": "Medicamentos"
+      "title": "Prescrições do paciente",
+      "newButton": "Nova prescrição",
+      "viewAll": "Ver todas",
+      "empty": "Nenhuma prescrição registrada.",
+      "tableDate": "Data",
+      "tableType": "Tipo",
+      "tableMedications": "Medicamentos"
     },
-    "exams": { "title": "Exames solicitados", "empty": "Nenhum exame solicitado.", "tableDate": "Data", "tableType": "Tipo", "tableStatus": "Status" },
+    "exams": {
+      "title": "Exames solicitados",
+      "empty": "Nenhum exame solicitado.",
+      "tableDate": "Data",
+      "tableType": "Tipo",
+      "tableStatus": "Status"
+    },
     "vaccines": {
-      "title": "Vacinas", "addButton": "Adicionar", "inThisRecord": "Nesta ficha", "generalHistory": "Histórico geral",
-      "empty": "Nenhuma vacina registrada.", "tableVaccine": "Vacina", "tableDate": "Data", "tableBatch": "Lote",
-      "tableNextDose": "Próxima dose", "batchInlineLabel": "Lote:", "nextDoseInlineLabel": "Próxima:"
+      "title": "Vacinas",
+      "addButton": "Adicionar",
+      "inThisRecord": "Nesta ficha",
+      "generalHistory": "Histórico geral",
+      "empty": "Nenhuma vacina registrada.",
+      "tableVaccine": "Vacina",
+      "tableDate": "Data",
+      "tableBatch": "Lote",
+      "tableNextDose": "Próxima dose",
+      "batchInlineLabel": "Lote:",
+      "nextDoseInlineLabel": "Próxima:"
     },
-    "attachments": { "title": "Anexos (imagens de exames, vacinas...)", "addButton": "Anexar", "empty": "Nenhum anexo." },
-    "footer": { "close": "Fechar", "save": "Salvar" },
+    "attachments": {
+      "title": "Anexos (imagens de exames, vacinas...)",
+      "addButton": "Anexar",
+      "empty": "Nenhum anexo."
+    },
+    "footer": {
+      "close": "Fechar",
+      "save": "Salvar"
+    },
     "vaccineModal": {
-      "title": "Adicionar Vacina", "nameLabel": "Nome *", "dateLabel": "Data", "batchLabel": "Lote",
-      "nextDoseLabel": "Próxima dose", "cancel": "Cancelar", "submit": "Adicionar"
+      "title": "Adicionar Vacina",
+      "nameLabel": "Nome *",
+      "dateLabel": "Data",
+      "batchLabel": "Lote",
+      "nextDoseLabel": "Próxima dose",
+      "cancel": "Cancelar",
+      "submit": "Adicionar"
     },
     "attachModal": {
-      "title": "Anexar Arquivo", "descriptionLabel": "Descrição", "descriptionPlaceholder": "Ex: Hemograma 25/03 (opcional)",
-      "categoryLabel": "Categoria", "categoryExam": "Exame", "categoryImage": "Imagem", "categoryDocument": "Documento",
-      "categoryOther": "Outro", "fileLabel": "Arquivo *", "cancel": "Cancelar", "submit": "Anexar"
+      "title": "Anexar Arquivo",
+      "descriptionLabel": "Descrição",
+      "descriptionPlaceholder": "Ex: Hemograma 25/03 (opcional)",
+      "categoryLabel": "Categoria",
+      "categoryExam": "Exame",
+      "categoryImage": "Imagem",
+      "categoryDocument": "Documento",
+      "categoryOther": "Outro",
+      "fileLabel": "Arquivo *",
+      "cancel": "Cancelar",
+      "submit": "Anexar"
     },
     "prescriptionModal": {
-      "title": "Nova prescrição", "typeLabel": "Tipo", "typeReceita": "Receita",
-      "typeSurgeryRequest": "Solicitação de cirurgia", "typeVaccines": "Vacinas",
-      "medicationsLabel": "Medicamentos", "addMedication": "Adicionar",
-      "medicationNamePlaceholder": "Nome do medicamento *", "viaPlaceholder": "Via (VO, IV, IM...)",
-      "dosagePlaceholder": "Dose (ex.: 10 mg/kg)", "frequencyPlaceholder": "Freq.",
-      "freqMinutes": "minutos", "freqHours": "horas", "freqDays": "dias",
-      "durationPlaceholder": "Duração", "durationDays": "dias", "durationWeeks": "semanas", "durationMonths": "meses",
-      "observationsLabel": "Observações", "cancel": "Cancelar", "submit": "Criar prescrição"
+      "title": "Nova prescrição",
+      "typeLabel": "Tipo",
+      "typeReceita": "Receita",
+      "typeSurgeryRequest": "Solicitação de cirurgia",
+      "typeVaccines": "Vacinas",
+      "medicationsLabel": "Medicamentos",
+      "addMedication": "Adicionar",
+      "medicationNamePlaceholder": "Nome do medicamento *",
+      "viaPlaceholder": "Via (VO, IV, IM...)",
+      "dosagePlaceholder": "Dose (ex.: 10 mg/kg)",
+      "frequencyPlaceholder": "Freq.",
+      "freqMinutes": "minutos",
+      "freqHours": "horas",
+      "freqDays": "dias",
+      "durationPlaceholder": "Duração",
+      "durationDays": "dias",
+      "durationWeeks": "semanas",
+      "durationMonths": "meses",
+      "observationsLabel": "Observações",
+      "cancel": "Cancelar",
+      "submit": "Criar prescrição"
     },
     "toast": {
-      "invalidRecord": "Ficha inválida", "saveError": "Erro ao salvar", "closeError": "Erro ao fechar",
-      "vaccineNameRequired": "Informe o nome da vacina", "addVaccineError": "Erro ao adicionar vacina",
-      "selectFileRequired": "Selecione um arquivo", "addAttachmentError": "Erro ao enviar anexo",
-      "openFileError": "Erro ao abrir arquivo", "formatAnamnesisError": "Não foi possível formatar com IA",
+      "invalidRecord": "Ficha inválida",
+      "saveError": "Erro ao salvar",
+      "closeError": "Erro ao fechar",
+      "vaccineNameRequired": "Informe o nome da vacina",
+      "addVaccineError": "Erro ao adicionar vacina",
+      "selectFileRequired": "Selecione um arquivo",
+      "addAttachmentError": "Erro ao enviar anexo",
+      "openFileError": "Erro ao abrir arquivo",
+      "formatAnamnesisError": "Não foi possível formatar com IA",
       "vetRequiredError": "Defina um veterinário na ficha antes de prescrever",
-      "medicationRequiredError": "Adicione ao menos um medicamento", "createPrescriptionError": "Erro ao criar prescrição"
+      "medicationRequiredError": "Adicione ao menos um medicamento",
+      "createPrescriptionError": "Erro ao criar prescrição"
     }
   },
   "internacaoDetail": {
@@ -861,21 +1043,42 @@
       "copySuccess": "Copiado para a área de transferência.",
       "copyError": "Não foi possível copiar"
     },
-    "table": { "date": "Data", "patient": "Paciente", "tutor": "Tutor", "veterinarian": "Veterinário", "type": "Tipo", "actions": "Ações" },
-    "type": { "surgery": "Cirurgia", "prescription": "Receita" },
-    "actions": { "view": "Visualizar", "downloadPdf": "Baixar PDF", "sendEmail": "Enviar por e-mail", "requestExam": "Solicitar exame", "digitalSignature": "Assinatura digital" },
+    "table": {
+      "date": "Data",
+      "patient": "Paciente",
+      "tutor": "Tutor",
+      "veterinarian": "Veterinário",
+      "type": "Tipo",
+      "actions": "Ações"
+    },
+    "type": {
+      "surgery": "Cirurgia",
+      "prescription": "Receita"
+    },
+    "actions": {
+      "view": "Visualizar",
+      "downloadPdf": "Baixar PDF",
+      "sendEmail": "Enviar por e-mail",
+      "requestExam": "Solicitar exame",
+      "digitalSignature": "Assinatura digital"
+    },
     "dialog": {
       "createTitle": "Nova Prescrição",
       "cancel": "Cancelar",
       "submit": "Gerar prescrição",
-      "pdfPreview": { "title": "Visualizar prescrição" },
+      "pdfPreview": {
+        "title": "Visualizar prescrição"
+      },
       "email": {
         "title": "Confirmar Envio de Email",
         "confirmQuestion": "Enviar prescrição por email para o tutor de",
         "hint": "O email será enviado para o endereço cadastrado no perfil do tutor.",
         "sendButton": "Enviar"
       },
-      "bulario": { "defaultTitle": "Detalhes do medicamento", "noDetails": "Sem detalhes cadastrados." },
+      "bulario": {
+        "defaultTitle": "Detalhes do medicamento",
+        "noDetails": "Sem detalhes cadastrados."
+      },
       "signature": {
         "title": "Assinatura digital",
         "valid": "Assinatura válida",
@@ -896,9 +1099,21 @@
         "goToProfileLink": "Ir para o perfil",
         "signButton": "Assinar",
         "legalModels": {
-          "SIMPLE": { "label": "Receituário simples", "legalBasis": "Uso veterinário · medicamento sob prescrição", "vias": "1 via — Tutor(a) · 30 dias" },
-          "SPECIAL_CONTROL": { "label": "Controle especial", "legalBasis": "Portaria SVS/MS 344/98 · listas C1/C5, fenobarbital", "vias": "2 vias — 1ª Farmácia (retenção) · 2ª Tutor(a) · 30 dias" },
-          "VET_NOTIFICATION": { "label": "Notificação veterinária", "legalBasis": "IN MAPA 35/2017 · produto de uso veterinário controlado", "vias": "3 vias — Tutor(a), Estabelecimento, Veterinário · exige Nº SIPEAGRO" }
+          "SIMPLE": {
+            "label": "Receituário simples",
+            "legalBasis": "Uso veterinário · medicamento sob prescrição",
+            "vias": "1 via — Tutor(a) · 30 dias"
+          },
+          "SPECIAL_CONTROL": {
+            "label": "Controle especial",
+            "legalBasis": "Portaria SVS/MS 344/98 · listas C1/C5, fenobarbital",
+            "vias": "2 vias — 1ª Farmácia (retenção) · 2ª Tutor(a) · 30 dias"
+          },
+          "VET_NOTIFICATION": {
+            "label": "Notificação veterinária",
+            "legalBasis": "IN MAPA 35/2017 · produto de uso veterinário controlado",
+            "vias": "3 vias — Tutor(a), Estabelecimento, Veterinário · exige Nº SIPEAGRO"
+          }
         }
       }
     },
@@ -910,14 +1125,26 @@
       "doctorPrefix": "Dr. {{name}}",
       "dateLabel": "Data (sem consulta)",
       "typeLabel": "Tipo",
-      "typeOptions": { "prescription": "Receita / Medicamentos", "vaccination": "Vacinação", "surgery": "Solicitação de cirurgia" },
+      "typeOptions": {
+        "prescription": "Receita / Medicamentos",
+        "vaccination": "Vacinação",
+        "surgery": "Solicitação de cirurgia"
+      },
       "vaccination": {
         "label": "Vacinas administradas *",
         "customPlaceholder": "Outra vacina / lote / marca comercial (texto livre)",
         "hint": "Adicione o número do lote, fabricante ou nome comercial no campo acima se necessário.",
-        "groups": { "canine": "Caninos", "feline": "Felinos", "equine": "Equinos", "other": "Outros" }
+        "groups": {
+          "canine": "Caninos",
+          "feline": "Felinos",
+          "equine": "Equinos",
+          "other": "Outros"
+        }
       },
-      "surgery": { "label": "Procedimentos cirúrgicos *", "searchPlaceholder": "Buscar procedimento..." },
+      "surgery": {
+        "label": "Procedimentos cirúrgicos *",
+        "searchPlaceholder": "Buscar procedimento..."
+      },
       "medicationsLabel": "Medicamentos",
       "medicationNamePlaceholder": "Nome do medicamento",
       "searchingBulario": "Buscando...",
@@ -928,17 +1155,35 @@
       "concentrationPlaceholder": "10mg/ml",
       "useTypeLabel": "Tipo de uso",
       "usePlaceholder": "Uso",
-      "useTypeOptions": { "veterinario": "Uso veterinário", "humano": "Uso humano" },
+      "useTypeOptions": {
+        "veterinario": "Uso veterinário",
+        "humano": "Uso humano"
+      },
       "administrationLabel": "Administração",
       "formPlaceholder": "Forma",
-      "administrationOptions": { "oral": "Oral", "topica": "Tópica", "colirio": "Colírio", "spray": "Spray", "injetavel": "Injetável", "outro": "Outro" },
+      "administrationOptions": {
+        "oral": "Oral",
+        "topica": "Tópica",
+        "colirio": "Colírio",
+        "spray": "Spray",
+        "injetavel": "Injetável",
+        "outro": "Outro"
+      },
       "doseLabel": "Dose",
       "dosePlaceholder": "Ex: 1 comp.",
       "frequencyLabel": "Frequência",
       "unitPlaceholder": "Un.",
-      "frequencyUnits": { "minutos": "minutos", "horas": "horas", "dias": "dias" },
+      "frequencyUnits": {
+        "minutos": "minutos",
+        "horas": "horas",
+        "dias": "dias"
+      },
       "durationLabel": "Duração",
-      "durationUnits": { "dias": "dias", "semanas": "semanas", "meses": "meses" },
+      "durationUnits": {
+        "dias": "dias",
+        "semanas": "semanas",
+        "meses": "meses"
+      },
       "dosageScheduleLabel": "Posologia",
       "everyConnectorWord": "a cada",
       "forConnectorWord": "por",
@@ -1051,7 +1296,116 @@
     "resetOk": "Senha do administrador atualizada.",
     "resetError": "Falha ao redefinir senha.",
     "cancel": "Cancelar",
-    "confirmReset": "Salvar senha"
+    "confirmReset": "Salvar senha",
+    "pageSubtitle": "Painel exclusivo do superadmin: crie, edite e gerencie os tenants.",
+    "newClinic": "Nova clínica",
+    "loadingShort": "Carregando...",
+    "emptyList": "Nenhuma clínica cadastrada.",
+    "cols": {
+      "clinic": "Clínica",
+      "code": "Código",
+      "admin": "Admin",
+      "chatbot": "Chatbot WhatsApp",
+      "ai": "Plataforma IA",
+      "plan": "Plano",
+      "status": "Status",
+      "actions": "Ações"
+    },
+    "fields": {
+      "name": "Nome",
+      "code": "Código",
+      "email": "Email",
+      "phone": "Telefone"
+    },
+    "until": "até {{date}}",
+    "cancelShort": "cancel. {{date}}",
+    "actions": {
+      "release": "Liberar",
+      "suspend": "Suspender",
+      "edit": "Editar",
+      "resetPassword": "Redefinir senha",
+      "more": "Mais ações",
+      "trial14": "Trial 14 dias",
+      "trial30": "Trial 30 dias",
+      "exempt3": "Isentar 3 meses",
+      "exempt6": "Isentar 6 meses",
+      "viewDetails": "Ver detalhes"
+    },
+    "toasts": {
+      "loggedAs": "Você está logado como \"{{role}}\". Faça logout e logue como superadmin.",
+      "roleUnknown": "desconhecido",
+      "superadminOnly": "Apenas superadmin pode acessar. Faça logout e entre com uma conta superadmin.",
+      "loadFail": "Falha ao carregar clínicas",
+      "passwordMin8": "Senha precisa ter no mínimo 8 caracteres",
+      "error": "Erro",
+      "nameCodeRequired": "Informe nome e código",
+      "createError": "Erro ao criar",
+      "updateFail": "Falha ao atualizar",
+      "updateFailReload": "Falha ao atualizar. Recarregue",
+      "phoneInvalid": "Telefone inválido. Use DDD e número, por exemplo (11) 91234-5678."
+    },
+    "resetDialog": {
+      "title": "Redefinir senha do admin",
+      "clinic": "Clínica: <b>{{name}}</b>",
+      "newPassword": "Nova senha",
+      "cancel": "Cancelar",
+      "confirm": "Confirmar"
+    },
+    "createDialog": {
+      "title": "Nova clínica",
+      "description": "Cria o tenant e, opcionalmente, o primeiro administrador.",
+      "name": "Nome *",
+      "code": "Código *",
+      "codePlaceholder": "ex: clinicavida",
+      "adminOptional": "Admin inicial (opcional)",
+      "adminName": "Nome do admin",
+      "adminEmail": "Email do admin",
+      "password": "Senha (mín 8)",
+      "planAndResources": "Plano & recursos",
+      "plan": "Plano",
+      "cancel": "Cancelar",
+      "create": "Criar"
+    },
+    "editDialog": {
+      "title": "Editar clínica",
+      "plan": "Plano",
+      "accessStatus": "Status de Acesso",
+      "validUntil": "Válido até",
+      "cancelScheduled": "Cancelamento agendado: {{date}}",
+      "cancel": "Cancelar",
+      "save": "Salvar"
+    },
+    "detail": {
+      "back": "Voltar",
+      "invalid": "Clínica inválida",
+      "loadFail": "Falha ao carregar dados da clínica",
+      "updateFail": "Falha ao atualizar",
+      "planFail": "Falha ao salvar plano",
+      "passwordMin": "Senha mínimo 8 caracteres",
+      "resetFail": "Erro ao redefinir senha",
+      "notFound": "Clínica não encontrada.",
+      "basicInfo": "Informações Básicas",
+      "created": "Criado em",
+      "cpfCnpj": "CPF/CNPJ",
+      "subscription": "Assinatura e Acesso",
+      "trialUntil": "Trial até",
+      "exemptUntil": "Isenção até",
+      "releaseAccess": "Liberar acesso",
+      "trial14d": "Trial 14d",
+      "trial30d": "Trial 30d",
+      "exempt3m": "Isentar 3m",
+      "exempt6m": "Isentar 6m",
+      "resources": "Recursos Habilitados",
+      "chatbotHint": "Habilita o chatbot da Nina via WhatsApp",
+      "aiHint": "Habilita recursos de IA clínica. Disponível no plano Hospital e Enterprise.",
+      "admin": "Administrador da Clínica",
+      "adminName": "Nome: ",
+      "adminEmail": "Email: ",
+      "whatsapp": "WhatsApp",
+      "whatsappText": "A própria clínica conecta o número em Configurações → WhatsApp, lendo o QR Code no celular.",
+      "payments": "Histórico de Pagamentos",
+      "paymentsSoon": "Histórico de pagamentos disponível em breve."
+    }
   },
   "superadminFinance": {
     "header": {
@@ -1090,11 +1444,25 @@
       "tenantsLoadError": "Erro ao carregar a lista de clínicas."
     },
     "kpis": {
-      "mrr": { "label": "MRR", "sub": "Receita recorrente mensal" },
-      "revenuePeriod": { "label": "Receita no período", "sub": "Pagamentos confirmados" },
-      "paying": { "label": "Clínicas pagantes", "sub": "de {{count}} no total" },
-      "overdue": { "label": "Inadimplentes" },
-      "trialExpiring": { "label": "Trial vencendo", "sub": "próximos 7 dias" },
+      "mrr": {
+        "label": "MRR",
+        "sub": "Receita recorrente mensal"
+      },
+      "revenuePeriod": {
+        "label": "Receita no período",
+        "sub": "Pagamentos confirmados"
+      },
+      "paying": {
+        "label": "Clínicas pagantes",
+        "sub": "de {{count}} no total"
+      },
+      "overdue": {
+        "label": "Inadimplentes"
+      },
+      "trialExpiring": {
+        "label": "Trial vencendo",
+        "sub": "próximos 7 dias"
+      },
       "aiCost": {
         "label": "Custo de IA",
         "subAllTime": "{{tokens}} tokens · {{calls}} chamadas (histórico)",
@@ -1104,22 +1472,39 @@
     "monthlyRevenue": {
       "title": "Receita mensal",
       "empty": "Sem pagamentos registrados no período.",
-      "columns": { "month": "Mês", "payments": "Pagamentos", "value": "Valor" }
+      "columns": {
+        "month": "Mês",
+        "payments": "Pagamentos",
+        "value": "Valor"
+      }
     },
     "monthlyAiCost": {
       "title": "Custo de IA por mês",
       "empty": "Sem uso de IA registrado no período.",
-      "columns": { "month": "Mês", "calls": "Chamadas", "tokens": "Tokens", "usd": "Custo (USD)" }
+      "columns": {
+        "month": "Mês",
+        "calls": "Chamadas",
+        "tokens": "Tokens",
+        "usd": "Custo (USD)"
+      }
     },
     "aiByOperation": {
       "title": "Custo de IA por operação",
       "empty": "Sem uso de IA registrado no período.",
-      "columns": { "operation": "Operação", "calls": "Chamadas", "usd": "Custo (USD)" }
+      "columns": {
+        "operation": "Operação",
+        "calls": "Chamadas",
+        "usd": "Custo (USD)"
+      }
     },
     "topAiTenants": {
       "title": "Clínicas com maior uso de IA",
       "empty": "Sem uso de IA registrado no período.",
-      "columns": { "clinic": "Clínica", "calls": "Chamadas", "usd": "Custo (USD)" }
+      "columns": {
+        "clinic": "Clínica",
+        "calls": "Chamadas",
+        "usd": "Custo (USD)"
+      }
     },
     "clinicsByStatus": "Clínicas por status",
     "loading": "Carregando...",
@@ -1173,8 +1558,14 @@
     "breedCreated": "Raça \"{{name}}\" cadastrada",
     "breedCreateError": "Erro ao cadastrar raça",
     "noTutorLabel": "Sem responsável ({{reason}})",
-    "noTutorReason": { "emergencia": "Emergência", "abandono": "Abandono" },
-    "dialog": { "createTitle": "Novo Paciente", "editTitle": "Editar Paciente" },
+    "noTutorReason": {
+      "emergencia": "Emergência",
+      "abandono": "Abandono"
+    },
+    "dialog": {
+      "createTitle": "Novo Paciente",
+      "editTitle": "Editar Paciente"
+    },
     "form": {
       "required": "Obrigatório",
       "nameLabel": "Nome *",
@@ -1201,6 +1592,18 @@
       "weightLabel": "Peso (kg) *",
       "sexLabel": "Sexo *",
       "chipLabel": "Nº Microchip"
+    },
+    "address": {
+      "types": {
+        "Rua": "Rua",
+        "Avenida": "Avenida",
+        "Travessa": "Travessa",
+        "Alameda": "Alameda",
+        "Praça": "Praça",
+        "Estrada": "Estrada",
+        "Rodovia": "Rodovia",
+        "Outro": "Outro"
+      }
     }
   },
   "patientDetail": {
@@ -1217,12 +1620,28 @@
     "vaccineLine": "{{name}} — Próxima: {{date}}",
     "examRequestLine": "Solicitação em {{date}}",
     "prescriptionLine": "Tipo: {{type}} — {{date}}",
-    "fields": { "species": "Espécie", "breed": "Raça", "age": "Idade", "weight": "Peso", "sex": "Sexo", "guardian": "Responsável" },
-    "recordTypes": {
-      "atendimento": "Atendimento", "retorno": "Retorno", "emergencia": "Emergência",
-      "cirurgia": "Cirurgia", "internacao": "Internação", "noShow": "Não Compareceu"
+    "fields": {
+      "species": "Espécie",
+      "breed": "Raça",
+      "age": "Idade",
+      "weight": "Peso",
+      "sex": "Sexo",
+      "guardian": "Responsável"
     },
-    "eventTypes": { "medicalRecord": "Ficha", "vaccine": "Vacina", "examRequest": "Exame", "prescription": "Prescrição" }
+    "recordTypes": {
+      "atendimento": "Atendimento",
+      "retorno": "Retorno",
+      "emergencia": "Emergência",
+      "cirurgia": "Cirurgia",
+      "internacao": "Internação",
+      "noShow": "Não Compareceu"
+    },
+    "eventTypes": {
+      "medicalRecord": "Ficha",
+      "vaccine": "Vacina",
+      "examRequest": "Exame",
+      "prescription": "Prescrição"
+    }
   },
   "owners": {
     "title": "Responsáveis",
@@ -1283,6 +1702,11 @@
       "complementPlaceholder": "Apto 101",
       "neighborhoodLabel": "Bairro *",
       "requiredField": "Campo obrigatório",
+      "emailInvalid": "Email inválido"
+    },
+    "validation": {
+      "required": "Obrigatório",
+      "phoneInvalid": "Telefone inválido",
       "emailInvalid": "Email inválido"
     }
   },
@@ -2272,7 +2696,9 @@
       "cancel": "Cancelar",
       "save": "Salvar"
     },
-    "previewDialog": { "title": "Visualizar termo" },
+    "previewDialog": {
+      "title": "Visualizar termo"
+    },
     "toasts": {
       "nameRequired": "Informe o nome do termo",
       "fileRequired": "Selecione um arquivo PDF ou DOCX",
@@ -2299,8 +2725,14 @@
       "status": "Status",
       "actions": "Ações"
     },
-    "origin": { "system": "Sistema", "custom": "Customizado" },
-    "status": { "active": "Ativo", "inactive": "Inativo" },
+    "origin": {
+      "system": "Sistema",
+      "custom": "Customizado"
+    },
+    "status": {
+      "active": "Ativo",
+      "inactive": "Inativo"
+    },
     "systemReadOnlyTooltip": "Perfil de sistema — somente leitura",
     "permissionsCount_one": "{{count}} permissão",
     "permissionsCount_other": "{{count}} permissões",
@@ -2335,16 +2767,56 @@
   "settingsWhatsappNumbers": {
     "title": "WhatsApp da clínica",
     "subtitle": "Conecte o WhatsApp da clínica lendo um QR Code com o celular — sem aprovação da Meta. O número continua no aparelho da clínica.",
-    "chatbot": { "title": "Chatbot — respostas automáticas (IA)", "active": "Ativo", "inactive": "Desativado" },
-    "actions": { "connect": "Conectar número", "checkStatus": "Verificar status", "scanQrCode": "Escanear QR Code", "disconnect": "Remover" },
-    "empty": { "withAction": "Nenhum número conectado. Clique em \"{{action}}\" e leia o QR Code com o celular da clínica.", "none": "Nenhum número conectado." },
-    "table": { "number": "Número", "status": "Status", "actions": "Ações", "awaitingPairing": "Aguardando leitura do QR Code" },
-    "status": { "checking": "Verificando", "connected": "Conectado", "disconnected": "Desconectado" },
-    "motivo": { "sessao_encerrada": "Sessão encerrada no celular — leia o QR Code de novo.", "sessao_assumida_por_outro_dispositivo": "Outro dispositivo assumiu a sessão — leia o QR Code de novo.", "numero_bloqueado": "O WhatsApp bloqueou este número." },
-    "qrModal": { "title": "Escanear QR Code", "instructionsPre": "Abra o WhatsApp no celular →", "connectedDevices": "Dispositivos conectados", "connectDevice": "Conectar dispositivo", "instructionsPost": "→ escaneie o código abaixo.", "waiting": "Gerando o QR Code…", "autoRefresh": "O código é atualizado automaticamente. A janela fecha sozinha quando o número conectar." },
+    "chatbot": {
+      "title": "Chatbot — respostas automáticas (IA)",
+      "active": "Ativo",
+      "inactive": "Desativado"
+    },
+    "actions": {
+      "connect": "Conectar número",
+      "checkStatus": "Verificar status",
+      "scanQrCode": "Escanear QR Code",
+      "disconnect": "Remover"
+    },
+    "empty": {
+      "withAction": "Nenhum número conectado. Clique em \"{{action}}\" e leia o QR Code com o celular da clínica.",
+      "none": "Nenhum número conectado."
+    },
+    "table": {
+      "number": "Número",
+      "status": "Status",
+      "actions": "Ações",
+      "awaitingPairing": "Aguardando leitura do QR Code"
+    },
+    "status": {
+      "checking": "Verificando",
+      "connected": "Conectado",
+      "disconnected": "Desconectado"
+    },
+    "motivo": {
+      "sessao_encerrada": "Sessão encerrada no celular — leia o QR Code de novo.",
+      "sessao_assumida_por_outro_dispositivo": "Outro dispositivo assumiu a sessão — leia o QR Code de novo.",
+      "numero_bloqueado": "O WhatsApp bloqueou este número."
+    },
+    "qrModal": {
+      "title": "Escanear QR Code",
+      "instructionsPre": "Abra o WhatsApp no celular →",
+      "connectedDevices": "Dispositivos conectados",
+      "connectDevice": "Conectar dispositivo",
+      "instructionsPost": "→ escaneie o código abaixo.",
+      "waiting": "Gerando o QR Code…",
+      "autoRefresh": "O código é atualizado automaticamente. A janela fecha sozinha quando o número conectar."
+    },
     "confirmDisconnect": "Remover este número? O WhatsApp será desconectado e a equipe deixa de receber as conversas por ele.",
-    "toasts": { "connected": "WhatsApp conectado com sucesso!" },
-    "errors": { "save": "Erro ao salvar", "qrCode": "Erro ao obter QR Code", "register": "Erro ao conectar número", "disconnect": "Erro ao remover" }
+    "toasts": {
+      "connected": "WhatsApp conectado com sucesso!"
+    },
+    "errors": {
+      "save": "Erro ao salvar",
+      "qrCode": "Erro ao obter QR Code",
+      "register": "Erro ao conectar número",
+      "disconnect": "Erro ao remover"
+    }
   },
   "balcao": {
     "title": "Balcão",
@@ -2641,7 +3113,8 @@
         "title": "Remover este horário?",
         "description": "Esta ação não pode ser desfeita."
       }
-    }
+    },
+    "timeRange": "{{open}} às {{close}}"
   },
   "settingsHub": {
     "title": "Configurações",
@@ -2905,5 +3378,1088 @@
   },
   "telefone": {
     "invalido": "Telefone inválido. Use o DDD e o número, por exemplo (11) 91234-5678."
+  },
+  "listPagination": {
+    "first": "Primeira página",
+    "previous": "Página anterior",
+    "next": "Próxima página",
+    "last": "Última página",
+    "range": "{{from}}-{{to}} de {{total}}",
+    "page": "Pág. {{page}} / {{total}}"
+  },
+  "trialBanner": {
+    "readOnly": "Assinatura em atraso: a conta está em <b>somente leitura</b>. Você continua consultando, exportando e imprimindo. Para voltar a editar, regularize o pagamento.",
+    "settle": "Regularizar",
+    "cancelled": "Acesso cancelado por falta de pagamento. Seus dados ficam preservados por <b>30 dias</b>. Regularize a assinatura para recuperá-los.",
+    "suspended": "Conta suspensa. Entre em contato com o suporte.",
+    "overdue": "Pagamento em atraso. Regularize em até <b>7 dias</b>. Depois disso a conta entra em somente leitura.",
+    "onboardingExpired": "O prazo para terminar o cadastro da clínica expirou. Termine a configuração para liberar o acesso.",
+    "finishSignup": "Terminar cadastro",
+    "trialExpired": "Seu período de teste expirou. Escolha um plano para recuperar o acesso.",
+    "choosePlan": "Escolher plano",
+    "exempt_one": "Acesso cortesia ativo: <b>{{count}} dia restante</b>.",
+    "exempt_other": "Acesso cortesia ativo: <b>{{count}} dias restantes</b>.",
+    "trialToday": "Trial expira hoje. Escolha um plano para continuar.",
+    "viewPlans": "Ver planos",
+    "trialSoon_one": "Seu trial expira em <b>{{count}} dia</b>. Escolha um plano para continuar.",
+    "trialSoon_other": "Seu trial expira em <b>{{count}} dias</b>. Escolha um plano para continuar.",
+    "trialRunning": "Você está no período de teste: <b>{{count}} dias restantes</b>."
+  },
+  "emailConfirmation": {
+    "prompt": "Confirme seu e-mail para liberar convites de equipe e ativação de plano pago.",
+    "promptWithEmail": "Confirme seu e-mail (<b>{{email}}</b>) para liberar convites de equipe e ativação de plano pago.",
+    "sentTo": "Enviamos um código para {{email}}.",
+    "sentGeneric": "Enviamos um código para o seu e-mail.",
+    "sendError": "Não foi possível enviar o código. Tente novamente.",
+    "digits": "Digite os 6 dígitos do código.",
+    "confirmed": "E-mail confirmado com sucesso.",
+    "invalid": "Código inválido ou expirado.",
+    "send": "Enviar código",
+    "sending": "Enviando...",
+    "confirm": "Confirmar",
+    "confirming": "Confirmando...",
+    "resend": "Reenviar"
+  },
+  "errorScreen": {
+    "title": "Algo deu errado",
+    "fatalTitle": "Erro inesperado",
+    "description": "A página não conseguiu carregar. Já registramos o que aconteceu. Você pode tentar de novo. Se persistir, informe o código abaixo ao suporte.",
+    "code": "Código: {{code}}",
+    "retry": "Tentar de novo",
+    "goHome": "Ir para o início"
+  },
+  "notFound": {
+    "badge": "Erro 404",
+    "title": "Página não encontrada",
+    "description": "O link que você acessou não existe ou foi movido. Volte para a página inicial do NixVetApp.",
+    "back": "Voltar para o início"
+  },
+  "commandPalette": {
+    "title": "Busca rápida",
+    "description": "Navegue, crie registros ou busque pacientes e responsáveis",
+    "placeholder": "Buscar telas, ações ou registros...",
+    "empty": "Nada encontrado.",
+    "quickActions": "Ações rápidas",
+    "screens": "Telas",
+    "patients": "Pacientes",
+    "owners": "Responsáveis"
+  },
+  "quickCreate": {
+    "menuTitle": "Criar novo",
+    "new": "Novo",
+    "patient": "Novo Paciente",
+    "appointment": "Novo Agendamento",
+    "medicalRecord": "Nova Consulta / Atendimento",
+    "prescription": "Nova Prescrição",
+    "teamMember": "Novo Membro da Equipe",
+    "product": "Novo Produto / Item de Estoque",
+    "vaccine": "Nova Vacina",
+    "followup": "Novo Acompanhamento",
+    "task": "Nova Tarefa",
+    "owner": "Novo Responsável"
+  },
+  "cookieConsent": {
+    "ariaLabel": "Aviso de cookies",
+    "text": "Usamos cookies de medição para entender como o site é usado e melhorá-lo. Eles só são ativados se você aceitar. Veja a <a>Política de Privacidade</a>.",
+    "deny": "Recusar",
+    "accept": "Aceitar"
+  },
+  "legalShell": {
+    "homeAria": "NixVetApp, início",
+    "policies": "Políticas de uso",
+    "terms": "Termos",
+    "login": "Entrar",
+    "lastUpdated": "Última atualização: {{date}}",
+    "backHome": "Voltar ao início"
+  },
+  "setupChecklist": {
+    "items": {
+      "team": "Cadastrar mais veterinários(as)",
+      "doctorSchedules": "Agenda de cada veterinário(a)",
+      "resources": "Salas e equipamentos",
+      "healthPlans": "Convênios / planos de saúde",
+      "branding": "Identidade visual (logo, cor, subdomínio)",
+      "whatsapp": "WhatsApp / atendimento por IA",
+      "googleCalendar": "Google Agenda",
+      "termTemplates": "Modelos de termo de consentimento"
+    },
+    "done": "Configuração concluída!",
+    "allSet": "Tudo pronto! 🎉",
+    "clinicDone": "Sua clínica está 100% configurada no NixVet.",
+    "panelTitle": "Configuração: {{percent}}% completa",
+    "panelHint": "Opcional, mas ajuda a aproveitar tudo do NixVet.",
+    "dismissAria": "Dispensar definitivamente",
+    "dismissTitle": "Não mostrar mais",
+    "bar": "Configuração {{percent}}%"
+  },
+  "appShell": {
+    "menu": "Menu",
+    "mainNavigation": "Navegação principal",
+    "redirectingToPlans": "Redirecionando para a escolha de plano…"
+  },
+  "tasks": {
+    "title": "Tarefas clínicas",
+    "new": "Nova tarefa",
+    "empty": "Nenhuma tarefa cadastrada.",
+    "colPatient": "Paciente",
+    "colType": "Tipo",
+    "colDue": "Vencimento",
+    "colStatus": "Status",
+    "colActions": "Ações",
+    "complete": "Concluir",
+    "status": {
+      "pending": "Pendente",
+      "completed": "Concluída"
+    },
+    "createError": "Erro ao criar",
+    "genericError": "Erro",
+    "cancel": "Cancelar",
+    "create": "Criar",
+    "select": "Selecione",
+    "typePlaceholder": "Ex.: Retorno, Ligar para tutor",
+    "loading": "Carregando..."
+  },
+  "billingUpgrade": {
+    "changeTitle": "Trocar de plano",
+    "chooseTitle": "Escolha seu plano",
+    "changeSubtitle": "Ao confirmar, sua assinatura atual é cancelada no Asaas e a nova começa imediatamente.",
+    "chooseSubtitle": "Selecione o plano ideal para a sua clínica e continue usando o NixVet.",
+    "clickHint": "Clique em um plano abaixo para selecioná-lo.",
+    "current": "Plano atual",
+    "popular": "Mais popular",
+    "perMonth": "/mês",
+    "cpfCnpj": "CPF ou CNPJ",
+    "cpfPlaceholder": "000.000.000-00 ou 00.000.000/0001-00",
+    "cpfHint": "Necessário para emissão de nota fiscal.",
+    "paymentMethod": "Forma de pagamento",
+    "select": "Selecione",
+    "methods": {
+      "CREDIT_CARD": "Cartão de crédito",
+      "BOLETO": "Boleto bancário",
+      "PIX": "PIX"
+    },
+    "changing": "Trocando...",
+    "activating": "Ativando...",
+    "confirmChange": "Confirmar troca",
+    "confirmChangeTo": "Confirmar troca para {{plan}}",
+    "activate": "Ativar plano",
+    "activatePlan": "Ativar plano {{plan}}",
+    "selectPlanError": "Selecione um plano para continuar.",
+    "cpfRequiredError": "Informe seu CPF ou CNPJ para continuar.",
+    "paymentOpenError": "Não foi possível abrir o pagamento. Tente novamente.",
+    "activateError": "Erro ao ativar plano. Tente novamente."
+  },
+  "plans": {
+    "essencial": {
+      "name": "Essencial",
+      "tagline": "Para clínicas pequenas começando a organizar a rotina.",
+      "features": {
+        "0": "Prontuário eletrônico",
+        "1": "Cadastro ilimitado de pacientes",
+        "2": "Agendamento online",
+        "3": "Emissão de receitas e pedidos",
+        "4": "WhatsApp básico"
+      }
+    },
+    "clinica": {
+      "name": "Clínica",
+      "tagline": "Para clínicas em crescimento com equipe e financeiro ativos.",
+      "features": {
+        "0": "Tudo do Essencial",
+        "1": "Múltiplos veterinários",
+        "2": "Relatórios financeiros avançados",
+        "3": "Internações",
+        "4": "Chatbot WhatsApp",
+        "5": "Lembretes automáticos"
+      }
+    },
+    "hospital": {
+      "name": "Hospital",
+      "tagline": "Para hospitais e clínicas de grande porte com casos complexos.",
+      "features": {
+        "0": "Tudo do Clínica",
+        "1": "Registros anestésicos",
+        "2": "IA clínica integrada",
+        "3": "Multi-unidades",
+        "4": "API dedicada",
+        "5": "Suporte prioritário 24/7"
+      }
+    },
+    "enterpriseManual": "Enterprise (manual)",
+    "enterprise": "Enterprise"
+  },
+  "help": {
+    "title": "Central de Ajuda",
+    "subtitle": "Tire dúvidas sobre o uso do NixVet com a assistente ou fale com o nosso time.",
+    "openTicket": "Abrir chamado",
+    "tabs": {
+      "assistant": "Assistente",
+      "articles": "Artigos",
+      "tickets": "Meus chamados"
+    },
+    "suggestions": {
+      "0": "Como cancelo um orçamento?",
+      "1": "Como conecto o WhatsApp da clínica?",
+      "2": "Como confirmo um lançamento sugerido?",
+      "3": "A clínica consegue emitir nota fiscal pelo sistema?"
+    },
+    "howCanIHelp": "Como posso ajudar?",
+    "intro": "Pergunte sobre como fazer algo no sistema. Eu respondo com base na base de conhecimento do NixVet. Não acesso os dados da sua clínica nem dou orientação veterinária.",
+    "relatedArticles": "Artigos relacionados:",
+    "solved": "Resolveu?",
+    "helpful": "Ajudou",
+    "notHelpful": "Não ajudou",
+    "consulting": "Consultando a base de conhecimento…",
+    "escalate": "Não resolveu? O time de suporte do NixVet assume daqui.",
+    "talkToSupport": "Falar com o suporte",
+    "inputPlaceholder": "Escreva sua dúvida sobre o sistema…",
+    "searchPlaceholder": "Buscar na central de ajuda…",
+    "allModules": "Todos os módulos",
+    "noArticles": "Nenhum artigo encontrado para essa busca.",
+    "openTicketWithSupport": "Abrir chamado com o suporte",
+    "noTickets": "Você ainda não abriu nenhum chamado.",
+    "supportReply": "Resposta do suporte",
+    "loading": "Carregando…",
+    "stillInDoubt": "Ainda com dúvida?",
+    "ticketDialogTitle": "Abrir chamado com o suporte NixVet",
+    "subject": "Assunto",
+    "subjectPlaceholder": "Resuma o problema em uma linha",
+    "description": "Descrição",
+    "descriptionPlaceholder": "O que você tentou fazer, o que aconteceu e em qual tela",
+    "module": "Módulo",
+    "priority": "Prioridade",
+    "priorities": {
+      "low": "Baixa",
+      "normal": "Normal",
+      "high": "Alta: está bloqueando o atendimento"
+    },
+    "attachConversation": "Anexar a conversa com a assistente: ajuda o time a entender o contexto.",
+    "cancel": "Cancelar",
+    "sending": "Enviando…",
+    "answerFailed": "Não consegui responder agora.",
+    "answerFailedPersist": "{{message}} Se persistir, abra um chamado com o nosso time.",
+    "fillRequired": "Preencha o assunto e a descrição",
+    "ticketOpened": "Chamado #{{number}} aberto. O time do NixVet responde por e-mail.",
+    "ticketError": "Erro ao abrir chamado",
+    "modules": {
+      "geral": "Geral",
+      "agenda": "Agenda",
+      "pacientes": "Pacientes",
+      "prontuario": "Prontuário",
+      "atendimento": "Atendimento",
+      "internacao": "Internação",
+      "exames": "Exames",
+      "prescricoes": "Prescrições",
+      "orcamentos": "Orçamentos",
+      "financeiro": "Financeiro",
+      "estoque": "Estoque",
+      "whatsapp": "WhatsApp",
+      "relatorios": "Relatórios",
+      "configuracoes": "Configurações",
+      "conta": "Conta",
+      "mobile": "App mobile"
+    },
+    "ticketStatus": {
+      "open": "Aberto",
+      "in_progress": "Em andamento",
+      "resolved": "Resolvido",
+      "closed": "Fechado"
+    }
+  },
+  "whatsapp": {
+    "title": "WhatsApp",
+    "refresh": "Atualiza a cada {{seconds}}s",
+    "stats": {
+      "waitingClinic": "Aguardando resposta",
+      "waitingPatient": "Aguardando responsável",
+      "closedToday": "Encerradas hoje",
+      "avgResponse": "Tempo médio resposta",
+      "unanswered_one": "{{count}} conversa há mais de 20 min sem resposta",
+      "unanswered_other": "{{count}} conversas há mais de 20 min sem resposta"
+    },
+    "conversations": "Conversas",
+    "active": "Ativas",
+    "archived": "Arquivadas",
+    "allClassifications": "Todas as classificações",
+    "noName": "Sem nome",
+    "archivedLabel": "Arquivada",
+    "archivedInactive": "Arquivada (inativa 7d)",
+    "byUser": "por {{name}}",
+    "none": "Nenhuma conversa",
+    "backToList": "Voltar para a lista de conversas",
+    "closedBy": "Encerrado por <b>{{name}}</b>",
+    "closedByAt": "Encerrado por <b>{{name}}</b> em {{date}}",
+    "selectConversation": "Selecione uma conversa",
+    "clickToView": "Clique em uma conversa para ver as mensagens",
+    "noMessages": "Nenhuma mensagem",
+    "deleted": "Mensagem apagada",
+    "suggestionsLabel": "Sugestões:",
+    "messagePlaceholder": "Digite a mensagem...",
+    "suggestReplyHint": "Sugerir resposta (IA)",
+    "badges": {
+      "humanAttention": "Atendimento humano",
+      "notAnswered": "Não respondido",
+      "waitingPatient": "Aguardando resposta do responsável"
+    },
+    "actions": {
+      "resumeBot": "Retomar Bot",
+      "resumeBotHint": "Retomar atendimento automático pelo bot",
+      "takeOver": "Assumir",
+      "takeOverHint": "Pausar bot e assumir atendimento manualmente",
+      "classify": "Classificar",
+      "classifyHint": "Classificar sem encerrar",
+      "classifyConversation": "Classificar conversa",
+      "close": "Encerrar",
+      "closeHint": "Encerrar conversa (escolher classificação e observação)",
+      "unarchive": "Desarquivar",
+      "unarchiveHint": "Trazer conversa de volta para a lista de ativas",
+      "archive": "Arquivar",
+      "archiveHint": "Arquivar temporariamente (reabre em nova mensagem)"
+    },
+    "closeDialog": {
+      "title": "Encerrar conversa",
+      "description": "Como esse atendimento foi concluído?",
+      "noteLabel": "Observação (opcional)",
+      "notePlaceholder": "Ex.: o paciente agendou por telefone...",
+      "cancel": "Cancelar"
+    },
+    "classifications": {
+      "scheduled": "Consulta agendada",
+      "not_returned": "Não retornou",
+      "resolved": "Atendimento encerrado",
+      "spam": "Spam / engano",
+      "lost": "Desistência",
+      "other": "Outro"
+    },
+    "teaser": {
+      "title": "Essa é a visão do WhatsApp para quem tem o plano Clínica",
+      "text": "Assine o plano Clínica para liberar o atendimento e todas as funções desta tela.",
+      "viewPlans": "Ver planos"
+    },
+    "errors": {
+      "selectClassification": "Selecione uma classificação",
+      "close": "Erro ao encerrar conversa",
+      "noMessagesForSuggestion": "Não há mensagens para sugerir resposta",
+      "noSuggestions": "Nenhuma sugestão retornada",
+      "suggest": "Erro ao obter sugestões",
+      "send": "Erro ao enviar",
+      "resume": "Erro ao retomar bot",
+      "pause": "Erro ao pausar bot",
+      "archive": "Erro ao arquivar conversa",
+      "unarchive": "Erro ao desarquivar conversa",
+      "classify": "Erro ao classificar"
+    }
+  },
+  "superadminSuporte": {
+    "title": "Suporte",
+    "subtitle": "Chamados das clínicas, base de conhecimento da assistente e perguntas que ela ainda não sabe responder.",
+    "stats": {
+      "openTickets": "Chamados abertos",
+      "pendingGaps": "Lacunas pendentes",
+      "publishedArticles": "Artigos publicados",
+      "drafts": "Rascunhos"
+    },
+    "tabs": {
+      "tickets": "Chamados",
+      "gaps": "Lacunas",
+      "knowledge": "Base de conhecimento"
+    },
+    "filters": {
+      "all": "Todos",
+      "allStatuses": "Todos os status",
+      "open": "Abertos",
+      "in_progress": "Em andamento",
+      "resolved": "Resolvidos",
+      "closed": "Fechados",
+      "pending": "Pendentes",
+      "answered": "Respondidas",
+      "dismissed": "Descartadas",
+      "published": "Publicados",
+      "draft": "Rascunhos"
+    },
+    "noTickets": "Nenhum chamado neste filtro.",
+    "priorityHigh": "Alta",
+    "recordedReply": "Resposta registrada",
+    "replyAction": "Responder / mudar status",
+    "gapsHint": "Perguntas que a base não cobriu, das mais repetidas para as menos.",
+    "noGaps": "Nenhuma lacuna neste filtro: a base está cobrindo o que perguntam.",
+    "asked": "{{count}}× perguntada",
+    "lastSeen": "última em {{date}}",
+    "writeArticle": "Escrever artigo",
+    "dismiss": "Descartar",
+    "searchPlaceholder": "Buscar por título, palavra-chave ou conteúdo…",
+    "newArticle": "Novo artigo",
+    "noArticles": "Nenhum artigo encontrado.",
+    "draftBadge": "Rascunho",
+    "reads_one": "{{count}} leitura",
+    "reads_other": "{{count}} leituras",
+    "edit": "Editar",
+    "remove": "Remover",
+    "editor": {
+      "editTitle": "Editar artigo",
+      "newTitle": "Novo artigo",
+      "title": "Título",
+      "summary": "Resumo",
+      "summaryPlaceholder": "Uma linha que aparece na lista da central de ajuda",
+      "module": "Módulo",
+      "status": "Status",
+      "statusDraft": "Rascunho (a IA não usa)",
+      "statusPublished": "Publicado",
+      "keywords": "Palavras-chave",
+      "keywordsPlaceholder": "Termos alternativos que o usuário usaria, separados por vírgula",
+      "content": "Conteúdo",
+      "contentPlaceholder": "Passo a passo. Use **negrito** para nomes de menu e botões.",
+      "contentHint": "A assistente responde apenas com o que estiver aqui. Cite os nomes de menu e botões exatamente como aparecem na tela."
+    },
+    "cancel": "Cancelar",
+    "saving": "Salvando…",
+    "save": "Salvar",
+    "ticketTitle": "Chamado #{{number}}",
+    "replyLabel": "Resposta",
+    "replyPlaceholder": "Fica visível para a clínica na aba Meus chamados",
+    "deleteTitle": "Remover “{{title}}”?",
+    "deleteDescription": "A assistente deixa de usar este artigo imediatamente. Se a ideia é só tirar do ar, prefira mudar o status para Rascunho.",
+    "toasts": {
+      "ticketUpdated": "Chamado atualizado.",
+      "ticketError": "Erro ao atualizar chamado",
+      "articleRequiredFields": "Informe o título e o conteúdo",
+      "articleUpdated": "Artigo atualizado",
+      "articleCreated": "Artigo criado",
+      "articleSaveError": "Erro ao salvar o artigo",
+      "articleRemoved": "Artigo removido",
+      "articleRemoveError": "Erro ao remover o artigo"
+    }
+  },
+  "subscriptionStatus": {
+    "active": "Ativo",
+    "exempt": "Isento (cortesia)",
+    "trial": "Trial",
+    "trial_expired": "Trial Expirado",
+    "overdue": "Em Atraso",
+    "suspended": "Suspenso",
+    "cancelled": "Cancelado"
+  },
+  "shared": {
+    "cancel": "Cancelar",
+    "close": "Fechar",
+    "loading": "Carregando...",
+    "noItems": "Nenhum item disponível.",
+    "openMenu": "Abrir menu",
+    "search": "Buscar",
+    "language": "Idioma",
+    "notificationsPanel": "Painel de notificações",
+    "retry": "Tentar de novo",
+    "loadData": "Não foi possível carregar os dados."
+  },
+  "errors": {
+    "timeout": "O servidor demorou para responder. Tente de novo em instantes.",
+    "noConnection": "Sem conexão com o servidor. Verifique sua internet e tente de novo.",
+    "server": "Erro no servidor.",
+    "withCode": "{{base}} Código: {{code}}",
+    "subscriptionIrregular": "Assinatura irregular. Regularize para continuar.",
+    "loadAgenda": "Não foi possível carregar a agenda.",
+    "loadRecords": "Não foi possível carregar os prontuários.",
+    "loadIndicators": "Não foi possível carregar os indicadores.",
+    "loadPatients": "Não foi possível carregar os pacientes."
+  },
+  "age": {
+    "years_one": "{{count}} ano",
+    "years_other": "{{count}} anos",
+    "months_one": "{{count}} mês",
+    "months_other": "{{count}} meses"
+  },
+  "photo": {
+    "adjust": "Ajustar foto",
+    "adjustHint": "Arraste para posicionar e use o zoom. O que estiver dentro do círculo será salvo.",
+    "zoom": "Zoom",
+    "cancel": "Cancelar",
+    "save": "Salvar foto",
+    "cropUnsupported": "Este formato não pode ser recortado no navegador.",
+    "cropFailed": "Não foi possível gerar o recorte.",
+    "updated": "Foto atualizada.",
+    "uploadError": "Erro ao enviar a foto.",
+    "removed": "Foto removida.",
+    "removeError": "Erro ao remover a foto.",
+    "unreadable": "Não foi possível ler este arquivo. Se ele estiver no Google Drive, iCloud, OneDrive ou numa pasta de rede, baixe-o para o computador antes de enviar.",
+    "heic": "Fotos em HEIC (padrão do iPhone) não são exibidas neste navegador. Converta para JPEG ou, no iPhone, ajuste Câmera → Formatos → Mais Compatível.",
+    "cannotOpen": "Não foi possível abrir esta imagem. Tente enviar em JPEG ou PNG.",
+    "change": "Trocar {{label}}",
+    "add": "Adicionar {{label}}",
+    "remove": "Remover",
+    "labels": {
+      "default": "foto",
+      "patient": "foto do paciente",
+      "you": "sua foto"
+    },
+    "unsupportedFormat": "Formato não suportado. Envie JPEG, PNG, WebP ou HEIC.",
+    "tooBig": "Não foi possível processar esta imagem e ela passa de 5 MB. Converta para JPEG e tente de novo.",
+    "sendFailed": "Não foi possível enviar a imagem. multipart: {{multipart}}; base64: {{base64}}"
+  },
+  "whatsappMedia": {
+    "expired": "{{kind}} removido do servidor após 7 dias. Peça ao tutor para reenviar, se necessário.",
+    "unavailable": "{{kind}} não pôde ser recuperado: o WhatsApp mantém o arquivo por tempo limitado.",
+    "receiving": "Recebendo {{kind}}…",
+    "loading": "Carregando…",
+    "openFail": "Não foi possível abrir o arquivo.",
+    "download": "Baixar",
+    "leavesToday": "Sai do servidor hoje. Baixe se precisar guardar.",
+    "availableDays_one": "Disponível por mais {{count}} dia no NixVet. Baixe se precisar guardar.",
+    "availableDays_other": "Disponível por mais {{count}} dias no NixVet. Baixe se precisar guardar.",
+    "imageAlt": "Imagem recebida",
+    "document": "Documento",
+    "kinds": {
+      "image": "Imagem",
+      "audio": "Áudio",
+      "video": "Vídeo",
+      "sticker": "Figurinha",
+      "document": "Documento"
+    }
+  },
+  "resetPassword": {
+    "emailRequired": "Informe o seu e-mail.",
+    "tenantRequired": "Informe o código da clínica.",
+    "sendFailed": "Não foi possível enviar o código.",
+    "sentNeutral": "Se o e-mail estiver cadastrado, você receberá um código.",
+    "connectFail": "Não foi possível conectar ao servidor.",
+    "codeDigits": "O código tem 6 dígitos.",
+    "passwordMin": "A nova senha precisa ter pelo menos 8 caracteres.",
+    "mismatch": "As senhas não conferem.",
+    "confirmFailed": "Não foi possível redefinir a senha.",
+    "done": "Senha redefinida. Entre com a nova senha.",
+    "titleRequest": "Esqueci minha senha",
+    "titleConfirm": "Criar nova senha",
+    "introRequest": "Informe o e-mail da sua conta e enviaremos um código de 6 dígitos.",
+    "introConfirm": "Enviamos um código para {{email}}. Ele vale por 15 minutos.",
+    "tenantLabel": "Código da clínica",
+    "tenantPlaceholder": "ex.: clinicavida",
+    "emailLabel": "E-mail",
+    "sendCode": "Enviar código",
+    "codeLabel": "Código de 6 dígitos",
+    "newPassword": "Nova senha",
+    "passwordPlaceholder": "Mínimo 8 caracteres",
+    "confirmPassword": "Confirme a nova senha",
+    "submit": "Redefinir senha",
+    "didNotReceive": "Não recebi o código",
+    "backToLogin": "Voltar para o login"
+  },
+  "acceptInvite": {
+    "passwordMin": "Senha deve ter ao menos 8 caracteres.",
+    "mismatch": "Senhas não conferem.",
+    "created": "Conta criada! Faça login para entrar.",
+    "welcomeToast": "Bem-vindo(a) à equipe, {{name}}!",
+    "acceptError": "Não foi possível aceitar o convite. Tente novamente.",
+    "loading": "Carregando convite...",
+    "invalidTitle": "Convite inválido ou expirado",
+    "invalidHint": "Peça para quem te convidou enviar um novo convite.",
+    "goLogin": "Ir para o login",
+    "welcome": "Bem-vindo(a), {{name}}",
+    "invited": "Você foi convidado(a) para a equipe de <b>{{clinic}}</b>. Crie sua senha para entrar.",
+    "password": "Senha",
+    "passwordPlaceholder": "Mínimo 8 caracteres",
+    "confirm": "Confirmar senha",
+    "confirmPlaceholder": "Repita a senha",
+    "creating": "Criando conta...",
+    "create": "Criar minha conta"
+  },
+  "verify": {
+    "promptPatient": "Insira o token e o código de desbloqueio do tutor.",
+    "iAmPatient": "Sou o tutor",
+    "isPatient": "É o tutor? Informe também o código de desbloqueio para ver seus dados.",
+    "rows": {
+      "owner": "Tutor",
+      "doctor": "Veterinário(a)",
+      "registry": "Registro",
+      "clinic": "Clínica",
+      "signedAt": "Assinado em",
+      "revokedAt": "Revogada em",
+      "patient": "Paciente",
+      "cpf": "CPF",
+      "phone": "Telefone",
+      "address": "Endereço"
+    },
+    "footer": "Documento assinado digitalmente via NixVetApp. Consulta protegida e auditada.",
+    "title": "Verificação de receita digital",
+    "status": {
+      "revoked": "Assinatura revogada",
+      "expired": "Assinatura expirada",
+      "valid": "Assinatura válida",
+      "invalid": "Assinatura inválida"
+    },
+    "controlled": "Receituário de Controle Especial",
+    "controlledWithNumber": "Receituário de Controle Especial, Nº {{number}}",
+    "iAmPharmacy": "Sou farmácia",
+    "promptPharmacy": "Insira o token da farmácia (impresso na receita).",
+    "tokenPlaceholder": "Token (ex.: A1B2C3)",
+    "codePlaceholder": "Código de desbloqueio (4 dígitos)",
+    "query": "Consultar",
+    "cancel": "Cancelar",
+    "prescription": "Prescrição",
+    "dose": "Dose: {{value}}",
+    "frequency": "Freq.: {{value}} {{unit}}",
+    "duration": "Duração: {{value}} {{unit}}",
+    "continuous": "USO CONTÍNUO",
+    "recommendations": "Recomendações",
+    "downloadPdf": "Baixar receita em PDF",
+    "checkLink": "Verifique o link ou o QR Code da receita.",
+    "errors": {
+      "notFound": "Documento não encontrado.",
+      "invalidToken": "Token ou código inválido.",
+      "rateLimit": "Muitas tentativas. Aguarde alguns instantes.",
+      "generic": "Não foi possível verificar o documento."
+    },
+    "forms": {
+      "oral": "Oral",
+      "topica": "Tópica",
+      "colirio": "Colírio",
+      "spray": "Spray",
+      "injetavel": "Injetável",
+      "outro": "Outro"
+    }
+  },
+  "chatbotWorkflowEditor": {
+    "actionTypes": {
+      "getAvailability": {
+        "label": "Buscar disponibilidade",
+        "description": "Consulta os horários livres na agenda"
+      },
+      "generateAiReply": {
+        "label": "Resposta da IA",
+        "description": "Gera a resposta com inteligência artificial"
+      },
+      "sendMessage": {
+        "label": "Enviar mensagem",
+        "description": "Envia um texto fixo ao responsável"
+      },
+      "createConsultation": {
+        "label": "Criar consulta",
+        "description": "Agenda a consulta com os dados coletados"
+      },
+      "notifyTeam": {
+        "label": "Avisar a equipe",
+        "description": "Notifica a equipe da clínica"
+      },
+      "pauseBot": {
+        "label": "Pausar o robô",
+        "description": "Passa a conversa para um atendente"
+      },
+      "waitReply": {
+        "label": "Aguardar resposta",
+        "description": "Espera a próxima mensagem do responsável"
+      }
+    },
+    "nodeTypes": {
+      "trigger": "Gatilho",
+      "condition": "Condição",
+      "action": "Ação",
+      "end": "Fim"
+    },
+    "palette": {
+      "condition": "Divide o fluxo por intenção ou variável",
+      "action": "Executa uma operação (IA, agenda, mensagem...)",
+      "end": "Encerra o fluxo desta mensagem"
+    },
+    "newNodeLabel": {
+      "condition": "Condição",
+      "action": "Nova ação",
+      "end": "Fim"
+    },
+    "toolbar": {
+      "back": "Voltar",
+      "namePlaceholder": "Nome do fluxo",
+      "active": "Ativo",
+      "inactive": "Inativo",
+      "save": "Salvar"
+    },
+    "addNode": "Adicionar nó",
+    "hint": "Clique em um nó para configurar. Arraste para mover. Conecte as saídas às entradas.",
+    "legend": "Legenda",
+    "sheet": {
+      "title": "Configurar nó",
+      "description": "Configuração do nó selecionado",
+      "label": "Nome",
+      "type": "Tipo",
+      "key": "Identificador",
+      "actionType": "Tipo de ação",
+      "select": "Selecione",
+      "messageText": "Texto da mensagem",
+      "daysAhead": "Dias à frente",
+      "notifyMessage": "Mensagem de notificação",
+      "outputVar": "Variável de saída",
+      "conditionVar": "Variável da condição",
+      "commonValues": "Valores comuns: intent, message",
+      "branches": "Ramificações",
+      "deleteNode": "Excluir nó"
+    },
+    "toasts": {
+      "invalidWorkflow": "Fluxo inválido",
+      "loadError": "Erro ao carregar o fluxo",
+      "saveError": "Erro ao salvar"
+    }
+  },
+  "termos": {
+    "typeNoMedicalDischarge": "Responsabilidade por saída sem alta veterinária",
+    "typeHospitalizationRefusal": "Recusa de internação",
+    "pdfError": "Erro ao gerar o PDF",
+    "responsibleNameRequired": "Informe o nome do responsável",
+    "createError": "Erro ao criar o termo",
+    "title": "Termos clínicos",
+    "subtitle": "Termos de responsabilidade e de recusa de internação, com PDF para assinatura.",
+    "newTerm": "Novo termo",
+    "empty": "Nenhum termo emitido ainda.",
+    "columnDate": "Data",
+    "columnType": "Tipo",
+    "columnResponsible": "Responsável",
+    "columnPatient": "Paciente",
+    "columnPdf": "PDF",
+    "download": "Baixar PDF",
+    "fieldType": "Tipo de termo",
+    "fieldPatient": "Paciente",
+    "fieldPatientPlaceholder": "Buscar paciente (opcional)",
+    "fieldResponsibleName": "Nome do responsável",
+    "fieldDocument": "CPF ou documento",
+    "fieldReason": "Motivo (opcional)",
+    "cancel": "Cancelar",
+    "createAndGeneratePdf": "Criar e gerar PDF"
+  },
+  "superadminPermissions": {
+    "notSuperadmin": "Apenas superadministradores acessam esta página (seu perfil: {{role}}).",
+    "unknownRole": "desconhecido",
+    "forbidden": "Você não tem permissão para acessar esta página.",
+    "loadError": "Erro ao carregar as permissões",
+    "deleteError": "Erro ao excluir a permissão",
+    "saveError": "Erro ao salvar a permissão",
+    "title": "Permissões",
+    "subtitle": "Catálogo de permissões do sistema, usado pelos perfis de acesso.",
+    "newPermission": "Nova permissão",
+    "empty": "Nenhuma permissão cadastrada.",
+    "columnKey": "Chave",
+    "columnName": "Nome",
+    "columnResource": "Recurso",
+    "columnAction": "Ação",
+    "columnOrigin": "Origem",
+    "columnStatus": "Situação",
+    "columnActions": "Ações",
+    "system": "Sistema",
+    "custom": "Personalizada",
+    "active": "Ativa",
+    "inactive": "Inativa",
+    "deleteConfirmTitle": "Excluir esta permissão?",
+    "cancel": "Cancelar",
+    "confirm": "Excluir",
+    "editPermission": "Editar permissão",
+    "fieldKey": "Chave",
+    "fieldKeyPlaceholder": "ex.: patients.read",
+    "requiredField": "Campo obrigatório",
+    "fieldName": "Nome",
+    "fieldNamePlaceholder": "Ex.: Ver pacientes",
+    "fieldResource": "Recurso",
+    "fieldResourcePlaceholder": "ex.: patients",
+    "fieldAction": "Ação",
+    "fieldActionPlaceholder": "ex.: read",
+    "fieldDescription": "Descrição",
+    "fieldDescriptionPlaceholder": "Para que serve esta permissão",
+    "save": "Salvar"
+  },
+  "register": {
+    "features": {
+      "records": "Prontuário eletrônico completo",
+      "agenda": "Agenda e lembretes automáticos",
+      "whatsapp": "WhatsApp integrado",
+      "ai": "IA clínica e chatbot inteligente"
+    },
+    "types": {
+      "consulta": "Consulta Clínica",
+      "retorno": "Retorno",
+      "vacinacao": "Vacinação",
+      "curativo": "Curativo",
+      "preCirurgica": "Avaliação Pré-cirúrgica"
+    },
+    "transition": {
+      "m0": "Configurando sua clínica...",
+      "m1": "Organizando a agenda...",
+      "m2": "Cadastrando os tipos de atendimento...",
+      "m3": "Ativando WhatsApp e IA clínica...",
+      "m4": "Preparando seu painel...",
+      "ready": "Pronto!",
+      "platformReady": "Sua plataforma está pronta."
+    },
+    "steps": {
+      "clinic": "Clínica",
+      "admin": "Responsável",
+      "fiscal": "Fiscal",
+      "hours": "Horário",
+      "types": "Atendimentos",
+      "done": "Pronto"
+    },
+    "validation": {
+      "clinicName": "Informe o nome da clínica.",
+      "codeMin": "Código deve ter ao menos 3 caracteres.",
+      "adminName": "Informe o nome do responsável.",
+      "emailInvalid": "E-mail inválido.",
+      "passwordMin": "Senha deve ter ao menos 8 caracteres.",
+      "mismatch": "Senhas não conferem.",
+      "mobileForCode": "Informe um celular com DDD. Telefone fixo não recebe o código.",
+      "cpfCnpj": "Informe um CPF ou CNPJ válido.",
+      "whatsappRequired": "Informe o WhatsApp do responsável com DDD. Telefone fixo não recebe os avisos.",
+      "confirmCode": "Confirme o código enviado para o seu WhatsApp.",
+      "weekdayHours": "Informe o horário de segunda a sexta.",
+      "selectType": "Selecione ao menos um tipo de atendimento."
+    },
+    "phone": {
+      "sentSms": "Código enviado por SMS.",
+      "sentWhatsapp": "Código enviado pelo WhatsApp.",
+      "sendFail": "Não foi possível enviar o código. Tente novamente.",
+      "confirmed": "WhatsApp confirmado.",
+      "wrongCode": "Código incorreto."
+    },
+    "errors": {
+      "createAccount": "Erro ao criar conta. Tente novamente.",
+      "autoLogin": "Conta criada, mas não foi possível entrar automaticamente. Faça login.",
+      "hoursSave": "Não foi possível salvar o horário de funcionamento. Tente novamente.",
+      "typeSave": "Não foi possível salvar um dos tipos de atendimento. Tente novamente.",
+      "finish": "Não foi possível concluir o cadastro. Tente novamente."
+    },
+    "left": {
+      "tagline": "Software de Gestão Veterinária",
+      "badge": "14 dias grátis, sem cartão",
+      "title": "Configure sua clínica em minutos",
+      "text": "Tudo que sua clínica precisa em um só lugar. Comece a atender ainda hoje.",
+      "haveAccount": "Já tem conta?",
+      "login": "Fazer login"
+    },
+    "loading": "Carregando...",
+    "continue": "Continuar",
+    "back": "Voltar",
+    "step1": {
+      "title": "Dados da clínica",
+      "subtitle": "Como sua clínica aparecerá no sistema.",
+      "name": "Nome da clínica",
+      "namePlaceholder": "Ex: Clínica Vet São Francisco",
+      "code": "Código de acesso",
+      "codeHint": "(usado no login)",
+      "codePlaceholder": "saofrancisco",
+      "codeRule": "Apenas letras minúsculas e números, sem espaços."
+    },
+    "step2": {
+      "title": "Dados do responsável",
+      "subtitle": "Será a conta administradora da clínica.",
+      "fullName": "Nome completo",
+      "namePlaceholder": "Dr. João Silva",
+      "email": "E-mail",
+      "emailPlaceholder": "joao@clinica.com.br",
+      "password": "Senha",
+      "passwordPlaceholder": "Mínimo 8 caracteres",
+      "confirm": "Confirmar senha",
+      "confirmPlaceholder": "Repita a senha"
+    },
+    "step3": {
+      "title": "Dados fiscais",
+      "subtitle": "Usado para emissão de NFS-e quando você contratar um plano, e para liberar seus 14 dias grátis.",
+      "cpfCnpj": "CPF ou CNPJ",
+      "cpfPlaceholder": "000.000.000-00 ou 00.000.000/0001-00",
+      "cpfHint": "Cada CPF/CNPJ só pode ter um período de teste gratuito.",
+      "whatsapp": "WhatsApp do responsável",
+      "phonePlaceholder": "(51) 99999-9999",
+      "resend": "Reenviar",
+      "sendCode": "Enviar código",
+      "whatsappHint": "É por aqui que avisamos sobre pagamento e vencimento da assinatura. Precisa ser um celular: fixo não recebe WhatsApp.",
+      "codePlaceholder": "Código de 6 dígitos",
+      "confirmBtn": "Confirmar",
+      "terms": "Ao criar sua conta você concorda com os <terms>Termos de Uso</terms> e <privacy>Política de Privacidade</privacy>."
+    },
+    "step4": {
+      "title": "Horário de funcionamento",
+      "subtitle": "Sem isso, ninguém consegue marcar consulta: a agenda fica vazia. Dá pra ajustar depois em Configurações.",
+      "weekdays": "Segunda a sexta",
+      "until": "até",
+      "saturday": "Abre aos sábados",
+      "sunday": "Abre aos domingos"
+    },
+    "step5": {
+      "title": "Tipos de atendimento",
+      "subtitle": "A “lista” de serviços que aparece na hora de marcar consulta. Já sugerimos os mais comuns. Pode ajustar depois.",
+      "min": "min"
+    },
+    "step6": {
+      "title": "Tudo pronto!",
+      "text": "Revise as etapas anteriores se precisar. Ao confirmar, criamos sua clínica e enviamos um código por e-mail para validar sua conta.",
+      "summary": "Resumo",
+      "trial": "14 dias de acesso completo gratuito",
+      "noCharge": "Sem cobrança automática. Você escolhe o plano depois",
+      "entering": "Entrando...",
+      "enter": "Entrar no sistema"
+    }
+  },
+  "landing": {
+    "heroBadge": "Novo: atendimento automático no WhatsApp",
+    "h1a": "Sua clínica",
+    "h1b": "organizada.",
+    "h1c": "Seu WhatsApp,",
+    "h1d": "respondendo sozinho.",
+    "heroText": "O NixVetApp junta prontuário, agenda e financeiro num só sistema, e ainda atende seus clientes no WhatsApp: agenda consulta, tira dúvida. E avisos sobre agendamentos, vacinas e retornos.",
+    "ctaStart": "Começar agora grátis",
+    "bullets": {
+      "free": "14 dias grátis",
+      "noCard": "sem cartão de crédito",
+      "cancel": "cancele quando quiser"
+    },
+    "why1": "Por que escolher",
+    "why2": "o NixVetApp?",
+    "sub1": "Tecnologia de ponta desenvolvida para",
+    "sub2": "otimizar cada aspecto da sua clínica",
+    "diffBadge": "★ Diferencial NixVet",
+    "diffTitle": "Atendimento no WhatsApp, mesmo sem ninguém na recepção",
+    "diffText": "Sua equipe para de perder cliente por mensagem não respondida. O sistema marca a consulta sozinho e chama um humano quando o caso foge do script.",
+    "chatClient": "Oi! Preciso marcar consulta pro meu gato, ele tá sem comer 😟",
+    "chatBot": "Entendi! Consigo um horário hoje às 16h40 com a Dra. Ana. Confirma?",
+    "features": {
+      "clinical": {
+        "title": "Gestão Clínica",
+        "description": "Prontuário completo com anamnese, histórico e exame físico. Tudo organizado por paciente e responsável."
+      },
+      "security": {
+        "title": "Segurança LGPD",
+        "description": "Dados sensíveis criptografados (AES-256), consentimento de responsáveis e logs de auditoria completos."
+      },
+      "docs": {
+        "title": "Docs Inteligentes",
+        "description": "Receitas e solicitações de exames em PDF com assinatura digital e envio automático por e-mail."
+      }
+    },
+    "docTags": {
+      "pdf": "Receita em PDF",
+      "signature": "Assinatura digital",
+      "auto": "Envio automático"
+    },
+    "docFile": "Receita.pdf",
+    "signed": "Assinado digitalmente",
+    "tourKicker": "Veja por dentro",
+    "tourTitle": "O sistema, na prática",
+    "tourText": "Um vislumbre de como fica o dia a dia da sua equipe usando o NixVetApp.",
+    "roi": {
+      "kicker": "Retorno sobre o investimento",
+      "title": "Quanto tempo isso economiza da sua equipe?",
+      "colTask": "Tarefa",
+      "colBefore": "Do jeito antigo",
+      "colAfter": "Com o NixVetApp",
+      "closing": "Menos tempo apagando incêndio na recepção, mais tempo cuidando dos pacientes.",
+      "rows": {
+        "whatsapp": {
+          "task": "Responder WhatsApp",
+          "before": "Recepcionista digitando, um cliente por vez",
+          "after": "Respostas automáticas 24h, recepção só entra em casos complexos"
+        },
+        "schedule": {
+          "task": "Marcar consulta",
+          "before": "Ida e volta de mensagens até fechar horário",
+          "after": "Agendamento direto pelo próprio WhatsApp do cliente"
+        },
+        "reminder": {
+          "task": "Lembrete de vacina",
+          "before": "Alguém precisa lembrar de avisar manualmente",
+          "after": "Lembrete automático, sem depender de ninguém lembrar"
+        },
+        "records": {
+          "task": "Prontuário",
+          "before": "Papel ou planilha, difícil de buscar depois",
+          "after": "Busca instantânea, histórico completo por paciente"
+        }
+      }
+    },
+    "plans": {
+      "title": "Planos para cada tamanho de clínica",
+      "subtitle": "14 dias grátis para testar, sem cartão de crédito. Escolha o plano ideal quando estiver pronto.",
+      "popular": "Mais popular",
+      "cta": "Começar grátis"
+    },
+    "faq": {
+      "kicker": "Dúvidas frequentes",
+      "title": "Perguntas frequentes",
+      "items": {
+        "0": {
+          "q": "Preciso migrar meus dados atuais para o NixVetApp?",
+          "a": "Sim, e nossa equipe ajuda nesse processo. Conte pra gente como estão seus dados hoje (planilha, outro sistema, papel) e te orientamos no melhor caminho para a migração."
+        },
+        "1": {
+          "q": "O atendimento automático no WhatsApp pode errar ou responder algo que não deveria?",
+          "a": "O sistema segue as regras que você configura e identifica quando o assunto foge do script ou é uma emergência. Nesses casos, transfere a conversa para um atendente humano."
+        },
+        "2": {
+          "q": "Preciso trocar de número de WhatsApp para usar o sistema?",
+          "a": "Não é necessário. A conexão é feita com o número que sua clínica já usa hoje."
+        },
+        "3": {
+          "q": "O que acontece depois dos 14 dias de teste grátis?",
+          "a": "Você escolhe o plano que melhor se encaixa na sua clínica e segue usando normalmente. Não pedimos cartão de crédito no cadastro, então nada é cobrado automaticamente se você decidir não continuar."
+        },
+        "4": {
+          "q": "Consigo cancelar quando quiser?",
+          "a": "Sim, sem multa ou fidelidade."
+        },
+        "5": {
+          "q": "O sistema funciona no celular?",
+          "a": "Sim, o NixVetApp funciona direto do navegador, em computador ou celular, sem precisar instalar aplicativo. Também temos um aplicativo dedicado, se preferir."
+        },
+        "6": {
+          "q": "Os dados dos meus clientes e pacientes ficam seguros?",
+          "a": "Sim. Seguimos a LGPD, com dados sensíveis criptografados e logs de auditoria completos sobre quem acessou o quê."
+        },
+        "7": {
+          "q": "Tem aplicativo para celular?",
+          "a": "Sim! O NixVetApp já está disponível para Android na <gp>Google Play</gp>. A versão para iOS (Apple Store) chega em breve."
+        }
+      }
+    },
+    "ctaSection": {
+      "titleMobile": "Pronto para\nnunca mais\n<hl>perder um cliente</hl>\npor mensagem\nnão respondida?",
+      "titleDesktop": "Pronto para nunca mais\n<hl>perder um cliente</hl>\npor mensagem não\nrespondida?",
+      "textMobile": "Junte-se às clínicas que já\nmodernizaram o atendimento\ncom o NixVetApp.",
+      "text": "Junte-se às clínicas que já modernizaram o atendimento com o NixVetApp."
+    },
+    "footer": {
+      "resources": "Recursos",
+      "plans": "Planos",
+      "faq": "Dúvidas frequentes",
+      "policies": "Políticas de uso",
+      "terms": "Termos do aplicativo",
+      "playAlt": "Disponível no Google Play",
+      "rights": "NixVetApp ©{{year}} - Todos os direitos reservados."
+    },
+    "tour": {
+      "prev": "Print anterior",
+      "next": "Próximo print",
+      "seeShot": "Ver print {{n}}",
+      "tabs": {
+        "prontuario": {
+          "label": "Prontuário",
+          "caption": "Histórico completo, sem papel perdido.",
+          "shots": {
+            "0": "Prontuário do paciente Duke no NixVetApp, com dados da tutora, espécie, raça, idade, peso, 12 fichas de atendimento e linha do tempo",
+            "1": "Lista de prontuários do NixVetApp em formato de pastas, uma por paciente, com contagem de fichas de cada um"
+          }
+        },
+        "agenda": {
+          "label": "Agenda",
+          "caption": "Veja o mês inteiro da clínica num só lugar.",
+          "shots": {
+            "0": "Agenda mensal do NixVetApp com consultas de vários pacientes distribuídas ao longo dos dias do mês"
+          }
+        },
+        "whatsapp": {
+          "label": "WhatsApp",
+          "caption": "Enquanto a equipe atende no balcão, o WhatsApp continua respondendo.",
+          "shots": {
+            "0": "Conversa de WhatsApp aberta no NixVetApp remarcando uma consulta, com várias mensagens trocadas entre a clínica e a tutora"
+          }
+        },
+        "financeiro": {
+          "label": "Financeiro",
+          "caption": "Contas a pagar, a receber e fluxo de caixa sempre atualizados.",
+          "shots": {
+            "0": "Lançamentos financeiros do NixVetApp com receitas, despesas e resultado do período, além de lançamentos sugeridos automaticamente"
+          }
+        }
+      }
+    }
   }
 }
