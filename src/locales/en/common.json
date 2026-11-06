@@ -4289,5 +4289,177 @@
       "entering": "Signing in...",
       "enter": "Enter the system"
     }
+  },
+  "landing": {
+    "heroBadge": "New: automatic WhatsApp assistance",
+    "h1a": "Your clinic",
+    "h1b": "organized.",
+    "h1c": "Your WhatsApp,",
+    "h1d": "answering on its own.",
+    "heroText": "NixVetApp brings records, scheduling and finances into one system, and also assists your clients on WhatsApp: it books appointments and answers questions. Plus notices about appointments, vaccines and follow-ups.",
+    "ctaStart": "Start free now",
+    "bullets": {
+      "free": "14 days free",
+      "noCard": "no credit card",
+      "cancel": "cancel anytime"
+    },
+    "why1": "Why choose",
+    "why2": "NixVetApp?",
+    "sub1": "Cutting-edge technology built to",
+    "sub2": "optimize every aspect of your clinic",
+    "diffBadge": "★ NixVet difference",
+    "diffTitle": "WhatsApp assistance, even with nobody at the front desk",
+    "diffText": "Your team stops losing clients to unanswered messages. The system books the appointment on its own and brings in a human when the case goes off script.",
+    "chatClient": "Hi! I need to book an appointment for my cat, he is not eating 😟",
+    "chatBot": "Understood! I can get a slot today at 4:40 pm with Dr. Ana. Confirm?",
+    "features": {
+      "clinical": {
+        "title": "Clinical Management",
+        "description": "Complete medical record with history, anamnesis and physical exam. Everything organized by patient and owner."
+      },
+      "security": {
+        "title": "Data Protection",
+        "description": "Sensitive data encrypted (AES-256), owner consent and complete audit logs."
+      },
+      "docs": {
+        "title": "Smart Documents",
+        "description": "Prescriptions and exam requests as PDFs with digital signature and automatic delivery by email."
+      }
+    },
+    "docTags": {
+      "pdf": "PDF prescription",
+      "signature": "Digital signature",
+      "auto": "Automatic delivery"
+    },
+    "docFile": "Prescription.pdf",
+    "signed": "Digitally signed",
+    "tourKicker": "See it inside",
+    "tourTitle": "The system in practice",
+    "tourText": "A glimpse of your team's day to day using NixVetApp.",
+    "roi": {
+      "kicker": "Return on investment",
+      "title": "How much time does this save your team?",
+      "colTask": "Task",
+      "colBefore": "The old way",
+      "colAfter": "With NixVetApp",
+      "closing": "Less time putting out fires at the front desk, more time caring for patients.",
+      "rows": {
+        "whatsapp": {
+          "task": "Answer WhatsApp",
+          "before": "A receptionist typing, one client at a time",
+          "after": "Automatic answers 24h, the front desk only steps in for complex cases"
+        },
+        "schedule": {
+          "task": "Book an appointment",
+          "before": "Back-and-forth messages until a time is settled",
+          "after": "Booking directly through the client's own WhatsApp"
+        },
+        "reminder": {
+          "task": "Vaccine reminder",
+          "before": "Someone has to remember to notify manually",
+          "after": "Automatic reminder, without depending on anyone remembering"
+        },
+        "records": {
+          "task": "Medical record",
+          "before": "Paper or spreadsheet, hard to search later",
+          "after": "Instant search, full history per patient"
+        }
+      }
+    },
+    "plans": {
+      "title": "Plans for every clinic size",
+      "subtitle": "14 days free to try, no credit card. Choose the ideal plan when you are ready.",
+      "popular": "Most popular",
+      "cta": "Start free"
+    },
+    "faq": {
+      "kicker": "Common questions",
+      "title": "Frequently asked questions",
+      "items": {
+        "0": {
+          "q": "Do I need to migrate my current data to NixVetApp?",
+          "a": "Yes, and our team helps with that. Tell us how your data looks today (spreadsheet, another system, paper) and we will guide you to the best migration path."
+        },
+        "1": {
+          "q": "Can the automatic WhatsApp assistance get it wrong or answer something it should not?",
+          "a": "The system follows the rules you configure and recognizes when the topic goes off script or is an emergency. In those cases it hands the conversation to a human attendant."
+        },
+        "2": {
+          "q": "Do I need to change my WhatsApp number to use the system?",
+          "a": "No. The connection uses the number your clinic already uses today."
+        },
+        "3": {
+          "q": "What happens after the 14-day free trial?",
+          "a": "You choose the plan that best fits your clinic and keep using it as usual. We do not ask for a credit card at signup, so nothing is charged automatically if you decide not to continue."
+        },
+        "4": {
+          "q": "Can I cancel anytime?",
+          "a": "Yes, with no penalty or lock-in."
+        },
+        "5": {
+          "q": "Does the system work on a phone?",
+          "a": "Yes, NixVetApp runs straight from the browser, on a computer or phone, with no app to install. We also have a dedicated app, if you prefer."
+        },
+        "6": {
+          "q": "Is my clients' and patients' data safe?",
+          "a": "Yes. We follow Brazil's LGPD, with sensitive data encrypted and complete audit logs of who accessed what."
+        },
+        "7": {
+          "q": "Is there a mobile app?",
+          "a": "Yes! NixVetApp is already available for Android on <gp>Google Play</gp>. The iOS version (App Store) is coming soon."
+        }
+      }
+    },
+    "ctaSection": {
+      "titleMobile": "Ready to never\n<hl>lose a client</hl>\nto an unanswered\nmessage again?",
+      "titleDesktop": "Ready to never\n<hl>lose a client</hl>\nto an unanswered\nmessage again?",
+      "textMobile": "Join the clinics that have\nalready modernized patient care\nwith NixVetApp.",
+      "text": "Join the clinics that have already modernized patient care with NixVetApp."
+    },
+    "footer": {
+      "resources": "Features",
+      "plans": "Plans",
+      "faq": "Common questions",
+      "policies": "Usage policies",
+      "terms": "App terms",
+      "playAlt": "Get it on Google Play",
+      "rights": "NixVetApp ©{{year}} - All rights reserved."
+    },
+    "tour": {
+      "prev": "Previous screenshot",
+      "next": "Next screenshot",
+      "seeShot": "View screenshot {{n}}",
+      "tabs": {
+        "prontuario": {
+          "label": "Medical record",
+          "caption": "Complete history, no lost paperwork.",
+          "shots": {
+            "0": "Medical record of the patient Duke in NixVetApp, with owner details, species, breed, age, weight, 12 visit records and a timeline",
+            "1": "NixVetApp medical record list shown as folders, one per patient, with the number of records in each"
+          }
+        },
+        "agenda": {
+          "label": "Schedule",
+          "caption": "See the whole month of the clinic in one place.",
+          "shots": {
+            "0": "NixVetApp monthly schedule with appointments of several patients spread across the days of the month"
+          }
+        },
+        "whatsapp": {
+          "label": "WhatsApp",
+          "caption": "While the team serves the front desk, WhatsApp keeps answering.",
+          "shots": {
+            "0": "WhatsApp conversation open in NixVetApp rescheduling an appointment, with several messages exchanged between the clinic and the owner"
+          }
+        },
+        "financeiro": {
+          "label": "Finance",
+          "caption": "Payables, receivables and cash flow always up to date.",
+          "shots": {
+            "0": "NixVetApp financial entries with income, expenses and the period result, plus automatically suggested entries"
+          }
+        }
+      }
+    }
   }
 }

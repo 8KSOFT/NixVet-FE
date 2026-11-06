@@ -4289,5 +4289,177 @@
       "entering": "Ingresando...",
       "enter": "Entrar al sistema"
     }
+  },
+  "landing": {
+    "heroBadge": "Nuevo: atención automática por WhatsApp",
+    "h1a": "Su clínica",
+    "h1b": "organizada.",
+    "h1c": "Su WhatsApp,",
+    "h1d": "respondiendo solo.",
+    "heroText": "NixVetApp reúne historia clínica, agenda y finanzas en un solo sistema, y además atiende a sus clientes por WhatsApp: agenda consultas y resuelve dudas. Y avisos sobre citas, vacunas y controles.",
+    "ctaStart": "Empezar gratis ahora",
+    "bullets": {
+      "free": "14 días gratis",
+      "noCard": "sin tarjeta de crédito",
+      "cancel": "cancele cuando quiera"
+    },
+    "why1": "¿Por qué elegir",
+    "why2": "NixVetApp?",
+    "sub1": "Tecnología de punta desarrollada para",
+    "sub2": "optimizar cada aspecto de su clínica",
+    "diffBadge": "★ Diferencial NixVet",
+    "diffTitle": "Atención por WhatsApp, incluso sin nadie en recepción",
+    "diffText": "Su equipo deja de perder clientes por mensajes sin responder. El sistema agenda la consulta solo y llama a una persona cuando el caso se sale del guion.",
+    "chatClient": "¡Hola! Necesito una cita para mi gato, no quiere comer 😟",
+    "chatBot": "¡Entendido! Tengo un horario hoy a las 16:40 con la Dra. Ana. ¿Confirma?",
+    "features": {
+      "clinical": {
+        "title": "Gestión Clínica",
+        "description": "Historia clínica completa con anamnesis, antecedentes y examen físico. Todo organizado por paciente y responsable."
+      },
+      "security": {
+        "title": "Protección de Datos",
+        "description": "Datos sensibles cifrados (AES-256), consentimiento de los responsables y registros de auditoría completos."
+      },
+      "docs": {
+        "title": "Documentos Inteligentes",
+        "description": "Recetas y solicitudes de exámenes en PDF con firma digital y envío automático por correo."
+      }
+    },
+    "docTags": {
+      "pdf": "Receta en PDF",
+      "signature": "Firma digital",
+      "auto": "Envío automático"
+    },
+    "docFile": "Receta.pdf",
+    "signed": "Firmado digitalmente",
+    "tourKicker": "Véalo por dentro",
+    "tourTitle": "El sistema en la práctica",
+    "tourText": "Un vistazo al día a día de su equipo usando NixVetApp.",
+    "roi": {
+      "kicker": "Retorno de la inversión",
+      "title": "¿Cuánto tiempo le ahorra esto a su equipo?",
+      "colTask": "Tarea",
+      "colBefore": "A la manera antigua",
+      "colAfter": "Con NixVetApp",
+      "closing": "Menos tiempo apagando incendios en recepción, más tiempo cuidando a los pacientes.",
+      "rows": {
+        "whatsapp": {
+          "task": "Responder WhatsApp",
+          "before": "Recepcionista escribiendo, un cliente a la vez",
+          "after": "Respuestas automáticas 24 h, recepción solo interviene en casos complejos"
+        },
+        "schedule": {
+          "task": "Agendar consulta",
+          "before": "Ida y vuelta de mensajes hasta cerrar un horario",
+          "after": "Agenda directa desde el propio WhatsApp del cliente"
+        },
+        "reminder": {
+          "task": "Recordatorio de vacuna",
+          "before": "Alguien debe acordarse de avisar manualmente",
+          "after": "Recordatorio automático, sin depender de que alguien se acuerde"
+        },
+        "records": {
+          "task": "Historia clínica",
+          "before": "Papel o planilla, difícil de buscar después",
+          "after": "Búsqueda instantánea, historial completo por paciente"
+        }
+      }
+    },
+    "plans": {
+      "title": "Planes para cada tamaño de clínica",
+      "subtitle": "14 días gratis para probar, sin tarjeta de crédito. Elija el plan ideal cuando esté listo.",
+      "popular": "Más popular",
+      "cta": "Empezar gratis"
+    },
+    "faq": {
+      "kicker": "Dudas frecuentes",
+      "title": "Preguntas frecuentes",
+      "items": {
+        "0": {
+          "q": "¿Necesito migrar mis datos actuales a NixVetApp?",
+          "a": "Sí, y nuestro equipo ayuda en ese proceso. Cuéntenos cómo están sus datos hoy (planilla, otro sistema, papel) y lo orientamos hacia el mejor camino de migración."
+        },
+        "1": {
+          "q": "¿La atención automática por WhatsApp puede equivocarse o responder algo que no debería?",
+          "a": "El sistema sigue las reglas que usted configura e identifica cuándo el tema se sale del guion o es una emergencia. En esos casos, transfiere la conversación a una persona."
+        },
+        "2": {
+          "q": "¿Necesito cambiar de número de WhatsApp para usar el sistema?",
+          "a": "No es necesario. La conexión se hace con el número que su clínica ya usa hoy."
+        },
+        "3": {
+          "q": "¿Qué pasa después de los 14 días de prueba gratis?",
+          "a": "Usted elige el plan que mejor se adapte a su clínica y sigue usándolo con normalidad. No pedimos tarjeta de crédito al registrarse, así que no se cobra nada automáticamente si decide no continuar."
+        },
+        "4": {
+          "q": "¿Puedo cancelar cuando quiera?",
+          "a": "Sí, sin multa ni permanencia."
+        },
+        "5": {
+          "q": "¿El sistema funciona en el celular?",
+          "a": "Sí, NixVetApp funciona directo desde el navegador, en computadora o celular, sin instalar ninguna aplicación. También tenemos una aplicación dedicada, si lo prefiere."
+        },
+        "6": {
+          "q": "¿Los datos de mis clientes y pacientes están seguros?",
+          "a": "Sí. Seguimos la LGPD de Brasil, con datos sensibles cifrados y registros de auditoría completos sobre quién accedió a qué."
+        },
+        "7": {
+          "q": "¿Hay aplicación para el celular?",
+          "a": "¡Sí! NixVetApp ya está disponible para Android en <gp>Google Play</gp>. La versión para iOS (App Store) llega pronto."
+        }
+      }
+    },
+    "ctaSection": {
+      "titleMobile": "¿Listo para no volver\n<hl>a perder un cliente</hl>\npor un mensaje\nsin responder?",
+      "titleDesktop": "¿Listo para no volver\n<hl>a perder un cliente</hl>\npor un mensaje\nsin responder?",
+      "textMobile": "Únase a las clínicas que ya\nmodernizaron la atención\ncon NixVetApp.",
+      "text": "Únase a las clínicas que ya modernizaron la atención con NixVetApp."
+    },
+    "footer": {
+      "resources": "Recursos",
+      "plans": "Planes",
+      "faq": "Dudas frecuentes",
+      "policies": "Políticas de uso",
+      "terms": "Términos de la aplicación",
+      "playAlt": "Disponible en Google Play",
+      "rights": "NixVetApp ©{{year}} - Todos los derechos reservados."
+    },
+    "tour": {
+      "prev": "Captura anterior",
+      "next": "Captura siguiente",
+      "seeShot": "Ver captura {{n}}",
+      "tabs": {
+        "prontuario": {
+          "label": "Historia clínica",
+          "caption": "Historial completo, sin papeles perdidos.",
+          "shots": {
+            "0": "Historia clínica del paciente Duke en NixVetApp, con datos de la tutora, especie, raza, edad, peso, 12 fichas de atención y línea de tiempo",
+            "1": "Lista de historias clínicas de NixVetApp en formato de carpetas, una por paciente, con el número de fichas de cada una"
+          }
+        },
+        "agenda": {
+          "label": "Agenda",
+          "caption": "Vea el mes completo de la clínica en un solo lugar.",
+          "shots": {
+            "0": "Agenda mensual de NixVetApp con consultas de varios pacientes repartidas a lo largo de los días del mes"
+          }
+        },
+        "whatsapp": {
+          "label": "WhatsApp",
+          "caption": "Mientras el equipo atiende en el mostrador, WhatsApp sigue respondiendo.",
+          "shots": {
+            "0": "Conversación de WhatsApp abierta en NixVetApp reprogramando una consulta, con varios mensajes entre la clínica y la tutora"
+          }
+        },
+        "financeiro": {
+          "label": "Finanzas",
+          "caption": "Cuentas por pagar, por cobrar y flujo de caja siempre actualizados.",
+          "shots": {
+            "0": "Movimientos financieros de NixVetApp con ingresos, gastos y resultado del período, además de movimientos sugeridos automáticamente"
+          }
+        }
+      }
+    }
   }
 }

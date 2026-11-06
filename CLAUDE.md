@@ -460,38 +460,47 @@ Objetivo: tirar todo texto fixo em português das páginas autenticadas (`src/ap
 - Módulo-level consts que viram labels traduzidas (ex.: `STATUS_LABELS`) precisam ser convertidas em função `getX(t: TFunction)` chamada dentro do componente — const de módulo não tem acesso ao hook.
 - **Merge de JSON com trabalho paralelo**: nunca deixe dois processos editando o mesmo arquivo de locale ao mesmo tempo — condição de corrida. Faça o merge sequencialmente. Depois de cada merge, valide com `node -e "JSON.parse(require('fs').readFileSync('src/locales/pt/common.json','utf8'))"` (repita para en/es) e rode `npx tsc --noEmit -p tsconfig.json`. Cuidado: texto que vier com `&amp;` deve virar `&` literal (não é HTML).
 
-### Módulos 100% traduzidos (pt/en/es), commitados
+### Estado em 06/11/2026: tudo que é texto de tela está traduzido
 
-- **Financeiro** (9 páginas: DRE, lançamentos, contas a pagar, planos de saúde, fluxo de caixa, análise de receita, receitas por origem, custos de pagamento, orçamentos) — commit `b4a3bfe`
-- **Settings** (21 páginas) — commit `b4a3bfe`
-- **Pacientes / Proprietários / Agenda** (patients, patients/[id], owners, calendar) — commit `d79d624`
-- **Clínico** (medical-records, medical-records/[id], medical-records/prontuario/[patientId], prescriptions, exams, internacoes, internacoes/[id], vaccines, bulario, followups) — commit `e1d264e`
+Uma varredura em três passadas (JSX, propriedades de objeto e literais soltos, mais texto sozinho em linha de JSX) achou
+~250 textos fixos em português fora do `t()`, e eles foram traduzidos para pt/en/es:
 
-### Parcialmente traduzidos — RETOMAR AQUI (commit `f23cc12`)
+- **Componentes de toda tela:** paginação, banners de assinatura e de e-mail, tela de erro (inclusive a global), 404, busca
+  rápida, menu "+ Novo" (rótulos saíram de `config/quick-create.ts` para chaves), cookies, checklist, notificações.
+- **Telas internas:** Tarefas, Upgrade de plano, Central de Ajuda, WhatsApp, Suporte e Clínicas do superadmin, editor de
+  fluxos do chatbot, Termos, Permissões, Responsáveis (mensagens de validação).
+- **Compartilhado:** recorte de foto, mídia do WhatsApp, mensagens de erro de rede e de servidor, idade (ano/mês com
+  plural), tipo de logradouro, nomes dos planos (`lib/i18n/plans.ts`) e status de assinatura.
+- **Páginas públicas:** login, esqueci a senha, convite, cadastro da clínica, verificação de receita, landing (hero,
+  diferenciais, tour do produto, ROI, planos, FAQ, rodapé).
 
-Uma rodada de 11 agentes paralelos foi cortada pelo limite de sessão da API. 7 arquivos ficaram com progresso parcial (mistura de `t()` e texto fixo). Todos compilam (tsc limpo) — os erros de referência quebrada já foram corrigidos manualmente. Status real (linhas totais vs. chamadas `t(` encontradas, como proxy grosseiro de cobertura):
+O teste `src/locales/locales.test.ts` exige que **toda chave usada no código exista no pt** (o teto era 80 e foi zerado) e
+que pt/en/es tenham as mesmas chaves e variáveis.
 
-| Arquivo | Linhas | `t()` encontrados | Situação |
-|---|---|---|---|
-| `chatbot-workflows/[id]/page.tsx` | 695 | 18 | Quase não iniciado — só scaffolding (`getActionTypes`, `getNodeTypeLabel` criados, mas JSX do editor visual ainda majoritariamente em português) |
-| `chatbot-workflows/page.tsx` | 463 | 36 | Parcial |
-| `dashboard/page.tsx` | 663 | 35 | Parcial — já tinha base (`dashboardHome`) de antes desta iniciativa |
-| `superadmin/access-control/permissions/page.tsx` | 381 | 52 | Parcial, provavelmente avançado |
-| `superadmin/finance/page.tsx` | 541 | 63 | Parcial, provavelmente avançado |
-| `superadmin/suporte/page.tsx` | 591 | 6 | Quase não iniciado |
-| `termos/page.tsx` | 249 | 28 | Parcial |
+### Fica em português de propósito (não é esquecimento)
 
-Para retomar: pedir para auditar cada arquivo (comparar contra o texto fixo restante) e completar — mesmo padrão dos módulos já prontos acima.
+- **Corpo das páginas legais** (`privacidade`, `politicas-uso`, `termos-servicos-aplicativo`): são documentos reais e
+  longos. Só a moldura (`LegalDocumentShell`) é traduzida; traduzir contrato e política exige revisão de advogado.
+- **Catálogo de planos e FAQ** (`lib/plans.ts`, `faq-items.tsx`): o texto em português é a fonte do dado estruturado da home
+  (JSON-LD) e o fallback; a tela usa as chaves e testes garantem que não divergem.
+- **Metadados de SEO do servidor** (`title`/`description` das rotas, `lib/seo.ts`).
+- **Dados gravados e impressos em documento clínico:** nomes de vacina do calendário brasileiro, via de administração das
+  receitas, espécie e sexo do paciente (o rótulo exibido é traduzido, o valor gravado não).
+- **Conteúdo que vem do backend:** artigos e respostas da assistente de ajuda, mensagens de erro da API, e-mails e PDFs.
+- **Datas** (`toLocaleDateString('pt-BR')`): formatação, não texto de interface; não existe `useDateFormatter`.
 
-### Ainda 100% em português (nunca chegou a ser tocado)
+### Armadilhas desta rodada (não redescobrir)
 
-`whatsapp/page.tsx`, `tasks/page.tsx`, `ajuda/page.tsx`, `superadmin/clinics/page.tsx`, `superadmin/clinics/[id]/page.tsx`, `billing/upgrade/page.tsx`.
-
-`profile/page.tsx` é exceção: já estava ~completo antes desta iniciativa (seção `profile` já existia).
-
-### Fora de escopo / decisão pendente
-
-Nunca discutido com o usuário se entram no mesmo esforço: páginas públicas (`src/app/page.tsx` landing, `login`, `register`, `esqueci-senha`, `convite/[token]`, `verificar/[signatureId]`, `termos-servicos-aplicativo`, `politicas-uso`, `privacidade`). São uma categoria diferente (marketing/legal/auth) — perguntar antes de incluir.
+- **`lib/` fora do React usa `i18n.t`** (`import i18n from '@/lib/i18n/instance'`), não `useTranslation`. Isso inicializa a
+  instância ao importar, e teste que antes dependia de o `t()` devolver a chave passou a receber o texto em pt: esses testes
+  usam `vi.mock('react-i18next', () => import('@/test-utils/react-i18next-eco'))`.
+- **`dayjs.locale('pt-br')` no módulo de uma tela** força português nas datas do app inteiro ao abrir a tela. Quem define
+  é o `AppProviders`.
+- **Schema zod com mensagem traduzida** precisa ser montado dentro do componente (`useMemo(() => build(t), [t])`), senão a
+  mensagem fica presa ao idioma de quando o módulo carregou.
+- **Marcação em texto** (negrito, link) usa `Trans` com `components`; plural usa `_one`/`_other`.
+- **Texto que muda de quebra de linha por idioma** (título de CTA) vai numa chave só, com `
+` e destaque `<hl>…</hl>`.
 
 ### Nota lateral (não é i18n, mas foi corrigido na mesma sessão)
 
