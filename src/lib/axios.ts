@@ -1,5 +1,6 @@
 import axios, { AxiosError, AxiosRequestConfig } from 'axios';
 import { toast } from 'sonner';
+import i18n from '@/lib/i18n/instance';
 import { codigoDoProblema, problemaDe } from '@/lib/problem';
 import { getApiBaseUrl } from './api-base';
 import { API_MESSAGE, isApiEnvelope } from '@/app/types/api-response';
@@ -211,8 +212,8 @@ function anexarCodigoDoErro(error: AxiosError): void {
   if (!codigo || !corpo) return;
   const campo = typeof corpo.detail === 'string' ? 'detail' : 'message';
   const base =
-    typeof corpo[campo] === 'string' && corpo[campo] ? (corpo[campo] as string) : 'Erro no servidor.';
-  if (!base.includes(codigo)) corpo[campo] = `${base} Código: ${codigo}`;
+    typeof corpo[campo] === 'string' && corpo[campo] ? (corpo[campo] as string) : i18n.t('errors.server');
+  if (!base.includes(codigo)) corpo[campo] = i18n.t('errors.withCode', { base, code: codigo });
 }
 
 /**
@@ -231,7 +232,7 @@ function tratarBloqueioDeCobranca(error: AxiosError): void {
   const codigo = problema?.code;
   if (!isBillingBlockCode(codigo)) return;
 
-  const mensagem = problema?.detail || 'Assinatura irregular. Regularize para continuar.';
+  const mensagem = problema?.detail || i18n.t('errors.subscriptionIrregular');
   publishBillingBlock({ code: codigo, message: mensagem });
   avisarUmaVez(codigo, mensagem);
 

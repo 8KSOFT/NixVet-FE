@@ -3,6 +3,9 @@
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+// global-error.tsx renderiza fora do AppProviders: sem isto o `t` devolveria a chave.
+import '@/lib/i18n/instance';
 import { Button } from '@/components/ui/button';
 import { reportarErroDoCliente } from '@/lib/client-telemetry';
 
@@ -20,12 +23,13 @@ import { reportarErroDoCliente } from '@/lib/client-telemetry';
 export function ErrorScreen({
   error,
   reset,
-  titulo = 'Algo deu errado',
+  titulo,
 }: {
   error: Error & { digest?: string };
   reset?: () => void;
   titulo?: string;
 }) {
+  const { t } = useTranslation();
   useEffect(() => {
     // Registra uma vez, do lado do servidor, o que só aconteceu no navegador.
     reportarErroDoCliente({
@@ -41,23 +45,22 @@ export function ErrorScreen({
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4 px-4 text-center">
       <AlertTriangle className="size-10 text-amber-500" aria-hidden />
-      <h1 className="text-xl font-semibold">{titulo}</h1>
+      <h1 className="text-xl font-semibold">{titulo ?? t('errorScreen.title')}</h1>
       <p className="max-w-md text-sm text-muted-foreground">
-        A página não conseguiu carregar. Já registramos o que aconteceu. Você pode
-        tentar de novo — se persistir, informe o código abaixo ao suporte.
+        {t('errorScreen.description')}
       </p>
       {codigo && (
-        <p className="rounded-md bg-muted px-3 py-1 font-mono text-xs">Código: {codigo}</p>
+        <p className="rounded-md bg-muted px-3 py-1 font-mono text-xs">{t('errorScreen.code', { code: codigo })}</p>
       )}
       <div className="flex flex-col gap-2 sm:flex-row">
         {reset && (
           <Button onClick={reset} className="w-full sm:w-auto">
             <RefreshCw className="mr-2 size-4" aria-hidden />
-            Tentar de novo
+            {t('errorScreen.retry')}
           </Button>
         )}
         <Button asChild variant="outline" className="w-full sm:w-auto">
-          <Link href="/dashboard">Ir para o início</Link>
+          <Link href="/dashboard">{t('errorScreen.goHome')}</Link>
         </Button>
       </div>
     </div>

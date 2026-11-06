@@ -24,7 +24,7 @@ import {
   usePaymentLinkMutation,
   useCancelBillingMutation,
 } from '@/hooks/apiHooks/useBilling';
-import { planFullLabel } from '@/lib/plans';
+import { usePlanFullLabel } from '@/lib/i18n/plans';
 import { useCurrencyFormatter } from '@/lib/i18n/currency';
 
 const STATUS_CONFIG: Record<string, { labelKey: string; color: string; icon: React.ElementType }> = {
@@ -38,6 +38,7 @@ const STATUS_CONFIG: Record<string, { labelKey: string; color: string; icon: Rea
 
 export default function BillingSettingsPage() {
   const { t } = useTranslation();
+  const planFullLabel = usePlanFullLabel();
   const fmt = useCurrencyFormatter();
   const [confirmCancel, setConfirmCancel] = useState(false);
 

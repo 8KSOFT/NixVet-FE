@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { useForm, Controller } from 'react-hook-form';
 import { Plus, CheckCircle2, Loader2 } from 'lucide-react';
@@ -30,6 +31,7 @@ interface TaskFormValues {
 }
 
 function TasksContent() {
+  const { t } = useTranslation();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -53,6 +55,8 @@ function TasksContent() {
   const listTotalPages = tasksPage?.totalPages ?? 1;
 
 
+  const statusLabel = (status: string) => t(`tasks.status.${status}`, { defaultValue: status });
+
   const createTask = useCreateClinicalTaskMutation();
   const markDoneMutation = useMarkClinicalTaskDoneMutation();
 
@@ -63,7 +67,7 @@ function TasksContent() {
       setModalOpen(false);
       reset();
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, 'Erro ao criar'));
+      toast.error(getApiErrorMessage(error, t('tasks.createError')));
     }
   };
 
@@ -71,16 +75,16 @@ function TasksContent() {
     try {
       await markDoneMutation.mutateAsync(id);
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, 'Erro'));
+      toast.error(getApiErrorMessage(error, t('tasks.genericError')));
     }
   };
 
   return (
     <div>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-8">
-        <h1 className="text-2xl font-extrabold flex items-center gap-2">Tarefas clínicas</h1>
+        <h1 className="text-2xl font-extrabold flex items-center gap-2">{t('tasks.title')}</h1>
         <Button onClick={() => setModalOpen(true)} className="w-full bg-primary sm:w-auto">
-          <Plus className="w-4 h-4 mr-2" /> Nova tarefa
+          <Plus className="w-4 h-4 mr-2" /> {t('tasks.new')}
         </Button>
       </div>
       <div className="bg-transparent border-none shadow-none">
@@ -90,7 +94,7 @@ function TasksContent() {
           </div>
         ) : list.length === 0 ? (
           <div className="rounded-lg border border-gray-300 bg-white py-8 text-center text-sm text-slate-500">
-            Nenhuma tarefa cadastrada.
+            {t('tasks.empty')}
           </div>
         ) : (
           <div>
@@ -99,11 +103,11 @@ function TasksContent() {
               <Table className="min-w-full border-collapse bg-white text-sm">
                 <TableHeader>
                   <TableRow className="border-b border-gray-300 h-15">
-                    <TableHead>Paciente</TableHead>
-                    <TableHead>Tipo</TableHead>
-                    <TableHead>Vencimento</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="w-30">Ações</TableHead>
+                    <TableHead>{t('tasks.colPatient')}</TableHead>
+                    <TableHead>{t('tasks.colType')}</TableHead>
+                    <TableHead>{t('tasks.colDue')}</TableHead>
+                    <TableHead>{t('tasks.colStatus')}</TableHead>
+                    <TableHead className="w-30">{t('tasks.colActions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -118,7 +122,7 @@ function TasksContent() {
                       <TableCell>{task.task_type}</TableCell>
                       <TableCell>{task.due_date}</TableCell>
                       <TableCell>
-                        <Badge variant={task.status === 'completed' ? 'default' : 'secondary'}>{task.status}</Badge>
+                        <Badge variant={task.status === 'completed' ? 'default' : 'secondary'}>{statusLabel(task.status)}</Badge>
                       </TableCell>
                       <TableCell>
                         {task.status !== 'completed' ? (
@@ -126,8 +130,8 @@ function TasksContent() {
                             variant="ghost"
                             size="icon"
                             className="p-0"
-                            title="Concluir"
-                            aria-label="Concluir"
+                            title={t('tasks.complete')}
+                            aria-label={t('tasks.complete')}
                             onClick={() => markDone(task.id)}
                           >
                             <CheckCircle2 className="w-4 h-4 text-green-600" />
@@ -155,13 +159,13 @@ function TasksContent() {
                       </div>
                     </div>
                     <Badge variant={task.status === 'completed' ? 'default' : 'secondary'} className="shrink-0">
-                      {task.status}
+                      {statusLabel(task.status)}
                     </Badge>
                   </div>
 
                   <div className="mt-3 flex items-center justify-between border-t border-gray-200 pt-2 text-sm">
                     <div>
-                      <p className="text-xs text-muted-foreground">Vencimento</p>
+                      <p className="text-xs text-muted-foreground">{t('tasks.colDue')}</p>
                       <p>{task.due_date || '—'}</p>
                     </div>
                     {task.status !== 'completed' && (
@@ -169,8 +173,8 @@ function TasksContent() {
                         variant="ghost"
                         size="icon"
                         className="p-0"
-                        title="Concluir"
-                        aria-label="Concluir"
+                        title={t('tasks.complete')}
+                        aria-label={t('tasks.complete')}
                         onClick={() => markDone(task.id)}
                       >
                         <CheckCircle2 className="w-4 h-4 text-green-600" />
@@ -196,14 +200,14 @@ function TasksContent() {
       <DashboardCreateFormDialog
         open={modalOpen}
         onOpenChange={setModalOpen}
-        title="Nova tarefa"
+        title={t('tasks.new')}
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>
-              Cancelar
+              {t('tasks.cancel')}
             </Button>
             <Button type="submit" form="task-create-form" className="bg-primary">
-              Criar
+              {t('tasks.create')}
             </Button>
           </div>
         }
@@ -211,7 +215,7 @@ function TasksContent() {
         <form id="task-create-form" onSubmit={handleSubmit(onSubmit)} className="space-y-4 md:space-y-6">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <div className="space-y-2 md:col-span-2">
-              <Label>Paciente</Label>
+              <Label>{t('tasks.colPatient')}</Label>
               <Controller
                 name="patient_id"
                 control={control}
@@ -220,19 +224,19 @@ function TasksContent() {
                   <PacienteBusca
                     value={field.value}
                     onChange={(v) => field.onChange(v)}
-                    placeholder="Selecione"
+                    placeholder={t('tasks.select')}
                   />
                 )}
               />
             </div>
             <div className="space-y-2">
-              <Label>Vencimento</Label>
+              <Label>{t('tasks.colDue')}</Label>
               <Input type="date" {...register('due_date')} />
             </div>
           </div>
           <div className="space-y-2">
-            <Label>Tipo</Label>
-            <Input {...register('task_type', { required: true })} placeholder="Ex.: Retorno, Ligar para tutor" />
+            <Label>{t('tasks.colType')}</Label>
+            <Input {...register('task_type', { required: true })} placeholder={t('tasks.typePlaceholder')} />
           </div>
         </form>
       </DashboardCreateFormDialog>
@@ -241,8 +245,9 @@ function TasksContent() {
 }
 
 export default function TasksPage() {
+  const { t } = useTranslation();
   return (
-    <Suspense fallback={<div className="p-6">Carregando...</div>}>
+    <Suspense fallback={<div className="p-6">{t('tasks.loading')}</div>}>
       <TasksContent />
     </Suspense>
   );

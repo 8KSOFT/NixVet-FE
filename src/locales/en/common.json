@@ -104,7 +104,10 @@
     "inviteCancelAction": "Cancel invite",
     "inviteStatusPending": "Pending",
     "inviteStatusExpired": "Expired",
-    "confirmCancelInvite": "Cancel this invite?"
+    "confirmCancelInvite": "Cancel this invite?",
+    "empty": "No team members registered.",
+    "cancel": "Cancel",
+    "save": "Save"
   },
   "userMenu": {
     "profile": "My profile",
@@ -115,7 +118,14 @@
     "title": "Notifications",
     "markAllRead": "Mark all as read",
     "loading": "Loading...",
-    "empty": "No unread notifications."
+    "empty": "No unread notifications.",
+    "types": {
+      "emergency": "Emergency",
+      "humanAttention": "Human assistance",
+      "conversationAlert": "Conversation awaiting reply",
+      "lowStock": "Low stock",
+      "default": "Notification"
+    }
   },
   "auth": {
     "cardTitle": "Sign in to your account",
@@ -135,7 +145,16 @@
     "forgotPassword": "Forgot your password?",
     "welcome": "Welcome, {{name}}!",
     "loginFailed": "Login failed. Check your credentials.",
-    "footer": "All rights reserved."
+    "footer": "All rights reserved.",
+    "fillEmailPassword": "Fill in email and password.",
+    "tenantCodeRequired": "Enter the clinic code.",
+    "invalidLoginResponse": "Invalid login response.",
+    "loginError": "Could not sign in. Please try again.",
+    "bulletIsolated": "Multi-clinic with data isolated per unit.",
+    "bulletFast": "Interface designed for a fast workflow in the practice.",
+    "noAccount": "Don't have an account?",
+    "startFree": "Start free for 14 days",
+    "logoAlt": "Logo"
   },
   "calendar": {
     "title": "Calendar",
@@ -147,13 +166,52 @@
     "back": "Back",
     "today": "Today",
     "genericError": "Error",
-    "weekdaysShort": { "sun": "Sun", "mon": "Mon", "tue": "Tue", "wed": "Wed", "thu": "Thu", "fri": "Fri", "sat": "Sat" },
-    "months": { "jan": "January", "feb": "February", "mar": "March", "apr": "April", "may": "May", "jun": "June", "jul": "July", "aug": "August", "sep": "September", "oct": "October", "nov": "November", "dec": "December" },
-    "monthsShort": { "jan": "Jan", "feb": "Feb", "mar": "Mar", "apr": "Apr", "may": "May", "jun": "Jun", "jul": "Jul", "aug": "Aug", "sep": "Sep", "oct": "Oct", "nov": "Nov", "dec": "Dec" },
+    "weekdaysShort": {
+      "sun": "Sun",
+      "mon": "Mon",
+      "tue": "Tue",
+      "wed": "Wed",
+      "thu": "Thu",
+      "fri": "Fri",
+      "sat": "Sat"
+    },
+    "months": {
+      "jan": "January",
+      "feb": "February",
+      "mar": "March",
+      "apr": "April",
+      "may": "May",
+      "jun": "June",
+      "jul": "July",
+      "aug": "August",
+      "sep": "September",
+      "oct": "October",
+      "nov": "November",
+      "dec": "December"
+    },
+    "monthsShort": {
+      "jan": "Jan",
+      "feb": "Feb",
+      "mar": "Mar",
+      "apr": "Apr",
+      "may": "May",
+      "jun": "Jun",
+      "jul": "Jul",
+      "aug": "Aug",
+      "sep": "Sep",
+      "oct": "Oct",
+      "nov": "Nov",
+      "dec": "Dec"
+    },
     "durationMin": "{{value}} min",
     "durationHoursMin": "{{hours}}h {{minutes}}min",
     "durationHours": "{{hours}}h",
-    "viewModes": { "day": "Day", "week": "Week", "month": "Month", "year": "Year" },
+    "viewModes": {
+      "day": "Day",
+      "week": "Week",
+      "month": "Month",
+      "year": "Year"
+    },
     "followupsAwaiting_one": "{{count}} follow-up awaiting return",
     "followupsAwaiting_other": "{{count}} follow-ups awaiting return",
     "google": {
@@ -161,10 +219,25 @@
       "noEventsThisMonth": "No Google Calendar events this month.",
       "calendarLabel": "Calendar"
     },
-    "dayView": { "appointmentTimeRange": "{{patient}} ({{vet}}) from {{start}} to {{end}}" },
-    "monthView": { "viewDayTooltip": "View day", "moreCount": "+{{count}} more" },
-    "yearView": { "consultationsCount_one": "{{count}} appointment", "consultationsCount_other": "{{count}} appointments" },
-    "status": { "scheduled": "Scheduled", "completed": "Completed", "cancelled": "Cancelled", "noShow": "No-Show", "paid": "Paid", "pending": "Pending" },
+    "dayView": {
+      "appointmentTimeRange": "{{patient}} ({{vet}}) from {{start}} to {{end}}"
+    },
+    "monthView": {
+      "viewDayTooltip": "View day",
+      "moreCount": "+{{count}} more"
+    },
+    "yearView": {
+      "consultationsCount_one": "{{count}} appointment",
+      "consultationsCount_other": "{{count}} appointments"
+    },
+    "status": {
+      "scheduled": "Scheduled",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "noShow": "No-Show",
+      "paid": "Paid",
+      "pending": "Pending"
+    },
     "appointmentDialog": {
       "availableSlotLabel": "Available time *",
       "submitButton": "Schedule",
@@ -176,9 +249,19 @@
       "newPetSection": "New Pet",
       "nameLabel": "Name *",
       "speciesLabel": "Species *",
-      "species": { "canine": "Canine", "feline": "Feline", "bird": "Bird", "rabbit": "Rabbit", "reptile": "Reptile", "other": "Other" },
+      "species": {
+        "canine": "Canine",
+        "feline": "Feline",
+        "bird": "Bird",
+        "rabbit": "Rabbit",
+        "reptile": "Reptile",
+        "other": "Other"
+      },
       "sexLabel": "Sex *",
-      "sex": { "male": "Male", "female": "Female" },
+      "sex": {
+        "male": "Male",
+        "female": "Female"
+      },
       "breedLabel": "Breed *",
       "weightLabel": "Weight (kg) *",
       "ageLabel": "Age (years) *",
@@ -234,7 +317,10 @@
       "cancelSuccess": "Appointment cancelled.",
       "cancelError": "Error cancelling the appointment"
     },
-    "reschedule": { "newDateTimeLabel": "New date/time *", "error": "Error rescheduling" }
+    "reschedule": {
+      "newDateTimeLabel": "New date/time *",
+      "error": "Error rescheduling"
+    }
   },
   "exams": {
     "pageTitle": "Exam Requests",
@@ -553,72 +639,168 @@
   "medicalRecordDetail": {
     "back": "Back",
     "notFound": "Record not found.",
-    "banner": { "message": "This patient is currently hospitalized.", "link": "View hospitalization →" },
-    "header": {
-      "defaultTitle": "Record #{{id}}", "statusOpen": "Open", "statusClosed": "Closed",
-      "subtitle": "Visit record", "save": "Save", "closeButton": "Close record", "noVet": "No veterinarian"
+    "banner": {
+      "message": "This patient is currently hospitalized.",
+      "link": "View hospitalization →"
     },
-    "tabs": { "clinical": "Clinical", "prescriptions": "Prescriptions", "exams": "Exams", "vaccines": "Vaccines", "attachments": "Attachments" },
+    "header": {
+      "defaultTitle": "Record #{{id}}",
+      "statusOpen": "Open",
+      "statusClosed": "Closed",
+      "subtitle": "Visit record",
+      "save": "Save",
+      "closeButton": "Close record",
+      "noVet": "No veterinarian"
+    },
+    "tabs": {
+      "clinical": "Clinical",
+      "prescriptions": "Prescriptions",
+      "exams": "Exams",
+      "vaccines": "Vaccines",
+      "attachments": "Attachments"
+    },
     "sections": {
-      "chiefComplaint": { "title": "Reason for visit", "label": "Chief complaint" },
-      "anamnesis": { "label": "Anamnesis", "placeholder": "Patient history, symptom progression...", "formatWithAi": "Format with AI", "undo": "Undo" },
-      "physicalExam": {
-        "title": "Physical exam", "header": "Vital signs and assessment",
-        "weightLabel": "Weight", "weightUnit": "kg",
-        "temperatureLabel": "Temperature", "temperatureUnit": "°C",
-        "heartRateLabel": "Heart rate", "heartRateUnit": "bpm",
-        "respiratoryRateLabel": "Respiratory rate", "respiratoryRateUnit": "rpm",
-        "crtLabel": "CRT", "crtUnit": "s",
-        "hydrationLabel": "Hydration", "hydrationPlaceholder": "Select",
-        "hydrationNormal": "Normal", "hydrationMild": "Mild", "hydrationModerate": "Moderate", "hydrationSevere": "Severe",
-        "lymphNodesLabel": "Lymph nodes",
-        "mucousMembranesLabel": "Mucous membranes", "mucousMembranesPlaceholder": "e.g.: pink, pale"
+      "chiefComplaint": {
+        "title": "Reason for visit",
+        "label": "Chief complaint"
       },
-      "assessment": { "title": "Assessment", "diagnosisLabel": "Presumptive diagnosis" },
+      "anamnesis": {
+        "label": "Anamnesis",
+        "placeholder": "Patient history, symptom progression...",
+        "formatWithAi": "Format with AI",
+        "undo": "Undo"
+      },
+      "physicalExam": {
+        "title": "Physical exam",
+        "header": "Vital signs and assessment",
+        "weightLabel": "Weight",
+        "weightUnit": "kg",
+        "temperatureLabel": "Temperature",
+        "temperatureUnit": "°C",
+        "heartRateLabel": "Heart rate",
+        "heartRateUnit": "bpm",
+        "respiratoryRateLabel": "Respiratory rate",
+        "respiratoryRateUnit": "rpm",
+        "crtLabel": "CRT",
+        "crtUnit": "s",
+        "hydrationLabel": "Hydration",
+        "hydrationPlaceholder": "Select",
+        "hydrationNormal": "Normal",
+        "hydrationMild": "Mild",
+        "hydrationModerate": "Moderate",
+        "hydrationSevere": "Severe",
+        "lymphNodesLabel": "Lymph nodes",
+        "mucousMembranesLabel": "Mucous membranes",
+        "mucousMembranesPlaceholder": "e.g.: pink, pale"
+      },
+      "assessment": {
+        "title": "Assessment",
+        "diagnosisLabel": "Presumptive diagnosis"
+      },
       "additional": {
-        "title": "Additional", "teamNotesLabel": "Team notes (internal)",
+        "title": "Additional",
+        "teamNotesLabel": "Team notes (internal)",
         "teamNotesTooltip": "Space to record important internal notes, operational recommendations, or information useful to the clinical team.",
-        "teamNotesPlaceholder": "Visible to staff only", "ownerObservationsLabel": "Notes for the owner"
+        "teamNotesPlaceholder": "Visible to staff only",
+        "ownerObservationsLabel": "Notes for the owner"
       }
     },
     "prescriptions": {
-      "title": "Patient prescriptions", "newButton": "New prescription", "viewAll": "View all",
-      "empty": "No prescriptions recorded.", "tableDate": "Date", "tableType": "Type", "tableMedications": "Medications"
+      "title": "Patient prescriptions",
+      "newButton": "New prescription",
+      "viewAll": "View all",
+      "empty": "No prescriptions recorded.",
+      "tableDate": "Date",
+      "tableType": "Type",
+      "tableMedications": "Medications"
     },
-    "exams": { "title": "Requested exams", "empty": "No exams requested.", "tableDate": "Date", "tableType": "Type", "tableStatus": "Status" },
+    "exams": {
+      "title": "Requested exams",
+      "empty": "No exams requested.",
+      "tableDate": "Date",
+      "tableType": "Type",
+      "tableStatus": "Status"
+    },
     "vaccines": {
-      "title": "Vaccines", "addButton": "Add", "inThisRecord": "In this record", "generalHistory": "General history",
-      "empty": "No vaccines recorded.", "tableVaccine": "Vaccine", "tableDate": "Date", "tableBatch": "Batch",
-      "tableNextDose": "Next dose", "batchInlineLabel": "Batch:", "nextDoseInlineLabel": "Next:"
+      "title": "Vaccines",
+      "addButton": "Add",
+      "inThisRecord": "In this record",
+      "generalHistory": "General history",
+      "empty": "No vaccines recorded.",
+      "tableVaccine": "Vaccine",
+      "tableDate": "Date",
+      "tableBatch": "Batch",
+      "tableNextDose": "Next dose",
+      "batchInlineLabel": "Batch:",
+      "nextDoseInlineLabel": "Next:"
     },
-    "attachments": { "title": "Attachments (exam images, vaccines...)", "addButton": "Attach", "empty": "No attachments." },
-    "footer": { "close": "Close", "save": "Save" },
+    "attachments": {
+      "title": "Attachments (exam images, vaccines...)",
+      "addButton": "Attach",
+      "empty": "No attachments."
+    },
+    "footer": {
+      "close": "Close",
+      "save": "Save"
+    },
     "vaccineModal": {
-      "title": "Add Vaccine", "nameLabel": "Name *", "dateLabel": "Date", "batchLabel": "Batch",
-      "nextDoseLabel": "Next dose", "cancel": "Cancel", "submit": "Add"
+      "title": "Add Vaccine",
+      "nameLabel": "Name *",
+      "dateLabel": "Date",
+      "batchLabel": "Batch",
+      "nextDoseLabel": "Next dose",
+      "cancel": "Cancel",
+      "submit": "Add"
     },
     "attachModal": {
-      "title": "Attach File", "descriptionLabel": "Description", "descriptionPlaceholder": "E.g.: CBC 03/25 (optional)",
-      "categoryLabel": "Category", "categoryExam": "Exam", "categoryImage": "Image", "categoryDocument": "Document",
-      "categoryOther": "Other", "fileLabel": "File *", "cancel": "Cancel", "submit": "Attach"
+      "title": "Attach File",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "E.g.: CBC 03/25 (optional)",
+      "categoryLabel": "Category",
+      "categoryExam": "Exam",
+      "categoryImage": "Image",
+      "categoryDocument": "Document",
+      "categoryOther": "Other",
+      "fileLabel": "File *",
+      "cancel": "Cancel",
+      "submit": "Attach"
     },
     "prescriptionModal": {
-      "title": "New Prescription", "typeLabel": "Type", "typeReceita": "Prescription",
-      "typeSurgeryRequest": "Surgery request", "typeVaccines": "Vaccines",
-      "medicationsLabel": "Medications", "addMedication": "Add",
-      "medicationNamePlaceholder": "Medication name *", "viaPlaceholder": "Route (PO, IV, IM...)",
-      "dosagePlaceholder": "Dosage (e.g.: 10 mg/kg)", "frequencyPlaceholder": "Freq.",
-      "freqMinutes": "minutes", "freqHours": "hours", "freqDays": "days",
-      "durationPlaceholder": "Duration", "durationDays": "days", "durationWeeks": "weeks", "durationMonths": "months",
-      "observationsLabel": "Notes", "cancel": "Cancel", "submit": "Create prescription"
+      "title": "New Prescription",
+      "typeLabel": "Type",
+      "typeReceita": "Prescription",
+      "typeSurgeryRequest": "Surgery request",
+      "typeVaccines": "Vaccines",
+      "medicationsLabel": "Medications",
+      "addMedication": "Add",
+      "medicationNamePlaceholder": "Medication name *",
+      "viaPlaceholder": "Route (PO, IV, IM...)",
+      "dosagePlaceholder": "Dosage (e.g.: 10 mg/kg)",
+      "frequencyPlaceholder": "Freq.",
+      "freqMinutes": "minutes",
+      "freqHours": "hours",
+      "freqDays": "days",
+      "durationPlaceholder": "Duration",
+      "durationDays": "days",
+      "durationWeeks": "weeks",
+      "durationMonths": "months",
+      "observationsLabel": "Notes",
+      "cancel": "Cancel",
+      "submit": "Create prescription"
     },
     "toast": {
-      "invalidRecord": "Invalid record", "saveError": "Error saving", "closeError": "Error closing",
-      "vaccineNameRequired": "Enter the vaccine name", "addVaccineError": "Error adding vaccine",
-      "selectFileRequired": "Select a file", "addAttachmentError": "Error uploading attachment",
-      "openFileError": "Error opening file", "formatAnamnesisError": "Could not format with AI",
+      "invalidRecord": "Invalid record",
+      "saveError": "Error saving",
+      "closeError": "Error closing",
+      "vaccineNameRequired": "Enter the vaccine name",
+      "addVaccineError": "Error adding vaccine",
+      "selectFileRequired": "Select a file",
+      "addAttachmentError": "Error uploading attachment",
+      "openFileError": "Error opening file",
+      "formatAnamnesisError": "Could not format with AI",
       "vetRequiredError": "Set a veterinarian on the record before prescribing",
-      "medicationRequiredError": "Add at least one medication", "createPrescriptionError": "Error creating prescription"
+      "medicationRequiredError": "Add at least one medication",
+      "createPrescriptionError": "Error creating prescription"
     }
   },
   "internacaoDetail": {
@@ -1114,7 +1296,116 @@
     "resetOk": "Administrator password updated.",
     "resetError": "Failed to reset password.",
     "cancel": "Cancel",
-    "confirmReset": "Save password"
+    "confirmReset": "Save password",
+    "pageSubtitle": "Superadmin-only panel: create, edit and manage tenants.",
+    "newClinic": "New clinic",
+    "loadingShort": "Loading...",
+    "emptyList": "No clinics registered.",
+    "cols": {
+      "clinic": "Clinic",
+      "code": "Code",
+      "admin": "Admin",
+      "chatbot": "WhatsApp chatbot",
+      "ai": "AI platform",
+      "plan": "Plan",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "fields": {
+      "name": "Name",
+      "code": "Code",
+      "email": "Email",
+      "phone": "Phone"
+    },
+    "until": "until {{date}}",
+    "cancelShort": "cancels {{date}}",
+    "actions": {
+      "release": "Release",
+      "suspend": "Suspend",
+      "edit": "Edit",
+      "resetPassword": "Reset password",
+      "more": "More actions",
+      "trial14": "14-day trial",
+      "trial30": "30-day trial",
+      "exempt3": "Exempt for 3 months",
+      "exempt6": "Exempt for 6 months",
+      "viewDetails": "View details"
+    },
+    "toasts": {
+      "loggedAs": "You are logged in as \"{{role}}\". Log out and sign in as superadmin.",
+      "roleUnknown": "unknown",
+      "superadminOnly": "Only superadmin can access this. Log out and sign in with a superadmin account.",
+      "loadFail": "Failed to load clinics",
+      "passwordMin8": "The password must have at least 8 characters",
+      "error": "Error",
+      "nameCodeRequired": "Enter the name and code",
+      "createError": "Error creating",
+      "updateFail": "Failed to update",
+      "updateFailReload": "Failed to update. Reload",
+      "phoneInvalid": "Invalid phone. Use area code and number, for example (11) 91234-5678."
+    },
+    "resetDialog": {
+      "title": "Reset the admin password",
+      "clinic": "Clinic: <b>{{name}}</b>",
+      "newPassword": "New password",
+      "cancel": "Cancel",
+      "confirm": "Confirm"
+    },
+    "createDialog": {
+      "title": "New clinic",
+      "description": "Creates the tenant and, optionally, the first administrator.",
+      "name": "Name *",
+      "code": "Code *",
+      "codePlaceholder": "e.g. clinicavida",
+      "adminOptional": "Initial admin (optional)",
+      "adminName": "Admin name",
+      "adminEmail": "Admin email",
+      "password": "Password (min 8)",
+      "planAndResources": "Plan & features",
+      "plan": "Plan",
+      "cancel": "Cancel",
+      "create": "Create"
+    },
+    "editDialog": {
+      "title": "Edit clinic",
+      "plan": "Plan",
+      "accessStatus": "Access status",
+      "validUntil": "Valid until",
+      "cancelScheduled": "Cancellation scheduled: {{date}}",
+      "cancel": "Cancel",
+      "save": "Save"
+    },
+    "detail": {
+      "back": "Back",
+      "invalid": "Invalid clinic",
+      "loadFail": "Failed to load the clinic data",
+      "updateFail": "Failed to update",
+      "planFail": "Failed to save the plan",
+      "passwordMin": "The password needs at least 8 characters",
+      "resetFail": "Error resetting the password",
+      "notFound": "Clinic not found.",
+      "basicInfo": "Basic Information",
+      "created": "Created on",
+      "cpfCnpj": "CPF/CNPJ",
+      "subscription": "Subscription and Access",
+      "trialUntil": "Trial until",
+      "exemptUntil": "Exempt until",
+      "releaseAccess": "Release access",
+      "trial14d": "Trial 14d",
+      "trial30d": "Trial 30d",
+      "exempt3m": "Exempt 3m",
+      "exempt6m": "Exempt 6m",
+      "resources": "Enabled Features",
+      "chatbotHint": "Enables Nina's WhatsApp chatbot",
+      "aiHint": "Enables clinical AI features. Available on the Hospital and Enterprise plans.",
+      "admin": "Clinic Administrator",
+      "adminName": "Name: ",
+      "adminEmail": "Email: ",
+      "whatsapp": "WhatsApp",
+      "whatsappText": "The clinic itself connects the number in Settings → WhatsApp by scanning the QR Code on the phone.",
+      "payments": "Payment History",
+      "paymentsSoon": "Payment history coming soon."
+    }
   },
   "superadminFinance": {
     "header": {
@@ -1153,11 +1444,25 @@
       "tenantsLoadError": "Error loading the clinic list."
     },
     "kpis": {
-      "mrr": { "label": "MRR", "sub": "Monthly recurring revenue" },
-      "revenuePeriod": { "label": "Revenue in period", "sub": "Confirmed payments" },
-      "paying": { "label": "Paying clinics", "sub": "of {{count}} total" },
-      "overdue": { "label": "Overdue" },
-      "trialExpiring": { "label": "Trial expiring", "sub": "next 7 days" },
+      "mrr": {
+        "label": "MRR",
+        "sub": "Monthly recurring revenue"
+      },
+      "revenuePeriod": {
+        "label": "Revenue in period",
+        "sub": "Confirmed payments"
+      },
+      "paying": {
+        "label": "Paying clinics",
+        "sub": "of {{count}} total"
+      },
+      "overdue": {
+        "label": "Overdue"
+      },
+      "trialExpiring": {
+        "label": "Trial expiring",
+        "sub": "next 7 days"
+      },
       "aiCost": {
         "label": "AI cost",
         "subAllTime": "{{tokens}} tokens · {{calls}} calls (all time)",
@@ -1167,22 +1472,39 @@
     "monthlyRevenue": {
       "title": "Monthly revenue",
       "empty": "No payments recorded in this period.",
-      "columns": { "month": "Month", "payments": "Payments", "value": "Value" }
+      "columns": {
+        "month": "Month",
+        "payments": "Payments",
+        "value": "Value"
+      }
     },
     "monthlyAiCost": {
       "title": "Monthly AI cost",
       "empty": "No AI usage recorded in this period.",
-      "columns": { "month": "Month", "calls": "Calls", "tokens": "Tokens", "usd": "Cost (USD)" }
+      "columns": {
+        "month": "Month",
+        "calls": "Calls",
+        "tokens": "Tokens",
+        "usd": "Cost (USD)"
+      }
     },
     "aiByOperation": {
       "title": "AI cost by operation",
       "empty": "No AI usage recorded in this period.",
-      "columns": { "operation": "Operation", "calls": "Calls", "usd": "Cost (USD)" }
+      "columns": {
+        "operation": "Operation",
+        "calls": "Calls",
+        "usd": "Cost (USD)"
+      }
     },
     "topAiTenants": {
       "title": "Top clinics by AI usage",
       "empty": "No AI usage recorded in this period.",
-      "columns": { "clinic": "Clinic", "calls": "Calls", "usd": "Cost (USD)" }
+      "columns": {
+        "clinic": "Clinic",
+        "calls": "Calls",
+        "usd": "Cost (USD)"
+      }
     },
     "clinicsByStatus": "Clinics by status",
     "loading": "Loading...",
@@ -1236,8 +1558,14 @@
     "breedCreated": "Breed \"{{name}}\" registered",
     "breedCreateError": "Error registering breed",
     "noTutorLabel": "No guardian ({{reason}})",
-    "noTutorReason": { "emergencia": "Emergency", "abandono": "Abandonment" },
-    "dialog": { "createTitle": "New Patient", "editTitle": "Edit Patient" },
+    "noTutorReason": {
+      "emergencia": "Emergency",
+      "abandono": "Abandonment"
+    },
+    "dialog": {
+      "createTitle": "New Patient",
+      "editTitle": "Edit Patient"
+    },
     "form": {
       "required": "Required",
       "nameLabel": "Name *",
@@ -1264,6 +1592,18 @@
       "weightLabel": "Weight (kg) *",
       "sexLabel": "Sex *",
       "chipLabel": "Chip No."
+    },
+    "address": {
+      "types": {
+        "Rua": "Street",
+        "Avenida": "Avenue",
+        "Travessa": "Lane",
+        "Alameda": "Alley",
+        "Praça": "Square",
+        "Estrada": "Road",
+        "Rodovia": "Highway",
+        "Outro": "Other"
+      }
     }
   },
   "patientDetail": {
@@ -1280,12 +1620,28 @@
     "vaccineLine": "{{name}} — Next: {{date}}",
     "examRequestLine": "Requested on {{date}}",
     "prescriptionLine": "Type: {{type}} — {{date}}",
-    "fields": { "species": "Species", "breed": "Breed", "age": "Age", "weight": "Weight", "sex": "Sex", "guardian": "Guardian" },
-    "recordTypes": {
-      "atendimento": "Appointment", "retorno": "Follow-up", "emergencia": "Emergency",
-      "cirurgia": "Surgery", "internacao": "Hospitalization", "noShow": "No-show"
+    "fields": {
+      "species": "Species",
+      "breed": "Breed",
+      "age": "Age",
+      "weight": "Weight",
+      "sex": "Sex",
+      "guardian": "Guardian"
     },
-    "eventTypes": { "medicalRecord": "Record", "vaccine": "Vaccine", "examRequest": "Exam", "prescription": "Prescription" }
+    "recordTypes": {
+      "atendimento": "Appointment",
+      "retorno": "Follow-up",
+      "emergencia": "Emergency",
+      "cirurgia": "Surgery",
+      "internacao": "Hospitalization",
+      "noShow": "No-show"
+    },
+    "eventTypes": {
+      "medicalRecord": "Record",
+      "vaccine": "Vaccine",
+      "examRequest": "Exam",
+      "prescription": "Prescription"
+    }
   },
   "owners": {
     "title": "Pet owners",
@@ -1346,6 +1702,11 @@
       "complementPlaceholder": "Apt 101",
       "neighborhoodLabel": "Neighborhood *",
       "requiredField": "Required field",
+      "emailInvalid": "Invalid email"
+    },
+    "validation": {
+      "required": "Required",
+      "phoneInvalid": "Invalid phone",
       "emailInvalid": "Invalid email"
     }
   },
@@ -2335,7 +2696,9 @@
       "cancel": "Cancel",
       "save": "Save"
     },
-    "previewDialog": { "title": "View term" },
+    "previewDialog": {
+      "title": "View term"
+    },
     "toasts": {
       "nameRequired": "Enter the term's name",
       "fileRequired": "Select a PDF or DOCX file",
@@ -2362,8 +2725,14 @@
       "status": "Status",
       "actions": "Actions"
     },
-    "origin": { "system": "System", "custom": "Custom" },
-    "status": { "active": "Active", "inactive": "Inactive" },
+    "origin": {
+      "system": "System",
+      "custom": "Custom"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
     "systemReadOnlyTooltip": "System profile — read only",
     "permissionsCount_one": "{{count}} permission",
     "permissionsCount_other": "{{count}} permissions",
@@ -2398,16 +2767,56 @@
   "settingsWhatsappNumbers": {
     "title": "Clinic WhatsApp",
     "subtitle": "Connect the clinic's WhatsApp by scanning a QR code with the phone — no Meta approval required. The number stays on the clinic's device.",
-    "chatbot": { "title": "Chatbot — automated replies (AI)", "active": "Active", "inactive": "Disabled" },
-    "actions": { "connect": "Connect number", "checkStatus": "Check status", "scanQrCode": "Scan QR code", "disconnect": "Remove" },
-    "empty": { "withAction": "No number connected. Click \"{{action}}\" and scan the QR code with the clinic's phone.", "none": "No number connected." },
-    "table": { "number": "Number", "status": "Status", "actions": "Actions", "awaitingPairing": "Waiting for QR code scan" },
-    "status": { "checking": "Checking", "connected": "Connected", "disconnected": "Disconnected" },
-    "motivo": { "sessao_encerrada": "Session ended on the phone — scan the QR code again.", "sessao_assumida_por_outro_dispositivo": "Another device took over the session — scan the QR code again.", "numero_bloqueado": "WhatsApp has blocked this number." },
-    "qrModal": { "title": "Scan QR code", "instructionsPre": "Open WhatsApp on your phone →", "connectedDevices": "Linked devices", "connectDevice": "Link a device", "instructionsPost": "→ scan the code below.", "waiting": "Generating the QR code…", "autoRefresh": "The code refreshes automatically. This window closes by itself once the number connects." },
+    "chatbot": {
+      "title": "Chatbot — automated replies (AI)",
+      "active": "Active",
+      "inactive": "Disabled"
+    },
+    "actions": {
+      "connect": "Connect number",
+      "checkStatus": "Check status",
+      "scanQrCode": "Scan QR code",
+      "disconnect": "Remove"
+    },
+    "empty": {
+      "withAction": "No number connected. Click \"{{action}}\" and scan the QR code with the clinic's phone.",
+      "none": "No number connected."
+    },
+    "table": {
+      "number": "Number",
+      "status": "Status",
+      "actions": "Actions",
+      "awaitingPairing": "Waiting for QR code scan"
+    },
+    "status": {
+      "checking": "Checking",
+      "connected": "Connected",
+      "disconnected": "Disconnected"
+    },
+    "motivo": {
+      "sessao_encerrada": "Session ended on the phone — scan the QR code again.",
+      "sessao_assumida_por_outro_dispositivo": "Another device took over the session — scan the QR code again.",
+      "numero_bloqueado": "WhatsApp has blocked this number."
+    },
+    "qrModal": {
+      "title": "Scan QR code",
+      "instructionsPre": "Open WhatsApp on your phone →",
+      "connectedDevices": "Linked devices",
+      "connectDevice": "Link a device",
+      "instructionsPost": "→ scan the code below.",
+      "waiting": "Generating the QR code…",
+      "autoRefresh": "The code refreshes automatically. This window closes by itself once the number connects."
+    },
     "confirmDisconnect": "Remove this number? WhatsApp will be disconnected and the team will stop receiving conversations through it.",
-    "toasts": { "connected": "WhatsApp connected successfully!" },
-    "errors": { "save": "Error saving", "qrCode": "Error getting QR code", "register": "Error connecting number", "disconnect": "Error removing" }
+    "toasts": {
+      "connected": "WhatsApp connected successfully!"
+    },
+    "errors": {
+      "save": "Error saving",
+      "qrCode": "Error getting QR code",
+      "register": "Error connecting number",
+      "disconnect": "Error removing"
+    }
   },
   "balcao": {
     "title": "Front Desk",
@@ -2704,7 +3113,8 @@
         "title": "Remove this schedule?",
         "description": "This action cannot be undone."
       }
-    }
+    },
+    "timeRange": "{{open}} to {{close}}"
   },
   "settingsHub": {
     "title": "Settings",
@@ -2968,5 +3378,916 @@
   },
   "telefone": {
     "invalido": "Invalid phone number. Use the area code and number, for example (11) 91234-5678."
+  },
+  "listPagination": {
+    "first": "First page",
+    "previous": "Previous page",
+    "next": "Next page",
+    "last": "Last page",
+    "range": "{{from}}-{{to}} of {{total}}",
+    "page": "Page {{page}} / {{total}}"
+  },
+  "trialBanner": {
+    "readOnly": "Subscription overdue: the account is <b>read-only</b>. You can still view, export and print. To edit again, settle the payment.",
+    "settle": "Settle payment",
+    "cancelled": "Access cancelled due to non-payment. Your data is kept for <b>30 days</b>. Settle the subscription to recover it.",
+    "suspended": "Account suspended. Please contact support.",
+    "overdue": "Payment overdue. Settle within <b>7 days</b>. After that, the account becomes read-only.",
+    "onboardingExpired": "The deadline to finish setting up the clinic has expired. Complete the setup to unlock access.",
+    "finishSignup": "Finish setup",
+    "trialExpired": "Your trial period has expired. Choose a plan to regain access.",
+    "choosePlan": "Choose a plan",
+    "exempt_one": "Complimentary access active: <b>{{count}} day left</b>.",
+    "exempt_other": "Complimentary access active: <b>{{count}} days left</b>.",
+    "trialToday": "Your trial expires today. Choose a plan to continue.",
+    "viewPlans": "View plans",
+    "trialSoon_one": "Your trial expires in <b>{{count}} day</b>. Choose a plan to continue.",
+    "trialSoon_other": "Your trial expires in <b>{{count}} days</b>. Choose a plan to continue.",
+    "trialRunning": "You are in your trial period: <b>{{count}} days left</b>."
+  },
+  "emailConfirmation": {
+    "prompt": "Confirm your email to unlock team invitations and paid plan activation.",
+    "promptWithEmail": "Confirm your email (<b>{{email}}</b>) to unlock team invitations and paid plan activation.",
+    "sentTo": "We sent a code to {{email}}.",
+    "sentGeneric": "We sent a code to your email.",
+    "sendError": "Could not send the code. Please try again.",
+    "digits": "Enter the 6-digit code.",
+    "confirmed": "Email confirmed successfully.",
+    "invalid": "Invalid or expired code.",
+    "send": "Send code",
+    "sending": "Sending...",
+    "confirm": "Confirm",
+    "confirming": "Confirming...",
+    "resend": "Resend"
+  },
+  "errorScreen": {
+    "title": "Something went wrong",
+    "fatalTitle": "Unexpected error",
+    "description": "The page could not load. We have already logged what happened. You can try again. If it persists, give the code below to support.",
+    "code": "Code: {{code}}",
+    "retry": "Try again",
+    "goHome": "Go to the start"
+  },
+  "notFound": {
+    "badge": "Error 404",
+    "title": "Page not found",
+    "description": "The link you followed does not exist or has been moved. Go back to the NixVetApp home page.",
+    "back": "Back to the start"
+  },
+  "commandPalette": {
+    "title": "Quick search",
+    "description": "Navigate, create records or search for patients and guardians",
+    "placeholder": "Search screens, actions or records...",
+    "empty": "Nothing found.",
+    "quickActions": "Quick actions",
+    "screens": "Screens",
+    "patients": "Patients",
+    "owners": "Pet owners"
+  },
+  "quickCreate": {
+    "menuTitle": "Create new",
+    "new": "New",
+    "patient": "New Patient",
+    "appointment": "New Appointment",
+    "medicalRecord": "New Consultation / Visit",
+    "prescription": "New Prescription",
+    "teamMember": "New Team Member",
+    "product": "New Product / Stock Item",
+    "vaccine": "New Vaccine",
+    "followup": "New Follow-up",
+    "task": "New Task",
+    "owner": "New Owner"
+  },
+  "cookieConsent": {
+    "ariaLabel": "Cookie notice",
+    "text": "We use measurement cookies to understand how the site is used and to improve it. They are only enabled if you accept. See the <a>Privacy Policy</a>.",
+    "deny": "Decline",
+    "accept": "Accept"
+  },
+  "legalShell": {
+    "homeAria": "NixVetApp, home",
+    "policies": "Usage policies",
+    "terms": "Terms",
+    "login": "Sign in",
+    "lastUpdated": "Last updated: {{date}}",
+    "backHome": "Back to the start"
+  },
+  "setupChecklist": {
+    "items": {
+      "team": "Add more veterinarians",
+      "doctorSchedules": "Each veterinarian's schedule",
+      "resources": "Rooms and equipment",
+      "healthPlans": "Insurance / health plans",
+      "branding": "Branding (logo, color, subdomain)",
+      "whatsapp": "WhatsApp / AI assistant",
+      "googleCalendar": "Google Calendar",
+      "termTemplates": "Consent form templates"
+    },
+    "done": "Setup complete!",
+    "allSet": "All set! 🎉",
+    "clinicDone": "Your clinic is 100% set up on NixVet.",
+    "panelTitle": "Setup: {{percent}}% complete",
+    "panelHint": "Optional, but it helps you get the most out of NixVet.",
+    "dismissAria": "Dismiss permanently",
+    "dismissTitle": "Do not show again",
+    "bar": "Setup {{percent}}%"
+  },
+  "appShell": {
+    "menu": "Menu",
+    "mainNavigation": "Main navigation",
+    "redirectingToPlans": "Redirecting to plan selection…"
+  },
+  "tasks": {
+    "title": "Clinical tasks",
+    "new": "New task",
+    "empty": "No tasks registered.",
+    "colPatient": "Patient",
+    "colType": "Type",
+    "colDue": "Due date",
+    "colStatus": "Status",
+    "colActions": "Actions",
+    "complete": "Mark as done",
+    "status": {
+      "pending": "Pending",
+      "completed": "Completed"
+    },
+    "createError": "Could not create the task",
+    "genericError": "Error",
+    "cancel": "Cancel",
+    "create": "Create",
+    "select": "Select",
+    "typePlaceholder": "E.g.: Follow-up, Call the owner",
+    "loading": "Loading..."
+  },
+  "billingUpgrade": {
+    "changeTitle": "Change plan",
+    "chooseTitle": "Choose your plan",
+    "changeSubtitle": "Once you confirm, your current subscription is cancelled in Asaas and the new one starts immediately.",
+    "chooseSubtitle": "Select the ideal plan for your clinic and keep using NixVet.",
+    "clickHint": "Click a plan below to select it.",
+    "current": "Current plan",
+    "popular": "Most popular",
+    "perMonth": "/month",
+    "cpfCnpj": "CPF or CNPJ",
+    "cpfPlaceholder": "000.000.000-00 or 00.000.000/0001-00",
+    "cpfHint": "Required to issue the invoice.",
+    "paymentMethod": "Payment method",
+    "select": "Select",
+    "methods": {
+      "CREDIT_CARD": "Credit card",
+      "BOLETO": "Bank slip (boleto)",
+      "PIX": "PIX"
+    },
+    "changing": "Changing...",
+    "activating": "Activating...",
+    "confirmChange": "Confirm change",
+    "confirmChangeTo": "Confirm change to {{plan}}",
+    "activate": "Activate plan",
+    "activatePlan": "Activate {{plan}} plan",
+    "selectPlanError": "Select a plan to continue.",
+    "cpfRequiredError": "Enter your CPF or CNPJ to continue.",
+    "paymentOpenError": "Could not open the payment page. Please try again.",
+    "activateError": "Error activating the plan. Please try again."
+  },
+  "plans": {
+    "essencial": {
+      "name": "Essential",
+      "tagline": "For small clinics starting to organize their routine.",
+      "features": {
+        "0": "Electronic medical record",
+        "1": "Unlimited patient registration",
+        "2": "Online scheduling",
+        "3": "Prescriptions and request issuing",
+        "4": "Basic WhatsApp"
+      }
+    },
+    "clinica": {
+      "name": "Clinic",
+      "tagline": "For growing clinics with an active team and finances.",
+      "features": {
+        "0": "Everything in Essential",
+        "1": "Multiple veterinarians",
+        "2": "Advanced financial reports",
+        "3": "Hospital admissions",
+        "4": "WhatsApp chatbot",
+        "5": "Automatic reminders"
+      }
+    },
+    "hospital": {
+      "name": "Hospital",
+      "tagline": "For hospitals and large clinics with complex cases.",
+      "features": {
+        "0": "Everything in Clinic",
+        "1": "Anesthesia records",
+        "2": "Integrated clinical AI",
+        "3": "Multi-site",
+        "4": "Dedicated API",
+        "5": "Priority 24/7 support"
+      }
+    },
+    "enterpriseManual": "Enterprise (manual)",
+    "enterprise": "Enterprise"
+  },
+  "help": {
+    "title": "Help Center",
+    "subtitle": "Get answers about using NixVet from the assistant or talk to our team.",
+    "openTicket": "Open a ticket",
+    "tabs": {
+      "assistant": "Assistant",
+      "articles": "Articles",
+      "tickets": "My tickets"
+    },
+    "suggestions": {
+      "0": "How do I cancel a quote?",
+      "1": "How do I connect the clinic's WhatsApp?",
+      "2": "How do I confirm a suggested entry?",
+      "3": "Can the clinic issue invoices through the system?"
+    },
+    "howCanIHelp": "How can I help?",
+    "intro": "Ask how to do something in the system. I answer based on the NixVet knowledge base. I do not access your clinic's data and I do not give veterinary advice.",
+    "relatedArticles": "Related articles:",
+    "solved": "Did it help?",
+    "helpful": "Helpful",
+    "notHelpful": "Not helpful",
+    "consulting": "Searching the knowledge base…",
+    "escalate": "Not solved? The NixVet support team takes it from here.",
+    "talkToSupport": "Talk to support",
+    "inputPlaceholder": "Write your question about the system…",
+    "searchPlaceholder": "Search the help center…",
+    "allModules": "All modules",
+    "noArticles": "No articles found for this search.",
+    "openTicketWithSupport": "Open a ticket with support",
+    "noTickets": "You have not opened any tickets yet.",
+    "supportReply": "Support reply",
+    "loading": "Loading…",
+    "stillInDoubt": "Still have questions?",
+    "ticketDialogTitle": "Open a ticket with NixVet support",
+    "subject": "Subject",
+    "subjectPlaceholder": "Summarize the problem in one line",
+    "description": "Description",
+    "descriptionPlaceholder": "What you tried to do, what happened and on which screen",
+    "module": "Module",
+    "priority": "Priority",
+    "priorities": {
+      "low": "Low",
+      "normal": "Normal",
+      "high": "High: it is blocking patient care"
+    },
+    "attachConversation": "Attach the conversation with the assistant: it helps the team understand the context.",
+    "cancel": "Cancel",
+    "sending": "Sending…",
+    "answerFailed": "I could not answer right now.",
+    "answerFailedPersist": "{{message}} If it persists, open a ticket with our team.",
+    "fillRequired": "Fill in the subject and the description",
+    "ticketOpened": "Ticket #{{number}} opened. The NixVet team replies by email.",
+    "ticketError": "Error opening the ticket",
+    "modules": {
+      "geral": "General",
+      "agenda": "Schedule",
+      "pacientes": "Patients",
+      "prontuario": "Medical record",
+      "atendimento": "Consultation",
+      "internacao": "Admission",
+      "exames": "Exams",
+      "prescricoes": "Prescriptions",
+      "orcamentos": "Quotes",
+      "financeiro": "Finance",
+      "estoque": "Stock",
+      "whatsapp": "WhatsApp",
+      "relatorios": "Reports",
+      "configuracoes": "Settings",
+      "conta": "Account",
+      "mobile": "Mobile app"
+    },
+    "ticketStatus": {
+      "open": "Open",
+      "in_progress": "In progress",
+      "resolved": "Resolved",
+      "closed": "Closed"
+    }
+  },
+  "whatsapp": {
+    "title": "WhatsApp",
+    "refresh": "Refreshes every {{seconds}}s",
+    "stats": {
+      "waitingClinic": "Awaiting reply",
+      "waitingPatient": "Awaiting owner",
+      "closedToday": "Closed today",
+      "avgResponse": "Average response time",
+      "unanswered_one": "{{count}} conversation unanswered for over 20 min",
+      "unanswered_other": "{{count}} conversations unanswered for over 20 min"
+    },
+    "conversations": "Conversations",
+    "active": "Active",
+    "archived": "Archived",
+    "allClassifications": "All classifications",
+    "noName": "No name",
+    "archivedLabel": "Archived",
+    "archivedInactive": "Archived (inactive 7d)",
+    "byUser": "by {{name}}",
+    "none": "No conversations",
+    "backToList": "Back to the conversation list",
+    "closedBy": "Closed by <b>{{name}}</b>",
+    "closedByAt": "Closed by <b>{{name}}</b> on {{date}}",
+    "selectConversation": "Select a conversation",
+    "clickToView": "Click a conversation to see the messages",
+    "noMessages": "No messages",
+    "deleted": "Message deleted",
+    "suggestionsLabel": "Suggestions:",
+    "messagePlaceholder": "Type a message...",
+    "suggestReplyHint": "Suggest a reply (AI)",
+    "badges": {
+      "humanAttention": "Human assistance",
+      "notAnswered": "Not answered",
+      "waitingPatient": "Awaiting owner reply"
+    },
+    "actions": {
+      "resumeBot": "Resume Bot",
+      "resumeBotHint": "Resume automatic handling by the bot",
+      "takeOver": "Take over",
+      "takeOverHint": "Pause the bot and handle the conversation manually",
+      "classify": "Classify",
+      "classifyHint": "Classify without closing",
+      "classifyConversation": "Classify conversation",
+      "close": "Close",
+      "closeHint": "Close the conversation (choose a classification and a note)",
+      "unarchive": "Unarchive",
+      "unarchiveHint": "Bring the conversation back to the active list",
+      "archive": "Archive",
+      "archiveHint": "Archive temporarily (reopens on a new message)"
+    },
+    "closeDialog": {
+      "title": "Close conversation",
+      "description": "How was this conversation concluded?",
+      "noteLabel": "Note (optional)",
+      "notePlaceholder": "E.g.: the patient booked by phone...",
+      "cancel": "Cancel"
+    },
+    "classifications": {
+      "scheduled": "Appointment booked",
+      "not_returned": "Did not return",
+      "resolved": "Conversation closed",
+      "spam": "Spam / wrong number",
+      "lost": "Gave up",
+      "other": "Other"
+    },
+    "teaser": {
+      "title": "This is the WhatsApp view for the Clinic plan",
+      "text": "Subscribe to the Clinic plan to unlock patient messaging and every feature on this screen.",
+      "viewPlans": "View plans"
+    },
+    "errors": {
+      "selectClassification": "Select a classification",
+      "close": "Error closing the conversation",
+      "noMessagesForSuggestion": "There are no messages to suggest a reply for",
+      "noSuggestions": "No suggestions returned",
+      "suggest": "Error getting suggestions",
+      "send": "Error sending",
+      "resume": "Error resuming the bot",
+      "pause": "Error pausing the bot",
+      "archive": "Error archiving the conversation",
+      "unarchive": "Error unarchiving the conversation",
+      "classify": "Error classifying"
+    }
+  },
+  "superadminSuporte": {
+    "title": "Support",
+    "subtitle": "Clinic tickets, the assistant's knowledge base and questions it cannot answer yet.",
+    "stats": {
+      "openTickets": "Open tickets",
+      "pendingGaps": "Pending gaps",
+      "publishedArticles": "Published articles",
+      "drafts": "Drafts"
+    },
+    "tabs": {
+      "tickets": "Tickets",
+      "gaps": "Gaps",
+      "knowledge": "Knowledge base"
+    },
+    "filters": {
+      "all": "All",
+      "allStatuses": "All statuses",
+      "open": "Open",
+      "in_progress": "In progress",
+      "resolved": "Resolved",
+      "closed": "Closed",
+      "pending": "Pending",
+      "answered": "Answered",
+      "dismissed": "Dismissed",
+      "published": "Published",
+      "draft": "Drafts"
+    },
+    "noTickets": "No tickets for this filter.",
+    "priorityHigh": "High",
+    "recordedReply": "Recorded reply",
+    "replyAction": "Reply / change status",
+    "gapsHint": "Questions the knowledge base did not cover, from most to least repeated.",
+    "noGaps": "No gaps for this filter: the knowledge base is covering what people ask.",
+    "asked": "asked {{count}}×",
+    "lastSeen": "last on {{date}}",
+    "writeArticle": "Write article",
+    "dismiss": "Dismiss",
+    "searchPlaceholder": "Search by title, keyword or content…",
+    "newArticle": "New article",
+    "noArticles": "No articles found.",
+    "draftBadge": "Draft",
+    "reads_one": "{{count}} read",
+    "reads_other": "{{count}} reads",
+    "edit": "Edit",
+    "remove": "Remove",
+    "editor": {
+      "editTitle": "Edit article",
+      "newTitle": "New article",
+      "title": "Title",
+      "summary": "Summary",
+      "summaryPlaceholder": "A line shown in the help center list",
+      "module": "Module",
+      "status": "Status",
+      "statusDraft": "Draft (the AI does not use it)",
+      "statusPublished": "Published",
+      "keywords": "Keywords",
+      "keywordsPlaceholder": "Alternative terms the user would use, separated by commas",
+      "content": "Content",
+      "contentPlaceholder": "Step by step. Use **bold** for menu and button names.",
+      "contentHint": "The assistant answers only with what is written here. Quote menu and button names exactly as they appear on screen."
+    },
+    "cancel": "Cancel",
+    "saving": "Saving…",
+    "save": "Save",
+    "ticketTitle": "Ticket #{{number}}",
+    "replyLabel": "Reply",
+    "replyPlaceholder": "Visible to the clinic in the My tickets tab",
+    "deleteTitle": "Remove “{{title}}”?",
+    "deleteDescription": "The assistant stops using this article immediately. If the idea is just to take it offline, prefer changing the status to Draft.",
+    "toasts": {
+      "ticketUpdated": "Ticket updated.",
+      "ticketError": "Error updating the ticket",
+      "articleRequiredFields": "Enter the title and the content",
+      "articleUpdated": "Article updated",
+      "articleCreated": "Article created",
+      "articleSaveError": "Could not save the article",
+      "articleRemoved": "Article removed",
+      "articleRemoveError": "Could not remove the article"
+    }
+  },
+  "subscriptionStatus": {
+    "active": "Active",
+    "exempt": "Exempt (courtesy)",
+    "trial": "Trial",
+    "trial_expired": "Trial expired",
+    "overdue": "Overdue",
+    "suspended": "Suspended",
+    "cancelled": "Cancelled"
+  },
+  "shared": {
+    "cancel": "Cancel",
+    "close": "Close",
+    "loading": "Loading...",
+    "noItems": "No items available.",
+    "openMenu": "Open menu",
+    "search": "Search",
+    "language": "Language",
+    "notificationsPanel": "Notifications panel",
+    "retry": "Try again",
+    "loadData": "Could not load the data."
+  },
+  "errors": {
+    "timeout": "The server took too long to respond. Please try again in a moment.",
+    "noConnection": "No connection to the server. Check your internet and try again.",
+    "server": "Server error.",
+    "withCode": "{{base}} Code: {{code}}",
+    "subscriptionIrregular": "Subscription overdue. Settle it to continue.",
+    "loadAgenda": "Could not load the schedule.",
+    "loadRecords": "Could not load the medical records.",
+    "loadIndicators": "Could not load the indicators.",
+    "loadPatients": "Could not load the patients."
+  },
+  "age": {
+    "years_one": "{{count}} year",
+    "years_other": "{{count}} years",
+    "months_one": "{{count}} month",
+    "months_other": "{{count}} months"
+  },
+  "photo": {
+    "adjust": "Adjust photo",
+    "adjustHint": "Drag to position and use the zoom. What is inside the circle will be saved.",
+    "zoom": "Zoom",
+    "cancel": "Cancel",
+    "save": "Save photo",
+    "cropUnsupported": "This format cannot be cropped in the browser.",
+    "cropFailed": "Could not generate the crop.",
+    "updated": "Photo updated.",
+    "uploadError": "Error uploading the photo.",
+    "removed": "Photo removed.",
+    "removeError": "Error removing the photo.",
+    "unreadable": "Could not read this file. If it is in Google Drive, iCloud, OneDrive or on a network folder, download it to the computer before uploading.",
+    "heic": "HEIC photos (the iPhone default) are not displayed in this browser. Convert to JPEG or, on the iPhone, set Camera → Formats → Most Compatible.",
+    "cannotOpen": "Could not open this image. Try uploading it as JPEG or PNG.",
+    "change": "Change {{label}}",
+    "add": "Add {{label}}",
+    "remove": "Remove",
+    "labels": {
+      "default": "photo",
+      "patient": "patient photo",
+      "you": "your photo"
+    },
+    "unsupportedFormat": "Unsupported format. Upload JPEG, PNG, WebP or HEIC.",
+    "tooBig": "Could not process this image and it is over 5 MB. Convert it to JPEG and try again.",
+    "sendFailed": "Could not upload the image. multipart: {{multipart}}; base64: {{base64}}"
+  },
+  "whatsappMedia": {
+    "expired": "{{kind}} removed from the server after 7 days. Ask the owner to send it again if needed.",
+    "unavailable": "{{kind}} could not be recovered: WhatsApp keeps the file for a limited time.",
+    "receiving": "Receiving {{kind}}…",
+    "loading": "Loading…",
+    "openFail": "Could not open the file.",
+    "download": "Download",
+    "leavesToday": "Leaves the server today. Download it if you need to keep it.",
+    "availableDays_one": "Available for {{count}} more day in NixVet. Download it if you need to keep it.",
+    "availableDays_other": "Available for {{count}} more days in NixVet. Download it if you need to keep it.",
+    "imageAlt": "Received image",
+    "document": "Document",
+    "kinds": {
+      "image": "Image",
+      "audio": "Audio",
+      "video": "Video",
+      "sticker": "Sticker",
+      "document": "Document"
+    }
+  },
+  "resetPassword": {
+    "emailRequired": "Enter your email.",
+    "tenantRequired": "Enter the clinic code.",
+    "sendFailed": "Could not send the code.",
+    "sentNeutral": "If the email is registered, you will receive a code.",
+    "connectFail": "Could not connect to the server.",
+    "codeDigits": "The code has 6 digits.",
+    "passwordMin": "The new password must have at least 8 characters.",
+    "mismatch": "The passwords do not match.",
+    "confirmFailed": "Could not reset the password.",
+    "done": "Password reset. Sign in with the new password.",
+    "titleRequest": "Forgot my password",
+    "titleConfirm": "Create a new password",
+    "introRequest": "Enter your account email and we will send a 6-digit code.",
+    "introConfirm": "We sent a code to {{email}}. It is valid for 15 minutes.",
+    "tenantLabel": "Clinic code",
+    "tenantPlaceholder": "e.g. clinicavida",
+    "emailLabel": "Email",
+    "sendCode": "Send code",
+    "codeLabel": "6-digit code",
+    "newPassword": "New password",
+    "passwordPlaceholder": "Minimum 8 characters",
+    "confirmPassword": "Confirm the new password",
+    "submit": "Reset password",
+    "didNotReceive": "I did not receive the code",
+    "backToLogin": "Back to sign in"
+  },
+  "acceptInvite": {
+    "passwordMin": "The password must have at least 8 characters.",
+    "mismatch": "The passwords do not match.",
+    "created": "Account created! Sign in to continue.",
+    "welcomeToast": "Welcome to the team, {{name}}!",
+    "acceptError": "Could not accept the invitation. Please try again.",
+    "loading": "Loading invitation...",
+    "invalidTitle": "Invalid or expired invitation",
+    "invalidHint": "Ask whoever invited you to send a new invitation.",
+    "goLogin": "Go to sign in",
+    "welcome": "Welcome, {{name}}",
+    "invited": "You have been invited to the team at <b>{{clinic}}</b>. Create your password to sign in.",
+    "password": "Password",
+    "passwordPlaceholder": "Minimum 8 characters",
+    "confirm": "Confirm password",
+    "confirmPlaceholder": "Repeat the password",
+    "creating": "Creating account...",
+    "create": "Create my account"
+  },
+  "verify": {
+    "promptPatient": "Enter the token and the owner's unlock code.",
+    "iAmPatient": "I am the owner",
+    "isPatient": "Are you the owner? Also enter the unlock code to see your data.",
+    "rows": {
+      "owner": "Owner",
+      "doctor": "Veterinarian",
+      "registry": "Registration",
+      "clinic": "Clinic",
+      "signedAt": "Signed on",
+      "revokedAt": "Revoked on",
+      "patient": "Patient",
+      "cpf": "CPF",
+      "phone": "Phone",
+      "address": "Address"
+    },
+    "footer": "Document digitally signed via NixVetApp. Access is protected and audited.",
+    "title": "Digital prescription verification",
+    "status": {
+      "revoked": "Signature revoked",
+      "expired": "Signature expired",
+      "valid": "Valid signature",
+      "invalid": "Invalid signature"
+    },
+    "controlled": "Special Control Prescription",
+    "controlledWithNumber": "Special Control Prescription, No. {{number}}",
+    "iAmPharmacy": "I am a pharmacy",
+    "promptPharmacy": "Enter the pharmacy token (printed on the prescription).",
+    "tokenPlaceholder": "Token (e.g. A1B2C3)",
+    "codePlaceholder": "Unlock code (4 digits)",
+    "query": "Look up",
+    "cancel": "Cancel",
+    "prescription": "Prescription",
+    "dose": "Dose: {{value}}",
+    "frequency": "Freq.: {{value}} {{unit}}",
+    "duration": "Duration: {{value}} {{unit}}",
+    "continuous": "CONTINUOUS USE",
+    "recommendations": "Recommendations",
+    "downloadPdf": "Download prescription as PDF",
+    "checkLink": "Check the link or the QR Code on the prescription.",
+    "errors": {
+      "notFound": "Document not found.",
+      "invalidToken": "Invalid token or code.",
+      "rateLimit": "Too many attempts. Please wait a moment.",
+      "generic": "Could not verify the document."
+    },
+    "forms": {
+      "oral": "Oral",
+      "topica": "Topical",
+      "colirio": "Eye drops",
+      "spray": "Spray",
+      "injetavel": "Injectable",
+      "outro": "Other"
+    }
+  },
+  "chatbotWorkflowEditor": {
+    "actionTypes": {
+      "getAvailability": {
+        "label": "Look up availability",
+        "description": "Checks the free slots on the schedule"
+      },
+      "generateAiReply": {
+        "label": "AI reply",
+        "description": "Writes the reply with artificial intelligence"
+      },
+      "sendMessage": {
+        "label": "Send message",
+        "description": "Sends a fixed text to the owner"
+      },
+      "createConsultation": {
+        "label": "Create appointment",
+        "description": "Books the appointment with the collected data"
+      },
+      "notifyTeam": {
+        "label": "Notify the team",
+        "description": "Notifies the clinic team"
+      },
+      "pauseBot": {
+        "label": "Pause the bot",
+        "description": "Hands the conversation over to a person"
+      },
+      "waitReply": {
+        "label": "Wait for reply",
+        "description": "Waits for the owner's next message"
+      }
+    },
+    "nodeTypes": {
+      "trigger": "Trigger",
+      "condition": "Condition",
+      "action": "Action",
+      "end": "End"
+    },
+    "palette": {
+      "condition": "Splits the flow by intent or variable",
+      "action": "Runs an operation (AI, schedule, message...)",
+      "end": "Ends the flow for this message"
+    },
+    "newNodeLabel": {
+      "condition": "Condition",
+      "action": "New action",
+      "end": "End"
+    },
+    "toolbar": {
+      "back": "Back",
+      "namePlaceholder": "Flow name",
+      "active": "Active",
+      "inactive": "Inactive",
+      "save": "Save"
+    },
+    "addNode": "Add node",
+    "hint": "Click a node to configure it. Drag to move. Connect outputs to inputs.",
+    "legend": "Legend",
+    "sheet": {
+      "title": "Configure node",
+      "description": "Settings of the selected node",
+      "label": "Name",
+      "type": "Type",
+      "key": "Identifier",
+      "actionType": "Action type",
+      "select": "Select",
+      "messageText": "Message text",
+      "daysAhead": "Days ahead",
+      "notifyMessage": "Notification message",
+      "outputVar": "Output variable",
+      "conditionVar": "Condition variable",
+      "commonValues": "Common values: intent, message",
+      "branches": "Branches",
+      "deleteNode": "Delete node"
+    },
+    "toasts": {
+      "invalidWorkflow": "Invalid flow",
+      "loadError": "Could not load the flow",
+      "saveError": "Could not save"
+    }
+  },
+  "termos": {
+    "typeNoMedicalDischarge": "Responsibility for leaving without veterinary discharge",
+    "typeHospitalizationRefusal": "Refusal of hospitalization",
+    "pdfError": "Could not generate the PDF",
+    "responsibleNameRequired": "Enter the owner's name",
+    "createError": "Could not create the form",
+    "title": "Clinical forms",
+    "subtitle": "Responsibility and hospitalization-refusal forms, with a PDF to sign.",
+    "newTerm": "New form",
+    "empty": "No forms issued yet.",
+    "columnDate": "Date",
+    "columnType": "Type",
+    "columnResponsible": "Responsible",
+    "columnPatient": "Patient",
+    "columnPdf": "PDF",
+    "download": "Download PDF",
+    "fieldType": "Form type",
+    "fieldPatient": "Patient",
+    "fieldPatientPlaceholder": "Search patient (optional)",
+    "fieldResponsibleName": "Owner name",
+    "fieldDocument": "ID or document number",
+    "fieldReason": "Reason (optional)",
+    "cancel": "Cancel",
+    "createAndGeneratePdf": "Create and generate PDF"
+  },
+  "superadminPermissions": {
+    "notSuperadmin": "Only superadmins can open this page (your role: {{role}}).",
+    "unknownRole": "unknown",
+    "forbidden": "You do not have permission to open this page.",
+    "loadError": "Could not load the permissions",
+    "deleteError": "Could not delete the permission",
+    "saveError": "Could not save the permission",
+    "title": "Permissions",
+    "subtitle": "Catalog of system permissions, used by access profiles.",
+    "newPermission": "New permission",
+    "empty": "No permissions registered.",
+    "columnKey": "Key",
+    "columnName": "Name",
+    "columnResource": "Resource",
+    "columnAction": "Action",
+    "columnOrigin": "Origin",
+    "columnStatus": "Status",
+    "columnActions": "Actions",
+    "system": "System",
+    "custom": "Custom",
+    "active": "Active",
+    "inactive": "Inactive",
+    "deleteConfirmTitle": "Delete this permission?",
+    "cancel": "Cancel",
+    "confirm": "Delete",
+    "editPermission": "Edit permission",
+    "fieldKey": "Key",
+    "fieldKeyPlaceholder": "e.g. patients.read",
+    "requiredField": "Required field",
+    "fieldName": "Name",
+    "fieldNamePlaceholder": "e.g. View patients",
+    "fieldResource": "Resource",
+    "fieldResourcePlaceholder": "e.g. patients",
+    "fieldAction": "Action",
+    "fieldActionPlaceholder": "e.g. read",
+    "fieldDescription": "Description",
+    "fieldDescriptionPlaceholder": "What this permission is for",
+    "save": "Save"
+  },
+  "register": {
+    "features": {
+      "records": "Complete electronic medical record",
+      "agenda": "Scheduling and automatic reminders",
+      "whatsapp": "Integrated WhatsApp",
+      "ai": "Clinical AI and smart chatbot"
+    },
+    "types": {
+      "consulta": "Clinical Consultation",
+      "retorno": "Follow-up",
+      "vacinacao": "Vaccination",
+      "curativo": "Dressing",
+      "preCirurgica": "Pre-surgical Assessment"
+    },
+    "transition": {
+      "m0": "Setting up your clinic...",
+      "m1": "Organizing the schedule...",
+      "m2": "Registering the appointment types...",
+      "m3": "Activating WhatsApp and clinical AI...",
+      "m4": "Preparing your dashboard...",
+      "ready": "Done!",
+      "platformReady": "Your platform is ready."
+    },
+    "steps": {
+      "clinic": "Clinic",
+      "admin": "Owner",
+      "fiscal": "Tax",
+      "hours": "Hours",
+      "types": "Services",
+      "done": "Done"
+    },
+    "validation": {
+      "clinicName": "Enter the clinic name.",
+      "codeMin": "The code must have at least 3 characters.",
+      "adminName": "Enter the owner's name.",
+      "emailInvalid": "Invalid email.",
+      "passwordMin": "The password must have at least 8 characters.",
+      "mismatch": "The passwords do not match.",
+      "mobileForCode": "Enter a mobile number with area code. Landlines do not receive the code.",
+      "cpfCnpj": "Enter a valid CPF or CNPJ.",
+      "whatsappRequired": "Enter the owner's WhatsApp with area code. Landlines do not receive notices.",
+      "confirmCode": "Confirm the code sent to your WhatsApp.",
+      "weekdayHours": "Enter the Monday to Friday hours.",
+      "selectType": "Select at least one appointment type."
+    },
+    "phone": {
+      "sentSms": "Code sent by SMS.",
+      "sentWhatsapp": "Code sent by WhatsApp.",
+      "sendFail": "Could not send the code. Please try again.",
+      "confirmed": "WhatsApp confirmed.",
+      "wrongCode": "Wrong code."
+    },
+    "errors": {
+      "createAccount": "Error creating the account. Please try again.",
+      "autoLogin": "Account created, but we could not sign you in automatically. Please sign in.",
+      "hoursSave": "Could not save the opening hours. Please try again.",
+      "typeSave": "Could not save one of the appointment types. Please try again.",
+      "finish": "Could not complete the setup. Please try again."
+    },
+    "left": {
+      "tagline": "Veterinary Practice Management Software",
+      "badge": "14 days free, no card",
+      "title": "Set up your clinic in minutes",
+      "text": "Everything your clinic needs in one place. Start seeing patients today.",
+      "haveAccount": "Already have an account?",
+      "login": "Sign in"
+    },
+    "loading": "Loading...",
+    "continue": "Continue",
+    "back": "Back",
+    "step1": {
+      "title": "Clinic details",
+      "subtitle": "How your clinic will appear in the system.",
+      "name": "Clinic name",
+      "namePlaceholder": "E.g. Saint Francis Vet Clinic",
+      "code": "Access code",
+      "codeHint": "(used to sign in)",
+      "codePlaceholder": "saintfrancis",
+      "codeRule": "Lowercase letters and numbers only, no spaces."
+    },
+    "step2": {
+      "title": "Owner details",
+      "subtitle": "This will be the clinic's administrator account.",
+      "fullName": "Full name",
+      "namePlaceholder": "Dr. John Smith",
+      "email": "Email",
+      "emailPlaceholder": "john@clinic.com",
+      "password": "Password",
+      "passwordPlaceholder": "Minimum 8 characters",
+      "confirm": "Confirm password",
+      "confirmPlaceholder": "Repeat the password"
+    },
+    "step3": {
+      "title": "Tax details",
+      "subtitle": "Used to issue the service invoice when you subscribe to a plan, and to unlock your 14 free days.",
+      "cpfCnpj": "CPF or CNPJ",
+      "cpfPlaceholder": "000.000.000-00 or 00.000.000/0001-00",
+      "cpfHint": "Each CPF/CNPJ can only have one free trial period.",
+      "whatsapp": "Owner's WhatsApp",
+      "phonePlaceholder": "(51) 99999-9999",
+      "resend": "Resend",
+      "sendCode": "Send code",
+      "whatsappHint": "This is where we notify you about payments and subscription due dates. It must be a mobile number: landlines do not receive WhatsApp.",
+      "codePlaceholder": "6-digit code",
+      "confirmBtn": "Confirm",
+      "terms": "By creating your account you agree to the <terms>Terms of Use</terms> and the <privacy>Privacy Policy</privacy>."
+    },
+    "step4": {
+      "title": "Opening hours",
+      "subtitle": "Without this, nobody can book an appointment: the schedule stays empty. You can adjust it later in Settings.",
+      "weekdays": "Monday to Friday",
+      "until": "to",
+      "saturday": "Open on Saturdays",
+      "sunday": "Open on Sundays"
+    },
+    "step5": {
+      "title": "Appointment types",
+      "subtitle": "The “list” of services shown when booking an appointment. We already suggest the most common ones. You can adjust it later.",
+      "min": "min"
+    },
+    "step6": {
+      "title": "All set!",
+      "text": "Review the previous steps if you need to. When you confirm, we create your clinic and send a code by email to validate your account.",
+      "summary": "Summary",
+      "trial": "14 days of full free access",
+      "noCharge": "No automatic charge. You choose the plan later",
+      "entering": "Signing in...",
+      "enter": "Enter the system"
+    }
   }
 }

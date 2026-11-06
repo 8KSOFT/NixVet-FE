@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslation } from 'react-i18next';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
@@ -20,6 +21,7 @@ type Props = {
 };
 
 export function CheckboxMultiSelect({ options, selected, onChange, emptyMessage, className, disabled }: Props) {
+  const { t } = useTranslation();
   const toggle = (value: string, checked: boolean) => {
     if (checked) {
       onChange([...selected, value]);
@@ -30,7 +32,7 @@ export function CheckboxMultiSelect({ options, selected, onChange, emptyMessage,
 
   if (options.length === 0) {
     return (
-      <p className="py-4 text-center text-sm text-muted-foreground">{emptyMessage ?? 'Nenhum item disponível.'}</p>
+      <p className="py-4 text-center text-sm text-muted-foreground">{emptyMessage ?? t('shared.noItems')}</p>
     );
   }
 

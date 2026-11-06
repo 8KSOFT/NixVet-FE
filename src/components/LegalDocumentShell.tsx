@@ -1,4 +1,7 @@
+'use client';
+
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { LogoColored } from '@/components/shared/componentizedImages/LogoColored';
 
 export default function LegalDocumentShell({
@@ -10,11 +13,12 @@ export default function LegalDocumentShell({
   lastUpdated: string;
   children: React.ReactNode;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="min-h-screen bg-[#eef7f3] text-brand-deep-dark/90">
       <div className="bg-brand-deep px-4 pb-24 pt-6 md:pt-10">
         <header className="mx-auto flex max-w-4xl items-center justify-between rounded-full bg-white/95 py-2.5 pl-5 pr-3 shadow-xl">
-          <Link href="/" aria-label="NixVetApp — início">
+          <Link href="/" aria-label={t('legalShell.homeAria')}>
             <LogoColored width="150px" height="32px" />
           </Link>
           <nav className="flex items-center gap-1 text-sm font-semibold">
@@ -22,19 +26,19 @@ export default function LegalDocumentShell({
               href="/politicas-uso"
               className="hidden rounded-full px-3 py-2 text-brand-deep-dark/70 transition-colors hover:bg-brand-deep/10 hover:text-brand-deep-dark sm:block"
             >
-              Políticas de uso
+              {t('legalShell.policies')}
             </Link>
             <Link
               href="/termos-servicos-aplicativo"
               className="hidden rounded-full px-3 py-2 text-brand-deep-dark/70 transition-colors hover:bg-brand-deep/10 hover:text-brand-deep-dark sm:block"
             >
-              Termos
+              {t('legalShell.terms')}
             </Link>
             <Link
               href="/login"
               className="rounded-full bg-brand-deep/10 px-4 py-2 text-brand-deep transition-colors hover:bg-brand-deep/20"
             >
-              Entrar
+              {t('legalShell.login')}
             </Link>
           </nav>
         </header>
@@ -42,7 +46,7 @@ export default function LegalDocumentShell({
         <div className="mx-auto mt-12 max-w-4xl px-2 md:mt-16">
           <h1 className="font-heading text-3xl font-black leading-tight text-white md:text-5xl">{title}</h1>
           <p className="mt-4 inline-block rounded-full border border-white/30 bg-white/15 px-3 py-1 text-[13px] font-semibold text-white">
-            Última atualização: {lastUpdated}
+            {t('legalShell.lastUpdated', { date: lastUpdated })}
           </p>
         </div>
       </div>
@@ -64,7 +68,7 @@ export default function LegalDocumentShell({
       <footer className="bg-brand-deep-dark py-8 text-center text-sm text-white/70">
         <p className="mb-2">NixVetApp © {new Date().getFullYear()} — 8KSOFT Tecnologia da Informação LTDA</p>
         <Link href="/" className="font-semibold text-white hover:underline">
-          Voltar ao início
+          {t('legalShell.backHome')}
         </Link>
       </footer>
     </div>

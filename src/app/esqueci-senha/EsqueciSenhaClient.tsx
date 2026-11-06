@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import TurnstileWidget from '@/components/security/TurnstileWidget';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -47,6 +48,7 @@ async function postJson(path: string, body: unknown): Promise<{ ok: boolean; dat
  * aparece de qualquer jeito depois do envio.
  */
 export default function EsqueciSenhaClient() {
+  const { t } = useTranslation();
   const router = useRouter();
 
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
@@ -71,8 +73,8 @@ export default function EsqueciSenhaClient() {
 
   const handleRequest = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) return toast.error('Informe o seu e-mail.');
-    if (!resolvedCode) return toast.error('Informe o código da clínica.');
+    if (!email.trim()) return toast.error(t('resetPassword.emailRequired'));
+    if (!resolvedCode) return toast.error(t('resetPassword.tenantRequired'));
 
     setLoading(true);
     try {
@@ -82,10 +84,10 @@ export default function EsqueciSenhaClient() {
         turnstileToken,
       });
       if (!ok) {
-        toast.error(apiMessage(data, 'Não foi possível enviar o código.'));
+        toast.error(apiMessage(data, t('resetPassword.sendFailed')));
         return;
       }
-      toast.success('Se o e-mail estiver cadastrado, você receberá um código.');
+      toast.success(t('resetPassword.sentNeutral'));
       // Token de Turnstile é de uso único: o que validou o pedido já foi
       // gasto. Zerar aqui evita mandar um token queimado na confirmação e
       // levar "não foi possível confirmar que você não é um robô" sem motivo
@@ -93,7 +95,7 @@ export default function EsqueciSenhaClient() {
       setTurnstileToken(null);
       setStep('confirm');
     } catch {
-      toast.error('Não foi possível conectar ao servidor.');
+      toast.error(t('resetPassword.connectFail'));
     } finally {
       setLoading(false);
     }
@@ -101,9 +103,9 @@ export default function EsqueciSenhaClient() {
 
   const handleConfirm = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (code.trim().length !== 6) return toast.error('O código tem 6 dígitos.');
-    if (password.length < 8) return toast.error('A nova senha precisa ter pelo menos 8 caracteres.');
-    if (password !== confirmPassword) return toast.error('As senhas não conferem.');
+    if (code.trim().length !== 6) return toast.error(t('resetPassword.codeDigits'));
+    if (password.length < 8) return toast.error(t('resetPassword.passwordMin'));
+    if (password !== confirmPassword) return toast.error(t('resetPassword.mismatch'));
 
     setLoading(true);
     try {
@@ -115,13 +117,13 @@ export default function EsqueciSenhaClient() {
         turnstileToken,
       });
       if (!ok) {
-        toast.error(apiMessage(data, 'Não foi possível redefinir a senha.'));
+        toast.error(apiMessage(data, t('resetPassword.confirmFailed')));
         return;
       }
-      toast.success('Senha redefinida. Entre com a nova senha.');
+      toast.success(t('resetPassword.done'));
       router.push('/login');
     } catch {
-      toast.error('Não foi possível conectar ao servidor.');
+      toast.error(t('resetPassword.connectFail'));
     } finally {
       setLoading(false);
     }
@@ -138,31 +140,31 @@ export default function EsqueciSenhaClient() {
         </div>
 
         <h2 className="text-xl font-semibold text-foreground">
-          {step === 'request' ? 'Esqueci minha senha' : 'Criar nova senha'}
+          {step === 'request' ? t('resetPassword.titleRequest') : t('resetPassword.titleConfirm')}
         </h2>
         <p className="mt-1 mb-6 text-sm text-muted-foreground">
           {step === 'request'
-            ? 'Informe o e-mail da sua conta e enviaremos um código de 6 dígitos.'
-            : `Enviamos um código para ${email}. Ele vale por 15 minutos.`}
+            ? t('resetPassword.introRequest')
+            : t('resetPassword.introConfirm', { email })}
         </p>
 
         {step === 'request' ? (
           <form onSubmit={handleRequest} className="space-y-4">
             {!tenantLocked && (
               <div className="space-y-2">
-                <Label htmlFor="tenantCode">Código da clínica</Label>
+                <Label htmlFor="tenantCode">{t('resetPassword.tenantLabel')}</Label>
                 <Input
                   id="tenantCode"
                   value={tenantCode}
                   onChange={(e) => setTenantCode(e.target.value)}
-                  placeholder="ex.: vixen"
+                  placeholder={t('resetPassword.tenantPlaceholder')}
                   autoComplete="organization"
                   required
                 />
               </div>
             )}
             <div className="space-y-2">
-              <Label htmlFor="email">E-mail</Label>
+              <Label htmlFor="email">{t('resetPassword.emailLabel')}</Label>
               <Input
                 id="email"
                 type="email"
@@ -175,13 +177,13 @@ export default function EsqueciSenhaClient() {
             <TurnstileWidget onToken={setTurnstileToken} className="mb-3 flex justify-center" />
             <Button type="submit" className="w-full rounded-full" disabled={loading}>
               {loading && <Loader2 className="mr-1 size-4 animate-spin" />}
-              Enviar código
+              {t('resetPassword.sendCode')}
             </Button>
           </form>
         ) : (
           <form onSubmit={handleConfirm} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="code">Código de 6 dígitos</Label>
+              <Label htmlFor="code">{t('resetPassword.codeLabel')}</Label>
               <Input
                 id="code"
                 value={code}
@@ -194,19 +196,19 @@ export default function EsqueciSenhaClient() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Nova senha</Label>
+              <Label htmlFor="password">{t('resetPassword.newPassword')}</Label>
               <Input
                 id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="new-password"
-                placeholder="Mínimo 8 caracteres"
+                placeholder={t('resetPassword.passwordPlaceholder')}
                 required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirme a nova senha</Label>
+              <Label htmlFor="confirmPassword">{t('resetPassword.confirmPassword')}</Label>
               <Input
                 id="confirmPassword"
                 type="password"
@@ -219,7 +221,7 @@ export default function EsqueciSenhaClient() {
             <TurnstileWidget onToken={setTurnstileToken} className="mb-3 flex justify-center" />
             <Button type="submit" className="w-full rounded-full" disabled={loading}>
               {loading && <Loader2 className="mr-1 size-4 animate-spin" />}
-              Redefinir senha
+              {t('resetPassword.submit')}
             </Button>
             <Button
               type="button"
@@ -228,7 +230,7 @@ export default function EsqueciSenhaClient() {
               disabled={loading}
               onClick={() => setStep('request')}
             >
-              Não recebi o código
+              {t('resetPassword.didNotReceive')}
             </Button>
           </form>
         )}
@@ -237,7 +239,7 @@ export default function EsqueciSenhaClient() {
           href="/login"
           className="mt-6 flex items-center justify-center gap-1 text-sm text-muted-foreground hover:text-foreground"
         >
-          <ArrowLeft className="size-4" /> Voltar para o login
+          <ArrowLeft className="size-4" /> {t('resetPassword.backToLogin')}
         </Link>
       </div>
     </div>

@@ -36,13 +36,7 @@ import {
   useUpdateTicketMutation,
   type ArticlePayload,
 } from '@/hooks/apiHooks/useSupportAdmin';
-import {
-  SUPPORT_MODULE_LABELS,
-  SUPPORT_MODULES,
-  SUPPORT_TICKET_STATUS_LABELS,
-  type SupportArticle,
-  type SupportTicket,
-} from '@/app/types/support';
+import { SUPPORT_MODULES, type SupportArticle, type SupportTicket } from '@/app/types/support';
 
 const EMPTY_ARTICLE: ArticlePayload = {
   title: '',
@@ -71,6 +65,7 @@ function StatCard({ label, value, icon: Icon }: { label: string; value: number; 
 
 export default function SuperadminSuportePage() {
   const { t } = useTranslation();
+  const moduleLabel = (m: string) => t(`help.modules.${m}`, { defaultValue: m });
   const [tab, setTab] = useState('chamados');
 
   const { data: stats } = useSupportStatsQuery();
@@ -145,30 +140,29 @@ export default function SuperadminSuportePage() {
         status: reply.status,
         resolution: reply.resolution,
       });
-      toast.success('Chamado atualizado.');
+      toast.success(t('superadminSuporte.toasts.ticketUpdated'));
       setReplyTo(null);
       setReply({ status: 'resolved', resolution: '' });
     } catch (error) {
-      toast.error(getApiErrorMessage(error, 'Erro ao atualizar chamado'));
+      toast.error(getApiErrorMessage(error, t('superadminSuporte.toasts.ticketError')));
     }
   };
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">Suporte</h1>
+        <h1 className="text-2xl font-bold">{t('superadminSuporte.title')}</h1>
         <p className="text-sm text-muted-foreground">
-          Chamados das clínicas, base de conhecimento da assistente e perguntas que ela ainda não
-          sabe responder.
+          {t('superadminSuporte.subtitle')}
         </p>
       </div>
 
       {stats && (
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <StatCard label="Chamados abertos" value={stats.open_tickets} icon={Ticket} />
-          <StatCard label="Lacunas pendentes" value={stats.pending_gaps} icon={FileWarning} />
-          <StatCard label="Artigos publicados" value={stats.published_articles} icon={BookOpen} />
-          <StatCard label="Rascunhos" value={stats.draft_articles} icon={Pencil} />
+          <StatCard label={t('superadminSuporte.stats.openTickets')} value={stats.open_tickets} icon={Ticket} />
+          <StatCard label={t('superadminSuporte.stats.pendingGaps')} value={stats.pending_gaps} icon={FileWarning} />
+          <StatCard label={t('superadminSuporte.stats.publishedArticles')} value={stats.published_articles} icon={BookOpen} />
+          <StatCard label={t('superadminSuporte.stats.drafts')} value={stats.draft_articles} icon={Pencil} />
         </div>
       )}
 
@@ -184,23 +178,23 @@ export default function SuperadminSuportePage() {
             <SelectContent>
               <SelectItem value="chamados">
                 <Ticket className="mr-2 size-4" />
-                Chamados
+                {t('superadminSuporte.tabs.tickets')}
               </SelectItem>
               <SelectItem value="lacunas">
                 <FileWarning className="mr-2 size-4" />
-                Lacunas
+                {t('superadminSuporte.tabs.gaps')}
               </SelectItem>
               <SelectItem value="artigos">
                 <BookOpen className="mr-2 size-4" />
-                Base de conhecimento
+                {t('superadminSuporte.tabs.knowledge')}
               </SelectItem>
             </SelectContent>
           </Select>
         </div>
         <TabsList className="hidden sm:inline-flex">
-          <TabsTrigger value="chamados">Chamados</TabsTrigger>
-          <TabsTrigger value="lacunas">Lacunas</TabsTrigger>
-          <TabsTrigger value="artigos">Base de conhecimento</TabsTrigger>
+          <TabsTrigger value="chamados">{t('superadminSuporte.tabs.tickets')}</TabsTrigger>
+          <TabsTrigger value="lacunas">{t('superadminSuporte.tabs.gaps')}</TabsTrigger>
+          <TabsTrigger value="artigos">{t('superadminSuporte.tabs.knowledge')}</TabsTrigger>
         </TabsList>
 
         {/* ── Chamados ──────────────────────────────────────────────── */}
@@ -210,14 +204,14 @@ export default function SuperadminSuportePage() {
             onValueChange={(v) => setTicketStatus(v === '_all' ? '' : v)}
           >
             <SelectTrigger className="w-full sm:w-56">
-              <SelectValue placeholder="Todos" />
+              <SelectValue placeholder={t('superadminSuporte.filters.all')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="_all">Todos os status</SelectItem>
-              <SelectItem value="open">Abertos</SelectItem>
-              <SelectItem value="in_progress">Em andamento</SelectItem>
-              <SelectItem value="resolved">Resolvidos</SelectItem>
-              <SelectItem value="closed">Fechados</SelectItem>
+              <SelectItem value="_all">{t('superadminSuporte.filters.allStatuses')}</SelectItem>
+              <SelectItem value="open">{t('superadminSuporte.filters.open')}</SelectItem>
+              <SelectItem value="in_progress">{t('superadminSuporte.filters.in_progress')}</SelectItem>
+              <SelectItem value="resolved">{t('superadminSuporte.filters.resolved')}</SelectItem>
+              <SelectItem value="closed">{t('superadminSuporte.filters.closed')}</SelectItem>
             </SelectContent>
           </Select>
 
@@ -226,7 +220,7 @@ export default function SuperadminSuportePage() {
           ) : tickets.length === 0 ? (
             <Card>
               <CardContent className="py-8 text-center text-sm text-muted-foreground">
-                Nenhum chamado neste filtro.
+                {t('superadminSuporte.noTickets')}
               </CardContent>
             </Card>
           ) : (
@@ -241,13 +235,13 @@ export default function SuperadminSuportePage() {
                       <p className="text-xs text-muted-foreground">
                         {ticket.clinic_name ?? '—'} · {ticket.user_name ?? '—'} (
                         {ticket.user_email ?? '—'}) ·{' '}
-                        {SUPPORT_MODULE_LABELS[ticket.module] ?? ticket.module}
+                        {moduleLabel(ticket.module)}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
-                      {ticket.priority === 'high' && <Badge variant="destructive">Alta</Badge>}
+                      {ticket.priority === 'high' && <Badge variant="destructive">{t('superadminSuporte.priorityHigh')}</Badge>}
                       <Badge variant={ticket.status === 'open' ? 'destructive' : 'secondary'}>
-                        {SUPPORT_TICKET_STATUS_LABELS[ticket.status]}
+                        {t(`help.ticketStatus.${ticket.status}`, { defaultValue: ticket.status })}
                       </Badge>
                     </div>
                   </div>
@@ -256,7 +250,7 @@ export default function SuperadminSuportePage() {
                   </p>
                   {ticket.resolution && (
                     <div className="rounded-lg bg-muted/50 p-3 text-sm">
-                      <p className="mb-1 font-medium">Resposta registrada</p>
+                      <p className="mb-1 font-medium">{t('superadminSuporte.recordedReply')}</p>
                       <p className="whitespace-pre-wrap text-muted-foreground">
                         {ticket.resolution}
                       </p>
@@ -274,7 +268,7 @@ export default function SuperadminSuportePage() {
                         });
                       }}
                     >
-                      Responder / mudar status
+                      {t('superadminSuporte.replyAction')}
                     </Button>
                   </div>
                 </CardContent>
@@ -291,13 +285,13 @@ export default function SuperadminSuportePage() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="pending">Pendentes</SelectItem>
-                <SelectItem value="answered">Respondidas</SelectItem>
-                <SelectItem value="dismissed">Descartadas</SelectItem>
+                <SelectItem value="pending">{t('superadminSuporte.filters.pending')}</SelectItem>
+                <SelectItem value="answered">{t('superadminSuporte.filters.answered')}</SelectItem>
+                <SelectItem value="dismissed">{t('superadminSuporte.filters.dismissed')}</SelectItem>
               </SelectContent>
             </Select>
             <p className="text-sm text-muted-foreground">
-              Perguntas que a base não cobriu, das mais repetidas para as menos.
+              {t('superadminSuporte.gapsHint')}
             </p>
           </div>
 
@@ -306,7 +300,7 @@ export default function SuperadminSuportePage() {
           ) : gaps.length === 0 ? (
             <Card>
               <CardContent className="py-8 text-center text-sm text-muted-foreground">
-                Nenhuma lacuna neste filtro — a base está cobrindo o que perguntam.
+                {t('superadminSuporte.noGaps')}
               </CardContent>
             </Card>
           ) : (
@@ -316,15 +310,15 @@ export default function SuperadminSuportePage() {
                   <div className="min-w-0">
                     <p className="font-medium">{gap.question}</p>
                     <p className="text-xs text-muted-foreground">
-                      {gap.occurrences}× perguntada
+                      {t('superadminSuporte.asked', { count: gap.occurrences })}
                       {gap.last_seen_at
-                        ? ` · última em ${new Date(gap.last_seen_at).toLocaleDateString('pt-BR')}`
+                        ? ` · ${t('superadminSuporte.lastSeen', { date: new Date(gap.last_seen_at).toLocaleDateString('pt-BR') })}`
                         : ''}
                     </p>
                   </div>
                   <div className="flex shrink-0 gap-2">
                     <Button size="sm" onClick={() => writeArticleForGap(gap.question)}>
-                      Escrever artigo
+                      {t('superadminSuporte.writeArticle')}
                     </Button>
                     {gap.status !== 'dismissed' && (
                       <Button
@@ -334,7 +328,7 @@ export default function SuperadminSuportePage() {
                           updateGap.mutate({ id: gap.id, status: 'dismissed' })
                         }
                       >
-                        Descartar
+                        {t('superadminSuporte.dismiss')}
                       </Button>
                     )}
                   </div>
@@ -348,7 +342,7 @@ export default function SuperadminSuportePage() {
         <TabsContent value="artigos" className="mt-4 space-y-3">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <Input
-              placeholder="Buscar por título, palavra-chave ou conteúdo…"
+              placeholder={t('superadminSuporte.searchPlaceholder')}
               value={articleFilters.q ?? ''}
               onChange={(e) => setArticleFilters((f) => ({ ...f, q: e.target.value }))}
               className="flex-1"
@@ -360,17 +354,17 @@ export default function SuperadminSuportePage() {
               }
             >
               <SelectTrigger className="sm:w-44">
-                <SelectValue placeholder="Todos" />
+                <SelectValue placeholder={t('superadminSuporte.filters.all')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="_all">Todos</SelectItem>
-                <SelectItem value="published">Publicados</SelectItem>
-                <SelectItem value="draft">Rascunhos</SelectItem>
+                <SelectItem value="_all">{t('superadminSuporte.filters.all')}</SelectItem>
+                <SelectItem value="published">{t('superadminSuporte.filters.published')}</SelectItem>
+                <SelectItem value="draft">{t('superadminSuporte.filters.draft')}</SelectItem>
               </SelectContent>
             </Select>
             <Button onClick={() => setEditing({ payload: { ...EMPTY_ARTICLE } })}>
               <Plus className="mr-2 size-4" />
-              Novo artigo
+              {t('superadminSuporte.newArticle')}
             </Button>
           </div>
 
@@ -379,7 +373,7 @@ export default function SuperadminSuportePage() {
           ) : articles.length === 0 ? (
             <Card>
               <CardContent className="py-8 text-center text-sm text-muted-foreground">
-                Nenhum artigo encontrado.
+                {t('superadminSuporte.noArticles')}
               </CardContent>
             </Card>
           ) : (
@@ -390,12 +384,12 @@ export default function SuperadminSuportePage() {
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="font-medium">{article.title}</p>
                       <Badge variant="secondary">
-                        {SUPPORT_MODULE_LABELS[article.module] ?? article.module}
+                        {moduleLabel(article.module)}
                       </Badge>
-                      {article.status === 'draft' && <Badge variant="outline">Rascunho</Badge>}
+                      {article.status === 'draft' && <Badge variant="outline">{t('superadminSuporte.draftBadge')}</Badge>}
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      /{article.slug} · {article.view_count} leituras · 👍 {article.helpful_count} · 👎{' '}
+                      /{article.slug} · {t('superadminSuporte.reads', { count: article.view_count })} · 👍 {article.helpful_count} · 👎{' '}
                       {article.not_helpful_count}
                     </p>
                   </div>
@@ -403,7 +397,7 @@ export default function SuperadminSuportePage() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      title="Editar"
+                      title={t('superadminSuporte.edit')}
                       onClick={() =>
                         setEditing({
                           id: article.id,
@@ -424,7 +418,7 @@ export default function SuperadminSuportePage() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      title="Remover"
+                      title={t('superadminSuporte.remove')}
                       onClick={() => setToDelete(article)}
                     >
                       <Trash2 className="size-4 text-destructive" />
@@ -441,12 +435,12 @@ export default function SuperadminSuportePage() {
       <Dialog open={!!editing} onOpenChange={(open) => !open && setEditing(null)}>
         <DialogContent className="max-h-[90vh] max-w-[calc(100%-2rem)] overflow-y-auto sm:max-w-3xl">
           <DialogHeader>
-            <DialogTitle>{editing?.id ? 'Editar artigo' : 'Novo artigo'}</DialogTitle>
+            <DialogTitle>{editing?.id ? t('superadminSuporte.editor.editTitle') : t('superadminSuporte.editor.newTitle')}</DialogTitle>
           </DialogHeader>
           {editing && (
             <div className="space-y-4">
               <div className="space-y-1">
-                <Label>Título</Label>
+                <Label>{t('superadminSuporte.editor.title')}</Label>
                 <Input
                   value={editing.payload.title}
                   maxLength={255}
@@ -456,11 +450,11 @@ export default function SuperadminSuportePage() {
                 />
               </div>
               <div className="space-y-1">
-                <Label>Resumo</Label>
+                <Label>{t('superadminSuporte.editor.summary')}</Label>
                 <Input
                   value={editing.payload.summary ?? ''}
                   maxLength={500}
-                  placeholder="Uma linha — aparece na lista da central de ajuda"
+                  placeholder={t('superadminSuporte.editor.summaryPlaceholder')}
                   onChange={(e) =>
                     setEditing((s) => s && { ...s, payload: { ...s.payload, summary: e.target.value } })
                   }
@@ -468,7 +462,7 @@ export default function SuperadminSuportePage() {
               </div>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div className="space-y-1">
-                  <Label>Módulo</Label>
+                  <Label>{t('superadminSuporte.editor.module')}</Label>
                   <Select
                     value={editing.payload.module}
                     onValueChange={(v) =>
@@ -481,14 +475,14 @@ export default function SuperadminSuportePage() {
                     <SelectContent>
                       {SUPPORT_MODULES.map((m) => (
                         <SelectItem key={m} value={m}>
-                          {SUPPORT_MODULE_LABELS[m]}
+                          {moduleLabel(m)}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-1">
-                  <Label>Status</Label>
+                  <Label>{t('superadminSuporte.editor.status')}</Label>
                   <Select
                     value={editing.payload.status ?? 'draft'}
                     onValueChange={(v: 'draft' | 'published') =>
@@ -499,46 +493,45 @@ export default function SuperadminSuportePage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="draft">Rascunho (a IA não usa)</SelectItem>
-                      <SelectItem value="published">Publicado</SelectItem>
+                      <SelectItem value="draft">{t('superadminSuporte.editor.statusDraft')}</SelectItem>
+                      <SelectItem value="published">{t('superadminSuporte.editor.statusPublished')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
               <div className="space-y-1">
-                <Label>Palavras-chave</Label>
+                <Label>{t('superadminSuporte.editor.keywords')}</Label>
                 <Input
                   value={editing.payload.keywords ?? ''}
-                  placeholder="Termos alternativos que o usuário usaria, separados por vírgula"
+                  placeholder={t('superadminSuporte.editor.keywordsPlaceholder')}
                   onChange={(e) =>
                     setEditing((s) => s && { ...s, payload: { ...s.payload, keywords: e.target.value } })
                   }
                 />
               </div>
               <div className="space-y-1">
-                <Label>Conteúdo</Label>
+                <Label>{t('superadminSuporte.editor.content')}</Label>
                 <Textarea
                   value={editing.payload.content}
                   rows={14}
                   className="font-mono text-sm"
-                  placeholder="Passo a passo. Use **negrito** para nomes de menu e botões."
+                  placeholder={t('superadminSuporte.editor.contentPlaceholder')}
                   onChange={(e) =>
                     setEditing((s) => s && { ...s, payload: { ...s.payload, content: e.target.value } })
                   }
                 />
                 <p className="text-xs text-muted-foreground">
-                  A assistente responde apenas com o que estiver aqui. Cite os nomes de menu e botões
-                  exatamente como aparecem na tela.
+                  {t('superadminSuporte.editor.contentHint')}
                 </p>
               </div>
             </div>
           )}
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button variant="outline" onClick={() => setEditing(null)}>
-              Cancelar
+              {t('superadminSuporte.cancel')}
             </Button>
             <Button onClick={() => void handleSaveArticle()} disabled={saveArticle.isPending}>
-              {saveArticle.isPending ? 'Salvando…' : 'Salvar'}
+              {saveArticle.isPending ? t('superadminSuporte.saving') : t('superadminSuporte.save')}
             </Button>
           </div>
         </DialogContent>
@@ -548,40 +541,40 @@ export default function SuperadminSuportePage() {
       <Dialog open={!!replyTo} onOpenChange={(open) => !open && setReplyTo(null)}>
         <DialogContent className="max-w-[calc(100%-2rem)] sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Chamado #{replyTo?.number}</DialogTitle>
+            <DialogTitle>{t('superadminSuporte.ticketTitle', { number: replyTo?.number })}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1">
-              <Label>Status</Label>
+              <Label>{t('superadminSuporte.editor.status')}</Label>
               <Select value={reply.status} onValueChange={(v) => setReply((r) => ({ ...r, status: v }))}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="open">Aberto</SelectItem>
-                  <SelectItem value="in_progress">Em andamento</SelectItem>
-                  <SelectItem value="resolved">Resolvido</SelectItem>
-                  <SelectItem value="closed">Fechado</SelectItem>
+                  <SelectItem value="open">{t('help.ticketStatus.open')}</SelectItem>
+                  <SelectItem value="in_progress">{t('help.ticketStatus.in_progress')}</SelectItem>
+                  <SelectItem value="resolved">{t('help.ticketStatus.resolved')}</SelectItem>
+                  <SelectItem value="closed">{t('help.ticketStatus.closed')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1">
-              <Label>Resposta</Label>
+              <Label>{t('superadminSuporte.replyLabel')}</Label>
               <Textarea
                 rows={6}
                 value={reply.resolution}
                 maxLength={5000}
-                placeholder="Fica visível para a clínica na aba Meus chamados"
+                placeholder={t('superadminSuporte.replyPlaceholder')}
                 onChange={(e) => setReply((r) => ({ ...r, resolution: e.target.value }))}
               />
             </div>
           </div>
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button variant="outline" onClick={() => setReplyTo(null)}>
-              Cancelar
+              {t('superadminSuporte.cancel')}
             </Button>
             <Button onClick={() => void handleReply()} disabled={updateTicket.isPending}>
-              {updateTicket.isPending ? 'Salvando…' : 'Salvar'}
+              {updateTicket.isPending ? t('superadminSuporte.saving') : t('superadminSuporte.save')}
             </Button>
           </div>
         </DialogContent>
@@ -591,21 +584,20 @@ export default function SuperadminSuportePage() {
       <AlertDialog open={!!toDelete} onOpenChange={(open) => !open && setToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remover “{toDelete?.title}”?</AlertDialogTitle>
+            <AlertDialogTitle>{t('superadminSuporte.deleteTitle', { title: toDelete?.title })}</AlertDialogTitle>
             <AlertDialogDescription>
-              A assistente deixa de usar este artigo imediatamente. Se a ideia é só tirar do ar,
-              prefira mudar o status para Rascunho.
+              {t('superadminSuporte.deleteDescription')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel>{t('superadminSuporte.cancel')}</AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => {
                 e.preventDefault();
                 void handleDeleteArticle();
               }}
             >
-              Remover
+              {t('superadminSuporte.remove')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

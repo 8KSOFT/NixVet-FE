@@ -2,6 +2,7 @@
 
 import React, { useRef, useState } from 'react';
 import { Camera, Loader2, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -60,12 +61,14 @@ export interface ProfilePhotoUploaderProps extends ProfilePhotoProps {
 export function ProfilePhotoUploader({
   target,
   invalidate = [],
-  label = 'foto',
+  label,
   canRemove = true,
   url,
   name,
   className,
 }: ProfilePhotoUploaderProps) {
+  const { t } = useTranslation();
+  const rotulo = label ?? t('photo.labels.default');
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [cropFile, setCropFile] = useState<File | null>(null);
@@ -78,9 +81,9 @@ export function ProfilePhotoUploader({
     setUploading(true);
     try {
       await upload.mutateAsync(image);
-      toast.success('Foto atualizada.');
+      toast.success(t('photo.updated'));
     } catch (err) {
-      toast.error(getApiErrorMessage(err, 'Erro ao enviar a foto.'));
+      toast.error(getApiErrorMessage(err, t('photo.uploadError')));
     } finally {
       setUploading(false);
     }
@@ -103,10 +106,7 @@ export function ProfilePhotoUploader({
     try {
       await file.slice(0, 1024).arrayBuffer();
     } catch {
-      toast.error(
-        'Não foi possível ler este arquivo. Se ele estiver no Google Drive, iCloud, OneDrive ou numa ' +
-          'pasta de rede, baixe-o para o computador antes de enviar.',
-      );
+      toast.error(t('photo.unreadable'));
       return;
     }
 
@@ -120,12 +120,7 @@ export function ProfilePhotoUploader({
       bmp.close();
     } catch {
       const heic = /heic|heif/i.test(file.type) || /\.hei[cf]$/i.test(file.name);
-      toast.error(
-        heic
-          ? 'Fotos em HEIC (padrão do iPhone) não são exibidas neste navegador. Converta para JPEG ou, no iPhone, ' +
-            'ajuste Câmera → Formatos → Mais Compatível.'
-          : 'Não foi possível abrir esta imagem. Tente enviar em JPEG ou PNG.',
-      );
+      toast.error(heic ? t('photo.heic') : t('photo.cannotOpen'));
       return;
     }
 
@@ -135,9 +130,9 @@ export function ProfilePhotoUploader({
   const handleRemove = async () => {
     try {
       await remove.mutateAsync();
-      toast.success('Foto removida.');
+      toast.success(t('photo.removed'));
     } catch (err) {
-      toast.error(getApiErrorMessage(err, 'Erro ao remover a foto.'));
+      toast.error(getApiErrorMessage(err, t('photo.removeError')));
     }
   };
 
@@ -167,8 +162,8 @@ export function ProfilePhotoUploader({
         type="button"
         disabled={busy}
         onClick={() => inputRef.current?.click()}
-        title={url ? `Trocar ${label}` : `Adicionar ${label}`}
-        aria-label={url ? `Trocar ${label}` : `Adicionar ${label}`}
+        title={url ? t('photo.change', { label: rotulo }) : t('photo.add', { label: rotulo })}
+        aria-label={url ? t('photo.change', { label: rotulo }) : t('photo.add', { label: rotulo })}
         className="group relative rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed"
       >
         <ProfilePhoto url={url} name={name} className={cn('size-20', className)} />
@@ -198,7 +193,7 @@ export function ProfilePhotoUploader({
           disabled={busy}
           onClick={handleRemove}
         >
-          <Trash2 className="mr-1 size-3.5" /> Remover
+          <Trash2 className="mr-1 size-3.5" /> {t('photo.remove')}
         </Button>
       ) : null}
     </div>

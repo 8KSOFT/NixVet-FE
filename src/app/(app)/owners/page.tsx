@@ -1,8 +1,9 @@
 'use client';
 
 import { logarErroDeApi } from '@/lib/problem';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -45,21 +46,25 @@ import { useHasPermission } from '@/hooks/useHasPermission';
 import { ProfilePhoto, ProfilePhotoUploader } from '@/components/shared/profile-photo';
 import { cn } from '@/lib/utils';
 
-const tutorSchema = z.object({
-  name: z.string().min(1, 'Obrigatório'),
-  cpf: z.string().min(1, 'Obrigatório'),
-  phone: z.string().min(1, 'Obrigatório').refine(telefoneValido, 'Telefone inválido'),
-  email: z.string().email('Email inválido'),
-  cep: z.string().min(1, 'Obrigatório'),
-  street: z.string().min(1, 'Obrigatório'),
-  number: z.string().min(1, 'Obrigatório'),
-  complement: z.string().optional(),
-  neighborhood: z.string().min(1, 'Obrigatório'),
-  city: z.string().min(1, 'Obrigatório'),
-  state: z.string().min(1, 'Obrigatório'),
-});
+/** Schema montado com o `t` do idioma ativo (mensagem de validação não pode ficar presa ao idioma do carregamento). */
+const buildTutorSchema = (t: TFunction) => {
+  const obrigatorio = t('owners.validation.required');
+  return z.object({
+    name: z.string().min(1, obrigatorio),
+    cpf: z.string().min(1, obrigatorio),
+    phone: z.string().min(1, obrigatorio).refine(telefoneValido, t('owners.validation.phoneInvalid')),
+    email: z.string().email(t('owners.validation.emailInvalid')),
+    cep: z.string().min(1, obrigatorio),
+    street: z.string().min(1, obrigatorio),
+    number: z.string().min(1, obrigatorio),
+    complement: z.string().optional(),
+    neighborhood: z.string().min(1, obrigatorio),
+    city: z.string().min(1, obrigatorio),
+    state: z.string().min(1, obrigatorio),
+  });
+};
 
-type TutorFormValues = z.infer<typeof tutorSchema>;
+type TutorFormValues = z.infer<ReturnType<typeof buildTutorSchema>>;
 
 const formatCpf = (value: string) => {
   const cleaned = value.replace(/\D/g, '').slice(0, 11);
@@ -129,6 +134,7 @@ function OwnerPetsList({ tutorId }: { tutorId: string }) {
 
 export default function OwnersPage() {
   const { t } = useTranslation('common');
+  const tutorSchema = useMemo(() => buildTutorSchema(t), [t]);
   const [listPage, setListPage] = useState(1);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);

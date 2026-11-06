@@ -330,7 +330,7 @@ function TeamContent() {
                           <AlertDialogDescription>{invite.email}</AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogCancel>{t('team.cancel')}</AlertDialogCancel>
                           <AlertDialogAction onClick={() => handleCancelInvite(invite.id)}>Confirmar</AlertDialogAction>
                         </AlertDialogFooter>
                       </AlertDialogContent>
@@ -349,7 +349,7 @@ function TeamContent() {
         </div>
       ) : users.length === 0 ? (
         <div className="rounded-lg border border-gray-300 bg-white py-8 text-center text-sm text-slate-500">
-          Nenhum membro cadastrado.
+          {t('team.empty')}
         </div>
       ) : (
         <div>
@@ -402,7 +402,7 @@ function TeamContent() {
                               <AlertDialogDescription>{user.name}</AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                              <AlertDialogCancel>{t('team.cancel')}</AlertDialogCancel>
                               <AlertDialogAction onClick={() => handleDelete(user.id)}>Confirmar</AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
@@ -463,7 +463,7 @@ function TeamContent() {
                         <AlertDialogDescription>{user.name}</AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogCancel>{t('team.cancel')}</AlertDialogCancel>
                         <AlertDialogAction onClick={() => handleDelete(user.id)}>Confirmar</AlertDialogAction>
                       </AlertDialogFooter>
                     </AlertDialogContent>
@@ -491,10 +491,10 @@ function TeamContent() {
         footer={
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button type="button" variant="outline" onClick={() => setModalVisible(false)}>
-              Cancelar
+              {t('team.cancel')}
             </Button>
             <Button type="submit" form="team-create-form">
-              Salvar
+              {t('team.save')}
             </Button>
           </div>
         }
@@ -646,8 +646,9 @@ function TeamContent() {
 }
 
 export default function TeamPage() {
+  const { t } = useTranslation('common');
   return (
-    <Suspense fallback={<div className="p-6">Carregando...</div>}>
+    <Suspense fallback={<div className="p-6">{t('shared.loading')}</div>}>
       <TeamContent />
     </Suspense>
   );

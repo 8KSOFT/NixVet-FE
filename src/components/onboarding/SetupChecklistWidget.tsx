@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { CheckCircle2, Circle, ChevronUp, ClipboardCheck, Star, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { GA_EVENTS, trackEvent } from '@/lib/analytics';
@@ -102,6 +103,7 @@ function FireworkParticle({ angle, distance, delay, color }: Particle) {
  * de <100% pra 100% observada durante a sessão (ver useEffect no widget).
  */
 function CelebrationOverlay({ items, onComplete }: { items: ChecklistItem[]; onComplete: () => void }) {
+  const { t } = useTranslation();
   const [phase, setPhase] = useState<'items' | 'finale' | 'out'>('items');
   const particles = useMemo(() => [...makeBurst(26, 'a'), ...makeBurst(22, 'b')], []);
 
@@ -129,7 +131,7 @@ function CelebrationOverlay({ items, onComplete }: { items: ChecklistItem[]; onC
       >
         {phase === 'items' ? (
           <>
-            <h3 className="mb-4 text-base font-bold text-wa-ink">Configuração concluída!</h3>
+            <h3 className="mb-4 text-base font-bold text-wa-ink">{t('setupChecklist.done')}</h3>
             <ul className="space-y-1.5 text-left">
               {items.map((item, i) => (
                 <li
@@ -157,8 +159,8 @@ function CelebrationOverlay({ items, onComplete }: { items: ChecklistItem[]; onC
               />
               <span className="absolute text-xl font-extrabold text-white">100%</span>
             </div>
-            <p className="text-lg font-extrabold text-wa-ink">Tudo pronto! 🎉</p>
-            <p className="text-sm text-wa-ink-2">Sua clínica está 100% configurada no NixVet.</p>
+            <p className="text-lg font-extrabold text-wa-ink">{t('setupChecklist.allSet')}</p>
+            <p className="text-sm text-wa-ink-2">{t('setupChecklist.clinicDone')}</p>
           </div>
         )}
       </div>
@@ -178,6 +180,7 @@ function CelebrationOverlay({ items, onComplete }: { items: ChecklistItem[]; onC
  * 100% pela primeira vez na sessão, toca uma celebração e some para sempre.
  */
 export function SetupChecklistWidget() {
+  const { t } = useTranslation();
   const [userId, setUserId] = useState<string | null>(null);
   const [dismissed, setDismissed] = useState(true);
   const [open, setOpen] = useState(false);
@@ -284,49 +287,49 @@ export function SetupChecklistWidget() {
   const items: ChecklistItem[] = [
     {
       key: 'team',
-      label: 'Cadastrar mais veterinários',
+      label: t('setupChecklist.items.team'),
       href: '/settings/team',
       done: (staffQuery.data?.length ?? 0) > 1,
     },
     {
       key: 'vet-schedules',
-      label: 'Agenda de cada veterinário',
+      label: t('setupChecklist.items.doctorSchedules'),
       href: '/settings/hours',
       done: (vetSchedulesQuery.data?.length ?? 0) > 0,
     },
     {
       key: 'resources',
-      label: 'Salas e equipamentos',
+      label: t('setupChecklist.items.resources'),
       href: '/settings/resources',
       done: (resourcesQuery.data?.length ?? 0) > 0,
     },
     {
       key: 'health-plans',
-      label: 'Convênios / planos de saúde',
+      label: t('setupChecklist.items.healthPlans'),
       href: '/settings/planos-saude',
       done: (healthPlansQuery.data?.length ?? 0) > 0,
     },
     {
       key: 'branding',
-      label: 'Identidade visual (logo, cor, subdomínio)',
+      label: t('setupChecklist.items.branding'),
       href: '/settings#identidade-visual',
       done: Boolean(tenant?.logo_url || tenant?.primary_color || tenant?.subdomain),
     },
     {
       key: 'whatsapp',
-      label: 'WhatsApp / atendimento por IA',
+      label: t('setupChecklist.items.whatsapp'),
       href: '/settings/whatsapp-numbers',
       done: Boolean(tenant?.whatsapp_ai_chatbot_enabled),
     },
     {
       key: 'google-calendar',
-      label: 'Google Agenda',
+      label: t('setupChecklist.items.googleCalendar'),
       href: '/settings#google-agenda',
       done: Boolean(googleStatusQuery.data?.connected),
     },
     {
       key: 'term-templates',
-      label: 'Modelos de termo de consentimento',
+      label: t('setupChecklist.items.termTemplates'),
       href: '/settings/clinic-terms',
       done: (termTemplatesQuery.data?.length ?? 0) > 0,
     },
@@ -436,15 +439,15 @@ export function SetupChecklistWidget() {
   const panel = (
     <div className="mb-3 flex items-center justify-between">
       <div>
-        <h3 className="text-sm font-bold text-slate-900">Configuração — {percent}% completa</h3>
+        <h3 className="text-sm font-bold text-slate-900">{t('setupChecklist.panelTitle', { percent })}</h3>
         <p className="text-xs text-slate-500">Opcional, mas ajuda a aproveitar tudo do NixVet.</p>
       </div>
       <button
         type="button"
         onClick={handleDismiss}
         className="text-slate-400 hover:text-slate-600"
-        aria-label="Dispensar definitivamente"
-        title="Não mostrar mais"
+        aria-label={t('setupChecklist.dismissAria')}
+        title={t('setupChecklist.dismissTitle')}
       >
         <X className="size-4" />
       </button>
@@ -495,7 +498,7 @@ export function SetupChecklistWidget() {
           <ClipboardCheck className="size-4.5" />
         </span>
         <span className="min-w-0 flex-1 text-left">
-          <span className="block text-[13.5px] font-bold text-wa-ink">Configuração {percent}%</span>
+          <span className="block text-[13.5px] font-bold text-wa-ink">{t('setupChecklist.bar', { percent })}</span>
           <span className="mt-1 block h-1.5 w-full overflow-hidden rounded-full bg-wa-line-2">
             <span
               className="block h-full rounded-full bg-wa-brand-600 transition-all duration-500"
@@ -523,7 +526,7 @@ export function SetupChecklistWidget() {
         }}
       >
         <ClipboardCheck className="size-4" />
-        Configuração {percent}%
+        {t('setupChecklist.bar', { percent })}
       </button>
     </>
   );

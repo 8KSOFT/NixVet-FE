@@ -345,7 +345,7 @@ export default function DashboardPage() {
           se fossem o número real do dia. */}
       {metricsError && (
         <EstadoErro
-          mensagem="Não foi possível carregar os indicadores."
+          mensagem={t('errors.loadIndicators')}
           onRetry={() => void refetchMetrics()}
         />
       )}

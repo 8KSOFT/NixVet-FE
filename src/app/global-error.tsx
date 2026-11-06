@@ -1,6 +1,7 @@
 'use client';
 
 import { ErrorScreen } from '@/components/error-screen';
+import i18n from '@/lib/i18n/instance';
 
 /**
  * Último recurso: erro no próprio layout raiz, onde nenhum `error.tsx` de
@@ -17,7 +18,7 @@ export default function GlobalError({
   return (
     <html lang="pt-BR">
       <body>
-        <ErrorScreen error={error} reset={reset} titulo="Erro inesperado" />
+        <ErrorScreen error={error} reset={reset} titulo={i18n.t('errorScreen.fatalTitle')} />
       </body>
     </html>
   );

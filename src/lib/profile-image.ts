@@ -1,3 +1,5 @@
+import i18n from '@/lib/i18n/instance';
+
 /** Teto aceito pelo backend (ProfilePhotoService.MAX_BYTES). */
 export const PROFILE_PHOTO_MAX_BYTES = 5 * 1024 * 1024;
 
@@ -27,7 +29,7 @@ export class ProfileImageError extends Error {}
  */
 export async function prepareProfileImage(file: File): Promise<PreparedImage> {
   if (!ACCEPTED.includes(file.type.toLowerCase())) {
-    throw new ProfileImageError('Formato não suportado. Envie JPEG, PNG, WebP ou HEIC.');
+    throw new ProfileImageError(i18n.t('photo.unsupportedFormat'));
   }
 
   try {
@@ -52,7 +54,7 @@ export async function prepareProfileImage(file: File): Promise<PreparedImage> {
   } catch {
     if (file.size > PROFILE_PHOTO_MAX_BYTES) {
       throw new ProfileImageError(
-        'Não foi possível processar esta imagem e ela passa de 5 MB. Converta para JPEG e tente de novo.',
+        i18n.t('photo.tooBig'),
       );
     }
     return { blob: file, mimeType: file.type };

@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -25,6 +26,7 @@ interface QuickCreateMenuProps {
 
 export function QuickCreateMenu({ menuAllow, variant = "sidebar", collapsed = false }: QuickCreateMenuProps) {
   const router = useRouter();
+  const { t } = useTranslation();
   const actions = useMemo(
     () => QUICK_CREATE_ACTIONS.filter((action) => menuAllow.has(action.menuKey)),
     [menuAllow],
@@ -44,18 +46,18 @@ export function QuickCreateMenu({ menuAllow, variant = "sidebar", collapsed = fa
             variant="outline"
             size="icon"
             className="size-8.5 rounded-wa border-wa-line bg-white text-wa-ink-2 shadow-none hover:bg-wa-line-2 hover:text-wa-ink"
-            aria-label="Criar novo"
+            aria-label={t("quickCreate.menuTitle")}
           >
             <Plus className="size-4" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-64">
-          <DropdownMenuLabel>Criar novo</DropdownMenuLabel>
+          <DropdownMenuLabel>{t("quickCreate.menuTitle")}</DropdownMenuLabel>
           <DropdownMenuSeparator />
           {actions.map((action) => (
             <DropdownMenuItem key={action.key} onClick={() => go(action.href)} className="gap-2">
               <action.icon className="size-4" />
-              {action.label}
+              {t(action.labelKey)}
             </DropdownMenuItem>
           ))}
         </DropdownMenuContent>
@@ -72,19 +74,19 @@ export function QuickCreateMenu({ menuAllow, variant = "sidebar", collapsed = fa
             "w-full justify-center gap-1.5 rounded-wa border border-white/7 bg-white/5 py-1.75 text-[13.5px] font-semibold text-white hover:bg-white/10 hover:text-white md:py-2.25",
             collapsed && "px-0",
           )}
-          title={collapsed ? "Novo" : undefined}
+          title={collapsed ? t("quickCreate.new") : undefined}
         >
           <Plus className="size-3.5 shrink-0" />
-          {!collapsed && <span>Novo</span>}
+          {!collapsed && <span>{t("quickCreate.new")}</span>}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-64">
-        <DropdownMenuLabel>Criar novo</DropdownMenuLabel>
+        <DropdownMenuLabel>{t("quickCreate.menuTitle")}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {actions.map((action) => (
           <DropdownMenuItem key={action.key} onClick={() => go(action.href)} className="gap-2">
             <action.icon className="size-4" />
-            {action.label}
+            {t(action.labelKey)}
           </DropdownMenuItem>
         ))}
       </DropdownMenuContent>

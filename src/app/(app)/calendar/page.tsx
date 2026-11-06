@@ -1183,7 +1183,7 @@ function CalendarContent() {
         <EstadoErro
           className="mb-3 py-4"
           error={consultationsErrorObj}
-          mensagem="Não foi possível carregar a agenda."
+          mensagem={t('errors.loadAgenda')}
           onRetry={() => void refetchConsultations()}
         />
       )}

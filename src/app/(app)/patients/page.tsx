@@ -371,7 +371,7 @@ function PatientsContent() {
         <EstadoErro
           error={patientsErrorDetail}
           onRetry={() => void refetchPatients()}
-          mensagem="Não foi possível carregar os pacientes."
+          mensagem={t('errors.loadPatients')}
         />
       ) : (
         <div>
@@ -564,7 +564,7 @@ function PatientsContent() {
             <ProfilePhotoUploader
               target={`/patients/${editingId}`}
               invalidate={[patientKeys.all]}
-              label="foto"
+              label={t('photo.labels.default')}
               url={editingPatient?.photo_url}
               name={editingPatient?.name}
             />

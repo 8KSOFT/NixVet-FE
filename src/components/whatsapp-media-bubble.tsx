@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { AlertCircle, Download, FileText, Loader2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import api from '@/lib/axios';
 import { Button } from '@/components/ui/button';
 import type { WhatsappMessage } from '@/app/types/whatsapp-conversation';
@@ -40,6 +41,8 @@ function daysLeft(expiresAt?: string | null): number | null {
  * revogado ao desmontar, para não vazar memória ao percorrer conversas.
  */
 export function WhatsappMediaBubble({ message }: { message: WhatsappMessage }) {
+  const { t } = useTranslation();
+  const labelFor = (k?: string) => t(`whatsappMedia.kinds.${k && MEDIA_KINDS.has(k) ? k : 'document'}`);
   const [url, setUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -94,8 +97,8 @@ export function WhatsappMediaBubble({ message }: { message: WhatsappMessage }) {
         <AlertCircle className="mt-0.5 size-3.5 shrink-0" />
         <span>
           {status === 'expired'
-            ? `${labelFor(kind)} removido do servidor após 7 dias. Peça ao tutor para reenviar, se necessário.`
-            : `${labelFor(kind)} não pôde ser recuperado — o WhatsApp mantém o arquivo por tempo limitado.`}
+            ? t('whatsappMedia.expired', { kind: labelFor(kind) })
+            : t('whatsappMedia.unavailable', { kind: labelFor(kind) })}
         </span>
       </div>
     );
@@ -105,7 +108,7 @@ export function WhatsappMediaBubble({ message }: { message: WhatsappMessage }) {
     return (
       <div className="flex items-center gap-2 text-xs opacity-80">
         <Loader2 className="size-3.5 animate-spin" />
-        Recebendo {labelFor(kind).toLowerCase()}…
+        {t('whatsappMedia.receiving', { kind: labelFor(kind).toLowerCase() })}
       </div>
     );
   }
@@ -115,14 +118,14 @@ export function WhatsappMediaBubble({ message }: { message: WhatsappMessage }) {
       {loading && (
         <div className="flex items-center gap-2 text-xs opacity-80">
           <Loader2 className="size-3.5 animate-spin" />
-          Carregando…
+          {t('whatsappMedia.loading')}
         </div>
       )}
 
       {failed && (
         <div className="flex items-center gap-2 text-xs">
           <AlertCircle className="size-3.5" />
-          Não foi possível abrir o arquivo.
+          {t('whatsappMedia.openFail')}
         </div>
       )}
 
@@ -130,7 +133,7 @@ export function WhatsappMediaBubble({ message }: { message: WhatsappMessage }) {
         // eslint-disable-next-line @next/next/no-img-element -- blob URL local, sem otimização possível
         <img
           src={url}
-          alt={message.body_text ?? 'Imagem recebida'}
+          alt={message.body_text ?? t('whatsappMedia.imageAlt')}
           className="max-h-72 w-auto max-w-full rounded-md"
         />
       )}
@@ -144,7 +147,7 @@ export function WhatsappMediaBubble({ message }: { message: WhatsappMessage }) {
       {kind === 'document' && (
         <div className="flex items-center gap-2 rounded-md border px-2 py-2">
           <FileText className="size-4 shrink-0" />
-          <span className="truncate text-xs">{message.media_filename ?? 'Documento'}</span>
+          <span className="truncate text-xs">{message.media_filename ?? t('whatsappMedia.document')}</span>
         </div>
       )}
 
@@ -160,7 +163,7 @@ export function WhatsappMediaBubble({ message }: { message: WhatsappMessage }) {
           onClick={() => void handleDownload()}
         >
           <Download className="size-3" />
-          Baixar
+          {t('whatsappMedia.download')}
         </Button>
       </div>
 
@@ -169,25 +172,11 @@ export function WhatsappMediaBubble({ message }: { message: WhatsappMessage }) {
       {remaining !== null && (
         <p className="text-[11px] opacity-70">
           {remaining <= 1
-            ? 'Sai do servidor hoje — baixe se precisar guardar.'
-            : `Disponível por mais ${remaining} dias no NixVet. Baixe se precisar guardar.`}
+            ? t('whatsappMedia.leavesToday')
+            : t('whatsappMedia.availableDays', { count: remaining })}
         </p>
       )}
     </div>
   );
 }
 
-function labelFor(kind?: string): string {
-  switch (kind) {
-    case 'image':
-      return 'Imagem';
-    case 'audio':
-      return 'Áudio';
-    case 'video':
-      return 'Vídeo';
-    case 'sticker':
-      return 'Figurinha';
-    default:
-      return 'Documento';
-  }
-}

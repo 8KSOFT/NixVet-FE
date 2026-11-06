@@ -1,6 +1,7 @@
 'use client';
 
 import { X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 import type { DashboardCreateFormDialogProps } from '@/app/types/dashboard-create-form-dialog';
 import { Button } from '@/components/ui/button';
@@ -24,6 +25,7 @@ export function DashboardCreateFormDialog({
   preventOutsideClose = false,
   preventEscapeClose = false,
 }: DashboardCreateFormDialogProps) {
+  const { t } = useTranslation();
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
@@ -75,7 +77,7 @@ export function DashboardCreateFormDialog({
                     className="h-9 w-9 text-gray-800 hover:bg-transparent"
                   >
                     <X className="size-5" />
-                    <span className="sr-only">Fechar</span>
+                    <span className="sr-only">{t('shared.close')}</span>
                   </Button>
                 </DialogClose>
               )}
